@@ -1,10 +1,24 @@
 @use '@carbon/layout';
 @use '@carbon/colors';
 
-.triageContainer {
- 
+.contentSwitcher {
+  margin: layout.$spacing-05;
 }
 
-.buttonStyles{
-    margin: 10px;
+.headerActions {
+  display: flex;
+  column-gap: layout.$spacing-05;
+  margin: layout.$spacing-05;
+}
+
+.patientSearchBar {
+  width: 100%;
+
+  & form {
+    border: none;
+  }
+}
+
+.pageHeader {
+  border-bottom: 1px solid colors.$gray-20;
 }

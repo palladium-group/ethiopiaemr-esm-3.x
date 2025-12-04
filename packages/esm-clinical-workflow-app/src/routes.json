@@ -33,6 +33,13 @@
       "title": "Triage Form",
       "canMaximize": true,
       "type": "clinical-form"
+    },
+    {
+      "name": "patient-registration-workspace",
+      "component": "patientRegistrationWorkspace",
+      "title": "Patient Registration",
+      "canMaximize": true,
+      "type": "registration-form"
     }
   ],
   "modals": [
