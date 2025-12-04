@@ -20,4 +20,7 @@ export const root = getAsyncLifecycle(() => import('./root.component'), options)
 
 export const triageDashboardLink = getSyncLifecycle(createDashboardLink(dashboardMeta), options);
 export const triageDashboard = getAsyncLifecycle(() => import('./triage/triage-dashboard.component'), options);
-export const triageWorkspace = getAsyncLifecycle(() => import('./triage-workspace/triage.workpace'), options);
+export const patientRegistrationWorkspace = getAsyncLifecycle(
+  () => import('./patient-registration/patient.registration.workspace'),
+  options,
+);
