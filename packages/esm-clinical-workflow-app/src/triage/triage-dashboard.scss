@@ -13,6 +13,10 @@
 
 .patientSearchBar {
   width: 100%;
+
+  & form {
+    border: none;
+  }
 }
 
 .pageHeader {

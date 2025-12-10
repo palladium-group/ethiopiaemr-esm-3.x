@@ -1,5 +1,5 @@
 {
-  "name": "@ethiopia/esm-clinical-workflow-app",
+  "name": "@palladium-ethiopia/esm-clinical-workflow-app",
   "version": "5.4.1",
   "description": "Express workflow app for OpenMRS 3",
   "keywords": [

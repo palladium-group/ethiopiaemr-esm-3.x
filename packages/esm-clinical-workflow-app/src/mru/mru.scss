@@ -1,0 +1,28 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.pageHeader {
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.patientSearchContainer {
+  padding: layout.$spacing-05;
+  background-color: colors.$gray-10;
+
+  & form {
+    border: none;
+  }
+}
+
+.patientHeaderContainer {
+  margin-top: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  background-color: colors.$white;
+}
+
+.patientHeaderActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}

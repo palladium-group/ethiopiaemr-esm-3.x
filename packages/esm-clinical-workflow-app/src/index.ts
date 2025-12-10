@@ -2,6 +2,9 @@ import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmr
 import { createDashboardLink } from './createDashboardLink';
 import { configSchema } from './config-schema';
 import { dashboardMeta } from './dashboard.meta';
+import MRUDashboard from './mru/dashboard.component';
+import { spaBasePath } from './constants';
+import BillingInformationWorkspace from './mru/billing-information/billing-information.workspace';
 
 const moduleName = '@ethiopia/esm-clinical-workflow-app';
 
@@ -24,3 +27,15 @@ export const patientRegistrationWorkspace = getAsyncLifecycle(
   () => import('./patient-registration/patient.registration.workspace'),
   options,
 );
+
+export const mruDashboard = getSyncLifecycle(MRUDashboard, options);
+export const mruLeftPanelLink = getSyncLifecycle(
+  createDashboardLink({
+    path: 'mru',
+    title: 'MRU',
+    basePath: spaBasePath,
+  }),
+  options,
+);
+
+export const billingInformationWorkspace = getSyncLifecycle(BillingInformationWorkspace, options);
