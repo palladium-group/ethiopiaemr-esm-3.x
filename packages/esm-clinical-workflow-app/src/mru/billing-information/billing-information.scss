@@ -1,0 +1,55 @@
+@use '@carbon/styles/scss/spacing';
+@use '@carbon/type';
+@use '@carbon/layout';
+@use '@carbon/colors';
+
+.sectionTitle {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin-bottom: spacing.$spacing-03;
+}
+
+.buttonSet {
+  width: 100%;
+  padding-top: spacing.$spacing-05;
+  background-color: colors.$white-0;
+  justify-content: space-between;
+  bottom: 0;
+  position: absolute;
+  & > button {
+    max-width: 50% !important;
+    width: 50%;
+  }
+}
+
+.billingInformationContainer {
+  margin: spacing.$spacing-05;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.creditDetailsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-05;
+  margin-top: spacing.$spacing-03;
+  min-height: 45rem;
+  border: 1px solid colors.$gray-20;
+  padding: spacing.$spacing-03;
+}
+
+.freeDetailsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-05;
+  margin-top: spacing.$spacing-03;
+  min-height: 20rem;
+  border: 1px solid colors.$gray-20;
+  padding: spacing.$spacing-03;
+}
+
+.creditTypeDetailsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-03;
+}

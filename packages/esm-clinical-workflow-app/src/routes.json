@@ -23,7 +23,25 @@
     "name": "triage-dashboard",
     "component": "triageDashboard",
     "slot":"triage-dashboard-slot"
-   }
+   },
+   {
+    "name": "ewf-mru-dashboard-link",
+    "component": "mruLeftPanelLink",
+    "slot": "homepage-dashboard-slot",
+    "meta": {
+      "name": "mru",
+      "title": "MRU",
+      "path": "mru",
+      "slot": "mru-dashboard-slot"
+    }
+  },
+  {
+    "name": "ewf-mru-dashboard",
+    "component": "mruDashboard",
+    "slot": "mru-dashboard-slot",
+    "online": true,
+    "offline": false
+  }
   ],
 
   "workspaces": [
@@ -40,6 +58,12 @@
       "title": "Patient Registration",
       "canMaximize": true,
       "type": "registration-form"
+    },
+    {
+      "name": "billing-information-workspace",
+      "component": "billingInformationWorkspace",
+      "title": "Billing Information Workspace",
+      "type": "clinical-form"
     }
   ],
   "modals": [
