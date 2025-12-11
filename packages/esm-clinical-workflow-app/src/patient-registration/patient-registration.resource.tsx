@@ -11,3 +11,13 @@ export const registerNewPatient = (payload) => {
     body: JSON.stringify(payload),
   });
 };
+export const generateIdentifier = (source: string) => {
+  const url = `${restBaseUrl}/idgen/identifiersource/${source}/identifier`;
+  return openmrsFetch<fhir.Identifier>(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: {},
+  });
+};

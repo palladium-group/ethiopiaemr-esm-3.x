@@ -2,64 +2,23 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ContentSwitcher, Switch } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import {
-  ExtensionSlot,
-  fetchCurrentPatient,
-  launchWorkspace,
-  PageHeader,
-  showSnackbar,
-  TriagePictogram,
-  UserHasAccess,
-} from '@openmrs/esm-framework';
-
-import { createVisitForPatient } from './triage.resource';
+import { ExtensionSlot, launchWorkspace, PageHeader, UserHasAccess } from '@openmrs/esm-framework';
 
 import styles from './triage-dashboard.scss';
+import { handleStartVisitAndLaunchTriageForm } from '../helper';
 
 const TriageDashboard: React.FC = () => {
   const { t } = useTranslation();
-  const [selectedTriageType, setSelectedTriageType] = React.useState<string | null>(null);
-
   const triageMap = {
     centralTriage: '37f6bd8d-586a-4169-95fa-5781f987fe62',
-    emergencyTriage: '0038a296-62f8-4099-80e5-c9ea7590c157',
-    pediatricsTriage: 'a1a62d1e-2def-11e9-b210-d663bd873d93',
+    emergencyTriage: '37f6bd8d-586a-4169-95fa-5781f987fe62',
+    pediatricsTriage: '37f6bd8d-586a-4169-95fa-5781f987fe62',
   };
-
-  const handleStartVisitAndLaunchTriageForm = async (patientUuid: string) => {
-    const patient = await fetchCurrentPatient(patientUuid);
-    const visitResponse = await createVisitForPatient(patientUuid);
-    if (visitResponse.ok) {
-      // launch triage form based on switch button value
-      const { data: visit } = visitResponse;
-      launchWorkspace('patient-form-entry-workspace', {
-        patientUuid: patientUuid,
-        patient: patient,
-        visitContext: visit,
-        formInfo: {
-          encounterUuid: '',
-          visitUuid: visit.uuid,
-          formUuid: triageMap[selectedTriageType], // Triage form UUID
-          visitTypeUuid: visit.visitType.uuid,
-        },
-      });
-    } else {
-      showSnackbar({
-        title: t('triageDashboardErrorStartingVisit', 'Error starting visit for patient'),
-        kind: 'error',
-        subtitle: t('triageDashboardPleaseTryAgain', 'Please try again.'),
-        isLowContrast: true,
-      });
-    }
-  };
+  const [selectedTriageType, setSelectedTriageType] = React.useState<string | null>(triageMap.centralTriage);
 
   return (
     <>
-      <PageHeader
-        className={styles.pageHeader}
-        title={t('triageDashboard', 'Triage Dashboard')}
-        illustration={<TriagePictogram />}
-      />
+      <PageHeader className={styles.pageHeader} title={t('triageDashboard', 'Triage Dashboard')} illustration={null} />
       <div className={styles.headerActions}>
         <ContentSwitcher
           lowContrast
@@ -82,7 +41,9 @@ const TriageDashboard: React.FC = () => {
           className={styles.patientSearchBar}
           name="patient-search-bar-slot"
           state={{
-            selectPatientAction: (patientUuid) => handleStartVisitAndLaunchTriageForm(patientUuid),
+            selectPatientAction: (patientUuid: string) => {
+              handleStartVisitAndLaunchTriageForm(patientUuid);
+            },
             buttonProps: {
               kind: 'secondary',
             },
