@@ -2,36 +2,23 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ContentSwitcher, Switch } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import {
-  ExtensionSlot,
-  launchWorkspace,
-  PageHeader,
-  TriagePictogram,
-  UserHasAccess,
-  useSession,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, launchWorkspace, PageHeader, UserHasAccess } from '@openmrs/esm-framework';
 
 import styles from './triage-dashboard.scss';
 import { handleStartVisitAndLaunchTriageForm } from '../helper';
 
 const TriageDashboard: React.FC = () => {
   const { t } = useTranslation();
-  const session = useSession();
-  const [selectedTriageType, setSelectedTriageType] = React.useState<string | null>(null);
-
   const triageMap = {
-    centralTriage: 'bea30222-4b16-40a1-8b7e-1396ff1e0038',
-    emergencyTriage: '0038a296-62f8-4099-80e5-c9ea7590c157',
-    pediatricsTriage: 'a1a62d1e-2def-11e9-b210-d663bd873d93',
+    centralTriage: '37f6bd8d-586a-4169-95fa-5781f987fe62',
+    emergencyTriage: '37f6bd8d-586a-4169-95fa-5781f987fe62',
+    pediatricsTriage: '37f6bd8d-586a-4169-95fa-5781f987fe62',
   };
+  const [selectedTriageType, setSelectedTriageType] = React.useState<string | null>(triageMap.centralTriage);
 
   return (
     <>
-      <PageHeader
-        className={styles.pageHeader}
-        title={t('triageDashboard', 'Triage Dashboard')}
-        illustration={<TriagePictogram />}
-      />
+      <PageHeader className={styles.pageHeader} title={t('triageDashboard', 'Triage Dashboard')} illustration={null} />
       <div className={styles.headerActions}>
         <ContentSwitcher
           lowContrast
@@ -55,7 +42,7 @@ const TriageDashboard: React.FC = () => {
           name="patient-search-bar-slot"
           state={{
             selectPatientAction: (patientUuid: string) => {
-              handleStartVisitAndLaunchTriageForm(patientUuid, triageMap[selectedTriageType], t);
+              handleStartVisitAndLaunchTriageForm(patientUuid);
             },
             buttonProps: {
               kind: 'secondary',

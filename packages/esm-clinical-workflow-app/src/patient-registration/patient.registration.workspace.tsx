@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { OpenmrsDatePicker, showSnackbar, generateOfflineUuid } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, showSnackbar, generateOfflineUuid, useSession } from '@openmrs/esm-framework';
 import { registerNewPatient, generateIdentifier } from './patient-registration.resource';
-import { handleStartVisitAndLaunchTriageForm } from '../helper';
 import useSWR from 'swr';
 import styles from './patient.registration.workspace.scss';
+import { handleStartVisitAndLaunchTriageForm } from '../helper';
 
 const genderOptions = [
   {
@@ -39,8 +39,11 @@ type PatientRegistrationFormData = z.infer<typeof patientRegistrationSchema>;
 
 const PatientRegistration: React.FC = () => {
   const { t } = useTranslation();
+  const { sessionLocation } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { data: identifierData } = useSWR('generateIdentifier', generateIdentifier);
+  const { data: identifierData } = useSWR('generateIdentifier', () =>
+    generateIdentifier('1952cc86-4f48-4737-a0ef-5e8a5bb63e41'),
+  );
   const identifier = (identifierData?.data as any)?.identifier;
 
   const {
@@ -93,8 +96,8 @@ const PatientRegistration: React.FC = () => {
         identifiers: [
           {
             identifier: identifier,
-            identifierType: '05a29f94-c0ed-11e2-94be-8c13b969e334', // defailt openmrs identifier type
-            location: '44c3efb0-2583-4c80-a79e-1f756a03c0a1', // TODO: get from session
+            identifierType: 'dfacd928-0370-4315-99d7-6ec1c9f7ae76', // defailt openmrs identifier type
+            location: sessionLocation.uuid, // TODO: get from session
             preferred: true,
           },
         ],
@@ -114,7 +117,7 @@ const PatientRegistration: React.FC = () => {
         });
 
         // Launch triage workspace for the patient
-        await handleStartVisitAndLaunchTriageForm(patientUuid, 'bea30222-4b16-40a1-8b7e-1396ff1e0038', t);
+        await handleStartVisitAndLaunchTriageForm(patientUuid);
       }
     } catch (error) {
       const errorMessage =
