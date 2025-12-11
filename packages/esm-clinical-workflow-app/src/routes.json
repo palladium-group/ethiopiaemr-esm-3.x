@@ -4,46 +4,43 @@
     "fhir2": ">=1.2",
     "webservices.rest": "^2.24.0"
   },
-  "pages": [
-    
-  ],
+  "pages": [],
   "extensions": [
-   {
-    "name": "triage-dashboard-link",
-    "component": "triageDashboardLink",
-    "slot":"homepage-dashboard-slot",
-    "order":0,
-    "meta":{
-      "name":"triage",
-      "slot":"triage-dashboard-slot",
-      "title":"triage"
+    {
+      "name": "clinical-workflow-triage-dashboard-link",
+      "component": "triageDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "order": 0,
+      "meta": {
+        "name": "clinical-workflow-triage",
+        "slot": "clinical-workflow-triage-dashboard-slot",
+        "title": "clinical-workflow-triage"
+      }
+    },
+    {
+      "name": "clinical-workflow-triage-dashboard",
+      "component": "triageDashboard",
+      "slot": "clinical-workflow-triage-dashboard-slot"
+    },
+    {
+      "name": "ewf-mru-dashboard-link",
+      "component": "mruLeftPanelLink",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "mru",
+        "title": "MRU",
+        "path": "mru",
+        "slot": "mru-dashboard-slot"
+      }
+    },
+    {
+      "name": "ewf-mru-dashboard",
+      "component": "mruDashboard",
+      "slot": "mru-dashboard-slot",
+      "online": true,
+      "offline": false
     }
-   },
-   {
-    "name": "triage-dashboard",
-    "component": "triageDashboard",
-    "slot":"triage-dashboard-slot"
-   },
-   {
-    "name": "ewf-mru-dashboard-link",
-    "component": "mruLeftPanelLink",
-    "slot": "homepage-dashboard-slot",
-    "meta": {
-      "name": "mru",
-      "title": "MRU",
-      "path": "mru",
-      "slot": "mru-dashboard-slot"
-    }
-  },
-  {
-    "name": "ewf-mru-dashboard",
-    "component": "mruDashboard",
-    "slot": "mru-dashboard-slot",
-    "online": true,
-    "offline": false
-  }
   ],
-
   "workspaces": [
     {
       "name": "triage-workspace",
@@ -66,10 +63,26 @@
       "type": "clinical-form"
     }
   ],
-  "modals": [
-    
+  "workspaces2": [
+    {
+      "name": "clinical-workflow-patient-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "clinical-workflow-window"
+    }
   ],
-  "workspaceGroups": [
-    
+  "workspaceWindows2": [
+    {
+      "name": "clinical-workflow-window",
+      "group": "clinical-workflow-group",
+      "width": "wider",
+      "canMaximize": true
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "clinical-workflow-group",
+      "overlay": true,
+      "persistence": "closable"
+    }
   ]
 }

@@ -4,6 +4,8 @@ import { Button, ContentSwitcher, Switch } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { ExtensionSlot, launchWorkspace, PageHeader, UserHasAccess } from '@openmrs/esm-framework';
 
+import { useStartVisitAndLaunchTriageForm } from './useStartVisitAndLaunchTriageForm';
+
 import styles from './triage-dashboard.scss';
 import { handleStartVisitAndLaunchTriageForm } from '../helper';
 
@@ -15,6 +17,7 @@ const TriageDashboard: React.FC = () => {
     pediatricsTriage: '37f6bd8d-586a-4169-95fa-5781f987fe62',
   };
   const [selectedTriageType, setSelectedTriageType] = React.useState<string | null>(triageMap.centralTriage);
+  const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
 
   return (
     <>
