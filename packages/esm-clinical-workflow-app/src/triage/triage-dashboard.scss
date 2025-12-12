@@ -22,3 +22,13 @@
 .pageHeader {
   border-bottom: 1px solid colors.$gray-20;
 }
+
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+
+  button {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

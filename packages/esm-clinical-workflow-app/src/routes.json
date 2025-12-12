@@ -26,6 +26,7 @@
       "name": "ewf-mru-dashboard-link",
       "component": "mruLeftPanelLink",
       "slot": "homepage-dashboard-slot",
+      "order": 1,
       "meta": {
         "name": "mru",
         "title": "MRU",

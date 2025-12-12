@@ -1,0 +1,14 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+
+.patientBannerContainer {
+  margin: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  background-color: colors.$white;
+}
+
+.patientBannerHeader {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}

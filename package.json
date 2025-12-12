@@ -13,7 +13,7 @@
     "postinstall": "husky install",
     "prettier": "prettier --config prettier.config.js --write \"packages/**/*.{ts,tsx,css,scss}\" \"e2e/**/*.ts\"",
     "release": "yarn workspaces foreach --all --topological version",
-    "start": "openmrs develop --sources packages/esm-clinical-workflow-app --port 8095 --backend http://localhost",
+    "start": "openmrs develop --sources packages/esm-clinical-workflow-app --port 8095",
     "test-e2e": "playwright test",
     "verify": "turbo run lint && turbo run typescript"
   },

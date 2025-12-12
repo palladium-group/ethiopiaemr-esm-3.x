@@ -10,12 +10,12 @@ const handleShowModal = async (patientUuid: string) => {
   });
 };
 
-export const handleStartVisitAndLaunchTriageForm = async (patientUuid: string) => {
+export const handleStartVisitAndLaunchTriageForm = async (patientUuid: string, visitTypeUuid: string) => {
   const patient = await fetchCurrentPatient(patientUuid);
   let activeVisit = await getCurrentVisitForPatient(patientUuid);
   if (!activeVisit) {
     // start a new visit
-    const visitResponse = await createVisitForPatient(patientUuid);
+    const visitResponse = await createVisitForPatient(patientUuid, visitTypeUuid);
     if (visitResponse.ok) {
       const { data: visit } = visitResponse;
       activeVisit = visit;
