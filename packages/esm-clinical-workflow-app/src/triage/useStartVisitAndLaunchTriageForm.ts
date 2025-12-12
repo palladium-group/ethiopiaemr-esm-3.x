@@ -1,0 +1,139 @@
+import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Encounter,
+  fetchCurrentPatient,
+  launchWorkspace2,
+  showModal,
+  showSnackbar,
+  useConfig,
+  Visit,
+} from '@openmrs/esm-framework';
+
+import { createVisitForPatient } from './triage.resource';
+import type { ClinicalWorkflowConfig } from '../config-schema';
+
+export const launchTriageFormWorkspace = (
+  patient: Awaited<ReturnType<typeof fetchCurrentPatient>>,
+  patientUuid: string,
+  visit: Visit,
+  formUuid: string,
+  t: (key: string, defaultValue?: string) => string,
+) => {
+  const handleShowModal = (encounter: Encounter) => {
+    const dispose = showModal('transition-patient-to-latest-queue-modal', {
+      activeVisit: visit,
+      closeModal: () => dispose(),
+    });
+  };
+
+  if (!visit?.uuid || !visit?.visitType?.uuid) {
+    throw new Error('Invalid visit data received');
+  }
+
+  // Launch triage form workspace
+  launchWorkspace2(
+    'clinical-workflow-patient-form-entry-workspace',
+    {
+      formEntryWorkspaceName: t('triageForm', 'Triage Form'),
+      patient,
+      visitContext: visit,
+      form: {
+        visitUuid: visit.uuid,
+        uuid: formUuid,
+        visitTypeUuid: visit.visitType.uuid,
+      },
+      encounterUuid: '',
+      handlePostResponse: handleShowModal,
+    },
+    {
+      patientUuid: patientUuid,
+      patient: patient,
+      visitContext: visit,
+    },
+  );
+
+  // Set z-index for workspace container
+  setTimeout(() => {
+    const workspaceContainer = document.getElementById('omrs-workspaces-container');
+    if (workspaceContainer) {
+      workspaceContainer.style.zIndex = '100';
+    }
+  }, 0);
+};
+
+interface UseStartVisitAndLaunchTriageFormReturn {
+  handleStartVisitAndLaunchTriageForm: (patientUuid: string, formUuid: string) => Promise<void>;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriageFormReturn => {
+  const { t } = useTranslation();
+  const { visitTypeUuid } = useConfig<ClinicalWorkflowConfig>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const handleStartVisitAndLaunchTriageForm = useCallback(
+    async (patientUuid: string, formUuid?: string, visit?: Visit) => {
+      if (!patientUuid?.trim()) {
+        const validationError = new Error('Patient UUID is required');
+        setError(validationError);
+        showSnackbar({
+          title: t('triageDashboardError', 'Error'),
+          kind: 'error',
+          subtitle: t('triageDashboardInvalidPatientUuid', 'Invalid patient identifier'),
+          isLowContrast: true,
+        });
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Fetch patient data
+        const patient = await fetchCurrentPatient(patientUuid);
+
+        if (!patient) {
+          throw new Error('Failed to fetch patient data');
+        }
+
+        // Create visit for patient
+        const visitResponse = await createVisitForPatient(patientUuid, visitTypeUuid);
+
+        if (!visitResponse.ok) {
+          throw new Error(
+            visitResponse.data?.error?.message ||
+              t('triageDashboardErrorStartingVisit', 'Error starting visit for patient'),
+          );
+        }
+
+        const { data: visit } = visitResponse;
+
+        launchTriageFormWorkspace(patient, patientUuid, visit, formUuid, t);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : t('triageDashboardUnexpectedError', 'An unexpected error occurred');
+
+        setError(err instanceof Error ? err : new Error(errorMessage));
+
+        showSnackbar({
+          title: t('triageDashboardErrorStartingVisit', 'Error starting visit for patient'),
+          kind: 'error',
+          subtitle: errorMessage,
+          isLowContrast: true,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [t],
+  );
+
+  return {
+    handleStartVisitAndLaunchTriageForm,
+    isLoading,
+    error,
+  };
+};

@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
-import { Button, Dropdown, TextInput } from '@carbon/react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button, ButtonSet, Dropdown, InlineLoading, TextInput } from '@carbon/react';
+import {
+  OpenmrsDatePicker,
+  showSnackbar,
+  generateOfflineUuid,
+  useSession,
+  useConfig,
+  useLayoutType,
+  DefaultWorkspaceProps,
+  ResponsiveWrapper,
+} from '@openmrs/esm-framework';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { OpenmrsDatePicker, showSnackbar, generateOfflineUuid, useSession } from '@openmrs/esm-framework';
-import { registerNewPatient, generateIdentifier } from './patient-registration.resource';
-import useSWR from 'swr';
+
+import type { ClinicalWorkflowConfig } from '../config-schema';
+import { registerNewPatient, buildPatientRegistrationPayload } from './patient-registration.resource';
+import { useStartVisitAndLaunchTriageForm } from '../triage/useStartVisitAndLaunchTriageForm';
+import { useGenerateIdentifier } from './useGenerateIdentifier';
 import styles from './patient.registration.workspace.scss';
-import { handleStartVisitAndLaunchTriageForm } from '../helper';
+import classNames from 'classnames';
 
 const genderOptions = [
   {
@@ -35,22 +47,25 @@ const patientRegistrationSchema = z.object({
     }),
 });
 
-type PatientRegistrationFormData = z.infer<typeof patientRegistrationSchema>;
+export type PatientRegistrationFormData = z.infer<typeof patientRegistrationSchema>;
 
-const PatientRegistration: React.FC = () => {
+const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
+  closeWorkspace,
+  closeWorkspaceWithSavedChanges,
+  promptBeforeClosing,
+}) => {
   const { t } = useTranslation();
+  const isTablet = useLayoutType() === 'tablet';
+  const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
+  const { visitTypeUuid, identifierSourceUuid, defaultIdentifierTypeUuid, triageServices } =
+    useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { data: identifierData } = useSWR('generateIdentifier', () =>
-    generateIdentifier('1952cc86-4f48-4737-a0ef-5e8a5bb63e41'),
-  );
-  const identifier = (identifierData?.data as any)?.identifier;
+  const { identifier } = useGenerateIdentifier(identifierSourceUuid);
 
   const {
-    register,
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<PatientRegistrationFormData>({
     resolver: zodResolver(patientRegistrationSchema),
     defaultValues: {
@@ -62,46 +77,20 @@ const PatientRegistration: React.FC = () => {
     },
   });
 
+  useEffect(() => {
+    promptBeforeClosing(() => isDirty);
+  }, [promptBeforeClosing, isDirty]);
+
   const onSubmit = async (data: PatientRegistrationFormData) => {
-    setIsSubmitting(true);
     const uuid = generateOfflineUuid()?.replace('OFFLINE+', '');
     try {
-      // Format birthdate as YYYY-M-D (not zero-padded)
-      const birthDate = new Date(data.dateOfBirth);
-      const formattedBirthDate = `${birthDate.getFullYear()}-${birthDate.getMonth() + 1}-${birthDate.getDate()}`;
-
-      // Map gender to single character (M/F)
-      const genderCode = data.gender === 'Male' ? 'M' : 'F';
-
-      // Build OpenMRS Patient payload
-      const registrationPayload = {
-        uuid: uuid,
-        person: {
-          uuid: uuid,
-          names: [
-            {
-              preferred: true,
-              givenName: data.firstName,
-              middleName: data.middleName,
-              familyName: data.lastName,
-            },
-          ],
-          gender: genderCode,
-          birthdate: formattedBirthDate,
-          birthdateEstimated: false,
-          attributes: [],
-          addresses: [{}],
-          dead: false,
-        },
-        identifiers: [
-          {
-            identifier: identifier,
-            identifierType: 'dfacd928-0370-4315-99d7-6ec1c9f7ae76', // defailt openmrs identifier type
-            location: sessionLocation.uuid, // TODO: get from session
-            preferred: true,
-          },
-        ],
-      };
+      const registrationPayload = buildPatientRegistrationPayload(
+        data,
+        uuid,
+        identifier,
+        defaultIdentifierTypeUuid,
+        sessionLocation.uuid,
+      );
 
       const patient = await registerNewPatient(registrationPayload);
 
@@ -116,8 +105,9 @@ const PatientRegistration: React.FC = () => {
           isLowContrast: true,
         });
 
-        // Launch triage workspace for the patient
-        await handleStartVisitAndLaunchTriageForm(patientUuid);
+        // Launch triage workspace for the patient, launch the first triage service by default
+        await handleStartVisitAndLaunchTriageForm(patientUuid, triageServices[0].formUuid);
+        closeWorkspaceWithSavedChanges();
       }
     } catch (error) {
       const errorMessage =
@@ -129,92 +119,128 @@ const PatientRegistration: React.FC = () => {
         isLowContrast: true,
       });
     } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className={styles.patientRegistrationFormContainer}>
-      <TextInput
-        id="first-name"
-        labelText={t('firstName', 'First Name')}
-        {...register('firstName')}
-        invalid={!!errors.firstName}
-        invalidText={errors.firstName?.message}
-        placeholder={t('enterFirstName', 'Enter Your First Name')}
-        size="md"
-        type="text"
-        disabled={isSubmitting}
-      />
+    <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+      <div className={styles.formContainer}>
+        <Controller
+          name="firstName"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <ResponsiveWrapper>
+              <TextInput
+                id="first-name"
+                labelText={t('firstName', 'First Name')}
+                value={value || ''}
+                onChange={(e) => onChange(e.target.value)}
+                invalid={!!errors.firstName}
+                invalidText={errors.firstName?.message}
+                placeholder={t('enterFirstName', 'Enter Your First Name')}
+                size="md"
+                type="text"
+                disabled={isSubmitting}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
 
-      <TextInput
-        id="middle-name"
-        labelText={t('middleName', 'Middle Name')}
-        {...register('middleName')}
-        invalid={!!errors.middleName}
-        invalidText={errors.middleName?.message}
-        placeholder={t('enterMiddleName', 'Enter Middle Name')}
-        size="md"
-        type="text"
-        disabled={isSubmitting}
-      />
+        <Controller
+          name="middleName"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <ResponsiveWrapper>
+              <TextInput
+                id="middle-name"
+                labelText={t('middleName', 'Middle Name')}
+                value={value || ''}
+                onChange={(e) => onChange(e.target.value)}
+                invalid={!!errors.middleName}
+                invalidText={errors.middleName?.message}
+                placeholder={t('enterMiddleName', 'Enter Middle Name')}
+                size="md"
+                type="text"
+                disabled={isSubmitting}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
 
-      <TextInput
-        id="last-name"
-        labelText={t('lastName', 'Last Name')}
-        {...register('lastName')}
-        invalid={!!errors.lastName}
-        invalidText={errors.lastName?.message}
-        placeholder={t('enterLastName', 'Enter Last Name')}
-        size="md"
-        type="text"
-        disabled={isSubmitting}
-      />
+        <Controller
+          name="lastName"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <ResponsiveWrapper>
+              <TextInput
+                id="last-name"
+                labelText={t('lastName', 'Last Name')}
+                value={value || ''}
+                onChange={(e) => onChange(e.target.value)}
+                invalid={!!errors.lastName}
+                invalidText={errors.lastName?.message}
+                placeholder={t('enterLastName', 'Enter Last Name')}
+                size="md"
+                type="text"
+                disabled={isSubmitting}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
 
-      <Controller
-        name="gender"
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <Dropdown
-            id="gender"
-            invalid={!!errors.gender}
-            invalidText={errors.gender?.message || t('invalidSelection', 'Invalid selection')}
-            itemToString={(item) => (item ? item.text : '')}
-            items={genderOptions}
-            label={t('gender', 'Gender')}
-            titleText={t('selectGender', 'Select gender')}
-            type="default"
-            selectedItem={genderOptions.find((item) => item.text === value) || null}
-            onChange={({ selectedItem }) => onChange(selectedItem?.text)}
-            disabled={isSubmitting}
-          />
-        )}
-      />
+        <Controller
+          name="gender"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <ResponsiveWrapper>
+              <Dropdown
+                id="gender"
+                invalid={!!errors.gender}
+                invalidText={errors.gender?.message || t('invalidSelection', 'Invalid selection')}
+                itemToString={(item) => (item ? item.text : '')}
+                items={genderOptions}
+                label={t('gender', 'Gender')}
+                titleText={t('selectGender', 'Select gender')}
+                type="default"
+                selectedItem={genderOptions.find((item) => item.text === value) || null}
+                onChange={({ selectedItem }) => onChange(selectedItem?.text)}
+                disabled={isSubmitting}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
 
-      <Controller
-        name="dateOfBirth"
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <div>
-            <OpenmrsDatePicker
-              labelText={t('selectDOB', 'Select Date of Birth')}
-              maxDate={new Date()}
-              value={value}
-              onChange={(date) => onChange(date)}
-              isDisabled={isSubmitting}
-            />
-            {errors.dateOfBirth && (
-              <div style={{ color: '#da1e28', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                {errors.dateOfBirth.message}
-              </div>
-            )}
-          </div>
-        )}
-      />
+        <Controller
+          name="dateOfBirth"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <ResponsiveWrapper>
+              <OpenmrsDatePicker
+                labelText={t('selectDOB', 'Select Date of Birth')}
+                maxDate={new Date()}
+                value={value}
+                invalid={!!errors.dateOfBirth}
+                invalidText={errors.dateOfBirth?.message}
+                onChange={(date) => onChange(date)}
+                isDisabled={isSubmitting}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
+      </div>
 
-      <Button type="submit" disabled={isSubmitting} className={styles.submitButton}>
-        {isSubmitting ? t('submittingRegistration', 'Submitting...') : t('submitRegistration', 'Submit Registration')}
-      </Button>
+      <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          {t('cancel', 'Cancel')}
+        </Button>
+        <Button className={styles.button} disabled={isSubmitting || !isDirty} kind="primary" type="submit">
+          {isSubmitting ? (
+            <InlineLoading className={styles.spinner} description={t('saving', 'Saving') + '...'} />
+          ) : (
+            <span>{t('saveAndClose', 'Save & close')}</span>
+          )}
+        </Button>
+      </ButtonSet>
     </form>
   );
 };

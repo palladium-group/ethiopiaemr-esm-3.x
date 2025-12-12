@@ -40,7 +40,7 @@
   "devDependencies": {
     "@carbon/pictograms-react": "^11.66.0",
     "@openmrs/esm-framework": "next",
-    "@openmrs/esm-patient-common-lib": "^11.3.1-pre.9443",
+    "@openmrs/esm-patient-common-lib": "next",
     "@playwright/test": "^1.30.0",
     "@rspack/cli": "^1.5.5",
     "@rspack/core": "^1.5.5",
