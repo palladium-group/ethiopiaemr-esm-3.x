@@ -18,6 +18,7 @@ import { z } from 'zod';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 import { registerNewPatient, buildPatientRegistrationPayload } from './patient-registration.resource';
 import { useStartVisitAndLaunchTriageForm } from '../triage/useStartVisitAndLaunchTriageForm';
+import { getTriageFormForLocation } from '../triage/triage.resource';
 import { useGenerateIdentifier } from './useGenerateIdentifier';
 import styles from './patient.registration.workspace.scss';
 import classNames from 'classnames';
@@ -57,10 +58,12 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
-  const { visitTypeUuid, identifierSourceUuid, defaultIdentifierTypeUuid, triageServices } =
+  const { visitTypeUuid, identifierSourceUuid, defaultIdentifierTypeUuid, triageLocationForms } =
     useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
+
+  const triageFormConfig = getTriageFormForLocation(sessionLocation?.uuid, triageLocationForms);
 
   const {
     control,
@@ -105,8 +108,19 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
           isLowContrast: true,
         });
 
-        // Launch triage workspace for the patient, launch the first triage service by default
-        await handleStartVisitAndLaunchTriageForm(patientUuid, triageServices[0].formUuid);
+        if (triageFormConfig) {
+          await handleStartVisitAndLaunchTriageForm(patientUuid, triageFormConfig.formUuid);
+        } else {
+          showSnackbar({
+            title: t('noTriageFormConfigured', 'No triage form configured'),
+            subtitle: t(
+              'noTriageFormConfiguredForLocation',
+              'No triage form is configured for the current location. Please configure a form for this location.',
+            ),
+            kind: 'warning',
+            isLowContrast: true,
+          });
+        }
         closeWorkspaceWithSavedChanges();
       }
     } catch (error) {

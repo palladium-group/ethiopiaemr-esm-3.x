@@ -1,33 +1,20 @@
 import { Type } from '@openmrs/esm-framework';
 
 export const configSchema = {
-  triageServices: {
-    _type: Type.Array,
-    _description: 'List of triage services to be displayed in the triage dashboard',
-    _elements: {
-      formUuid: {
-        _type: Type.String,
-        _description: 'Form UUID for the triage service',
+  triageLocationForms: {
+    _type: Type.Object,
+    _description:
+      'Mapping of location UUIDs to their triage form configurations. Each location can have one triage form.',
+    _default: {
+      '44c3efb0-2583-4c80-a79e-1f756a03c0a1': {
+        formUuid: '03307226-b354-49c6-bd8e-f16abb10284e',
+        name: 'Central Triage Form',
       },
-      name: {
-        _type: Type.String,
-        _description: 'Name of the triage service',
+      '8d9045ad-50f0-45b8-93c8-3ed4bce19dbf': {
+        formUuid: '6b5fd8d7-c050-4f0a-bd94-f3eca88f750d',
+        name: 'Emergency Triage Form',
       },
     },
-    _default: [
-      {
-        formUuid: '37f6bd8d-586a-4169-95fa-5781f987fe62',
-        name: 'Central Triage',
-      },
-      {
-        formUuid: '37f6bd8d-586a-4169-95fa-5781f987fe621',
-        name: 'Pediatrics Triage',
-      },
-      {
-        formUuid: '37f6bd8d-586a-4169-95fa-5781f987fe622',
-        name: 'Emergency Triage',
-      },
-    ],
   },
   billingVisitAttributeTypes: {
     _type: Type.Object,
@@ -42,25 +29,28 @@ export const configSchema = {
   visitTypeUuid: {
     _type: Type.String,
     _description: 'Visit type UUID',
-    _default: '3371a4d4-f66f-4454-a86d-92c7b3da990c',
+    _default: '7b0f5697-27e3-40c4-8bae-f4049abfb4ed', // Outpatient
   },
   identifierSourceUuid: {
     _type: Type.String,
     _description: 'Identifier source UUID',
-    _default: 'fb034aac-2353-4940-abe2-7bc94e7c1e71',
+    _default: '8549f706-7e85-4c1d-9424-217d50a2988b',
   },
   defaultIdentifierTypeUuid: {
     _type: Type.String,
-    _description: 'Default identifier type UUID',
-    _default: 'dfacd928-0370-4315-99d7-6ec1c9f7ae76',
+    _description: 'OpenMRS ID',
+    _default: '05a29f94-c0ed-11e2-94be-8c13b969e334',
   },
 };
 
 export type ClinicalWorkflowConfig = {
-  triageServices: Array<{
-    formUuid: string;
-    name: string;
-  }>;
+  triageLocationForms: Record<
+    string,
+    {
+      formUuid: string;
+      name: string;
+    }
+  >;
   billingVisitAttributeTypes: {
     paymentMethod: string;
     creditType: string;
