@@ -547,7 +547,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                       key={index}
                       onClose={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
                       type="red">
-                      {diagnosis.display}
+                      {`${diagnosis.display} (${
+                        diagnosis.certainty === 'CONFIRMED' ? t('confirmed', 'Confirmed') : t('presumed', 'Presumed')
+                      })`}
                     </Tag>
                   ))}
                 </>
@@ -561,7 +563,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                       key={index}
                       onClose={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
                       type="blue">
-                      {diagnosis.display}
+                      {`${diagnosis.display} (${
+                        diagnosis.certainty === 'CONFIRMED' ? t('confirmed', 'Confirmed') : t('presumed', 'Presumed')
+                      })`}
                     </Tag>
                   ))}
                 </>

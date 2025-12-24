@@ -157,7 +157,8 @@
   margin-top: layout.$spacing-03;
 }
 
-.diagnoserrorOutline {
+.diagnoserrorOutline {    max-width: 20rem;
+
   :global(.cds--search-input):focus {
     outline: 2.5px solid colors.$red-60;
   }
@@ -208,6 +209,7 @@
 }
 
 .tag {
+  max-width: 20rem;
   margin-right: layout.$spacing-03;
   margin-left: 0;
 }
@@ -362,16 +364,16 @@
 .confirmedOption {
   border-color: colors.$green-30;
   background: colors.$green-10;
-  
+
   &:hover {
     border-color: colors.$green-60;
     background: colors.$green-20;
   }
-  
+
   .optionIcon {
     color: colors.$green-60;
   }
-  
+
   .optionTitle {
     color: colors.$green-70;
   }
@@ -380,16 +382,16 @@
 .presumedOption {
   border-color: colors.$yellow-20;
   background: colors.$yellow-10;
-  
+
   &:hover {
     border-color: colors.$yellow-30;
     background: colors.$yellow-20;
   }
-  
+
   .optionIcon {
     color: colors.$yellow-40;
   }
-  
+
   .optionTitle {
     color: colors.$yellow-70;
   }
