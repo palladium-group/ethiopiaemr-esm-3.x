@@ -213,7 +213,7 @@
   max-width: 20rem;
   margin-right: layout.$spacing-03;
   margin-left: 0;
-  
+
   :global(.cds--tag__label) {
     display: flex;
     align-items: center;
@@ -239,7 +239,7 @@
 }
 
 .presumedIcon {
-  color: colors.$orange-40;  
+  color: colors.$orange-40;
 }
 
 :global(.omrs-breakpoint-lt-desktop) {
