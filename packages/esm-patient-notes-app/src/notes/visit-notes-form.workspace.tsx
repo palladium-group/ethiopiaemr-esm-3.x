@@ -547,18 +547,22 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                       diagnosis.certainty === 'CONFIRMED' ? t('confirmed', 'Confirmed') : t('presumed', 'Presumed');
 
                     return (
-                      <Tag
-                        className={styles.tag}
-                        filter
-                        key={index}
-                        onClose={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
-                        type="red"
-                        title={`${diagnosis.display} (${certaintyText})`}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          {displayText}
-                          {diagnosis.certainty === 'CONFIRMED' ? <CheckmarkFilled size={12} /> : <Help size={12} />}
-                        </span>
-                      </Tag>
+                      <div key={index} className={styles.tagWrapper} title={`${diagnosis.display} (${certaintyText})`}>
+                        <Tag
+                          className={styles.tag}
+                          filter
+                          onClose={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
+                          type="red">
+                          <span className={styles.tagContent}>
+                            {displayText}
+                            {diagnosis.certainty === 'CONFIRMED' ? (
+                              <CheckmarkFilled size={12} className={classnames(styles.tagIcon, styles.confirmedIcon)} />
+                            ) : (
+                              <Help size={12} className={classnames(styles.tagIcon, styles.presumedIcon)} />
+                            )}
+                          </span>
+                        </Tag>
+                      </div>
                     );
                   })}
                 </>
@@ -572,18 +576,22 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                       diagnosis.certainty === 'CONFIRMED' ? t('confirmed', 'Confirmed') : t('presumed', 'Presumed');
 
                     return (
-                      <Tag
-                        className={styles.tag}
-                        filter
-                        key={index}
-                        onClose={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
-                        type="blue"
-                        title={`${diagnosis.display} (${certaintyText})`}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          {displayText}
-                          {diagnosis.certainty === 'CONFIRMED' ? <CheckmarkFilled size={12} /> : <Help size={12} />}
-                        </span>
-                      </Tag>
+                      <div key={index} className={styles.tagWrapper} title={`${diagnosis.display} (${certaintyText})`}>
+                        <Tag
+                          className={styles.tag}
+                          filter
+                          onClose={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
+                          type="blue">
+                          <span className={styles.tagContent}>
+                            {displayText}
+                            {diagnosis.certainty === 'CONFIRMED' ? (
+                              <CheckmarkFilled size={12} className={classnames(styles.tagIcon, styles.confirmedIcon)} />
+                            ) : (
+                              <Help size={12} className={classnames(styles.tagIcon, styles.presumedIcon)} />
+                            )}
+                          </span>
+                        </Tag>
+                      </div>
                     );
                   })}
                 </>

@@ -215,10 +215,31 @@
   margin-left: 0;
   
   :global(.cds--tag__label) {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
   }
+}
+
+.tagContent {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.tagIcon {
+  flex-shrink: 0;
+}
+
+.confirmedIcon {
+  color: colors.$green-60;
+}
+
+.presumedIcon {
+  color: colors.$orange-40;  
 }
 
 :global(.omrs-breakpoint-lt-desktop) {
