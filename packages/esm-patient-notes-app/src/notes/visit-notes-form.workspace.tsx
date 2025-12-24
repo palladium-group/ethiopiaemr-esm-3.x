@@ -540,34 +540,52 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             <div className={styles.diagnosesText}>
               {selectedPrimaryDiagnoses && selectedPrimaryDiagnoses.length ? (
                 <>
-                  {selectedPrimaryDiagnoses.map((diagnosis, index) => (
-                    <Tag
-                      className={styles.tag}
-                      filter
-                      key={index}
-                      onClose={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
-                      type="red">
-                      {`${diagnosis.display} (${
-                        diagnosis.certainty === 'CONFIRMED' ? t('confirmed', 'Confirmed') : t('presumed', 'Presumed')
-                      })`}
-                    </Tag>
-                  ))}
+                  {selectedPrimaryDiagnoses.map((diagnosis, index) => {
+                    const displayText =
+                      diagnosis.display.length > 30 ? `${diagnosis.display.substring(0, 30)}...` : diagnosis.display;
+                    const certaintyText =
+                      diagnosis.certainty === 'CONFIRMED' ? t('confirmed', 'Confirmed') : t('presumed', 'Presumed');
+
+                    return (
+                      <Tag
+                        className={styles.tag}
+                        filter
+                        key={index}
+                        onClose={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
+                        type="red"
+                        title={`${diagnosis.display} (${certaintyText})`}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {displayText}
+                          {diagnosis.certainty === 'CONFIRMED' ? <CheckmarkFilled size={12} /> : <Help size={12} />}
+                        </span>
+                      </Tag>
+                    );
+                  })}
                 </>
               ) : null}
               {selectedSecondaryDiagnoses && selectedSecondaryDiagnoses.length ? (
                 <>
-                  {selectedSecondaryDiagnoses.map((diagnosis, index) => (
-                    <Tag
-                      className={styles.tag}
-                      filter
-                      key={index}
-                      onClose={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
-                      type="blue">
-                      {`${diagnosis.display} (${
-                        diagnosis.certainty === 'CONFIRMED' ? t('confirmed', 'Confirmed') : t('presumed', 'Presumed')
-                      })`}
-                    </Tag>
-                  ))}
+                  {selectedSecondaryDiagnoses.map((diagnosis, index) => {
+                    const displayText =
+                      diagnosis.display.length > 30 ? `${diagnosis.display.substring(0, 30)}...` : diagnosis.display;
+                    const certaintyText =
+                      diagnosis.certainty === 'CONFIRMED' ? t('confirmed', 'Confirmed') : t('presumed', 'Presumed');
+
+                    return (
+                      <Tag
+                        className={styles.tag}
+                        filter
+                        key={index}
+                        onClose={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
+                        type="blue"
+                        title={`${diagnosis.display} (${certaintyText})`}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {displayText}
+                          {diagnosis.certainty === 'CONFIRMED' ? <CheckmarkFilled size={12} /> : <Help size={12} />}
+                        </span>
+                      </Tag>
+                    );
+                  })}
                 </>
               ) : null}
               {selectedPrimaryDiagnoses &&

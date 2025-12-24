@@ -157,7 +157,8 @@
   margin-top: layout.$spacing-03;
 }
 
-.diagnoserrorOutline {    max-width: 20rem;
+.diagnoserrorOutline {
+  max-width: 20rem;
 
   :global(.cds--search-input):focus {
     outline: 2.5px solid colors.$red-60;
@@ -212,6 +213,18 @@
   max-width: 20rem;
   margin-right: layout.$spacing-03;
   margin-left: 0;
+  
+  :global(.cds--tag__label) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+
+:global(.omrs-breakpoint-lt-desktop) {
+  .tag {
+    max-width: layout.$spacing-10;
+  }
 }
 
 .uploadButton {
