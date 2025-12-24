@@ -98,22 +98,6 @@ const TriageDashboard: React.FC = () => {
                   'Search for a patient using the search bar above to start the triage process, or register a new patient.',
                 )}
               </p>
-              <div className={styles.emptyStateActions}>
-                <div className={styles.actionItem}>
-                  <span className={styles.actionIcon}>
-                    <Search size={16} />
-                  </span>
-                  <span className={styles.actionLabel}>
-                    {t('searchExistingPatient', 'Search for an existing patient')}
-                  </span>
-                </div>
-                <div className={styles.actionItem}>
-                  <span className={styles.actionIcon}>
-                    <Add size={16} />
-                  </span>
-                  <span className={styles.actionLabel}>{t('registerNewPatient', 'Register a new patient')}</span>
-                </div>
-              </div>
             </div>
           </Tile>
         </div>

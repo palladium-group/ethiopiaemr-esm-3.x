@@ -9,7 +9,54 @@ export const buildPatientRegistrationPayload = (
   defaultIdentifierTypeUuid: string,
   locationUuid: string,
 ) => {
-  const formattedBirthDate = dayjs(formData.dateOfBirth).format('YYYY-M-D');
+  let formattedBirthDate: string;
+  let birthdateEstimated = false;
+
+  if (formData.dateOfBirth) {
+    formattedBirthDate = dayjs(formData.dateOfBirth).format('YYYY-M-D');
+    birthdateEstimated = formData.isEstimatedDOB || false;
+  } else if (
+    formData.isEstimatedDOB &&
+    (formData.ageYears !== undefined || formData.ageMonths !== undefined || formData.ageDays !== undefined)
+  ) {
+    // Calculate birthdate from age fields
+    const currentDate = dayjs();
+    let calculatedDate = currentDate;
+
+    if (formData.ageYears !== undefined && formData.ageYears !== null) {
+      calculatedDate = calculatedDate.subtract(formData.ageYears, 'year');
+    }
+    if (formData.ageMonths !== undefined && formData.ageMonths !== null) {
+      calculatedDate = calculatedDate.subtract(formData.ageMonths, 'month');
+    }
+    if (formData.ageDays !== undefined && formData.ageDays !== null) {
+      calculatedDate = calculatedDate.subtract(formData.ageDays, 'day');
+    }
+
+    formattedBirthDate = calculatedDate.format('YYYY-M-D');
+    birthdateEstimated = true;
+  } else if (formData.ageYears !== undefined || formData.ageMonths !== undefined || formData.ageDays !== undefined) {
+    const currentDate = dayjs();
+    let calculatedDate = currentDate;
+
+    if (formData.ageYears !== undefined && formData.ageYears !== null) {
+      calculatedDate = calculatedDate.subtract(formData.ageYears, 'year');
+    }
+    if (formData.ageMonths !== undefined && formData.ageMonths !== null) {
+      calculatedDate = calculatedDate.subtract(formData.ageMonths, 'month');
+    }
+    if (formData.ageDays !== undefined && formData.ageDays !== null) {
+      calculatedDate = calculatedDate.subtract(formData.ageDays, 'day');
+    }
+
+    formattedBirthDate = calculatedDate.format('YYYY-M-D');
+    birthdateEstimated = false;
+  } else {
+    // Fallback - should not happen due to validation, but provide a default
+    formattedBirthDate = dayjs().format('YYYY-M-D');
+    birthdateEstimated = false;
+  }
+
   // Map gender to single character (M/F)
   const genderCode = formData.gender === 'Male' ? 'M' : 'F';
 
@@ -27,7 +74,7 @@ export const buildPatientRegistrationPayload = (
       ],
       gender: genderCode,
       birthdate: formattedBirthDate,
-      birthdateEstimated: false,
+      birthdateEstimated: birthdateEstimated,
       attributes: [],
       addresses: [{}],
       dead: false,

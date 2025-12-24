@@ -7,11 +7,11 @@ export const configSchema = {
       'Mapping of location UUIDs to their triage form configurations. Each location can have one triage form.',
     _default: {
       '44c3efb0-2583-4c80-a79e-1f756a03c0a1': {
-        formUuid: '03307226-b354-49c6-bd8e-f16abb10284e',
+        formUuid: '78446038-3e65-40c6-a347-e4d00343cfb5',
         name: 'Central Triage Form',
       },
       '8d9045ad-50f0-45b8-93c8-3ed4bce19dbf': {
-        formUuid: '6b5fd8d7-c050-4f0a-bd94-f3eca88f750d',
+        formUuid: '59bd5bb4-e78b-40f9-833a-c4a36d086c1e',
         name: 'Emergency Triage Form',
       },
     },
