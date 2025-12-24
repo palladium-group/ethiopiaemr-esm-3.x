@@ -47,7 +47,6 @@
       "name": "triage-workspace",
       "component": "triageWorkspace",
       "title": "Triage Form",
-      "canMaximize": true,
       "type": "clinical-form"
     },
     {
