@@ -40,6 +40,25 @@
       "slot": "mru-dashboard-slot",
       "online": true,
       "offline": false
+    },
+    {
+      "name": "patient-scoreboard-link",
+      "component": "patientScoreboardLink",
+      "slot": "homepage-dashboard-slot",
+      "order": 1,
+      "meta": {
+        "name": "patient-scoreboard",
+        "title": "Patient Scoreboard",
+        "path": "patient-scoreboard",
+        "slot": "patient-scoreboard-slot"
+      }
+    },
+    {
+      "name": "patient-scoreboard",
+      "component": "patientScoreboard",
+      "slot": "patient-scoreboard-slot",
+      "online": true,
+      "offline": false
     }
   ],
   "workspaces": [

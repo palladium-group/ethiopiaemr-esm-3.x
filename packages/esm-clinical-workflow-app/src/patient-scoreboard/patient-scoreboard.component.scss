@@ -1,0 +1,47 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+@use '@carbon/type';
+
+.patientScoreboardContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+
+  h1 {
+    @include type.type-style('heading-05');
+    margin-bottom: layout.$spacing-03;
+  }
+
+  .cardsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: layout.$spacing-05;
+  }
+
+  .visitsSection {
+    margin-top: layout.$spacing-06;
+  }
+
+  .switcher {
+    margin-bottom: layout.$spacing-05;
+  }
+
+  .patientScoreboardContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .scoreCard {
+    display: flex;
+    flex-direction: column;
+    gap: layout.$spacing-05;
+    width: 32%;
+    border: 1px solid colors.$gray-20;
+    padding: layout.$spacing-05;
+    min-height: 8rem;
+    font-weight: 600;
+    color: colors.$gray-70;
+  }
+}

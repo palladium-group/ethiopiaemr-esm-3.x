@@ -128,7 +128,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
         setIsLoading(false);
       }
     },
-    [t],
+    [t, visitTypeUuid],
   );
 
   return {

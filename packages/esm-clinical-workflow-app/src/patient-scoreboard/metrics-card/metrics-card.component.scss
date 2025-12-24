@@ -1,0 +1,84 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.tileContainer {
+  border: 1px solid colors.$gray-20;
+  height: 7.875rem;
+  padding: layout.$spacing-05;
+}
+
+.tileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: layout.$spacing-03;
+}
+
+.headerLabel {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+}
+
+.totalsLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.totalsValue {
+  @include type.type-style('heading-04');
+  color: colors.$gray-100;
+}
+
+.headerLabelContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.link {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  color: colors.$blue-60;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  &:has(.countGrid) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  &:not(:has(.countGrid)) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metricsContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.countGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  justify-self: flex-end;
+  column-gap: layout.$spacing-03;
+  row-gap: layout.$spacing-03;
+  margin: layout.$spacing-03;
+
+  & > span {
+    font-size: 0.7rem !important;
+    margin: 0;
+    color: colors.$gray-70;
+  }
+
+  & > p {
+    margin: 0;
+  }
+}
