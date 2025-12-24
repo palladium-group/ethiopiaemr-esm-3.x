@@ -1611,12 +1611,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethiopiaemr/esm-patient-notes-app@workspace:packages/esm-patient-notes-app":
-  version: 0.0.0-use.local
-  resolution: "@ethiopiaemr/esm-patient-notes-app@workspace:packages/esm-patient-notes-app"
-  languageName: unknown
-  linkType: soft
-
 "@floating-ui/core@npm:^1.7.3":
   version: 1.7.3
   resolution: "@floating-ui/core@npm:1.7.3"
@@ -3301,6 +3295,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openmrs/esm-patient-common-lib@npm:11.x":
+  version: 11.3.0
+  resolution: "@openmrs/esm-patient-common-lib@npm:11.3.0"
+  dependencies:
+    "@carbon/react": "npm:^1.83.0"
+    lodash-es: "npm:^4.17.21"
+    uuid: "npm:^8.3.2"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
+    react: 18.x
+    single-spa: 6.x
+  checksum: 10/31ae8a24636bbb1b2d18465a6236f8519b728c63c4b78013c18d7f07a0cc3155a55a5ad336f3c9434c5e2efb6fc2b2ef1c0eca34fbc36bc1ed01c4ba39e948b3
+  languageName: node
+  linkType: hard
+
 "@openmrs/esm-patient-common-lib@npm:next":
   version: 11.3.1-pre.9583
   resolution: "@openmrs/esm-patient-common-lib@npm:11.3.1-pre.9583"
@@ -3315,6 +3324,44 @@ __metadata:
   checksum: 10/006170f991e0fba6490c6926771bd33747892ecb7ea76e4081e899fe687ba45275d95167d497e304404fd91574963ba01df2057d92d3bd56a423b7fa9fe2a9ad
   languageName: node
   linkType: hard
+
+"@openmrs/esm-patient-notes-app@npm:11.3.1-pre.9583":
+  version: 11.3.1-pre.9583
+  resolution: "@openmrs/esm-patient-notes-app@npm:11.3.1-pre.9583"
+  dependencies:
+    lodash-es: "npm:^4.17.21"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
+    "@openmrs/esm-patient-common-lib": 11.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    swr: 2.x
+  checksum: 10/b5741be46ab781f3fac7d89ebff7e85be2c99214753754a238f434c22860bc5bfe064d64d9a16eb33c8790877c7de2416aa9b06c6d8c257fbbbb8a3f481e7178
+  languageName: node
+  linkType: hard
+
+"@openmrs/esm-patient-notes-app@workspace:packages/esm-patient-notes-app":
+  version: 0.0.0-use.local
+  resolution: "@openmrs/esm-patient-notes-app@workspace:packages/esm-patient-notes-app"
+  dependencies:
+    "@openmrs/esm-patient-common-lib": "npm:11.x"
+    "@openmrs/esm-patient-notes-app": "npm:11.3.1-pre.9583"
+    lodash-es: "npm:^4.17.21"
+    webpack: "npm:^5.99.9"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
+    "@openmrs/esm-patient-common-lib": 11.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
 
 "@openmrs/esm-react-utils@npm:8.0.1-pre.3615":
   version: 8.0.1-pre.3615
