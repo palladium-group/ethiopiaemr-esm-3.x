@@ -215,3 +215,176 @@
 .uploadButton {
   margin-top: layout.$spacing-05;
 }
+
+.diagnosisListItem {
+  position: relative;
+  margin-bottom: layout.$spacing-03;
+}
+
+.diagnosisRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: layout.$spacing-04;
+  background-color: white;
+  border: 1px solid colors.$gray-20;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background-color: colors.$gray-20;
+    border-color: colors.$blue-60;
+  }
+}
+
+.diagnosisInfo {
+  flex: 1;
+  margin-right: layout.$spacing-05;
+}
+
+.diagnosisName {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  line-height: 1.4;
+}
+
+.addButton {
+  min-width: 4rem;
+  flex-shrink: 0;
+}
+
+.certaintyDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  margin-top: layout.$spacing-03;
+  background: white;
+  border: 1px solid colors.$gray-20;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.dropdownHeader {
+  padding: layout.$spacing-04;
+  border-bottom: 1px solid colors.$gray-20;
+  background: colors.$gray-10;
+}
+
+.dropdownTitle {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  margin-bottom: layout.$spacing-02;
+}
+
+.diagnosisPreview {
+  color: colors.$blue-60;
+  font-weight: 600;
+}
+
+.dropdownSubtitle {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.certaintyOptions {
+  padding: layout.$spacing-03;
+}
+
+.certaintyOption {
+  width: 100%;
+  padding: layout.$spacing-04;
+  margin-bottom: layout.$spacing-03;
+  text-align: left;
+  background: white;
+  border: 1px solid colors.$gray-20;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+
+  &:hover {
+    border-color: colors.$blue-60;
+    background: colors.$gray-10;
+  }
+
+  &:focus {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: -2px;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.optionContent {
+  display: flex;
+  align-items: flex-start;
+  gap: layout.$spacing-03;
+}
+
+.optionIcon {
+  flex-shrink: 0;
+  margin-top: layout.$spacing-01;
+}
+
+.confirmedOption .optionIcon {
+  color: colors.$green-60;
+}
+
+.presumedOption .optionIcon {
+  color: colors.$yellow-30;
+}
+
+.optionText {
+  flex: 1;
+  text-align: left;
+}
+
+.optionTitle {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  margin-bottom: layout.$spacing-01;
+  font-weight: 600;
+}
+
+.optionDescription {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  line-height: 1.3;
+}
+
+.dropdownFooter {
+  padding: layout.$spacing-03 layout.$spacing-04;
+  border-top: 1px solid colors.$gray-20;
+  text-align: right;
+  background: colors.$gray-10;
+}
+
+// Responsive styles
+:global(.omrs-breakpoint-lt-desktop) {
+  .certaintyDropdown {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 24rem;
+    max-height: 80vh;
+    overflow-y: auto;
+    margin-top: 0;
+  }
+
+  .diagnosisRow {
+    padding: layout.$spacing-05 layout.$spacing-04;
+  }
+
+  .certaintyOption {
+    padding: layout.$spacing-05;
+  }
+}

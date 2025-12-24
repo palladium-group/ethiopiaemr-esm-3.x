@@ -12,6 +12,7 @@ import {
   Button,
   ButtonSet,
   Column,
+  Dropdown,
   Form,
   FormGroup,
   InlineLoading,
@@ -24,7 +25,7 @@ import {
   TextArea,
   Tile,
 } from '@carbon/react';
-import { Add, CloseFilled, WarningFilled } from '@carbon/react/icons';
+import { Add, CloseFilled, WarningFilled, CheckmarkFilled, Help } from '@carbon/react/icons';
 import {
   createAttachment,
   createErrorHandler,
@@ -67,7 +68,7 @@ interface DiagnosesDisplayProps {
   isDiagnosisNotSelected: (diagnosis: Concept) => boolean;
   isLoading: boolean;
   isSearching: boolean;
-  onAddDiagnosis: (diagnosis: Concept, searchInputField: string) => void;
+  onAddDiagnosis: (diagnosis: Concept, certainty: string, searchInputField: string) => void;
   searchResults: Array<Concept>;
   t: TFunction;
   value: string;
@@ -248,8 +249,8 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 
   const createDiagnosis = useCallback(
-    (concept: Concept) => ({
-      certainty: 'PROVISIONAL',
+    (concept: Concept, certainty: string = 'PROVISIONAL') => ({
+      certainty,
       display: concept.display,
       diagnosis: {
         coded: concept.uuid,
@@ -261,8 +262,8 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 
   const handleAddDiagnosis = useCallback(
-    (conceptDiagnosisToAdd: Concept, searchInputField: string) => {
-      const newDiagnosis = createDiagnosis(conceptDiagnosisToAdd);
+    (conceptDiagnosisToAdd: Concept, certainty: string = 'PROVISIONAL', searchInputField: string) => {
+      const newDiagnosis = createDiagnosis(conceptDiagnosisToAdd, certainty);
       if (searchInputField === 'primaryDiagnosisSearch') {
         newDiagnosis.rank = 1;
         setValue('primaryDiagnosisSearch', '');
@@ -572,7 +573,6 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                   <span>{t('emptyDiagnosisText', 'No diagnosis selected — Enter a diagnosis below')}</span>
                 )}
             </div>
-            <p style={{ color: '#999' }}>TODO: diagnosis order & certainty dropdowns here</p>
             <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>{t('primaryDiagnosis', 'Primary diagnosis')}</span>
@@ -797,6 +797,24 @@ function DiagnosesDisplay({
   t,
   value,
 }: DiagnosesDisplayProps) {
+  const [selectedDiagnosis, setSelectedDiagnosis] = useState<Concept | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const isTablet = useLayoutType() === 'tablet';
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+        setSelectedDiagnosis(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   if (!value) {
     return null;
   }
@@ -811,12 +829,90 @@ function DiagnosesDisplay({
         {searchResults.map((diagnosis, index) => {
           if (isDiagnosisNotSelected(diagnosis)) {
             return (
-              <li
-                className={styles.diagnosis}
-                key={index}
-                onClick={() => onAddDiagnosis(diagnosis, fieldName)}
-                role="menuitem">
-                {diagnosis.display}
+              <li key={index} className={styles.diagnosisListItem}>
+                <div className={styles.diagnosisRow}>
+                  <div className={styles.diagnosisInfo}>
+                    <span className={styles.diagnosisName}>{diagnosis.display}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    kind="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedDiagnosis(diagnosis);
+                      setShowDropdown(!showDropdown || selectedDiagnosis?.uuid !== diagnosis.uuid);
+                    }}
+                    className={styles.addButton}
+                    renderIcon={Add}
+                    iconDescription={t('addWithCertainty', 'Add with certainty')}>
+                    {t('add', 'Add')}
+                  </Button>
+                </div>
+
+                {selectedDiagnosis?.uuid === diagnosis.uuid && showDropdown && (
+                  <div ref={dropdownRef} className={styles.certaintyDropdown}>
+                    <div className={styles.dropdownHeader}>
+                      <div className={styles.dropdownTitle}>
+                        <span className={styles.diagnosisPreview}>
+                          {diagnosis.display.length > 40
+                            ? `${diagnosis.display.substring(0, 40)}...`
+                            : diagnosis.display}
+                        </span>
+                      </div>
+                      <p className={styles.dropdownSubtitle}>{t('selectCertainty', 'Select certainty level')}</p>
+                    </div>
+
+                    <div className={styles.certaintyOptions}>
+                      <button
+                        className={classnames(styles.certaintyOption, styles.confirmedOption)}
+                        onClick={() => {
+                          onAddDiagnosis(diagnosis, 'CONFIRMED', fieldName);
+                          setShowDropdown(false);
+                          setSelectedDiagnosis(null);
+                        }}>
+                        <div className={styles.optionContent}>
+                          <CheckmarkFilled size={16} className={styles.optionIcon} />
+                          <div className={styles.optionText}>
+                            <span className={styles.optionTitle}>{t('confirmed', 'Confirmed')}</span>
+                            <span className={styles.optionDescription}>
+                              {t('confirmedDescription', 'Diagnosis is confirmed by clinical evidence')}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        className={classnames(styles.certaintyOption, styles.presumedOption)}
+                        onClick={() => {
+                          onAddDiagnosis(diagnosis, 'PROVISIONAL', fieldName);
+                          setShowDropdown(false);
+                          setSelectedDiagnosis(null);
+                        }}>
+                        <div className={styles.optionContent}>
+                          <Help size={16} className={styles.optionIcon} />
+                          <div className={styles.optionText}>
+                            <span className={styles.optionTitle}>{t('presumed', 'Presumed')}</span>
+                            <span className={styles.optionDescription}>
+                              {t('presumedDescription', 'Diagnosis is suspected but not yet confirmed')}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+
+                    <div className={styles.dropdownFooter}>
+                      <Button
+                        size="sm"
+                        kind="tertiary"
+                        onClick={() => {
+                          setShowDropdown(false);
+                          setSelectedDiagnosis(null);
+                        }}>
+                        {t('cancel', 'Cancel')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </li>
             );
           }
