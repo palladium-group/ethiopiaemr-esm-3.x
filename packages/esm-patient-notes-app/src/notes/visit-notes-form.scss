@@ -302,18 +302,27 @@
   padding: layout.$spacing-02;
 }
 
+.certaintyOptions {
+  padding: layout.$spacing-02;
+  display: flex;
+  gap: layout.$spacing-01;
+}
+
 .certaintyOption {
-  width: 100%;
-  padding: layout.$spacing-03;
-  margin-bottom: layout.$spacing-02;
-  text-align: left;
+  flex: 1;
+  padding: layout.$spacing-02;
+  text-align: center;
   background: white;
   border: 1px solid colors.$gray-20;
   border-radius: 2px;
   cursor: pointer;
   transition: all 0.1s ease;
   outline: none;
-  min-height: 2.5rem;
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
 
   &:hover {
     border-color: colors.$blue-60;
@@ -324,44 +333,66 @@
     outline: 1px solid colors.$blue-60;
     outline-offset: -1px;
   }
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 }
 
 .optionContent {
   display: flex;
   align-items: center;
-  gap: layout.$spacing-02;
-  height: 100%;
+  gap: layout.$spacing-01;
+  justify-content: center;
 }
 
 .optionIcon {
-  flex-shrink: 0;
   width: 0.875rem;
   height: 0.875rem;
 }
 
-.confirmedOption .optionIcon {
-  color: colors.$green-60;
-}
-
-.presumedOption .optionIcon {
-  color: colors.$yellow-30;
-}
-
 .optionText {
-  flex: 1;
-  text-align: left;
+  text-align: center;
 }
 
 .optionTitle {
-  @include type.type-style('body-compact-01');
+  @include type.type-style('label-01');
   color: colors.$gray-100;
-  margin-bottom: 0;
   font-weight: 600;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.confirmedOption {
+  border-color: colors.$green-30;
+  background: colors.$green-10;
+  
+  &:hover {
+    border-color: colors.$green-60;
+    background: colors.$green-20;
+  }
+  
+  .optionIcon {
+    color: colors.$green-60;
+  }
+  
+  .optionTitle {
+    color: colors.$green-70;
+  }
+}
+
+.presumedOption {
+  border-color: colors.$yellow-20;
+  background: colors.$yellow-10;
+  
+  &:hover {
+    border-color: colors.$yellow-30;
+    background: colors.$yellow-20;
+  }
+  
+  .optionIcon {
+    color: colors.$yellow-40;
+  }
+  
+  .optionTitle {
+    color: colors.$yellow-70;
+  }
 }
 
 .optionDescription {

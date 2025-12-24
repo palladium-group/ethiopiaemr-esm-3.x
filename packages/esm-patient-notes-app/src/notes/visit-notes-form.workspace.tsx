@@ -874,9 +874,6 @@ function DiagnosesDisplay({
                           <CheckmarkFilled size={16} className={styles.optionIcon} />
                           <div className={styles.optionText}>
                             <span className={styles.optionTitle}>{t('confirmed', 'Confirmed')}</span>
-                            <span className={styles.optionDescription}>
-                              {t('confirmedDescription', 'Diagnosis is confirmed by clinical evidence')}
-                            </span>
                           </div>
                         </div>
                       </button>
@@ -892,9 +889,6 @@ function DiagnosesDisplay({
                           <Help size={16} className={styles.optionIcon} />
                           <div className={styles.optionText}>
                             <span className={styles.optionTitle}>{t('presumed', 'Presumed')}</span>
-                            <span className={styles.optionDescription}>
-                              {t('presumedDescription', 'Diagnosis is suspected but not yet confirmed')}
-                            </span>
                           </div>
                         </div>
                       </button>
