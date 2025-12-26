@@ -41,6 +41,11 @@ export const configSchema = {
     _description: 'OpenMRS ID',
     _default: '05a29f94-c0ed-11e2-94be-8c13b969e334',
   },
+  medicoLegalCasesAttributeTypeUuid: {
+    _type: Type.String,
+    _description: 'Patient attribute type UUID for Medico Legal Cases',
+    _default: '',
+  },
 };
 
 export type ClinicalWorkflowConfig = {
@@ -60,4 +65,5 @@ export type ClinicalWorkflowConfig = {
   visitTypeUuid: string;
   identifierSourceUuid: string;
   defaultIdentifierTypeUuid: string;
+  medicoLegalCasesAttributeTypeUuid: string;
 };

@@ -2,13 +2,9 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import type { PatientRegistrationFormData } from './patient.registration.workspace';
 
-export const buildPatientRegistrationPayload = (
+const calculateBirthdate = (
   formData: PatientRegistrationFormData,
-  uuid: string,
-  identifier: string,
-  defaultIdentifierTypeUuid: string,
-  locationUuid: string,
-) => {
+): { formattedBirthDate: string; birthdateEstimated: boolean } => {
   let formattedBirthDate: string;
   let birthdateEstimated = false;
 
@@ -19,7 +15,6 @@ export const buildPatientRegistrationPayload = (
     formData.isEstimatedDOB &&
     (formData.ageYears !== undefined || formData.ageMonths !== undefined || formData.ageDays !== undefined)
   ) {
-    // Calculate birthdate from age fields
     const currentDate = dayjs();
     let calculatedDate = currentDate;
 
@@ -52,13 +47,34 @@ export const buildPatientRegistrationPayload = (
     formattedBirthDate = calculatedDate.format('YYYY-M-D');
     birthdateEstimated = false;
   } else {
-    // Fallback - should not happen due to validation, but provide a default
     formattedBirthDate = dayjs().format('YYYY-M-D');
     birthdateEstimated = false;
   }
 
-  // Map gender to single character (M/F)
+  return { formattedBirthDate, birthdateEstimated };
+};
+
+export const buildPatientRegistrationPayload = (
+  formData: PatientRegistrationFormData,
+  uuid: string,
+  identifier: string,
+  defaultIdentifierTypeUuid: string,
+  locationUuid: string,
+  isMedicoLegalCase?: boolean,
+  medicoLegalCasesAttributeTypeUuid?: string,
+  triageFormName?: string,
+) => {
+  const { formattedBirthDate, birthdateEstimated } = calculateBirthdate(formData);
+
   const genderCode = formData.gender === 'Male' ? 'M' : 'F';
+
+  const attributes: Array<{ attributeType: string; value: string }> = [];
+  if (isMedicoLegalCase === true && medicoLegalCasesAttributeTypeUuid && triageFormName === 'Emergency Triage Form') {
+    attributes.push({
+      attributeType: medicoLegalCasesAttributeTypeUuid,
+      value: 'true',
+    });
+  }
 
   return {
     uuid: uuid,
@@ -75,7 +91,7 @@ export const buildPatientRegistrationPayload = (
       gender: genderCode,
       birthdate: formattedBirthDate,
       birthdateEstimated: birthdateEstimated,
-      attributes: [],
+      attributes: attributes,
       addresses: [{}],
       dead: false,
     },

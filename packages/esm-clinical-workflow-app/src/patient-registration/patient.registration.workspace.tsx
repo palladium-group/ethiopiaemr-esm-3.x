@@ -62,6 +62,7 @@ const patientRegistrationSchema = z
       })
       .optional()
       .nullable(),
+    isMedicoLegalCase: z.boolean().optional().default(false),
   })
   .refine(
     (data) => {
@@ -88,8 +89,13 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
-  const { visitTypeUuid, identifierSourceUuid, defaultIdentifierTypeUuid, triageLocationForms } =
-    useConfig<ClinicalWorkflowConfig>();
+  const {
+    visitTypeUuid,
+    identifierSourceUuid,
+    defaultIdentifierTypeUuid,
+    triageLocationForms,
+    medicoLegalCasesAttributeTypeUuid,
+  } = useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
 
@@ -115,6 +121,7 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
       ageDays: null,
       isEstimatedDOB: true,
       dateOfBirth: null,
+      isMedicoLegalCase: false,
     },
   });
 
@@ -131,6 +138,9 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
         identifier,
         defaultIdentifierTypeUuid,
         sessionLocation.uuid,
+        data.isMedicoLegalCase,
+        medicoLegalCasesAttributeTypeUuid,
+        triageFormConfig?.name,
       );
 
       const patient = await registerNewPatient(registrationPayload);
@@ -392,6 +402,22 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
                 invalidText={isSubmitted && errors.dateOfBirth ? errors.dateOfBirth.message : ''}
                 onChange={(date) => onChange(date)}
                 isDisabled={isSubmitting}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
+
+        <Controller
+          name="isMedicoLegalCase"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <ResponsiveWrapper>
+              <Checkbox
+                id="medico-legal-case"
+                labelText={t('medicoLegalCases', 'Medico Legal Cases')}
+                checked={value || false}
+                onChange={(event, { checked }) => onChange(checked)}
+                disabled={isSubmitting}
               />
             </ResponsiveWrapper>
           )}
