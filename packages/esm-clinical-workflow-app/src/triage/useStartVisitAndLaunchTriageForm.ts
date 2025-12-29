@@ -18,6 +18,7 @@ export const launchTriageFormWorkspace = (
   patientUuid: string,
   visit: Visit,
   formUuid: string,
+  formName: string,
   t: (key: string, defaultValue?: string) => string,
 ) => {
   const handleShowModal = (encounter: Encounter) => {
@@ -35,7 +36,7 @@ export const launchTriageFormWorkspace = (
   launchWorkspace2(
     'clinical-workflow-patient-form-entry-workspace',
     {
-      formEntryWorkspaceName: t('triageForm', 'Triage Form'),
+      formEntryWorkspaceName: formName,
       patient,
       visitContext: visit,
       form: {
@@ -63,7 +64,7 @@ export const launchTriageFormWorkspace = (
 };
 
 interface UseStartVisitAndLaunchTriageFormReturn {
-  handleStartVisitAndLaunchTriageForm: (patientUuid: string, formUuid: string) => Promise<void>;
+  handleStartVisitAndLaunchTriageForm: (patientUuid: string, formUuid: string, formName: string) => Promise<void>;
   isLoading: boolean;
   error: Error | null;
 }
@@ -75,7 +76,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
   const [error, setError] = useState<Error | null>(null);
 
   const handleStartVisitAndLaunchTriageForm = useCallback(
-    async (patientUuid: string, formUuid: string) => {
+    async (patientUuid: string, formUuid: string, formName: string) => {
       if (!patientUuid?.trim()) {
         const validationError = new Error('Patient UUID is required');
         setError(validationError);
@@ -126,7 +127,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
         }
 
         // Launch triage form workspace with visit
-        launchTriageFormWorkspace(patient, patientUuid, visit, formUuid, t);
+        launchTriageFormWorkspace(patient, patientUuid, visit, formUuid, formName, t);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : t('triageDashboardUnexpectedError', 'An unexpected error occurred');

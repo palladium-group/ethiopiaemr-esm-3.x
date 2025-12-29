@@ -10,10 +10,11 @@ import styles from './patient-banner.scss';
 type PatientBannerProps = {
   patientUuid: string;
   formUuid: string;
+  formName: string;
   setPatientUuid: (patientUuid: string | undefined) => void;
 };
 
-const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, formUuid, setPatientUuid }) => {
+const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, formUuid, formName, setPatientUuid }) => {
   const { t } = useTranslation();
   const { isLoading: isVisitLoading, activeVisit } = useVisit(patientUuid);
   const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
@@ -21,9 +22,9 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, formUuid, se
 
   const handleLaunchTriageForm = () => {
     if (activeVisit) {
-      launchTriageFormWorkspace(patient, patientUuid, activeVisit, formUuid, t);
+      launchTriageFormWorkspace(patient, patientUuid, activeVisit, formUuid, formName, t);
     } else {
-      handleStartVisitAndLaunchTriageForm(patientUuid, formUuid);
+      handleStartVisitAndLaunchTriageForm(patientUuid, formUuid, formName);
     }
   };
 

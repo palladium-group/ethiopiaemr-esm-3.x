@@ -102,7 +102,12 @@ const TriageDashboard: React.FC = () => {
           </Tile>
         </div>
       ) : (
-        <PatientBanner patientUuid={patientUuid} formUuid={triageFormConfig.formUuid} setPatientUuid={setPatientUuid} />
+        <PatientBanner
+          patientUuid={patientUuid}
+          formUuid={triageFormConfig.formUuid}
+          formName={triageFormConfig.name}
+          setPatientUuid={setPatientUuid}
+        />
       )}
     </div>
   );

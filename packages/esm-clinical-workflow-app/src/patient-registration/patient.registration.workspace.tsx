@@ -156,7 +156,7 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
         });
 
         if (triageFormConfig) {
-          await handleStartVisitAndLaunchTriageForm(patientUuid, triageFormConfig.formUuid);
+          await handleStartVisitAndLaunchTriageForm(patientUuid, triageFormConfig.formUuid, triageFormConfig.name);
         } else {
           showSnackbar({
             title: t('noTriageFormConfigured', 'No triage form configured'),
