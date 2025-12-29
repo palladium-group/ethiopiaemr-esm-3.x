@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   Encounter,
   fetchCurrentPatient,
@@ -19,7 +20,7 @@ export const launchTriageFormWorkspace = (
   visit: Visit,
   formUuid: string,
   formName: string,
-  t: (key: string, defaultValue?: string) => string,
+  t: TFunction<'translation', undefined>,
 ) => {
   const handleShowModal = (encounter: Encounter) => {
     const dispose = showModal('transition-patient-to-latest-queue-modal', {

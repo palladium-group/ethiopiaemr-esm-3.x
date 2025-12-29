@@ -20,6 +20,8 @@ import {
   showSnackbar,
 } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+
 import { useForm, Controller, Control, FieldErrors, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -181,7 +183,7 @@ export default BillingInformationWorkspace;
 type CreditDetailsProps = {
   control: Control<BillingFormData>;
   errors: FieldErrors<BillingFormData>;
-  t: (key: string, defaultValue?: string) => string;
+  t: TFunction;
 };
 
 const CreditDetails: React.FC<CreditDetailsProps> = ({ control, errors, t }) => {
@@ -324,7 +326,7 @@ const CreditDetails: React.FC<CreditDetailsProps> = ({ control, errors, t }) => 
 type FreeDetailsProps = {
   control: Control<BillingFormData>;
   errors: FieldErrors<BillingFormData>;
-  t: (key: string, defaultValue?: string) => string;
+  t: TFunction;
 };
 
 const FreeDetails: React.FC<FreeDetailsProps> = ({ control, errors, t }) => {

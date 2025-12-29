@@ -1,0 +1,31 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+
+.visitsTableContainer {
+  margin-top: layout.$spacing-06;
+}
+
+.tableHeader {
+  margin-bottom: layout.$spacing-05;
+
+  h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: colors.$gray-100;
+  }
+}
+
+.link {
+  text-decoration: none;
+  color: colors.$blue-60;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.emptyState {
+  padding: layout.$spacing-06;
+  text-align: center;
+  color: colors.$gray-70;
+}

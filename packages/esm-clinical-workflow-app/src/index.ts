@@ -5,6 +5,7 @@ import { dashboardMeta } from './dashboard.meta';
 import MRUDashboard from './mru/dashboard.component';
 import { spaBasePath } from './constants';
 import BillingInformationWorkspace from './mru/billing-information/billing-information.workspace';
+import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component';
 
 const moduleName = '@ethiopia/esm-clinical-workflow-app';
 
@@ -39,3 +40,14 @@ export const mruLeftPanelLink = getSyncLifecycle(
 );
 
 export const billingInformationWorkspace = getSyncLifecycle(BillingInformationWorkspace, options);
+
+export const patientScoreboardLink = getSyncLifecycle(
+  createDashboardLink({
+    path: 'patient-scoreboard',
+    title: 'Patient Scoreboard',
+    basePath: spaBasePath,
+  }),
+  options,
+);
+
+export const patientScoreboard = getSyncLifecycle(PatientScoreboard, options);

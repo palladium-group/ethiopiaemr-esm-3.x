@@ -1,7 +1,9 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { z } from 'zod';
 // Create the billing form schema factory with conditional validation based on skip logic
-export const createBillingFormSchema = (t: (key: string, defaultValue?: string) => string) => {
+import type { TFunction } from 'i18next';
+
+export const createBillingFormSchema = (t: TFunction) => {
   return z
     .object({
       billingType: z.enum(['credit', 'free', 'cash']).optional(),
