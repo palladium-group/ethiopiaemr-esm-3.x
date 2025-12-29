@@ -23,7 +23,7 @@ const MRU: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title={t('medicalRecordUpdate', 'Medical Record Update(MRU)')}
+        title={t('medicalRecordUpdate', 'Medical Record Unit(MRU)')}
         illustration={<RegistrationPictogram />}
         className={styles.pageHeader}
       />
