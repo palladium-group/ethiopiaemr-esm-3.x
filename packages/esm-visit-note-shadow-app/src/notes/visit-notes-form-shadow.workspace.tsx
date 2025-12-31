@@ -125,6 +125,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const [rows, setRows] = useState<number>();
   const [error, setError] = useState<Error>(null);
   const { allowedFileExtensions } = useAllowedFileExtensions();
+  const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
 
   const visitNoteFormSchema = useMemo(() => createSchema(t), [t]);
 
@@ -350,149 +351,145 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   };
 
   const onSubmit = useCallback(
-    (data: VisitNotesFormData) => {
-      const { noteDate, clinicalNote, images } = data;
-
-      if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) {
+    async (data: VisitNotesFormData) => {
+      if (isSubmittingLocal) {
         return;
       }
+      setIsSubmittingLocal(true);
 
-      let finalNoteDate = dayjs(noteDate);
-      const now = new Date();
-      if (finalNoteDate.diff(now, 'minute') <= 30) {
-        finalNoteDate = null;
-      }
+      try {
+        const { noteDate, clinicalNote, images } = data;
 
-      const existingClinicalNoteObs = encounter?.obs?.find((obs) => obs.concept.uuid === encounterNoteTextConceptUuid);
+        if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) {
+          return;
+        }
 
-      const visitNotePayload: VisitNotePayload = {
-        encounterDatetime: finalNoteDate?.format(),
-        form: formConceptUuid,
-        patient: patientUuid,
-        location: locationUuid,
-        encounterProviders: [
-          {
-            encounterRole: clinicianEncounterRole,
-            provider: providerUuid,
-          },
-        ],
-        encounterType: encounterTypeUuid,
-        obs: clinicalNote
-          ? [
-              {
-                concept: { uuid: encounterNoteTextConceptUuid, display: '' },
-                value: clinicalNote,
-                ...(existingClinicalNoteObs && { uuid: existingClinicalNoteObs.uuid }),
-              },
-            ]
-          : [],
-      };
+        let finalNoteDate = dayjs(noteDate);
+        const now = new Date();
+        if (finalNoteDate.diff(now, 'minute') <= 30) {
+          finalNoteDate = null;
+        }
 
-      const abortController = new AbortController();
+        const existingClinicalNoteObs = encounter?.obs?.find(
+          (obs) => obs.concept.uuid === encounterNoteTextConceptUuid,
+        );
 
-      const savePromise = isEditing
-        ? updateVisitNote(abortController, encounter.id, visitNotePayload)
-        : saveVisitNote(abortController, visitNotePayload);
-
-      savePromise
-        .then((response) => {
-          if (response.status === 201 || response.status === 200) {
-            const encounterUuid = encounter?.id || response.data.uuid;
-
-            // If editing, first delete existing diagnoses
-            if (isEditing && encounter?.diagnoses?.length) {
-              return Promise.all(
-                encounter.diagnoses.map((diagnosis) => deletePatientDiagnosis(abortController, diagnosis.uuid)),
-              ).then(() => encounterUuid);
-            }
-
-            return encounterUuid;
-          }
-        })
-        .then((encounterUuid) => {
-          return Promise.all(
-            combinedDiagnoses.map((diagnosis) => {
-              const diagnosesPayload: DiagnosisPayload = {
-                encounter: encounterUuid,
-                patient: patientUuid,
-                condition: null,
-                diagnosis: {
-                  coded: diagnosis.diagnosis.coded,
+        const visitNotePayload: VisitNotePayload = {
+          encounterDatetime: finalNoteDate?.format(),
+          form: formConceptUuid,
+          patient: patientUuid,
+          location: locationUuid,
+          encounterProviders: [
+            {
+              encounterRole: clinicianEncounterRole,
+              provider: providerUuid,
+            },
+          ],
+          encounterType: encounterTypeUuid,
+          obs: clinicalNote
+            ? [
+                {
+                  concept: { uuid: encounterNoteTextConceptUuid, display: '' },
+                  value: clinicalNote,
+                  ...(existingClinicalNoteObs && { uuid: existingClinicalNoteObs.uuid }),
                 },
-                certainty: diagnosis.certainty,
-                rank: diagnosis.rank,
+              ]
+            : [],
+        };
+
+        const abortController = new AbortController();
+
+        const savePromise = isEditing
+          ? updateVisitNote(abortController, encounter.id, visitNotePayload)
+          : saveVisitNote(abortController, visitNotePayload);
+
+        const response = await savePromise;
+        if (response.status !== 201 && response.status !== 200) {
+          throw new Error('Unexpected response status');
+        }
+
+        const encounterUuid = isEditing ? encounter.id : response.data.uuid;
+
+        if (isEditing && encounter?.diagnoses?.length) {
+          await Promise.all(
+            encounter.diagnoses.map((diagnosis) => deletePatientDiagnosis(abortController, diagnosis.uuid)),
+          );
+        }
+
+        await Promise.all(
+          combinedDiagnoses.map((diagnosis) => {
+            const diagnosesPayload: DiagnosisPayload = {
+              encounter: encounterUuid,
+              patient: patientUuid,
+              condition: null,
+              diagnosis: {
+                coded: diagnosis.diagnosis.coded,
+              },
+              certainty: diagnosis.certainty,
+              rank: diagnosis.rank,
+            };
+            return savePatientDiagnosis(abortController, diagnosesPayload);
+          }),
+        );
+
+        if (images?.length) {
+          await Promise.all(
+            images.map((image) => {
+              const imageToUpload: UploadedFile = {
+                base64Content: image.base64Content,
+                file: image.file,
+                fileName: image.fileName,
+                fileType: image.fileType,
+                fileDescription: image.fileDescription || '',
               };
-              return savePatientDiagnosis(abortController, diagnosesPayload);
+              return createAttachment(patientUuid, imageToUpload);
             }),
           );
-        })
-        .then(() => {
-          if (images?.length) {
-            return Promise.all(
-              images.map((image) => {
-                const imageToUpload: UploadedFile = {
-                  base64Content: image.base64Content,
-                  file: image.file,
-                  fileName: image.fileName,
-                  fileType: image.fileType,
-                  fileDescription: image.fileDescription || '',
-                };
-                return createAttachment(patientUuid, imageToUpload);
-              }),
-            );
-          } else {
-            return Promise.resolve([]);
-          }
-        })
-        .then(() => {
-          // Invalidate encounter and notes data since we created a new encounter with notes
-          // Also invalidate visit history table since the visit now has new encounters
-          invalidateVisitAndEncounterData(globalMutate, patientUuid);
-          mutateVisitNotes();
+        }
 
-          if (images?.length) {
-            mutateAttachments();
-          }
+        invalidateVisitAndEncounterData(globalMutate, patientUuid);
+        mutateVisitNotes();
+        if (images?.length) {
+          mutateAttachments();
+        }
+        closeWorkspace({ discardUnsavedChanges: true });
 
-          closeWorkspace({ discardUnsavedChanges: true });
-
-          showSnackbar({
-            isLowContrast: true,
-            subtitle: t('visitNoteNowVisible', 'It is now visible on the Visits page'),
-            kind: 'success',
-            title: t('visitNoteSaved', 'Visit note saved'),
-          });
-        })
-        .catch((err) => {
-          createErrorHandler();
-
-          showSnackbar({
-            title: t('visitNoteSaveError', 'Error saving visit note'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: err?.responseBody?.error?.message ?? err.message,
-          });
+        showSnackbar({
+          isLowContrast: true,
+          subtitle: t('visitNoteNowVisible', 'It is now visible on the Visits page'),
+          kind: 'success',
+          title: t('visitNoteSaved', 'Visit note saved'),
         });
+      } catch (err) {
+        createErrorHandler();
+        showSnackbar({
+          title: t('visitNoteSaveError', 'Error saving visit note'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: err?.responseBody?.error?.message ?? err.message,
+        });
+      } finally {
+        setIsSubmittingLocal(false);
+      }
     },
     [
-      clinicianEncounterRole,
-      closeWorkspace,
+      isSubmittingLocal,
+      isEditing,
+      encounter,
+      isPrimaryDiagnosisRequired,
+      selectedPrimaryDiagnoses.length,
       combinedDiagnoses,
-      encounter?.diagnoses,
-      encounter?.id,
-      encounter?.obs,
-      encounterNoteTextConceptUuid,
+      clinicianEncounterRole,
+      providerUuid,
+      locationUuid,
       encounterTypeUuid,
       formConceptUuid,
-      globalMutate,
-      isEditing,
-      isPrimaryDiagnosisRequired,
-      locationUuid,
-      mutateAttachments,
-      mutateVisitNotes,
+      encounterNoteTextConceptUuid,
       patientUuid,
-      providerUuid,
-      selectedPrimaryDiagnoses.length,
+      globalMutate,
+      mutateVisitNotes,
+      mutateAttachments,
+      closeWorkspace,
       t,
     ],
   );
@@ -696,7 +693,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                         onBlur={onBlur}
                         onChange={(event) => {
                           onChange(event);
-                          const textareaLineHeight = 24; // This is the default line height for Carbon's TextArea component
+                          const textareaLineHeight = 24;
                           const newRows = Math.ceil(event.target.scrollHeight / textareaLineHeight);
                           setRows(newRows);
                         }}
@@ -747,13 +744,8 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
             {t('discard', 'Discard')}
           </Button>
-          <Button
-            className={styles.button}
-            kind="primary"
-            onClick={() => handleSubmit}
-            disabled={isSubmitting}
-            type="submit">
-            {isSubmitting ? (
+          <Button className={styles.button} kind="primary" type="submit" disabled={isSubmitting || isSubmittingLocal}>
+            {isSubmitting || isSubmittingLocal ? (
               <InlineLoading description={t('saving', 'Saving') + '...'} />
             ) : (
               <span>{t('saveAndClose', 'Save and close')}</span>
@@ -833,7 +825,6 @@ function DiagnosesDisplay({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isTablet = useLayoutType() === 'tablet';
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {

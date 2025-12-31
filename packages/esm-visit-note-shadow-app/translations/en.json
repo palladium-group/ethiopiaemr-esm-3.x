@@ -32,6 +32,7 @@
   "secondaryDiagnosisInputPlaceholder": "Choose a secondary diagnosis",
   "selectCertainty": "Select certainty level",
   "visitDate": "Visit date",
+  "visitNote": "Visit note",
   "visitNoteNowVisible": "It is now visible on the Encounters page",
   "visitNoteSaved": "Visit note saved",
   "visitNoteSaveError": "Error saving visit note",
