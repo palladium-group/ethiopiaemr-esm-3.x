@@ -47,8 +47,8 @@ import {
   type PatientWorkspace2DefinitionProps,
   useAllowedFileExtensions,
 } from '@openmrs/esm-patient-common-lib';
-import type { ConfigObject } from '../config-schema';
-import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '../types';
+import type { ConfigObject } from '@openmrs/esm-patient-notes-app/src/config-schema';
+import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '@openmrs/esm-patient-notes-app/src/types';
 import {
   deletePatientDiagnosis,
   fetchDiagnosisConceptsByName,
@@ -56,7 +56,7 @@ import {
   saveVisitNote,
   updateVisitNote,
   useVisitNotes,
-} from './visit-notes.resource';
+} from '@openmrs/esm-patient-notes-app/src/notes/visit-notes.resource';
 import styles from './visit-notes-form.scss';
 
 type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images'> & {

@@ -1,9 +1,9 @@
 {
-  "name": "@palladium-ethiopia/esm-visit-note-app",
+  "name": "@palladium-ethiopia/esm-visit-note-shadow-app",
   "version": "11.3.0",
   "license": "MPL-2.0",
   "description": "Patient notes microfrontend for the OpenMRS SPA",
-  "browser": "dist/openmrs-esm-visit-note-app.js",
+  "browser": "dist/openmrs-esm-visit-note-shadow-app.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
@@ -51,6 +51,7 @@
   },
   "devDependencies": {
     "@openmrs/esm-patient-common-lib": "11.x",
+    "@openmrs/esm-patient-notes-app": "next",
     "webpack": "^5.99.9"
   }
 }

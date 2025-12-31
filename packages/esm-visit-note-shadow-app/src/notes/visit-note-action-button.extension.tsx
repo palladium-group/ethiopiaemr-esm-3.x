@@ -7,7 +7,7 @@ import { useStartVisitIfNeeded, type PatientChartWorkspaceActionButtonProps } fr
  * This button uses the patient chart store and MUST only be used
  * within the patient chart
  */
-const EthiopiaVisitNoteButton: React.FC<PatientChartWorkspaceActionButtonProps> = ({ groupProps: { patientUuid } }) => {
+const VisitNoteActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = ({ groupProps: { patientUuid } }) => {
   const { t } = useTranslation();
 
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
@@ -17,7 +17,7 @@ const EthiopiaVisitNoteButton: React.FC<PatientChartWorkspaceActionButtonProps> 
       icon={(props: ComponentProps<typeof PenIcon>) => <PenIcon {...props} />}
       label={t('visitNote', 'Visit note')}
       workspaceToLaunch={{
-        workspaceName: 'ethiopia-visit-notes-form-workspace',
+        workspaceName: 'visit-notes-form-shadow-workspace',
         workspaceProps: {},
       }}
       onBeforeWorkspaceLaunch={startVisitIfNeeded}
@@ -25,4 +25,4 @@ const EthiopiaVisitNoteButton: React.FC<PatientChartWorkspaceActionButtonProps> 
   );
 };
 
-export default EthiopiaVisitNoteButton;
+export default VisitNoteActionButton;

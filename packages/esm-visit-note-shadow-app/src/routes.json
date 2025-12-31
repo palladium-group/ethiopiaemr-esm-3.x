@@ -6,17 +6,17 @@
   },
   "workspaceWindows2": [
     {
-      "name": "ethiopia-visit-note",
+      "name": "visit-note-shadow",
       "group": "patient-chart",
-      "icon": "ethiopiaVisitNoteButton",
+      "icon": "visitNoteActionButton",
       "order": 3
     }
   ],
   "workspaces2": [
     {
-      "name": "ethiopia-visit-notes-form-workspace",
+      "name": "visit-notes-form-shadow-workspace",
       "component": "visitNotesFormWorkspace",
-      "window": "ethiopia-visit-note"
+      "window": "visit-note-shadow"
     }
   ]
 }

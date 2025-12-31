@@ -6,8 +6,8 @@ import {
   messageOmrsServiceWorker,
   restBaseUrl,
 } from '@openmrs/esm-framework';
-import { configSchema } from './config-schema';
-import EthiopiaVisitNoteButton from './notes/ethiopia-visit-note-button';
+import { configSchema } from '@openmrs/esm-patient-notes-app/src/config-schema';
+import visitNotesActionButtonExtension from './notes/visit-note-action-button.extension';
 
 const moduleName = '@openmrs/esm-patient-notes-app';
 
@@ -44,10 +44,10 @@ export function startupApp() {
   workspace2Store.subscribe(removeCoreButton);
 }
 
-export const ethiopiaVisitNoteButton = getSyncLifecycle(EthiopiaVisitNoteButton, options);
+export const visitNoteActionButton = getSyncLifecycle(visitNotesActionButtonExtension, options);
 
 // t('visitNoteWorkspaceTitle', 'Visit Note')
 export const visitNotesFormWorkspace = getAsyncLifecycle(
-  () => import('./notes/ethiopia-visit-notes-form.workspace'),
+  () => import('./notes/visit-notes-form-shadow.workspace'),
   options,
 );
