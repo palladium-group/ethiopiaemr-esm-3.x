@@ -47,8 +47,8 @@ import {
   type PatientWorkspace2DefinitionProps,
   useAllowedFileExtensions,
 } from '@openmrs/esm-patient-common-lib';
-import type { ConfigObject } from '@openmrs/esm-patient-notes-app/src/config-schema';
-import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '@openmrs/esm-patient-notes-app/src/types';
+import type { ConfigObject } from '../config-schema';
+import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '../types';
 import {
   deletePatientDiagnosis,
   fetchDiagnosisConceptsByName,
@@ -56,7 +56,7 @@ import {
   saveVisitNote,
   updateVisitNote,
   useVisitNotes,
-} from '@openmrs/esm-patient-notes-app/src/notes/visit-notes.resource';
+} from './visit-notes.resource';
 import styles from './visit-notes-form.scss';
 
 type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images'> & {
@@ -109,10 +109,11 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const { isPrimaryDiagnosisRequired, ...config } = useConfig<ConfigObject>();
+  const config = useConfig<ConfigObject>();
+  const { isPrimaryDiagnosisRequired, visitNoteConfig } = config;
   const memoizedState = useMemo(() => ({ patientUuid }), [patientUuid]);
-  const { clinicianEncounterRole, encounterNoteTextConceptUuid, encounterTypeUuid, formConceptUuid } =
-    config.visitNoteConfig;
+  const { clinicianEncounterRole, encounterNoteTextConceptUuid, encounterTypeUuid, formConceptUuid } = visitNoteConfig;
+
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
   const [isSearching, setIsSearching] = useState(false);

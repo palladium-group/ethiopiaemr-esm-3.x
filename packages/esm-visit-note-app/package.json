@@ -1,9 +1,9 @@
 {
-  "name": "@openmrs/esm-patient-notes-app",
+  "name": "@palladium-ethiopia/esm-visit-note-app",
   "version": "11.3.0",
   "license": "MPL-2.0",
   "description": "Patient notes microfrontend for the OpenMRS SPA",
-  "browser": "dist/openmrs-esm-patient-notes-app.js",
+  "browser": "dist/openmrs-esm-visit-note-app.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
@@ -37,7 +37,6 @@
     "url": "https://github.com/openmrs/openmrs-esm-patient-chart/issues"
   },
   "dependencies": {
-    "@openmrs/esm-patient-notes-app": "11.3.1-pre.9583",
     "lodash-es": "^4.17.21"
   },
   "peerDependencies": {

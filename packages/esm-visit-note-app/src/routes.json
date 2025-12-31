@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "fhir2": ">=1.2",
+    "webservices.rest": ">=2.2.0"
+  },
+  "workspaceWindows2": [
+    {
+      "name": "ethiopia-visit-note",
+      "group": "patient-chart",
+      "icon": "ethiopiaVisitNoteButton",
+      "order": 3
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "ethiopia-visit-notes-form-workspace",
+      "component": "visitNotesFormWorkspace",
+      "window": "ethiopia-visit-note"
+    }
+  ]
+}
