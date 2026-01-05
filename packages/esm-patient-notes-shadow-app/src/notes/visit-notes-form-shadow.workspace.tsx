@@ -554,9 +554,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                           <span className={styles.tagContent}>
                             {displayText}
                             {diagnosis.certainty === 'CONFIRMED' ? (
-                              <CheckmarkFilled size={12} className={classnames(styles.tagIcon, styles.confirmedIcon)} />
+                              <CheckmarkFilled size={14} className={classnames(styles.tagIcon, styles.confirmedIcon)} />
                             ) : (
-                              <Help size={12} className={classnames(styles.tagIcon, styles.presumedIcon)} />
+                              <Help size={14} className={classnames(styles.tagIcon, styles.presumedIcon)} />
                             )}
                           </span>
                         </Tag>

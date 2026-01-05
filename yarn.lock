@@ -1542,21 +1542,21 @@ __metadata:
   linkType: hard
 
 "@emnapi/core@npm:^1.5.0":
-  version: 1.7.1
-  resolution: "@emnapi/core@npm:1.7.1"
+  version: 1.8.1
+  resolution: "@emnapi/core@npm:1.8.1"
   dependencies:
     "@emnapi/wasi-threads": "npm:1.1.0"
     tslib: "npm:^2.4.0"
-  checksum: 10/260841f6dd2a7823a964d9de6da3a5e6f565dac8d21a5bd8f6215b87c45c22a4dc371b9ad877961579ee3cca8a76e55e3dd033ae29cba1998999cda6d794bdab
+  checksum: 10/904ea60c91fc7d8aeb4a8f2c433b8cfb47c50618f2b6f37429fc5093c857c6381c60628a5cfbc3a7b0d75b0a288f21d4ed2d4533e82f92c043801ef255fd6a5c
   languageName: node
   linkType: hard
 
 "@emnapi/runtime@npm:^1.5.0":
-  version: 1.7.1
-  resolution: "@emnapi/runtime@npm:1.7.1"
+  version: 1.8.1
+  resolution: "@emnapi/runtime@npm:1.8.1"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 10/6fc83f938e3c70e32e84c1fbe5cab6cb9340b8107cee4048384ad5b8f2998a06502b4bed342acaf6e44f473f2c14c4ab1e3fd5083bd7823fc63abfca9eff0175
+  checksum: 10/26725e202d4baefdc4a6ba770f703dfc80825a27c27a08c22bac1e1ce6f8f75c47b4fe9424d9b63239463c33ef20b650f08d710da18dfa1164a95e5acb865dba
   languageName: node
   linkType: hard
 
@@ -3221,7 +3221,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openmrs/esm-framework@npm:next":
+"@openmrs/esm-framework@npm:8.0.1-pre.3623, @openmrs/esm-framework@npm:next":
   version: 8.0.1-pre.3623
   resolution: "@openmrs/esm-framework@npm:8.0.1-pre.3623"
   dependencies:
@@ -3292,6 +3292,29 @@ __metadata:
     "@openmrs/esm-state": 6.x
     rxjs: 6.x
   checksum: 10/de250580fe9a917bfa2c3f17d6cbb67a3616a894db673369749d41140e7926223f4a02758f3f967235f2c829df10a286ba25ccd62a643ebfbfaa429b9b1d79a1
+  languageName: node
+  linkType: hard
+
+"@openmrs/esm-patient-chart-app@npm:next":
+  version: 11.3.1-pre.9583
+  resolution: "@openmrs/esm-patient-chart-app@npm:11.3.1-pre.9583"
+  dependencies:
+    lodash-es: "npm:^4.17.21"
+    uuid: "npm:^8.3.2"
+  peerDependencies:
+    "@carbon/react": 1.x
+    "@openmrs/esm-framework": 8.x
+    "@openmrs/esm-patient-common-lib": "*"
+    dayjs: 1.x
+    lodash-es: 4.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    single-spa: 6.x
+    single-spa-react: 6.x
+    swr: 2.x
+  checksum: 10/5cee97ef0584bf66b73c754b2e914377437d1a1f194521537844d8632654b11b73316d5558a9b2f9937b3406cded6836d11acfa7c565cc98c4f24644c1b1c85c
   languageName: node
   linkType: hard
 
@@ -3609,9 +3632,48 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@palladium-ethiopia/esm-visit-note-shadow-app@workspace:packages/esm-visit-note-shadow-app":
+"@palladium-ethiopia/esm-patient-chart-shadow-app@workspace:packages/esm-patient-chart-shadow-app":
   version: 0.0.0-use.local
-  resolution: "@palladium-ethiopia/esm-visit-note-shadow-app@workspace:packages/esm-visit-note-shadow-app"
+  resolution: "@palladium-ethiopia/esm-patient-chart-shadow-app@workspace:packages/esm-patient-chart-shadow-app"
+  dependencies:
+    "@openmrs/esm-patient-chart-app": "npm:next"
+    "@openmrs/esm-patient-common-lib": "npm:11.x"
+    lodash-es: "npm:^4.17.21"
+    webpack: "npm:^5.99.9"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
+    "@openmrs/esm-patient-common-lib": 11.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
+"@palladium-ethiopia/esm-patient-notes-app@workspace:packages/esm-patient-notes-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-patient-notes-app@workspace:packages/esm-patient-notes-app"
+  dependencies:
+    "@openmrs/esm-patient-common-lib": "npm:11.x"
+    lodash-es: "npm:^4.17.21"
+    webpack: "npm:^5.99.9"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
+    "@openmrs/esm-patient-common-lib": 11.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
+"@palladium-ethiopia/esm-patient-notes-shadow-app@workspace:packages/esm-patient-notes-shadow-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-patient-notes-shadow-app@workspace:packages/esm-patient-notes-shadow-app"
   dependencies:
     "@openmrs/esm-patient-common-lib": "npm:11.x"
     "@openmrs/esm-patient-notes-app": "npm:next"
@@ -5786,9 +5848,9 @@ __metadata:
   linkType: hard
 
 "@sinclair/typebox@npm:^0.34.0":
-  version: 0.34.45
-  resolution: "@sinclair/typebox@npm:0.34.45"
-  checksum: 10/e8e1523de12666bc98f9a03270e254a9b735bb65146d85955c4c01ed0a79419b584e69e5c04ccaef589cc7bad01c2968ad5b743f9407ac4269fccd84fe6674b0
+  version: 0.34.46
+  resolution: "@sinclair/typebox@npm:0.34.46"
+  checksum: 10/3b92cc688ea87ad1ff27065d60b16fb2fce88f51481302c215e385aac03a77f5dfc3e1919bd628895e5d093cf305d63977d2edad9abec0d176060a04c9b6ec8a
   languageName: node
   linkType: hard
 
@@ -17376,11 +17438,11 @@ __metadata:
   linkType: hard
 
 "react-hook-form@npm:^7.45.1, react-hook-form@npm:^7.54.0":
-  version: 7.69.0
-  resolution: "react-hook-form@npm:7.69.0"
+  version: 7.70.0
+  resolution: "react-hook-form@npm:7.70.0"
   peerDependencies:
     react: ^16.8.0 || ^17 || ^18 || ^19
-  checksum: 10/12a8b90d337c557cb53cfb6c9fd7ed3972a20960834b060bb239101a2765cd762ef6651b3231feb0932d3582d51801fda57bc660bfac88688b538b6609e4a1ec
+  checksum: 10/9d861a7a6406006655fae0cf52f2595857c207b2d49a877a976fa0df5f14dc5b7aa46c80ac7cd13e0931a0af8dc7bfb669e72df5c6a3b6bb0036d72383eafa00
   languageName: node
   linkType: hard
 
@@ -17406,10 +17468,10 @@ __metadata:
   linkType: hard
 
 "react-i18next@npm:^16.0.0":
-  version: 16.5.0
-  resolution: "react-i18next@npm:16.5.0"
+  version: 16.5.1
+  resolution: "react-i18next@npm:16.5.1"
   dependencies:
-    "@babel/runtime": "npm:^7.27.6"
+    "@babel/runtime": "npm:^7.28.4"
     html-parse-stringify: "npm:^3.0.1"
     use-sync-external-store: "npm:^1.6.0"
   peerDependencies:
@@ -17423,7 +17485,7 @@ __metadata:
       optional: true
     typescript:
       optional: true
-  checksum: 10/1c0cebe33dece1ebe9683acf7437b013dd9c42837c2bfd862f1304f1704d5aba40051ed0c2b5989bcf096da828eacd9ca751a234b340dac1c2bbbeb285a40bda
+  checksum: 10/c316a30f9f2b9e5078e196e8b137216a821fd61507ab37fcf9f4445616cedb6fe978d164c134db1d69e24ab5d13bb2d1166eaa018e2c862c1703b9ff75604d79
   languageName: node
   linkType: hard
 
@@ -19460,9 +19522,9 @@ __metadata:
   linkType: hard
 
 "tabbable@npm:^6.0.0, tabbable@npm:^6.2.0":
-  version: 6.3.0
-  resolution: "tabbable@npm:6.3.0"
-  checksum: 10/3e54a0b770d26bc20c3de5837652be19f5efa8bfa869f580af24bcf60de934506e9401a577213186b5e86ebcf6b5290a5429d354cc3041471815f5095e44e51a
+  version: 6.4.0
+  resolution: "tabbable@npm:6.4.0"
+  checksum: 10/0fe8fada2d97bd02058af2e0176bddca26b1100c069e0a096ac19ad8ef61bd0b4f0cf05e1dd68229b8f1cb6fe6bf4c34d50a5f4a3e26b150a92f89b7dc0a4916
   languageName: node
   linkType: hard
 

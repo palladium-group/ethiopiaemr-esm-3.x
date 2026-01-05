@@ -1,0 +1,16 @@
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.certaintyRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.certaintyTag {
+  font-size: 0.625rem;
+  padding: 0 0.375rem;
+}
