@@ -1,4 +1,5 @@
 import { openmrsFetch, restBaseUrl, Visit } from '@openmrs/esm-framework';
+import type { ClinicalWorkflowConfig } from '../config-schema';
 
 const queueEntryCustomRepresentation =
   'custom:(uuid,display,queue,status,patient:(uuid,display,person,identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
@@ -30,4 +31,14 @@ export const fetchQueueEntryForPatient = async (patientUuid: string): Promise<an
   const url = `${restBaseUrl}/queue-entry?v=${queueEntryCustomRepresentation}&patient=${patientUuid}&includeInactive=false`;
   const { data } = await openmrsFetch<{ results: Array<unknown> }>(url);
   return data.results[0];
+};
+
+export const getTriageFormForLocation = (
+  locationUuid: string | undefined,
+  triageLocationForms: ClinicalWorkflowConfig['triageLocationForms'],
+): { formUuid: string; name: string } | undefined => {
+  if (!locationUuid) {
+    return undefined;
+  }
+  return triageLocationForms[locationUuid];
 };

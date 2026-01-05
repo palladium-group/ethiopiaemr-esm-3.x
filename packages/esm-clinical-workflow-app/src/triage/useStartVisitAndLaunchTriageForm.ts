@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-
 import {
   Encounter,
   fetchCurrentPatient,
@@ -12,7 +11,7 @@ import {
   Visit,
 } from '@openmrs/esm-framework';
 
-import { createVisitForPatient } from './triage.resource';
+import { createVisitForPatient, getCurrentVisitForPatient } from './triage.resource';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 
 export const launchTriageFormWorkspace = (
@@ -20,7 +19,8 @@ export const launchTriageFormWorkspace = (
   patientUuid: string,
   visit: Visit,
   formUuid: string,
-  t: TFunction,
+  formName: string,
+  t: TFunction<'translation', undefined>,
 ) => {
   const handleShowModal = (encounter: Encounter) => {
     const dispose = showModal('transition-patient-to-latest-queue-modal', {
@@ -37,7 +37,7 @@ export const launchTriageFormWorkspace = (
   launchWorkspace2(
     'clinical-workflow-patient-form-entry-workspace',
     {
-      formEntryWorkspaceName: t('triageForm', 'Triage Form'),
+      formEntryWorkspaceName: formName,
       patient,
       visitContext: visit,
       form: {
@@ -65,7 +65,7 @@ export const launchTriageFormWorkspace = (
 };
 
 interface UseStartVisitAndLaunchTriageFormReturn {
-  handleStartVisitAndLaunchTriageForm: (patientUuid: string, formUuid: string) => Promise<void>;
+  handleStartVisitAndLaunchTriageForm: (patientUuid: string, formUuid: string, formName: string) => Promise<void>;
   isLoading: boolean;
   error: Error | null;
 }
@@ -77,7 +77,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
   const [error, setError] = useState<Error | null>(null);
 
   const handleStartVisitAndLaunchTriageForm = useCallback(
-    async (patientUuid: string, formUuid?: string, visit?: Visit) => {
+    async (patientUuid: string, formUuid: string, formName: string) => {
       if (!patientUuid?.trim()) {
         const validationError = new Error('Patient UUID is required');
         setError(validationError);
@@ -85,6 +85,18 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
           title: t('triageDashboardError', 'Error'),
           kind: 'error',
           subtitle: t('triageDashboardInvalidPatientUuid', 'Invalid patient identifier'),
+          isLowContrast: true,
+        });
+        return;
+      }
+
+      if (!formUuid?.trim()) {
+        const validationError = new Error('Form UUID is required');
+        setError(validationError);
+        showSnackbar({
+          title: t('triageDashboardError', 'Error'),
+          kind: 'error',
+          subtitle: t('triageDashboardInvalidFormUuid', 'Invalid form identifier'),
           isLowContrast: true,
         });
         return;
@@ -101,19 +113,22 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
           throw new Error('Failed to fetch patient data');
         }
 
-        // Create visit for patient
-        const visitResponse = await createVisitForPatient(patientUuid, visitTypeUuid);
+        let visit = await getCurrentVisitForPatient(patientUuid);
+        if (!visit) {
+          const visitResponse = await createVisitForPatient(patientUuid, visitTypeUuid);
 
-        if (!visitResponse.ok) {
-          throw new Error(
-            visitResponse.data?.error?.message ||
-              t('triageDashboardErrorStartingVisit', 'Error starting visit for patient'),
-          );
+          if (!visitResponse.ok) {
+            throw new Error(
+              visitResponse.data?.error?.message ||
+                t('triageDashboardErrorStartingVisit', 'Error starting visit for patient'),
+            );
+          }
+
+          visit = visitResponse.data;
         }
 
-        const { data: visit } = visitResponse;
-
-        launchTriageFormWorkspace(patient, patientUuid, visit, formUuid, t);
+        // Launch triage form workspace with visit
+        launchTriageFormWorkspace(patient, patientUuid, visit, formUuid, formName, t);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : t('triageDashboardUnexpectedError', 'An unexpected error occurred');

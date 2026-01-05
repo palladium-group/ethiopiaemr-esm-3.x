@@ -1,18 +1,66 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, RadioButtonGroup, RadioButton } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
-import { ExtensionSlot, TriagePictogram, launchWorkspace, PageHeader, useConfig } from '@openmrs/esm-framework';
+import { Button, InlineNotification, Tile } from '@carbon/react';
+import { Add, Search } from '@carbon/react/icons';
+import {
+  ExtensionSlot,
+  TriagePictogram,
+  launchWorkspace,
+  PageHeader,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
 
 import styles from './triage-dashboard.scss';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 import PatientBanner from './patient-banner.component';
+import { getTriageFormForLocation } from './triage.resource';
 
 const TriageDashboard: React.FC = () => {
   const { t } = useTranslation();
-  const { triageServices } = useConfig<ClinicalWorkflowConfig>();
+  const { sessionLocation } = useSession();
+  const { triageLocationForms } = useConfig<ClinicalWorkflowConfig>();
   const [patientUuid, setPatientUuid] = useState<string | null>(null);
-  const [selectedTriageService, setSelectedTriageService] = useState<string | null>(null);
+
+  const triageFormConfig = getTriageFormForLocation(sessionLocation?.uuid, triageLocationForms);
+
+  if (!sessionLocation) {
+    return (
+      <div className={styles.triageDashboardContainer}>
+        <PageHeader
+          className={styles.pageHeader}
+          title={t('triageDashboard', 'Triage Dashboard')}
+          illustration={<TriagePictogram />}
+        />
+        <InlineNotification
+          kind="error"
+          title={t('noSessionLocation', 'No session location')}
+          subtitle={t('noSessionLocationSubtitle', 'Please select a location to continue')}
+          lowContrast
+        />
+      </div>
+    );
+  }
+
+  if (!triageFormConfig) {
+    return (
+      <div className={styles.triageDashboardContainer}>
+        <PageHeader
+          className={styles.pageHeader}
+          title={t('triageDashboard', 'Triage Dashboard')}
+          illustration={<TriagePictogram />}
+        />
+        <InlineNotification
+          kind="warning"
+          title={t('noTriageFormConfigured', 'No triage form configured')}
+          subtitle={t('noTriageFormConfiguredSubtitle', 'No triage form is configured for location: {{location}}', {
+            location: sessionLocation.display,
+          })}
+          lowContrast
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.triageDashboardContainer}>
@@ -22,24 +70,8 @@ const TriageDashboard: React.FC = () => {
         illustration={<TriagePictogram />}
       />
       <div className={styles.headerActions}>
-        <RadioButtonGroup
-          legendText={t('selectTriageService', 'Select Triage Service')}
-          name="triage-service-radio-button-group"
-          valueSelected={selectedTriageService || undefined}
-          onChange={(value: string) => setSelectedTriageService(value)}>
-          {triageServices.map((service) => (
-            <RadioButton
-              key={service.formUuid}
-              id={service.formUuid}
-              labelText={service.name}
-              value={service.formUuid}
-            />
-          ))}
-        </RadioButtonGroup>
-      </div>
-      <div className={styles.headerActions}>
         <ExtensionSlot
-          className={`${styles.patientSearchBar} ${selectedTriageService ? '' : styles.disabled}`}
+          className={styles.patientSearchBar}
           name="patient-search-bar-slot"
           state={{
             selectPatientAction: (patientUuid: string) => setPatientUuid(patientUuid),
@@ -52,10 +84,28 @@ const TriageDashboard: React.FC = () => {
           {t('registerNewPatient', 'Register New Patient')}
         </Button>
       </div>
-      {patientUuid && (
+      {!patientUuid ? (
+        <div className={styles.emptyStateContainer}>
+          <Tile className={styles.emptyStateTile}>
+            <div className={styles.emptyStateContent}>
+              <div className={styles.emptyStateIcon}>
+                <Search size={48} />
+              </div>
+              <h3 className={styles.emptyStateHeading}>{t('noPatientSelected', 'No patient selected')}</h3>
+              <p className={styles.emptyStateDescription}>
+                {t(
+                  'searchForPatientToStartTriage',
+                  'Search for a patient using the search bar above to start the triage process, or register a new patient.',
+                )}
+              </p>
+            </div>
+          </Tile>
+        </div>
+      ) : (
         <PatientBanner
           patientUuid={patientUuid}
-          selectedTriageService={selectedTriageService}
+          formUuid={triageFormConfig.formUuid}
+          formName={triageFormConfig.name}
           setPatientUuid={setPatientUuid}
         />
       )}

@@ -1,16 +1,11 @@
-:wave: *New to our project? Be sure to review the [OpenMRS 3 Frontend Developer Documentation](https://o3-docs.openmrs.org). You may find the [Map of the Project](https://o3-docs.openmrs.org/docs/core-concepts) especially helpful.* :teacher: 
+:wave: *New to our project? Be sure to review the [OpenMRS 3 Frontend Developer Documentation](https://o3-docs.openmrs.org). You may find the [Map of the Project](https://o3-docs.openmrs.org/docs/core-concepts) especially helpful.* :teacher:
 
-![Node.js CI](https://github.com/palladiumkenya/kenyaemr-esm-3.x/actions/workflows/ci.yml/badge.svg)
+# EthiopiaEMR 3.x custom packages
 
-# KenyaEMR 3.x custom packages
+This repository contains frontend modules for the EthiopiaEMR 3.x. These modules provide clinical workflow and patient notes functionality. The modules within this repository include:
 
-This repository contains frontend modules for the KenyaEMR 3.x. These modules relate to patient-flags, versioning and care-panels. The modules within this repository include:
-
-- [Patient flags](packages/esm-patient-flags-app/)
-- [Care panels](packages/esm-care-panel-app/)
-- [Version](packages/esm-version-app)
-- [Billing](packages/esm-billing-app/)
-- [Clinical views](esm-patient-clinical-view-app/)
+- [Clinical Workflow App](packages/esm-clinical-workflow-app/) - Express workflow app for OpenMRS 3, providing patient registration, triage, patient scoreboard, and MRU (Medical Recording Unit) functionality
+- [Patient Notes App](packages/esm-patient-notes-app/) - Patient notes microfrontend providing a tabular overview of visit notes and forms for recording new visit notes
 
 ## Setup
 
@@ -18,7 +13,7 @@ Check out the developer documentation [here](http://o3-dev.docs.openmrs.org).
 
 This monorepo uses [yarn](https://yarnpkg.com).
 
-To install the dependancies, run:
+To install the dependencies, run:
 ```bash
 yarn install
 ```
@@ -30,7 +25,7 @@ To set up environment variables for the project, follow these steps:
   cp example.env .env
   ```
 2. Open the newly created .env file in the root of the project.
-3. Add the environment variables you need. 
+3. Add the environment variables you need.
 
 Note: These variables are currently only used for end-to-end tests.
 
@@ -50,10 +45,10 @@ To start a dev server for a specific module, run:
 yarn start --sources 'packages/esm-<insert-package-name>-app'
 ```
 
-You could provide `yarn start` with as many `sources` arguments as you require. For example, to run the patient registration and patient search modules only, use:
+You could provide `yarn start` with as many `sources` arguments as you require. For example, to run both the clinical workflow and patient notes modules, use:
 
 ```bash
-yarn start --sources 'packages/esm-patient-search-app' --sources 'packages/esm-patient-registration-app'
+yarn start --sources 'packages/esm-clinical-workflow-app' --sources 'packages/esm-patient-notes-app'
 ```
 
 ## Troubleshooting
@@ -70,7 +65,6 @@ git checkout package.json
 # Run `yarn` to recreate the lockfile
 yarn
 ```
-
 
 ## Contributing
 
@@ -107,7 +101,7 @@ For documentation about our design patterns, please visit our [design system](ht
 
 ## Deployment
 
-The `main` branch of this repo is deployed in a [demo environment](https://openmrs-spa.org/openmrs/spa).
+The `main` branch of this repo contains the latest stable version of the EthiopiaEMR 3.x frontend modules.
 
 ## Configuration
 
@@ -121,18 +115,17 @@ To increment the version, run the following command:
 yarn release
 ```
 
-You will need to pick the next version number. We use minor changes (e.g. `3.2.0` → `3.3.0`)
-to indicate big new features and breaking changes, and patch changes (e.g. `3.2.0` → `3.2.1`)
+You will need to pick the next version number. We use minor changes (e.g. `5.4.0` → `5.5.0`)
+to indicate big new features and breaking changes, and patch changes (e.g. `5.4.0` → `5.4.1`)
 otherwise.
 
 Note that this command will not create a new tag, nor publish the packages.
 After running it, make a PR or merge to `main` with the resulting changeset.
 
 Once the version bump is merged, go to GitHub and
-[draft a new release](https://github.com/openmrs/openmrs-esm-patient-management/releases/new). 
-The tag should be prefixed with `v` (e.g., `v3.2.1`), while the release title
-should just be the version number (e.g., `3.2.1`). The creation of the GitHub release
+[draft a new release](https://github.com/palladium-group/ethiopiaemr-esm-3.x/releases/new).
+The tag should be prefixed with `v` (e.g., `v5.4.1`), while the release title
+should just be the version number (e.g., `5.4.1`). The creation of the GitHub release
 will cause GitHub Actions to publish the packages, completing the release process.
 
 > Don't run `npm publish`, `yarn publish`, or `lerna publish`. Use the above process.
-

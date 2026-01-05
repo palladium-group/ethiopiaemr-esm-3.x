@@ -4,15 +4,15 @@
   "description": "Express workflow app for OpenMRS 3",
   "keywords": [
     "openmrs",
-    "kenyaemr"
+    "ethiopiaemr"
   ],
-  "homepage": "https://github.com/palladiumkenya/kenyaemr-esm-3.x#readme",
+  "homepage": "https://github.com/palladium-group/ethiopiaemr-esm-3.x#readme",
   "bugs": {
-    "url": "https://github.com/palladiumkenya/kenyaemr-esm-3.x/issues"
+    "url": "https://github.com/palladium-group/ethiopiaemr-esm-3.x/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/palladiumkenya/kenyaemr-esm-3.x.git"
+    "url": "git+https://github.com/palladium-group/ethiopiaemr-esm-3.x.git"
   },
   "license": "MPL-2.0",
   "main": "src/index.ts",
