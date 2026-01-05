@@ -1,22 +1,25 @@
 @use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
 .diagnosesText {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-05;
 }
 
 .tagWrapper {
   display: inline-flex;
-  /* It makes the wrapper behave like the tag for the mouse */
+  /* Makes the wrapper behave like the tag for the mouse */
   height: fit-content;
   width: fit-content;
 }
 
 .tag {
-  max-width: 20rem;
+  max-width: layout.rem(320px);
   margin: 0 !important;
-  /* This prevents the internal Carbon elements from stealing the hover event */
+  /* Prevents internal Carbon elements from stealing hover event */
   pointer-events: none;
 
   :global(.cds--tag__label) {
@@ -29,7 +32,7 @@
 .tagContent {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: layout.$spacing-02; 
   width: 100%;
 }
 
