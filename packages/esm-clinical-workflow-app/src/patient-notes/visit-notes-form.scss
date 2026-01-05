@@ -27,9 +27,11 @@
 
 .diagnosisList {
   background-color: white;
-  max-height: 13.5rem;
+  max-height: 18rem;   
   overflow-y: auto;
   border: 1px solid colors.$gray-20;
+  display: flex;  
+  flex-direction: column;
 }
 
 .diagnosisList li:hover {
@@ -255,6 +257,7 @@
 .diagnosisListItem {
   position: relative;
   margin-bottom: layout.$spacing-02;
+  height: auto;  
 }
 
 .diagnosisRow {
@@ -295,16 +298,14 @@
 }
 
 .certaintyDropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 1000;
+  position: relative; 
+  z-index: 10;    
   margin-top: layout.$spacing-02;
   background: white;
   border: 1px solid colors.$gray-20;
   border-radius: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  box-shadow: none; 
   overflow: hidden;
   font-size: 0.8125rem;
 }

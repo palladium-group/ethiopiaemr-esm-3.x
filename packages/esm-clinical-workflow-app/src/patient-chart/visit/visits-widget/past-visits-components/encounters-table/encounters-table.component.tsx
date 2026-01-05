@@ -50,7 +50,7 @@ import {
 } from './encounters-table.resource';
 import EncounterObservations from '../../encounter-observations';
 import styles from './encounters-table.scss';
-import { type ChartConfig } from '../../../../config-schema';
+import { type ChartConfig } from '../../../../../config-schema';
 
 /**
  * This components is used by the AllEncountersTable and VisitEncountersTable to display

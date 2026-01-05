@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
-import type { ChartConfig } from '../../config-schema';
+import type { ChartConfig } from '../../../config-schema';
 import VisitHistoryTable from '../visit-history-table/visit-history-table.component';
 import AllEncountersTable from './past-visits-components/encounters-table/all-encounters-table.component';
 import styles from './visit-detail-overview.scss';

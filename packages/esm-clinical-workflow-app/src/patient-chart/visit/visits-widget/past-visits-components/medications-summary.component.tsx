@@ -6,7 +6,7 @@ import { Tag, Tooltip } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import type { OrderItem } from '../visit.resource';
 import styles from '../visit-detail-overview.scss';
-import { type ChartConfig } from '../../../config-schema';
+import { type ChartConfig } from '../../../../config-schema';
 
 interface MedicationSummaryProps {
   medications: Array<OrderItem>;

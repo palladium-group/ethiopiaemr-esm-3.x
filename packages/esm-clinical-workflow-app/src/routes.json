@@ -59,6 +59,18 @@
       "slot": "patient-scoreboard-slot",
       "online": true,
       "offline": false
+    },
+    {
+      "name": "past-visits-detail-overview-shadow",
+      "slot": "patient-chart-encounters-dashboard-slot",
+      "component": "pastVisitsDetailOverviewShadow",
+      "order": 0,
+      "meta": {
+        "title": "Visits",
+        "view": "visits"
+      },
+      "online": true,
+      "offline": true
     }
   ],
   "workspaces": [
@@ -88,6 +100,11 @@
       "name": "clinical-workflow-patient-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "clinical-workflow-window"
+    },
+    {
+      "name": "visit-notes-form-shadow-workspace",
+      "component": "visitNotesFormWorkspace",
+      "window": "visit-note-shadow"
     }
   ],
   "workspaceWindows2": [
@@ -96,6 +113,12 @@
       "group": "clinical-workflow-group",
       "width": "wider",
       "canMaximize": true
+    },
+    {
+      "name": "visit-note-shadow",
+      "group": "patient-chart",
+      "icon": "visitNoteActionButton",
+      "order": 3
     }
   ],
   "workspaceGroups2": [
