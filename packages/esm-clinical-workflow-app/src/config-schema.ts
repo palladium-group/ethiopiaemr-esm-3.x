@@ -1,4 +1,5 @@
 import { Type } from '@openmrs/esm-framework';
+import notesConfigSchema, { type VisitNoteConfigObject } from './patient-notes/visit-note-config-schema';
 
 export const configSchema = {
   triageLocationForms: {
@@ -46,6 +47,54 @@ export const configSchema = {
     _description: 'Patient attribute type UUID for Medico Legal Cases',
     _default: '',
   },
+  diagnosisConceptClass: {
+    _type: Type.UUID,
+    _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
+    _description: 'The concept class UUID for diagnoses',
+  },
+  isPrimaryDiagnosisRequired: {
+    _type: Type.Boolean,
+    _default: true,
+    _description: 'Indicates whether a primary diagnosis is required when submitting a visit note',
+  },
+  visitNoteConfig: notesConfigSchema,
+  disableEmptyTabs: {
+    _type: Type.Boolean,
+    _default: false,
+    _description: 'Disable notes/tests/medications/encounters tabs when empty',
+  },
+  encounterEditableDuration: {
+    _type: Type.Number,
+    _default: 0,
+    _description:
+      'The number of minutes an encounter is editable after it is created. 0 means the encounter is editable forever.',
+  },
+  encounterEditableDurationOverridePrivileges: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.String,
+    },
+    _default: [],
+    _description:
+      'The privileges that allow users to edit encounters even after the editable duration (set by `encounterEditableDuration`) has expired. Any privilege in the list is sufficient to edit the encounter.',
+  },
+  notesConceptUuids: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.ConceptUuid,
+    },
+    _default: ['162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+  },
+  showAllEncountersTab: {
+    _type: Type.Boolean,
+    _description: 'Shows the All Encounters Tab of Patient Visits section in Patient Chart',
+    _default: true,
+  },
+  drugOrderTypeUUID: {
+    _type: Type.UUID,
+    _description: "UUID for the 'Drug' order type to fetch medications",
+    _default: '131168f4-15f5-102d-96e4-000c29c2a5d7',
+  },
 };
 
 export type ClinicalWorkflowConfig = {
@@ -67,3 +116,52 @@ export type ClinicalWorkflowConfig = {
   defaultIdentifierTypeUuid: string;
   medicoLegalCasesAttributeTypeUuid: string;
 };
+
+export interface VisitNoteConfig {
+  diagnosisConceptClass: string;
+  isPrimaryDiagnosisRequired: boolean;
+  visitNoteConfig: VisitNoteConfigObject;
+}
+
+export interface ChartConfig {
+  defaultFacilityUrl: string;
+  disableChangingVisitLocation: boolean;
+  disableEmptyTabs: boolean;
+  encounterEditableDuration: number;
+  encounterEditableDurationOverridePrivileges: Array<string>;
+  freeTextFieldConceptUuid: string;
+  logo: {
+    alt: string;
+    name: string;
+    src: string;
+  };
+  notesConceptUuids: string[];
+  offlineVisitTypeUuid: string;
+  restrictByVisitLocationTag: boolean;
+  showAllEncountersTab: boolean;
+  showRecommendedVisitTypeTab: boolean;
+  showServiceQueueFields: boolean; // used by extension from esm-service-queues-app
+  showUpcomingAppointments: boolean; // used by extension from esm-appointments-app
+  visitTypeResourceUrl: string;
+  visitAttributeTypes: Array<{
+    displayInThePatientBanner: boolean;
+    required: boolean;
+    showWhenExpression?: string;
+    uuid: string;
+  }>;
+  visitDiagnosisConceptUuid: string;
+  requireActiveVisitForEncounterTile: boolean;
+  trueConceptUuid: string;
+  falseConceptUuid: string;
+  tileDefinitions: Array<{
+    title: string;
+    columns: Array<{
+      title: string;
+      concept: string;
+      encounterType: string;
+      hasSummary?: boolean;
+    }>;
+  }>;
+  otherConceptUuid: string;
+  drugOrderTypeUUID: string;
+}

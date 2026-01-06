@@ -1,0 +1,57 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.diagnosesText {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-05;
+}
+
+.tagWrapper {
+  display: inline-flex;
+  /* Makes the wrapper behave like the tag for the mouse */
+  height: fit-content;
+  width: fit-content;
+}
+
+.tag {
+  max-width: layout.rem(320px);
+  margin: 0 !important;
+  /* Prevents internal Carbon elements from stealing hover event */
+  pointer-events: none;
+
+  :global(.cds--tag__label) {
+    display: flex;
+    align-items: center;
+    max-width: 100%;
+  }
+}
+
+.tagContent {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02; 
+  width: 100%;
+}
+
+.textLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.confirmedIcon {
+  color: colors.$green-60;
+}
+
+.presumedIcon {
+  color: colors.$orange-60;
+}

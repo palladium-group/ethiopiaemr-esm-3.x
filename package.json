@@ -13,7 +13,7 @@
     "postinstall": "husky install",
     "prettier": "prettier --config prettier.config.js --write \"packages/**/*.{ts,tsx,css,scss}\" \"e2e/**/*.ts\"",
     "release": "yarn workspaces foreach --all --topological version",
-    "start": "openmrs develop --sources packages/esm-clinical-workflow-app --port 8095",
+    "start": "openmrs develop --sources packages/esm-clinical-workflow-app --port 8095 --config-file ./dev-config.json",
     "test-e2e": "playwright test",
     "verify": "turbo run lint && turbo run typescript"
   },
@@ -24,8 +24,7 @@
     "@types/d3-dispatch": "3.0.6",
     "sass": "^1.54.3",
     "webpack": "5.99.9",
-    "open": "8.4.2",
-    "@openmrs/esm-framework": "next"
+    "open": "8.4.2"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.1.1",

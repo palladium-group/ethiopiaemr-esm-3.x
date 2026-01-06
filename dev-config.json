@@ -1,0 +1,14 @@
+{
+    "@openmrs/esm-patient-chart-app": {
+      "extensionSlots": {
+        "patient-chart-encounters-dashboard-slot": {
+          "remove": [
+            "past-visits-detail-overview"
+          ]
+        }
+      }
+    },
+  "@openmrs/esm-patient-notes-app": {
+    "disabled": true
+  }
+  }
