@@ -27,7 +27,7 @@
 
 .diagnosisList {
   background-color: colors.$white;
-  max-height: layout.rem(320px); 
+  max-height: layout.rem(320px);
   overflow-y: auto;
   border: 1px solid colors.$gray-20;
   display: flex;
@@ -160,10 +160,10 @@
 }
 
 .diagnoserrorOutline {
-  max-width: layout.rem(320px); 
+  max-width: layout.rem(320px);
 
   :global(.cds--search-input):focus {
-    outline: 2px solid colors.$red-60; 
+    outline: 2px solid colors.$red-60;
   }
 
   :global(.cds--search-magnifier) {
@@ -265,7 +265,7 @@
   border-radius: 2px;
   transition: all 0.1s ease;
   cursor: pointer;
-  min-height: layout.$spacing-08; 
+  min-height: layout.$spacing-08;
 
   &:hover {
     background-color: colors.$gray-10;
@@ -287,11 +287,11 @@
   min-width: layout.$spacing-07;
   flex-shrink: 0;
   padding: layout.$spacing-02 layout.$spacing-03;
-  height: layout.$spacing-07; 
+  height: layout.$spacing-07;
 }
 
 .certaintyDropdown {
-  position: relative; 
+  position: relative;
   z-index: 10;
   margin-top: layout.$spacing-02;
   background: colors.$white;
@@ -443,7 +443,7 @@
 
   .diagnosisRow {
     padding: layout.$spacing-03;
-    min-height: layout.$spacing-09; 
+    min-height: layout.$spacing-09;
   }
 
   .certaintyOption {

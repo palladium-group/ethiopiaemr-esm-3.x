@@ -119,6 +119,12 @@
       "group": "patient-chart",
       "icon": "visitNoteActionButton",
       "order": 3
+    },
+    {
+      "name": "patient-transfer",
+      "group": "patient-chart",
+      "icon": "patientTransferActionButton",
+      "order": 4
     }
   ],
   "workspaceGroups2": [

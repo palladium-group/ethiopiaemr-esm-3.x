@@ -7,6 +7,7 @@ import { spaBasePath } from './constants';
 import BillingInformationWorkspace from './mru/billing-information/billing-information.workspace';
 import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
+import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 
 const moduleName = '@ethiopia/esm-clinical-workflow-app';
@@ -70,6 +71,8 @@ export const patientScoreboardLink = getSyncLifecycle(
 export const patientScoreboard = getSyncLifecycle(PatientScoreboard, options);
 
 export const visitNoteActionButton = getSyncLifecycle(visitNotesActionButtonExtension, options);
+
+export const patientTransferActionButton = getSyncLifecycle(patientTransferActionButtonExtension, options);
 
 export const visitNotesFormWorkspace = getAsyncLifecycle(
   () => import('./patient-notes/visit-notes-form-shadow.workspace'),

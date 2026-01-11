@@ -95,6 +95,11 @@ export const configSchema = {
     _description: "UUID for the 'Drug' order type to fetch medications",
     _default: '131168f4-15f5-102d-96e4-000c29c2a5d7',
   },
+  transferPatientFormUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the transfer patient form',
+    _default: '94d5788f-6aaf-4ef6-b56e-1c71749cfa3e',
+  },
 };
 
 export type ClinicalWorkflowConfig = {
@@ -115,6 +120,7 @@ export type ClinicalWorkflowConfig = {
   identifierSourceUuid: string;
   defaultIdentifierTypeUuid: string;
   medicoLegalCasesAttributeTypeUuid: string;
+  transferPatientFormUuid: string;
 };
 
 export interface VisitNoteConfig {
@@ -164,4 +170,5 @@ export interface ChartConfig {
   }>;
   otherConceptUuid: string;
   drugOrderTypeUUID: string;
+  transferPatientFormUuid: string;
 }
