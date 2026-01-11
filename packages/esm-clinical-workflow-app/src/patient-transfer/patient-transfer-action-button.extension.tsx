@@ -1,43 +1,130 @@
-import React, { type ComponentProps, useMemo } from 'react';
+import React, { type ComponentProps, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionMenuButton2, ArrowRightIcon, useConfig } from '@openmrs/esm-framework';
-import { useStartVisitIfNeeded, type PatientChartWorkspaceActionButtonProps } from '@openmrs/esm-patient-common-lib';
+import {
+  ActionMenuButton2,
+  ArrowRightIcon,
+  Encounter,
+  launchWorkspace2,
+  showModal,
+  useConfig,
+} from '@openmrs/esm-framework';
+import {
+  useStartVisitIfNeeded,
+  type PatientChartWorkspaceActionButtonProps,
+  type PatientWorkspaceGroupProps,
+} from '@openmrs/esm-patient-common-lib';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 
-const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = ({
-  groupProps: { patientUuid },
-}) => {
+const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = (props) => {
   const { t } = useTranslation();
   const config = useConfig<ClinicalWorkflowConfig>();
+
+  const groupProps = props?.groupProps;
+  const patientUuid = groupProps?.patientUuid ?? '';
+  const patient = groupProps?.patient;
+  const visitContext = groupProps?.visitContext;
+  const mutateVisitContext = groupProps?.mutateVisitContext;
   const transferFormUuid = config?.transferPatientFormUuid;
+
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
-  const workspaceToLaunch = useMemo(
-    () => ({
-      workspaceName: 'patient-form-entry-workspace' as const,
-      workspaceProps: {
-        workspaceTitle: t('transferPatient', 'Transfer Patient'),
-        form: {
-          uuid: transferFormUuid,
-          display: t('transferPatient', 'Transfer Patient'),
-          name: 'Transfer Patient',
-        },
-        encounterUuid: '', // Empty for new form entry
-        mutateForm: () => {
-          // Optional: Invalidate any cached data after form submission
-          // The form engine will handle visit/encounter data invalidation automatically
-        },
-      },
-    }),
-    [transferFormUuid, t],
+  const handlePostResponse = useCallback(
+    (encounter: Encounter) => {
+      if (!visitContext) {
+        console.warn('Visit context not available for post-save queue modal');
+        return;
+      }
+
+      const dispose = showModal('transition-patient-to-latest-queue-modal', {
+        activeVisit: visitContext,
+        closeModal: () => dispose(),
+      });
+    },
+    [visitContext],
   );
+
+  const handleLaunchWorkspace = useCallback(async () => {
+    const didStartVisit = await startVisitIfNeeded();
+    if (!didStartVisit) {
+      return;
+    }
+
+    if (!visitContext?.uuid || !visitContext?.visitType?.uuid) {
+      console.error('Invalid visit context: visit UUID or visit type UUID is missing');
+      return;
+    }
+
+    if (!patient) {
+      console.error('Patient data is not available');
+      return;
+    }
+
+    launchWorkspace2<
+      {
+        form: { visitUuid: string; uuid: string; visitTypeUuid: string };
+        encounterUuid: string;
+        handlePostResponse?: (encounter: Encounter) => void;
+      },
+      {
+        patient: typeof patient;
+        patientUuid: string;
+        visitContext: typeof visitContext;
+        mutateVisitContext: typeof mutateVisitContext | null;
+      },
+      PatientWorkspaceGroupProps
+    >(
+      'patient-transfer-form-entry-workspace',
+      {
+        form: {
+          visitUuid: visitContext.uuid,
+          uuid: transferFormUuid ?? '',
+          visitTypeUuid: visitContext.visitType.uuid,
+        },
+        encounterUuid: '',
+        handlePostResponse,
+      },
+      {
+        patient: patient!,
+        patientUuid,
+        visitContext,
+        mutateVisitContext: mutateVisitContext || null,
+      },
+    );
+  }, [
+    patientUuid,
+    patient,
+    visitContext,
+    mutateVisitContext,
+    transferFormUuid,
+    handlePostResponse,
+    startVisitIfNeeded,
+  ]);
+
+  if (!groupProps?.patientUuid || !patient) {
+    return null;
+  }
 
   return (
     <ActionMenuButton2
       icon={(iconProps: ComponentProps<typeof ArrowRightIcon>) => <ArrowRightIcon {...iconProps} />}
       label={t('transferPatient', 'Transfer Patient')}
-      workspaceToLaunch={workspaceToLaunch}
-      onBeforeWorkspaceLaunch={startVisitIfNeeded}
+      workspaceToLaunch={{
+        workspaceName: 'patient-form-entry-workspace' as const,
+        workspaceProps: {
+          form: {
+            uuid: transferFormUuid ?? '',
+            display: t('transferPatient', 'Transfer Patient'),
+            name: 'Transfer Patient',
+          },
+          encounterUuid: '',
+        },
+      }}
+      onBeforeWorkspaceLaunch={async () => {
+        handleLaunchWorkspace().catch((error) => {
+          console.error('Error launching transfer form workspace:', error);
+        });
+        return false;
+      }}
     />
   );
 };

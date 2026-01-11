@@ -102,6 +102,11 @@
       "window": "clinical-workflow-window"
     },
     {
+      "name": "patient-transfer-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "patient-transfer"
+    },
+    {
       "name": "visit-notes-form-shadow-workspace",
       "component": "visitNotesFormWorkspace",
       "window": "visit-note-shadow"
