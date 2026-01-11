@@ -74,6 +74,11 @@ export const visitNoteActionButton = getSyncLifecycle(visitNotesActionButtonExte
 
 export const patientTransferActionButton = getSyncLifecycle(patientTransferActionButtonExtension, options);
 
+export const confirmTransferDialog = getAsyncLifecycle(
+  () => import('./patient-transfer/confirm-transfer-dialog.modal'),
+  options,
+);
+
 export const visitNotesFormWorkspace = getAsyncLifecycle(
   () => import('./patient-notes/visit-notes-form-shadow.workspace'),
   options,

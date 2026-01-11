@@ -138,5 +138,11 @@
       "overlay": true,
       "persistence": "closable"
     }
+  ],
+  "modals": [
+    {
+      "name": "confirm-transfer-dialog",
+      "component": "confirmTransferDialog"
+    }
   ]
 }

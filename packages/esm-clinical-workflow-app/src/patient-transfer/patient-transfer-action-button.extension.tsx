@@ -31,11 +31,11 @@ const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonPro
   const handlePostResponse = useCallback(
     (encounter: Encounter) => {
       if (!visitContext) {
-        console.warn('Visit context not available for post-save queue modal');
         return;
       }
 
-      const dispose = showModal('transition-patient-to-latest-queue-modal', {
+      // Show confirmation dialog asking if physician wants to move patient to queue
+      const dispose = showModal('confirm-transfer-dialog', {
         activeVisit: visitContext,
         closeModal: () => dispose(),
       });
