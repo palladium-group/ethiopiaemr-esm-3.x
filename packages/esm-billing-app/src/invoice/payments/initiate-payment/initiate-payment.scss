@@ -1,0 +1,48 @@
+@use '@carbon/styles/scss/spacing';
+@use '@carbon/styles/scss/type';
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '~@openmrs/esm-styleguide/src/vars' as *;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.section {
+  margin: spacing.$spacing-03;
+}
+
+.sectionTitle {
+  @include type.type-style('heading-compact-02');
+  color: $text-02;
+  margin-bottom: spacing.$spacing-04;
+}
+
+.button_spinner {
+  padding: 0;
+  margin-right: layout.$spacing-04;
+}
+
+.button {
+  height: layout.$spacing-10;
+  display: flex;
+  align-content: flex-start;
+  align-items: baseline;
+  min-width: 20%;
+}
+
+.buttonSet {
+  padding: 0rem;
+  margin-top: layout.$spacing-05;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: layout.$spacing-05;
+}
+
+.heading {
+  @include type.type-style('heading-02');
+}
