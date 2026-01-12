@@ -1,14 +1,40 @@
 {
-    "@openmrs/esm-patient-chart-app": {
-      "extensionSlots": {
-        "patient-chart-encounters-dashboard-slot": {
-          "remove": [
-            "past-visits-detail-overview"
-          ]
-        }
+  "@openmrs/esm-patient-chart-app": {
+    "extensionSlots": {
+      "patient-chart-encounters-dashboard-slot": {
+        "remove": [
+          "past-visits-detail-overview"
+        ]
       }
-    },
+    }
+  },
   "@openmrs/esm-patient-notes-app": {
     "disabled": true
+  },
+  "@openmrs/esm-service-queues-app": {
+    
+    "queueTables": {
+      "columnDefinitions": [
+        {
+          "id": "transfer-status",
+          "columnType": "extension",
+          "header": "Transfer"
+        }
+      ],
+      "tableDefinitions": [
+        {
+          "columns": [
+            "patient-name",
+            "coming-from",
+            "priority",
+            "status",
+            "transfer-status",
+            "queue",
+            "wait-time",
+            "actions"
+          ]
+        }
+      ]
+    }
   }
-  }
+}

@@ -92,6 +92,7 @@
   "medicoLegalCases": "Medico Legal Cases",
   "middleName": "Middle Name",
   "months": "Months",
+  "moveToQueueQuestion": "Do you want to move the patient to a queue now?",
   "name": "Name",
   "nextPage": "Next page",
   "noDiagnosesFound": "No diagnoses found",
@@ -150,6 +151,7 @@
   "timeCompleted": "Time completed",
   "timeline": "Timeline",
   "timeStarted": "Time started",
+  "transferFormSaved": "Patient transfer form saved",
   "transferPatient": "Transfer Patient",
   "triageDashboard": "Triage Dashboard",
   "triageForm": "Triage form",
@@ -165,5 +167,6 @@
   "Visits": "Visits",
   "visitType": "Visit Type",
   "years": "Years",
+  "yesMoveToQueue": "Yes, move to queue",
   "zone": "Zone"
 }

@@ -88,3 +88,13 @@ export const pastVisitsDetailOverviewShadow = getSyncLifecycle(pastVisitsOvervie
   featureName: 'visits-detail-overview',
   moduleName,
 });
+
+export const queueTableTransferColumn = getAsyncLifecycle(
+  () => import('./patient-transfer/queue-table-transfer-column.component'),
+  options,
+);
+
+export const patientTransferDetailsModal = getAsyncLifecycle(
+  () => import('./patient-transfer/transfer-details.modal'),
+  options,
+);

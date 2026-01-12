@@ -24,7 +24,7 @@ const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonPro
   const patient = groupProps?.patient;
   const visitContext = groupProps?.visitContext;
   const mutateVisitContext = groupProps?.mutateVisitContext;
-  const transferFormUuid = config?.transferPatientFormUuid;
+  const transferFormUuid = config?.patientTransferFormUuid;
 
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
