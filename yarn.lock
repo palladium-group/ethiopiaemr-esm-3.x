@@ -3561,7 +3561,7 @@ __metadata:
     lodash-es: "npm:^4.17.15"
     react-to-print: "npm:2.14.13"
   peerDependencies:
-    "@carbon/react": 1.x
+    "@carbon/react": ^1.83.0
     "@openmrs/esm-framework": 8.x
     react: ^18.1.0
     react-i18next: 11.x
