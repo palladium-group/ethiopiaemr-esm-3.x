@@ -103,7 +103,7 @@ export const configSchema = {
   transferEncounterTypeUuid: {
     _type: Type.UUID,
     _description: 'UUID of the Intra-Hospital Transfer encounter type',
-    _default: '465a92f2-baf8-42e9-9612-53064be868e8',
+    _default: '7b68d557-85ef-4fc8-b767-4fa4f5eb5c23',
   },
   transferNoteConceptUuid: {
     _type: Type.UUID,

@@ -1,13 +1,7 @@
 import React, { type ComponentProps, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActionMenuButton2,
-  ArrowRightIcon,
-  Encounter,
-  launchWorkspace2,
-  showModal,
-  useConfig,
-} from '@openmrs/esm-framework';
+import { ArrowsHorizontal } from '@carbon/react/icons';
+import { ActionMenuButton2, Encounter, launchWorkspace2, showModal, useConfig } from '@openmrs/esm-framework';
 import {
   useStartVisitIfNeeded,
   type PatientChartWorkspaceActionButtonProps,
@@ -106,7 +100,7 @@ const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonPro
 
   return (
     <ActionMenuButton2
-      icon={(iconProps: ComponentProps<typeof ArrowRightIcon>) => <ArrowRightIcon {...iconProps} />}
+      icon={(iconProps: ComponentProps<typeof ArrowsHorizontal>) => <ArrowsHorizontal {...iconProps} />}
       label={t('transferPatient', 'Transfer Patient')}
       workspaceToLaunch={{
         workspaceName: 'patient-form-entry-workspace' as const,
