@@ -1,11 +1,10 @@
 import React, { useCallback } from 'react';
 import { Edit } from '@carbon/react/icons';
-import { launchWorkspace } from '@openmrs/esm-framework';
+import { launchWorkspace, useVisit } from '@openmrs/esm-framework';
 import { BaseOrderButton } from './base-order-button.component';
 import { useMedicationOrderAction, useOrderByUuid } from '../hooks/useMedicationOrderAction';
 import { launchPrescriptionEditWorkspace, navigateAndLaunchWorkspace } from '../hooks/useModalHandler';
 import { useTranslation } from 'react-i18next';
-import { useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib/src';
 import { Button } from '@carbon/react';
 import styles from './medication-order-button.scss';
 
@@ -77,7 +76,7 @@ export const MedicationOrderButton: React.FC<MedicationOrderButtonProps> = ({
   } = useMedicationOrderAction(medicationRequestBundle);
   const { data: order, isLoading: isOrderLoading } = useOrderByUuid(medicationRequestBundle?.request?.id);
   const isLoading = isMedicationOrderLoading && isOrderLoading;
-  const { activeVisit: currentVisit } = useVisitOrOfflineVisit(patientUuid);
+  const { activeVisit: currentVisit } = useVisit(patientUuid);
   const buttonText = actionText ?? defaultButtonText;
 
   const launchModal = useCallback(() => {
