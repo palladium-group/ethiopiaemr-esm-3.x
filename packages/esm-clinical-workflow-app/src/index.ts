@@ -98,3 +98,8 @@ export const patientTransferDetailsModal = getAsyncLifecycle(
   () => import('./patient-transfer/transfer-details.modal'),
   options,
 );
+
+export const transferNotesOverview = getAsyncLifecycle(
+  () => import('./patient-transfer/transfer-notes-overview.extension'),
+  options,
+);

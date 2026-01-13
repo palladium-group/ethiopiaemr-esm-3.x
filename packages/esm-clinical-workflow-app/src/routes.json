@@ -76,6 +76,15 @@
       "name": "queue-table-transfer-column",
       "component": "queueTableTransferColumn",
       "slot": "queue-table-transfer-status-slot"
+    },
+    {
+      "name": "transfer-notes-overview-widget",
+      "component": "transferNotesOverview",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "meta": {
+        "fullWidth": false
+      },
+      "order": 6
     }
   ],
   "workspaces": [
@@ -134,7 +143,9 @@
       "name": "patient-transfer",
       "group": "patient-chart",
       "icon": "patientTransferActionButton",
-      "order": 4
+      "order": 4,
+      "width": "wider",
+      "canMaximize": true
     }
   ],
   "workspaceGroups2": [
