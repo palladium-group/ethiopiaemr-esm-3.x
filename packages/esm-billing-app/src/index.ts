@@ -2,7 +2,7 @@ import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle, registerFeatur
 
 import { configSchema } from './config-schema';
 import { accountingDashboardMeta } from './dashboard.meta';
-const moduleName = '@kenyaemr/esm-billing-app';
+const moduleName = '@palladium-ethiopia/esm-billing-app';
 const options = {
   featureName: 'billing',
   moduleName,

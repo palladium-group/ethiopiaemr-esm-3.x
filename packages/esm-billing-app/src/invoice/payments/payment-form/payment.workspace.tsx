@@ -29,7 +29,7 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { formMethods, paymentSchema } = usePaymentForm(t, bill.balance);
+  const { formMethods, paymentSchema } = usePaymentForm((key, defaultValue) => t(key, defaultValue), bill.balance);
 
   type PaymentFormData = z.infer<typeof paymentSchema>;
 

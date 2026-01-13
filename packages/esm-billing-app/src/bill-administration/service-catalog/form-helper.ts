@@ -210,7 +210,9 @@ export function createExcelTemplateFile(): Uint8Array {
 
 export const downloadExcelTemplateFile = () => {
   const excelBuffer = createExcelTemplateFile();
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const blob = new Blob([new Uint8Array(excelBuffer)], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.style.display = 'none';

@@ -12,7 +12,7 @@ import {
 
 const options = {
   featureName: 'billing-admin',
-  moduleName: '@kenyaemr/esm-billing-app',
+  moduleName: '@palladium-ethiopia/esm-billing-app',
 };
 
 // Bill Deposit Components
