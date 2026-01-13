@@ -1,5 +1,5 @@
 import { launchWorkspace, navigate, getGlobalStore } from '@openmrs/esm-framework';
-import { getPatientChartStore, Order } from '@openmrs/esm-patient-common-lib';
+import { Order } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { mutate } from 'swr';
 
@@ -65,11 +65,6 @@ export const launchPrescriptionEditWorkspace = (order: Order, patientUuid: strin
       valueCoded: order.quantityUnits?.uuid,
     },
   };
-
-  const store = getPatientChartStore();
-  store.setState({
-    patientUuid,
-  });
 
   const targetUrl = `\${openmrsSpaBase}/patient/${patientUuid}/chart/Medications`;
   const workspaceName = 'add-drug-order';

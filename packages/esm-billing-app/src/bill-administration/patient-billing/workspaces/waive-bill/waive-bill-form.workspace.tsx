@@ -20,14 +20,16 @@ import { mutate } from 'swr';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
 import first from 'lodash-es/first';
 import classNames from 'classnames';
 import { useCurrencyFormatting } from '../../../../helpers/currency';
 import { extractString } from '../../../../helpers';
 
-type BillWaiverFormProps = DefaultPatientWorkspaceProps & {
+type BillWaiverFormProps = {
   bill: MappedBill;
+  closeWorkspace: () => void;
+  closeWorkspaceWithSavedChanges?: () => void;
+  promptBeforeClosing?: (testFcn: () => boolean) => void;
 };
 
 export const WaiveBillForm: React.FC<BillWaiverFormProps> = ({

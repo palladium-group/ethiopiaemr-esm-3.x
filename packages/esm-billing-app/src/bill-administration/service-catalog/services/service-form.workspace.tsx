@@ -15,7 +15,6 @@ import { Controller, useFieldArray, useForm, FormProvider } from 'react-hook-for
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useLayoutType, useDebounce, ResponsiveWrapper, showSnackbar, restBaseUrl } from '@openmrs/esm-framework';
-import { DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
 
 import { createBillableService, useConceptsSearch, useServiceTypes } from '../billable-service.resource';
 import PriceField from './price.component';
@@ -27,8 +26,12 @@ import { formatBillableServicePayloadForSubmission, mapInputToPayloadSchema } fr
 import ConceptSearch from './concept-search.component';
 import { handleMutate } from '../../../billable-services/utils';
 
-interface AddServiceFormProps extends DefaultPatientWorkspaceProps {
+interface AddServiceFormProps {
   initialValues?: BillableFormSchema;
+  closeWorkspace: () => void;
+  closeWorkspaceWithSavedChanges?: () => void;
+  promptBeforeClosing?: (testFcn: () => boolean) => void;
+  onWorkspaceClose?: () => void;
 }
 
 const AddServiceForm: React.FC<AddServiceFormProps> = ({

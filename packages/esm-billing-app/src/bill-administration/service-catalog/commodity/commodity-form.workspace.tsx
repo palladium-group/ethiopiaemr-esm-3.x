@@ -5,7 +5,6 @@ import { Add } from '@carbon/react/icons';
 import { useForm, FormProvider, useFieldArray, Controller } from 'react-hook-form';
 
 import { useLayoutType, ResponsiveWrapper, showSnackbar, restBaseUrl } from '@openmrs/esm-framework';
-import { DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
 import styles from './commodity-form.scss';
 import StockItemSearch from './stock-search.component';
 import classNames from 'classnames';
@@ -16,8 +15,11 @@ import { formatBillableServicePayloadForSubmission, mapInputToPayloadSchema } fr
 import { createBillableService } from '../billable-service.resource';
 import { handleMutate } from '../../../billable-services/utils';
 
-type CommodityFormProps = DefaultPatientWorkspaceProps & {
+type CommodityFormProps = {
   initialValues?: BillableFormSchema;
+  closeWorkspace: () => void;
+  closeWorkspaceWithSavedChanges?: () => void;
+  promptBeforeClosing?: (testFcn: () => boolean) => void;
 };
 
 const CommodityForm: React.FC<CommodityFormProps> = ({

@@ -14,7 +14,7 @@ import {
 import { Add, Close } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
 import { ConfigurableLink, getPatientName, usePatient, setCurrentVisit } from '@openmrs/esm-framework';
-import { getPatientChartStore, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import capitalize from 'lodash/capitalize';
 
 import { type MappedBill } from '../types';
@@ -130,20 +130,12 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient, onCancel 
   const { t } = useTranslation();
   const patientName = getPatientName(patient);
   const identifier = patient?.identifier[0]?.value ?? '--';
-  const state = useMemo(() => ({ patient, patientUuid: patient.id }), [patient]);
-  const launchPatientWorkspace = useLaunchWorkspaceRequiringVisit('billing-form');
+  const launchPatientWorkspace = useLaunchWorkspaceRequiringVisit(patient.id, 'billing-form');
 
   const handleAddNewBill = () => {
     setCurrentVisit(patient.id, null);
     launchPatientWorkspace({ workspaceTitle: t('billingForm', 'Billing Form'), patientUuid: patient.id, patient });
   };
-
-  useEffect(() => {
-    getPatientChartStore().setState({ ...state });
-    return () => {
-      getPatientChartStore().setState({});
-    };
-  }, [state]);
 
   return (
     <div className={styles.patientHeaderContainer}>

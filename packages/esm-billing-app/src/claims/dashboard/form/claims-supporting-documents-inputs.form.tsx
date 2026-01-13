@@ -76,11 +76,8 @@ const ClaimsSupportingDocumentsInput: FC<{ patientUuid: string }> = ({ patientUu
                   )}
                   labelTitle={t('uploadSupportFiles', 'Upload support files')}
                   name=""
-                  onChange={async ({
-                    target: {
-                      files: [file],
-                    },
-                  }) => {
+                  onChange={async (event: React.ChangeEvent<HTMLInputElement>) => {
+                    const file = event.target.files?.[0];
                     if (file instanceof File) {
                       const oneMBInBytes = 1024 * 1024; // 1MB = 1024 KB * 1024 B/KB
                       if (file.size > oneMBInBytes) {

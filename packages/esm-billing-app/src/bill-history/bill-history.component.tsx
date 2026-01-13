@@ -36,7 +36,7 @@ interface BillHistoryProps {
 const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const { bills, isLoading, error } = useBills(patientUuid);
-  const launchPatientWorkspace = useLaunchWorkspaceRequiringVisit('billing-form');
+  const launchPatientWorkspace = useLaunchWorkspaceRequiringVisit(patientUuid, 'billing-form');
   const layout = useLayoutType();
   const [pageSize, setPageSize] = React.useState(10);
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
