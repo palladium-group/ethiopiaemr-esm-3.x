@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { mutate } from 'swr';
-import { getPatientUuidFromStore } from '@openmrs/esm-patient-common-lib';
 import { type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
   Button,
@@ -29,6 +28,7 @@ import { type BillingService } from '../types';
 import { type BillingConfig } from '../config-schema';
 
 import styles from './billing-form.scss';
+import { useParams } from 'react-router-dom';
 
 type BillingFormProps = DefaultWorkspaceProps & {
   patientUuid: string;
@@ -38,7 +38,8 @@ type FormType = z.infer<typeof billingFormSchema>;
 
 const BillingForm: React.FC<BillingFormProps> = ({ closeWorkspace, patientUuid: patientUuidProp }) => {
   const { t } = useTranslation();
-  const patientUuid = patientUuidProp || getPatientUuidFromStore();
+  const { patientUuid: patientUuidParam = '' } = useParams();
+  const patientUuid = patientUuidProp || patientUuidParam;
   const { billableServices, error, isLoading } = useBillableServices();
   const [searchTermValue, setSearchTermValue] = useState('');
   const { cashPointUuid, cashierUuid } = useConfig<BillingConfig>();

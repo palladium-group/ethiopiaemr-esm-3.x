@@ -1,12 +1,12 @@
 import { Button, DataTableSkeleton } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { getPatientUuidFromStore } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreAuthRequests } from '../../hooks/use-pre-auth-requests';
 import GenericDataTable from './generic_data_table.component';
 import { formatDate, launchWorkspace, parseDate } from '@openmrs/esm-framework';
 import { useFacilityClaims } from '../../claims/claims-management/table/use-facility-claims';
+import { useParams } from 'react-router-dom';
 
 const headers = [
   {
@@ -37,7 +37,7 @@ const headers = [
 
 const BenefitsTable = () => {
   const { t } = useTranslation();
-  const patientUuid = getPatientUuidFromStore();
+  const { patientUuid } = useParams();
   const { isLoading } = usePreAuthRequests();
 
   const { claims } = useFacilityClaims();
