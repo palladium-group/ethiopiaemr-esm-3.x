@@ -1,0 +1,88 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.widgetCard {
+  background-color: $ui-background;
+  border: 1px solid colors.$gray-20;
+  position: relative;
+}
+
+.tableContainer {
+  padding: 0 layout.$spacing-05;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  margin: layout.$spacing-03;
+}
+
+.copy {
+  @include type.type-style('body-01');
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  @include type.type-style('body-01');
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.observationRow {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: layout.$spacing-03;
+  padding-bottom: layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
+
+  &:last-of-type {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}
+
+.observationLabel {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  margin-bottom: layout.$spacing-02;
+  color: $text-02;
+  letter-spacing: 0.01em;
+}
+
+.observationValue {
+  @include type.type-style('body-01');
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.metadata {
+  @include type.type-style('label-01');
+  color: $text-02;
+  margin-top: layout.$spacing-05;
+  padding-top: layout.$spacing-03;
+  border-top: 1px solid colors.$gray-20;
+}
+
+.expandedRow {
+  > td {
+    padding-left: layout.$spacing-08 !important;
+  }
+
+  > td > div {
+    max-height: max-content !important;
+  }
+
+  th[colspan] td[colspan] > div:first-child {
+    padding: 0 layout.$spacing-05;
+  }
+}
+
+.hiddenRow {
+  display: none;
+}
+
