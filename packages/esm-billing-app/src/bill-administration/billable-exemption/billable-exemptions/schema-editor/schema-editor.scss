@@ -1,0 +1,36 @@
+@use '@carbon/colors';
+@use '@carbon/type';
+@use '@carbon/layout';
+
+.validationErrorsContainer {
+  display: flex;
+  gap: layout.$spacing-03;
+
+  :global(.cds--actionable-notification) {
+    max-width: 100%;
+  }
+  :global(.cds--actionable-notification__details) {
+    margin: 0 0rem 0 layout.$spacing-04 !important;
+  }
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  font-size: layout.$spacing-04;
+
+  .paginationIcon {
+    fill: colors.$blue-50;
+    cursor: pointer;
+  }
+
+  .disabledIcon {
+    fill: colors.$gray-40;
+    cursor: not-allowed;
+  }
+}
+
+.hasErrors {
+  border: layout.$spacing-02 solid colors.$red-60;
+}

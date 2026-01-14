@@ -1,0 +1,51 @@
+{
+  "name": "@palladium-ethiopia/esm-billing-app",
+  "version": "1.0.0",
+  "description": "Billing app for EthiopiaEMR",
+  "keywords": [
+    "openmrs"
+  ],
+  "homepage": "https://github.com/palladium-group/ethiopiaemr-esm-3.x#readme",
+  "bugs": {
+    "url": "https://github.com/palladium-group/ethiopiaemr-esm-3.x/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palladium-group/ethiopiaemr-esm-3.x.git"
+  },
+  "license": "MPL-2.0",
+  "main": "src/index.ts",
+  "source": true,
+  "browser": "dist/ethiopia-esm-billing-app.js",
+  "scripts": {
+    "analyze": "rspack --mode=production --env analyze=true",
+    "build": "rspack --mode=production",
+    "coverage": "yarn test --coverage",
+    "debug": "npm run serve",
+    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/index.ts' --config ../../tools/i18next-parser.config.js",
+    "lint": "eslint src --ext ts,tsx",
+    "serve": "rspack serve --mode=development",
+    "start": "openmrs develop",
+    "test": "cross-env TZ=UTC jest --config jest.config.js --verbose false --passWithNoTests",
+    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js",
+    "typescript": "tsc"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "dependencies": {
+    "lodash-es": "^4.17.15",
+    "react-to-print": "2.14.13"
+  },
+  "peerDependencies": {
+    "@carbon/react": "^1.83.0",
+    "@openmrs/esm-framework": "8.x",
+    "react": "^18.1.0",
+    "react-i18next": "11.x",
+    "react-router-dom": "6.x",
+    "swr": "2.x"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
