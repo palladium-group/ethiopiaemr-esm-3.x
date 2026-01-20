@@ -95,6 +95,21 @@ export const configSchema = {
     _description: "UUID for the 'Drug' order type to fetch medications",
     _default: '131168f4-15f5-102d-96e4-000c29c2a5d7',
   },
+  patientTransferFormUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the patient transfer form',
+    _default: '94d5788f-6aaf-4ef6-b56e-1c71749cfa3e',
+  },
+  transferEncounterTypeUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the Intra-Hospital Transfer encounter type',
+    _default: '7b68d557-85ef-4fc8-b767-4fa4f5eb5c23',
+  },
+  transferNoteConceptUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the Transfer Note concept',
+    _default: 'f4162fe3-f7e3-4062-9bb3-aa1a4b1044a5',
+  },
 };
 
 export type ClinicalWorkflowConfig = {
@@ -115,6 +130,9 @@ export type ClinicalWorkflowConfig = {
   identifierSourceUuid: string;
   defaultIdentifierTypeUuid: string;
   medicoLegalCasesAttributeTypeUuid: string;
+  patientTransferFormUuid: string;
+  transferEncounterTypeUuid: string;
+  transferNoteConceptUuid: string;
 };
 
 export interface VisitNoteConfig {
@@ -164,4 +182,7 @@ export interface ChartConfig {
   }>;
   otherConceptUuid: string;
   drugOrderTypeUUID: string;
+  patientTransferFormUuid: string;
+  transferEncounterTypeUuid: string;
+  transferNoteConceptUuid: string;
 }

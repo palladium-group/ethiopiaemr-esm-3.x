@@ -7,6 +7,7 @@ import { spaBasePath } from './constants';
 import BillingInformationWorkspace from './mru/billing-information/billing-information.workspace';
 import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
+import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 
 const moduleName = '@ethiopia/esm-clinical-workflow-app';
@@ -71,6 +72,13 @@ export const patientScoreboard = getSyncLifecycle(PatientScoreboard, options);
 
 export const visitNoteActionButton = getSyncLifecycle(visitNotesActionButtonExtension, options);
 
+export const patientTransferActionButton = getSyncLifecycle(patientTransferActionButtonExtension, options);
+
+export const confirmTransferDialog = getAsyncLifecycle(
+  () => import('./patient-transfer/confirm-transfer-dialog.modal'),
+  options,
+);
+
 export const visitNotesFormWorkspace = getAsyncLifecycle(
   () => import('./patient-notes/visit-notes-form-shadow.workspace'),
   options,
@@ -80,3 +88,18 @@ export const pastVisitsDetailOverviewShadow = getSyncLifecycle(pastVisitsOvervie
   featureName: 'visits-detail-overview',
   moduleName,
 });
+
+export const queueTableTransferColumn = getAsyncLifecycle(
+  () => import('./patient-transfer/queue-table-transfer-column.component'),
+  options,
+);
+
+export const patientTransferDetailsModal = getAsyncLifecycle(
+  () => import('./patient-transfer/transfer-details.modal'),
+  options,
+);
+
+export const transferNotesOverview = getAsyncLifecycle(
+  () => import('./patient-transfer/transfer-notes-overview.extension'),
+  options,
+);

@@ -3554,6 +3554,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-billing-app@workspace:packages/esm-billing-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-billing-app@workspace:packages/esm-billing-app"
+  dependencies:
+    lodash-es: "npm:^4.17.15"
+    react-to-print: "npm:2.14.13"
+  peerDependencies:
+    "@carbon/react": ^1.83.0
+    "@openmrs/esm-framework": 8.x
+    react: ^18.1.0
+    react-i18next: 11.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-clinical-workflow-app@workspace:packages/esm-clinical-workflow-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-clinical-workflow-app@workspace:packages/esm-clinical-workflow-app"
@@ -17469,6 +17485,16 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
   checksum: 10/a82d9ba6fdb9a922cb0820de2678be548fa08fc011a9b0be35f3a0022049219810ce1696b7b9104db907b3103233143801649b584d8a06fec582dfb78c81dcf9
+  languageName: node
+  linkType: hard
+
+"react-to-print@npm:2.14.13":
+  version: 2.14.13
+  resolution: "react-to-print@npm:2.14.13"
+  peerDependencies:
+    react: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
+    react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
+  checksum: 10/cc4e438b5b7e5c67a73ca3d87ff0f1b5a550a7e6c1a1911cded14c9591b286efd82029bd0447e016b0b404f274d546a108e760fd7867e6b73342dba450282a29
   languageName: node
   linkType: hard
 

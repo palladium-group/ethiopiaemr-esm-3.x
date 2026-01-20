@@ -1,0 +1,18 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.container {
+  padding: layout.$spacing-05;
+}
+
+.header {
+  margin-bottom: layout.$spacing-06;
+
+  h3 {
+    @include type.type-style('heading-03');
+    font-weight: 600;
+    margin: 0;
+  }
+}

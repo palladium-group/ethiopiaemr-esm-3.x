@@ -71,6 +71,20 @@
       },
       "online": true,
       "offline": true
+    },
+    {
+      "name": "queue-table-transfer-column",
+      "component": "queueTableTransferColumn",
+      "slot": "queue-table-transfer-status-slot"
+    },
+    {
+      "name": "transfer-notes-overview-widget",
+      "component": "transferNotesOverview",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "meta": {
+        "fullWidth": false
+      },
+      "order": 6
     }
   ],
   "workspaces": [
@@ -102,6 +116,11 @@
       "window": "clinical-workflow-window"
     },
     {
+      "name": "patient-transfer-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "patient-transfer"
+    },
+    {
       "name": "visit-notes-form-shadow-workspace",
       "component": "visitNotesFormWorkspace",
       "window": "visit-note-shadow"
@@ -119,6 +138,14 @@
       "group": "patient-chart",
       "icon": "visitNoteActionButton",
       "order": 3
+    },
+    {
+      "name": "patient-transfer",
+      "group": "patient-chart",
+      "icon": "patientTransferActionButton",
+      "order": 4,
+      "width": "wider",
+      "canMaximize": true
     }
   ],
   "workspaceGroups2": [
@@ -126,6 +153,16 @@
       "name": "clinical-workflow-group",
       "overlay": true,
       "persistence": "closable"
+    }
+  ],
+  "modals": [
+    {
+      "name": "confirm-transfer-dialog",
+      "component": "confirmTransferDialog"
+    },
+    {
+      "name": "patient-transfer-details-modal",
+      "component": "patientTransferDetailsModal"
     }
   ]
 }

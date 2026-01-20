@@ -1,0 +1,62 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.shaStatusContainer {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
+.navDivider {
+  background-color: var(--brand-03);
+  width: 0.05rem;
+  height: 1.5rem;
+}
+
+.tag {
+  margin: layout.$spacing-02 0;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.statusTag {
+  @extend .tag;
+  @include type.type-style('label-01');
+  color: colors.$green-80;
+  background-color: colors.$green-20;
+}
+
+.activeTag {
+  @extend .tag;
+  @include type.type-style('label-01');
+  color: colors.$green-80;
+  background-color: colors.$green-20;
+}
+
+.inactiveTag {
+  @extend .tag;
+  @include type.type-style('label-01');
+  color: colors.$red-80;
+  background-color: colors.$red-20;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.statusBackgroundColor {
+  background-color: colors.$green-20;
+}
+
+.separator {
+  margin: 0 layout.$spacing-02;
+}
+
+.schemeName {
+  @include type.type-style('label-01');
+  color: colors.$gray-100;
+  font-weight: 600;
+  margin-right: layout.$spacing-02;
+}
