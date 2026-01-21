@@ -21,8 +21,6 @@ import {
   buildPatientRegistrationPayload,
   calculateDOBFromAgeFields,
 } from './patient-registration.resource';
-import { useStartVisitAndLaunchTriageForm } from '../triage/useStartVisitAndLaunchTriageForm';
-import { getTriageFormForLocation } from '../triage/triage.resource';
 import { useGenerateIdentifier } from './useGenerateIdentifier';
 import styles from './patient.registration.workspace.scss';
 import classNames from 'classnames';
@@ -102,18 +100,10 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
-  const {
-    visitTypeUuid,
-    identifierSourceUuid,
-    defaultIdentifierTypeUuid,
-    triageLocationForms,
-    medicoLegalCasesAttributeTypeUuid,
-  } = useConfig<ClinicalWorkflowConfig>();
+  const { visitTypeUuid, identifierSourceUuid, defaultIdentifierTypeUuid, medicoLegalCasesAttributeTypeUuid } =
+    useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
-
-  const triageFormConfig = getTriageFormForLocation(sessionLocation?.uuid, triageLocationForms);
 
   const {
     control,
@@ -184,7 +174,6 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
         sessionLocation.uuid,
         data.isMedicoLegalCase,
         medicoLegalCasesAttributeTypeUuid,
-        triageFormConfig?.name,
       );
 
       const patient = await registerNewPatient(registrationPayload);
@@ -199,19 +188,6 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
           isLowContrast: true,
         });
 
-        if (triageFormConfig) {
-          await handleStartVisitAndLaunchTriageForm(patientUuid, triageFormConfig.formUuid, triageFormConfig.name);
-        } else {
-          showSnackbar({
-            title: t('noTriageFormConfigured', 'No triage form configured'),
-            subtitle: t(
-              'noTriageFormConfiguredForLocation',
-              'No triage form is configured for the current location. Please configure a form for this location.',
-            ),
-            kind: 'warning',
-            isLowContrast: true,
-          });
-        }
         closeWorkspaceWithSavedChanges();
       }
     } catch (error) {

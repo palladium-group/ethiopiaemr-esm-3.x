@@ -134,14 +134,13 @@ export const buildPatientRegistrationPayload = (
   locationUuid: string,
   isMedicoLegalCase?: boolean,
   medicoLegalCasesAttributeTypeUuid?: string,
-  triageFormName?: string,
 ) => {
   const { formattedBirthDate, birthdateEstimated } = calculateBirthdate(formData);
 
   const genderCode = formData.gender === 'Male' ? 'M' : 'F';
 
   const attributes: Array<{ attributeType: string; value: string }> = [];
-  if (isMedicoLegalCase === true && medicoLegalCasesAttributeTypeUuid && triageFormName === 'Emergency Triage Form') {
+  if (isMedicoLegalCase === true && medicoLegalCasesAttributeTypeUuid) {
     attributes.push({
       attributeType: medicoLegalCasesAttributeTypeUuid,
       value: 'true',

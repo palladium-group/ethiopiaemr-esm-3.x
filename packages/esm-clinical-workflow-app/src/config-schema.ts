@@ -2,18 +2,38 @@ import { Type } from '@openmrs/esm-framework';
 import notesConfigSchema, { type VisitNoteConfigObject } from './patient-notes/visit-note-config-schema';
 
 export const configSchema = {
-  triageLocationForms: {
+  enforceTriagePrivileges: {
+    _type: Type.Boolean,
+    _description: 'Enable role-based access control for triage variants. When false, privilege checks are bypassed.',
+    _default: false,
+  },
+  triageVariants: {
     _type: Type.Object,
-    _description:
-      'Mapping of location UUIDs to their triage form configurations. Each location can have one triage form.',
+    _description: 'Mapping of triage variants with form configs and required privileges.',
     _default: {
-      '5931b8b4-c259-43b8-8926-efdb43e01209': {
-        formUuid: '35093e6c-f35e-48a7-ae42-17b988d86c17',
+      central: {
+        formUuid: '880a9b3b-0b4e-4cdb-8cd4-725bedd7b81f',
         name: 'Central Triage Form',
+        displayName: 'Central Triage',
+        enabled: true,
+        order: 0,
+        privilege: 'Central Triage Access',
       },
-      'ba685651-ed3b-4e63-9b35-78893060758a': {
-        formUuid: 'ffbe6be3-3b72-4271-a2f4-803907ca4ef4',
+      emergency: {
+        formUuid: '907d122d-151d-4367-980a-ec8b8a5245a7',
         name: 'Emergency Triage Form',
+        displayName: 'Emergency Triage',
+        enabled: true,
+        order: 1,
+        privilege: 'Emergency Triage Access',
+      },
+      pediatric: {
+        formUuid: '',
+        name: 'Pediatric Triage Form',
+        displayName: 'Pediatric Triage',
+        enabled: false,
+        order: 2,
+        privilege: 'Pediatric Triage Access',
       },
     },
   },
@@ -112,14 +132,18 @@ export const configSchema = {
   },
 };
 
+export interface TriageVariantConfig {
+  formUuid: string;
+  name: string;
+  displayName: string;
+  enabled: boolean;
+  order: number;
+  privilege: string;
+}
+
 export type ClinicalWorkflowConfig = {
-  triageLocationForms: Record<
-    string,
-    {
-      formUuid: string;
-      name: string;
-    }
-  >;
+  enforceTriagePrivileges: boolean;
+  triageVariants: Record<string, TriageVariantConfig>;
   billingVisitAttributeTypes: {
     paymentMethod: string;
     creditType: string;

@@ -1,3 +1,4 @@
+import React from 'react';
 import { defineConfigSchema, getAsyncLifecycle, getGlobalStore, getSyncLifecycle } from '@openmrs/esm-framework';
 import { createDashboardLink } from './createDashboardLink';
 import { configSchema } from './config-schema';
@@ -9,6 +10,8 @@ import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
+import TriageVariantPage from './triage/variants/triage-variant.page';
+import type { ClinicalWorkflowConfig } from './config-schema';
 
 const moduleName = '@ethiopia/esm-clinical-workflow-app';
 
@@ -40,8 +43,41 @@ export function startupApp() {
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
-export const triageDashboardLink = getSyncLifecycle(createDashboardLink(dashboardMeta), options);
-export const triageDashboard = getAsyncLifecycle(() => import('./triage/triage-dashboard.component'), options);
+const createTriageVariantPage = (variant: string) => () => {
+  return React.createElement(TriageVariantPage, { variant });
+};
+
+export const centralTriagePage = getSyncLifecycle(createTriageVariantPage('central'), options);
+export const emergencyTriagePage = getSyncLifecycle(createTriageVariantPage('emergency'), options);
+export const pediatricTriagePage = getSyncLifecycle(createTriageVariantPage('pediatric'), options);
+
+export const centralTriageDashboardLink = getSyncLifecycle(
+  createDashboardLink({
+    path: 'triage-central',
+    title: 'Central Triage',
+    basePath: spaBasePath,
+  }),
+  options,
+);
+
+export const emergencyTriageDashboardLink = getSyncLifecycle(
+  createDashboardLink({
+    path: 'triage-emergency',
+    title: 'Emergency Triage',
+    basePath: spaBasePath,
+  }),
+  options,
+);
+
+export const pediatricTriageDashboardLink = getSyncLifecycle(
+  createDashboardLink({
+    path: 'triage-pediatric',
+    title: 'Pediatric Triage',
+    basePath: spaBasePath,
+  }),
+  options,
+);
+
 export const patientRegistrationWorkspace = getAsyncLifecycle(
   () => import('./patient-registration/patient.registration.workspace'),
   options,

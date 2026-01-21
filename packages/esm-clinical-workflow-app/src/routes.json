@@ -4,23 +4,53 @@
     "fhir2": ">=1.2",
     "webservices.rest": "^2.24.0"
   },
-  "pages": [],
+  "pages": [
+    {
+      "component": "centralTriagePage",
+      "route": "triage-central"
+    },
+    {
+      "component": "emergencyTriagePage",
+      "route": "triage-emergency"
+    },
+    {
+      "component": "pediatricTriagePage",
+      "route": "triage-pediatric"
+    }
+  ],
   "extensions": [
     {
-      "name": "clinical-workflow-triage-dashboard-link",
-      "component": "triageDashboardLink",
+      "name": "central-triage-dashboard-link",
+      "component": "centralTriageDashboardLink",
       "slot": "homepage-dashboard-slot",
       "order": 0,
       "meta": {
-        "name": "clinical-workflow-triage",
-        "slot": "clinical-workflow-triage-dashboard-slot",
-        "title": "clinical-workflow-triage"
+        "name": "central-triage",
+        "title": "Central Triage",
+        "path": "triage-central"
       }
     },
     {
-      "name": "clinical-workflow-triage-dashboard",
-      "component": "triageDashboard",
-      "slot": "clinical-workflow-triage-dashboard-slot"
+      "name": "emergency-triage-dashboard-link",
+      "component": "emergencyTriageDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "order": 1,
+      "meta": {
+        "name": "emergency-triage",
+        "title": "Emergency Triage",
+        "path": "triage-emergency"
+      }
+    },
+    {
+      "name": "pediatric-triage-dashboard-link",
+      "component": "pediatricTriageDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "order": 2,
+      "meta": {
+        "name": "pediatric-triage",
+        "title": "Pediatric Triage",
+        "path": "triage-pediatric"
+      }
     },
     {
       "name": "ewf-mru-dashboard-link",
@@ -88,13 +118,6 @@
     }
   ],
   "workspaces": [
-    {
-      "name": "triage-workspace",
-      "component": "triageWorkspace",
-      "title": "Triage Form",
-      "canMaximize": true,
-      "type": "clinical-form"
-    },
     {
       "name": "patient-registration-workspace",
       "component": "patientRegistrationWorkspace",
