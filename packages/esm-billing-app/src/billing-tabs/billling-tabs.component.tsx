@@ -26,7 +26,7 @@ const BillingTabs = () => {
       <Tabs selectedIndex={activeTabIndex} onChange={handleTabChange}>
         <div style={{ display: 'flex' }}>
           <TabList style={{ paddingLeft: '1rem' }} aria-label={t('billingTabs', 'Billing tabs')} contained>
-            <Tab renderIcon={List}>{t('billsToday', 'Bills Today')}</Tab>
+            <Tab renderIcon={List}>{t('billsToday', `Today's Bills`)}</Tab>
             <Tab renderIcon={Search}>{t('patientBills', 'Patient Bills')}</Tab>
             {enableClaims && <Tab renderIcon={BaggageClaim}>{t('claims', 'Claims')}</Tab>}
             {enablePreAuth && <Tab renderIcon={TwoFactorAuthentication}>{t('preAuth', 'Pre-Authorization')}</Tab>}
@@ -34,10 +34,10 @@ const BillingTabs = () => {
         </div>
         <TabPanels>
           <TabPanel>
-            <PatientBillsScreen />
+            <BillsTable />
           </TabPanel>
           <TabPanel>
-            <BillsTable />
+            <PatientBillsScreen />
           </TabPanel>
           <TabPanel>
             <ClaimsManagementTable />
