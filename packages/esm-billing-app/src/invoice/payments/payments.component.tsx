@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Button, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { navigate, showSnackbar, useVisit } from '@openmrs/esm-framework';
+import { navigate, showSnackbar, useVisit, useConfig } from '@openmrs/esm-framework';
+import type { BillingConfig } from '../../config-schema';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { FormProvider, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -29,12 +30,13 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
   const { lineItems } = bill;
+  const { visitAttributeTypes } = useConfig<BillingConfig>();
 
   const paymentSchema = usePaymentSchema(bill);
   const { globalActiveSheet } = useClockInStatus();
   const { activeVisit } = useVisit(bill.patientUuid);
   const activeVisitPaymentMethod = activeVisit.attributes.find(
-    (attribute) => attribute.attributeType.uuid === 'e6cb0c3b-04b0-4117-9bc6-ce24adbda802',
+    (attribute) => attribute.attributeType.uuid === visitAttributeTypes.paymentMethods,
   );
   const { paymentModes, isLoading: isLoadingPaymentModes, error: errorPaymentModes } = usePaymentModes();
   const {

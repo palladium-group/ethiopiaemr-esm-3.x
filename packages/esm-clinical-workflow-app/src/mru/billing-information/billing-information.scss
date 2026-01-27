@@ -24,18 +24,35 @@
 
 .billingInformationContainer {
   margin: spacing.$spacing-05;
+  overflow-y: visible;
   height: 100%;
-  overflow-y: auto;
+  border: solid red 1px;
 }
+
+.paymentTypeSwitcher {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  // flex-wrap: wrap;
+  border: none;
+  outline: none;
+  padding: 2px;
+}
+
+// .paymentTypeSwitch {
+//   margin-bottom: spacing.$spacing-03;
+//   border: solid #a6c8ff;
+// }
 
 .creditDetailsContainer {
   display: flex;
   flex-direction: column;
   gap: spacing.$spacing-05;
   margin-top: spacing.$spacing-03;
-  min-height: 45rem;
+  height: auto;
   border: 1px solid colors.$gray-20;
   padding: spacing.$spacing-03;
+  overflow: visible;
 }
 
 .freeDetailsContainer {
@@ -43,9 +60,10 @@
   flex-direction: column;
   gap: spacing.$spacing-05;
   margin-top: spacing.$spacing-03;
-  min-height: 20rem;
+  height: auto;
   border: 1px solid colors.$gray-20;
   padding: spacing.$spacing-03;
+  overflow: visible;
 }
 
 .creditTypeDetailsContainer {
