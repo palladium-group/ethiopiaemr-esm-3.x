@@ -10,7 +10,7 @@ import visitNotesActionButtonExtension from './patient-notes/visit-note-action-b
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 
-const moduleName = '@ethiopia/esm-clinical-workflow-app';
+const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
 const options = {
   featureName: 'clinical-workflow',
