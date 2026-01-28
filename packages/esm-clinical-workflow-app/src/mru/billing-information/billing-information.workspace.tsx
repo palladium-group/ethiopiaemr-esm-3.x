@@ -1,37 +1,29 @@
-import React, { useEffect, useMemo } from 'react';
-import {
-  Button,
-  ButtonSet,
-  InlineLoading,
-  ContentSwitcher,
-  Dropdown,
-  Switch,
-  TextInput,
-  Form,
-  FormGroup,
-} from '@carbon/react';
+import React, { useEffect } from 'react';
+import { Button, ButtonSet, InlineLoading, ContentSwitcher, Switch, Form } from '@carbon/react';
 import {
   DefaultWorkspaceProps,
   ExtensionSlot,
   usePatient,
-  OpenmrsDatePicker,
   useConfig,
   useVisit,
   showSnackbar,
 } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
-
-import { useForm, Controller, Control, FieldErrors, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 import {
   type BillingFormData,
-  createBillingFormSchema,
   createBillingInformationVisitAttribute,
   updateVisitWithBillingInformation,
 } from './billing-information.resource';
 import type { ClinicalWorkflowConfig } from '../../config-schema';
+import { usePaymentModes, useCreditCompanies, useBillingForm, useBillingType } from './hooks';
+import {
+  BillingTypeAttributes,
+  CreditSubTypeSelection,
+  FreeSubTypeSelection,
+  CreditSubTypeFields,
+  FreeSubTypeFields,
+} from './components';
 import styles from './billing-information.scss';
 
 type BillingInformationWorkspaceProps = DefaultWorkspaceProps & {
@@ -48,30 +40,30 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   const { patient, isLoading } = usePatient(patientUuid);
   const { activeVisit, mutate: mutateVisit } = useVisit(patientUuid);
   const { billingVisitAttributeTypes } = useConfig<ClinicalWorkflowConfig>();
-  const billingFormSchema = useMemo(() => createBillingFormSchema(t), [t]);
 
+  // Custom hooks for data fetching
+  const { billingTypes } = usePaymentModes();
+
+  // Form management hook
   const {
     control,
     handleSubmit,
     watch,
     setValue,
     formState: { errors, isDirty },
-  } = useForm<BillingFormData>({
-    resolver: zodResolver(billingFormSchema),
-    mode: 'onTouched',
-    defaultValues: {
-      billingType: undefined,
-      creditType: '',
-      name: '',
-      code: '',
-      id: '',
-      expiryDate: '',
-      zone: '',
-      freeType: '',
-    },
-  });
+  } = useBillingForm(t, billingTypes);
 
-  const billingType = watch('billingType');
+  // Watch form values
+  const billingTypeUuid = watch('billingTypeUuid');
+  const creditSubType = watch('creditSubType');
+  const freeSubType = watch('freeSubType');
+  const attributes = watch('attributes') || {};
+
+  // Billing type logic hook
+  const { selectedBillingType, isCreditType, isFreeType } = useBillingType(billingTypes, billingTypeUuid);
+
+  // Fetch credit companies conditionally
+  const { creditCompanies } = useCreditCompanies(isCreditType && creditSubType === 'creditCompany');
 
   const onSubmit = async (data: BillingFormData) => {
     try {
@@ -101,35 +93,24 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
     }
   };
 
-  const handleBillingTypeChange = (type: 'credit' | 'free' | 'cash') => {
-    // Clear form fields to avoid carrying over values from previous billing type
-    setValue('billingType', type, { shouldDirty: true });
-    setValue('creditType', '', { shouldDirty: false });
-    setValue('name', '', { shouldDirty: false });
-    setValue('code', '', { shouldDirty: false });
-    setValue('id', '', { shouldDirty: false });
-    setValue('expiryDate', '', { shouldDirty: false });
-    setValue('zone', '', { shouldDirty: false });
-    setValue('freeType', '', { shouldDirty: false });
+  const handleBillingTypeChange = (uuid: string) => {
+    // Clear attributes and sub-types when changing billing type
+    setValue('billingTypeUuid', uuid, { shouldDirty: true });
+    setValue('creditSubType', undefined, { shouldDirty: false });
+    setValue('freeSubType', undefined, { shouldDirty: false });
+    setValue('attributes', {}, { shouldDirty: false });
   };
 
   const getSelectedIndex = () => {
-    if (billingType === 'cash') {
-      return 0;
+    if (!billingTypeUuid) {
+      return -1;
     }
-    if (billingType === 'free') {
-      return 1;
-    }
-    if (billingType === 'credit') {
-      return 2;
-    }
-    return -1;
+    return billingTypes.findIndex((bt) => bt.uuid === billingTypeUuid);
   };
 
   const handleContentSwitcherChange = ({ index }: { index: number }) => {
-    const types: ('cash' | 'free' | 'credit')[] = ['cash', 'free', 'credit'];
-    if (index >= 0 && index < types.length) {
-      handleBillingTypeChange(types[index]);
+    if (index >= 0 && index < billingTypes.length) {
+      handleBillingTypeChange(billingTypes[index].uuid);
     }
   };
 
@@ -140,6 +121,8 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   if (isLoading) {
     return <InlineLoading status="active" iconDescription="Loading" description="Loading billing information..." />;
   }
+
+  //
 
   return (
     <>
@@ -156,14 +139,75 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
       <Form onSubmit={handleSubmit(onSubmit)}>
         <div className={styles.billingInformationContainer}>
           <p className={styles.sectionTitle}>{t('paymentMethods', 'Payment Methods')}</p>
-          <ContentSwitcher onChange={handleContentSwitcherChange} selectedIndex={getSelectedIndex()} size="md">
-            <Switch name="cash" text={t('cash', 'Cash')} />
-            <Switch name="free" text={t('free', 'Free')} />
-            <Switch name="credit" text={t('credit', 'Credit')} />
+
+          <ContentSwitcher
+            className={styles.paymentTypeSwitcher}
+            onChange={handleContentSwitcherChange}
+            selectedIndex={getSelectedIndex()}
+            size="md">
+            {billingTypes?.map((billingType) => (
+              <Switch
+                className={styles.paymentTypeSwitch}
+                key={billingType.uuid}
+                name={billingType.uuid}
+                text={billingType.name}
+              />
+            ))}
           </ContentSwitcher>
 
-          {billingType === 'credit' && <CreditDetails control={control} errors={errors} t={t} />}
-          {billingType === 'free' && <FreeDetails control={control} errors={errors} t={t} />}
+          {/* Credit sub-type selection */}
+          {isCreditType && (
+            <CreditSubTypeSelection
+              control={control}
+              errors={errors}
+              t={t}
+              creditSubType={creditSubType}
+              setValue={setValue}
+            />
+          )}
+
+          {/* Free sub-type selection */}
+          {isFreeType && (
+            <FreeSubTypeSelection
+              control={control}
+              errors={errors}
+              t={t}
+              freeSubType={freeSubType}
+              setValue={setValue}
+            />
+          )}
+
+          {/* Conditional fields based on Credit sub-type */}
+          {isCreditType && creditSubType && (
+            <CreditSubTypeFields
+              control={control}
+              errors={errors}
+              t={t}
+              creditSubType={creditSubType}
+              creditCompanies={creditCompanies}
+              attributes={attributes}
+              setValue={setValue}
+            />
+          )}
+
+          {/* Conditional fields based on Free sub-type */}
+          {isFreeType && freeSubType && <FreeSubTypeFields />}
+
+          {/* Default attribute types for other billing types */}
+          {selectedBillingType &&
+            !isCreditType &&
+            !isFreeType &&
+            selectedBillingType.attributeTypes &&
+            selectedBillingType.attributeTypes.length > 0 && (
+              <BillingTypeAttributes
+                control={control}
+                errors={errors}
+                t={t}
+                attributeTypes={selectedBillingType.attributeTypes}
+                attributes={attributes}
+                setValue={setValue}
+              />
+            )}
         </div>
         <ButtonSet className={styles.buttonSet}>
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
@@ -179,193 +223,3 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
 };
 
 export default BillingInformationWorkspace;
-
-type CreditDetailsProps = {
-  control: Control<BillingFormData>;
-  errors: FieldErrors<BillingFormData>;
-  t: TFunction;
-};
-
-const CreditDetails: React.FC<CreditDetailsProps> = ({ control, errors, t }) => {
-  const creditType = useWatch({
-    control,
-    name: 'creditType',
-  });
-
-  const creditTypeOptions = [
-    {
-      id: 'chbi',
-      text: t('chbi', 'CHBI'),
-    },
-    {
-      id: 'shi',
-      text: t('shi', 'SHI'),
-    },
-    {
-      id: 'creditCompanies',
-      text: t('creditCompanies', 'Credit Companies'),
-    },
-    {
-      id: 'insurance',
-      text: t('insurance', 'Insurance'),
-    },
-  ];
-
-  const showCreditCompanyFields = creditType === 'creditCompanies' || creditType === 'insurance';
-
-  return (
-    <FormGroup className={styles.creditDetailsContainer} legendText={t('creditDetails', 'Credit Details')}>
-      <Controller
-        name="creditType"
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <Dropdown
-            id="credit-type"
-            invalid={!!errors.creditType}
-            invalidText={errors.creditType?.message || 'invalid selection'}
-            itemToString={(item) => item?.text ?? ''}
-            items={creditTypeOptions}
-            label="Credit"
-            titleText="Credit"
-            type="default"
-            selectedItem={creditTypeOptions.find((item) => item.id === value) || null}
-            onChange={({ selectedItem }) => onChange(selectedItem?.id || '')}
-          />
-        )}
-      />
-
-      {showCreditCompanyFields && (
-        <FormGroup
-          legendText={t('creditTypeDetails', 'Credit Type Details')}
-          className={styles.creditTypeDetailsContainer}>
-          <Controller
-            name="id"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                id="credit-id"
-                labelText={t('id', 'ID')}
-                value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={t('enterId', 'Enter ID')}
-                invalid={!!errors.id}
-                invalidText={errors.id?.message}
-              />
-            )}
-          />
-
-          <Controller
-            name="name"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                id="credit-name"
-                labelText={t('name', 'Name')}
-                value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={t('enterName', 'Enter name')}
-                invalid={!!errors.name}
-                invalidText={errors.name?.message}
-              />
-            )}
-          />
-
-          <Controller
-            name="code"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                id="credit-code"
-                labelText={t('code', 'Code')}
-                value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={t('enterCode', 'Enter code')}
-                invalid={!!errors.code}
-                invalidText={errors.code?.message}
-              />
-            )}
-          />
-
-          <Controller
-            name="expiryDate"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <OpenmrsDatePicker
-                id="credit-expiry-date"
-                labelText={t('expiryDate', 'Expiry Date')}
-                minDate={new Date()}
-                value={value || ''}
-                onChange={(date) => {
-                  const dateValue = typeof date === 'string' ? date : date.toISOString().split('T')[0];
-                  onChange(dateValue);
-                }}
-              />
-            )}
-          />
-          <Controller
-            name="zone"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                id="credit-zone"
-                labelText={t('zone', 'Zone')}
-                value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={t('enterZone', 'Enter zone')}
-                invalid={!!errors.zone}
-                invalidText={errors.zone?.message}
-              />
-            )}
-          />
-        </FormGroup>
-      )}
-    </FormGroup>
-  );
-};
-
-type FreeDetailsProps = {
-  control: Control<BillingFormData>;
-  errors: FieldErrors<BillingFormData>;
-  t: TFunction;
-};
-
-const FreeDetails: React.FC<FreeDetailsProps> = ({ control, errors, t }) => {
-  const items = [
-    {
-      id: 'staff',
-      text: t('staff', 'Staff'),
-    },
-    {
-      id: '24Hours',
-      text: t('24Hours', '24 Hours'),
-    },
-    {
-      id: 'exempted',
-      text: t('exempted', 'Exempted'),
-    },
-  ];
-
-  return (
-    <FormGroup className={styles.freeDetailsContainer} legendText={t('freeDetails', 'Free Details')}>
-      <Controller
-        name="freeType"
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <Dropdown
-            id="free-type"
-            hideLabel={true}
-            invalid={!!errors.freeType}
-            invalidText={errors.freeType?.message || 'invalid selection'}
-            itemToString={(item) => item?.text ?? ''}
-            items={items}
-            label={t('selectOption', 'Select a free type')}
-            titleText={t('selectOption', 'Select a free type')}
-            type="default"
-            selectedItem={items.find((item) => item.id === value) || null}
-            onChange={({ selectedItem }) => onChange(selectedItem?.id || '')}
-          />
-        )}
-      />
-    </FormGroup>
-  );
-};

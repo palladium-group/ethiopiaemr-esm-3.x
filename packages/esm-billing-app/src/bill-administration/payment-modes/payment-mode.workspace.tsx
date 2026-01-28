@@ -6,7 +6,9 @@ import {
   restBaseUrl,
   showSnackbar,
   useLayoutType,
+  useConfig,
 } from '@openmrs/esm-framework';
+import type { BillingConfig } from '../../config-schema';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import styles from './payment-mode.workspace.scss';
 import { TextInput, ButtonSet, Button, InlineLoading, Stack, Toggle } from '@carbon/react';
@@ -31,6 +33,7 @@ const PaymentModeWorkspace: React.FC<PaymentModeWorkspaceProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const { visitAttributeTypes } = useConfig<BillingConfig>();
   const { paymentModeFormSchema } = usePaymentModeFormSchema();
   type PaymentModeFormSchema = z.infer<typeof paymentModeFormSchema>;
   const formDefaultValues = Object.keys(initialPaymentMode).length > 0 ? initialPaymentMode : {};
@@ -81,7 +84,11 @@ const PaymentModeWorkspace: React.FC<PaymentModeWorkspaceProps> = ({
     };
 
     try {
-      const response = await createPaymentMode(payload, initialPaymentMode?.uuid ?? '');
+      const response = await createPaymentMode(
+        payload,
+        initialPaymentMode?.uuid ?? '',
+        visitAttributeTypes.paymentMethods,
+      );
       if (response.ok) {
         showSnackbar({
           title: t('paymentModeCreated', 'Payment mode created successfully'),

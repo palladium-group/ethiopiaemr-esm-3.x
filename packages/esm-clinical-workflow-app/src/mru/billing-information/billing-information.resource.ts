@@ -3,59 +3,45 @@ import { z } from 'zod';
 // Create the billing form schema factory with conditional validation based on skip logic
 import type { TFunction } from 'i18next';
 
-export const createBillingFormSchema = (t: TFunction) => {
+export const createBillingFormSchema = (
+  t: TFunction,
+  billingTypes?: Array<{ uuid: string; name?: string; attributeTypes?: Array<{ uuid: string; required?: boolean }> }>,
+) => {
   return z
     .object({
-      billingType: z.enum(['credit', 'free', 'cash']).optional(),
-      creditType: z.string().optional(),
-      name: z.string().optional(),
-      code: z.string().optional(),
-      id: z.string().optional(),
-      expiryDate: z.string().optional(),
-      zone: z.string().optional(),
-      freeType: z.string().optional(),
+      billingTypeUuid: z.string().optional(),
+      creditSubType: z.string().optional(),
+      freeSubType: z.string().optional(),
+      attributes: z.record(z.string(), z.any()).optional(),
     })
     .superRefine((data, ctx) => {
       // Billing type is required on submit
-      if (!data.billingType) {
+      if (!data.billingTypeUuid) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: t('billingTypeRequired', 'Billing type is required'),
-          path: ['billingType'],
+          path: ['billingTypeUuid'],
         });
         return;
       }
 
-      // Credit billing type validation
-      if (data.billingType === 'credit') {
-        // Credit type is required
-        if (!data.creditType || data.creditType.trim() === '') {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: t('creditTypeRequired', 'Credit type is required'),
-            path: ['creditType'],
-          });
-        }
-
-        // If creditType is insurance, require additional fields
-        if (data.creditType === 'insurance') {
-          if (!data.id || data.id.trim() === '') {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: t('idRequired', 'ID is required'),
-              path: ['id'],
-            });
-          }
-        }
-      }
-
-      // Free billing type validation
-      if (data.billingType === 'free') {
-        if (!data.freeType || data.freeType.trim() === '') {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: t('freeTypeRequired', 'Free type is required'),
-            path: ['freeType'],
+      // Validate required attributes for the selected billing type
+      if (billingTypes && data.billingTypeUuid) {
+        const selectedBillingType = billingTypes.find((bt) => bt.uuid === data.billingTypeUuid);
+        if (selectedBillingType?.attributeTypes) {
+          selectedBillingType.attributeTypes.forEach((attrType) => {
+            if (attrType.required) {
+              const attrValue = data.attributes?.[attrType.uuid];
+              if (!attrValue || (typeof attrValue === 'string' && attrValue.trim() === '')) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message: t('attributeRequired', '{{attributeName}} is required', {
+                    attributeName: attrType.uuid,
+                  }),
+                  path: ['attributes', attrType.uuid],
+                });
+              }
+            }
           });
         }
       }
@@ -98,33 +84,48 @@ export const createBillingInformationVisitAttribute = (
   billingFormData: BillingFormData,
   visitAttributeTypeUuidsMap: {
     paymentMethod: string;
-    creditType: string;
-    creditTypeDetails: string;
-    freeType: string;
+    paymentAttributesSummary?: string;
   },
 ) => {
-  const { billingType, creditType, name, code, id, expiryDate, zone, freeType } = billingFormData;
+  const { billingTypeUuid, attributes } = billingFormData;
 
-  const formObject = {
-    paymentMethod: billingType,
-    creditType: creditType,
-    creditTypeDetails: {
-      name: name,
-      code: code,
-      id: id,
-      expiryDate: expiryDate,
-      zone: zone,
-    },
-    freeType: freeType,
-  };
+  const visitAttributePayload: Array<{ attributeType: { uuid: string } | string; value: string }> = [];
 
-  const visitAttributePayload = transformFormObjectToVisitAttributes(formObject, visitAttributeTypeUuidsMap);
+  // Add billing method
+  if (billingTypeUuid && visitAttributeTypeUuidsMap.paymentMethod) {
+    visitAttributePayload.push({
+      attributeType: visitAttributeTypeUuidsMap.paymentMethod,
+      value: billingTypeUuid,
+    });
+  }
+
+  // Save sub attributes (from attributes object) as a stringified object under the paymentAttributesSummary key
+  // Format: {attributeUuid: value}
+  // Only includes sub attributes, not the main paymentMethod attribute
+  if (visitAttributeTypeUuidsMap.paymentAttributesSummary && attributes) {
+    const paymentAttributesObject: Record<string, any> = {};
+
+    // Add sub attributes from the attributes object using their UUIDs as keys
+    Object.entries(attributes).forEach(([attrTypeUuid, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        paymentAttributesObject[attrTypeUuid] = value;
+      }
+    });
+
+    // Only add the summary if there are sub attributes to save
+    if (Object.keys(paymentAttributesObject).length > 0) {
+      visitAttributePayload.push({
+        attributeType: visitAttributeTypeUuidsMap.paymentAttributesSummary,
+        value: JSON.stringify(paymentAttributesObject),
+      });
+    }
+  }
 
   return visitAttributePayload;
 };
 
 export const updateVisitWithBillingInformation = (
-  visitAttributePayload: Array<{ attributeType: string; value: string }>,
+  visitAttributePayload: Array<{ attributeType: { uuid: string } | string; value: string }>,
   visitUuid: string,
 ) => {
   return openmrsFetch(`${restBaseUrl}/visit/${visitUuid}`, {
