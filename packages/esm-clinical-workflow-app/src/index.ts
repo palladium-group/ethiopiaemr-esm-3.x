@@ -1,8 +1,6 @@
 import React from 'react';
 import { defineConfigSchema, getAsyncLifecycle, getGlobalStore, getSyncLifecycle } from '@openmrs/esm-framework';
 import { createDashboardLink } from './createDashboardLink';
-import { configSchema } from './config-schema';
-import { dashboardMeta } from './dashboard.meta';
 import MRUDashboard from './mru/dashboard.component';
 import { spaBasePath } from './constants';
 import BillingInformationWorkspace from './mru/billing-information/billing-information.workspace';
@@ -11,7 +9,7 @@ import visitNotesActionButtonExtension from './patient-notes/visit-note-action-b
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import TriageVariantPage from './triage/variants/triage-variant.page';
-import type { ClinicalWorkflowConfig } from './config-schema';
+import { configSchema } from './config-schema';
 
 const moduleName = '@ethiopia/esm-clinical-workflow-app';
 
@@ -43,13 +41,13 @@ export function startupApp() {
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
-const createTriageVariantPage = (variant: string) => () => {
+const createTriageVariantDashboard = (variant: string) => () => {
   return React.createElement(TriageVariantPage, { variant });
 };
 
-export const centralTriagePage = getSyncLifecycle(createTriageVariantPage('central'), options);
-export const emergencyTriagePage = getSyncLifecycle(createTriageVariantPage('emergency'), options);
-export const pediatricTriagePage = getSyncLifecycle(createTriageVariantPage('pediatric'), options);
+export const centralTriageDashboard = getSyncLifecycle(createTriageVariantDashboard('central'), options);
+export const emergencyTriageDashboard = getSyncLifecycle(createTriageVariantDashboard('emergency'), options);
+export const pediatricTriageDashboard = getSyncLifecycle(createTriageVariantDashboard('pediatric'), options);
 
 export const centralTriageDashboardLink = getSyncLifecycle(
   createDashboardLink({

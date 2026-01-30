@@ -4,7 +4,8 @@ import notesConfigSchema, { type VisitNoteConfigObject } from './patient-notes/v
 export const configSchema = {
   enforceTriagePrivileges: {
     _type: Type.Boolean,
-    _description: 'Enable role-based access control for triage variants. When false, privilege checks are bypassed.',
+    _description:
+      'Enable role-based access control for triage variants. When false (default), all authenticated users can access all triage variants. When true, users must have specific privileges assigned.',
     _default: false,
   },
   triageVariants: {
@@ -12,7 +13,7 @@ export const configSchema = {
     _description: 'Mapping of triage variants with form configs and required privileges.',
     _default: {
       central: {
-        formUuid: '880a9b3b-0b4e-4cdb-8cd4-725bedd7b81f',
+        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
         name: 'Central Triage Form',
         displayName: 'Central Triage',
         enabled: true,
@@ -20,7 +21,7 @@ export const configSchema = {
         privilege: 'Central Triage Access',
       },
       emergency: {
-        formUuid: '907d122d-151d-4367-980a-ec8b8a5245a7',
+        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
         name: 'Emergency Triage Form',
         displayName: 'Emergency Triage',
         enabled: true,
@@ -28,7 +29,7 @@ export const configSchema = {
         privilege: 'Emergency Triage Access',
       },
       pediatric: {
-        formUuid: '',
+        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
         name: 'Pediatric Triage Form',
         displayName: 'Pediatric Triage',
         enabled: false,
@@ -47,20 +48,21 @@ export const configSchema = {
       freeType: '7523ecfe-b8f1-4e7f-80a7-1a495b15ace4',
     },
   },
+
   visitTypeUuid: {
     _type: Type.String,
     _description: 'Visit type UUID',
-    _default: '7b0f5697-27e3-40c4-8bae-f4049abfb4ed', // Outpatient
+    _default: '3371a4d4-f66f-4454-a86d-92c7b3da990c', // Outpatient
   },
   identifierSourceUuid: {
     _type: Type.String,
     _description: 'Identifier source UUID',
-    _default: '8549f706-7e85-4c1d-9424-217d50a2988b',
+    _default: 'fb034aac-2353-4940-abe2-7bc94e7c1e71',
   },
   defaultIdentifierTypeUuid: {
     _type: Type.String,
     _description: 'OpenMRS ID',
-    _default: '05a29f94-c0ed-11e2-94be-8c13b969e334',
+    _default: 'dfacd928-0370-4315-99d7-6ec1c9f7ae76',
   },
   medicoLegalCasesAttributeTypeUuid: {
     _type: Type.String,

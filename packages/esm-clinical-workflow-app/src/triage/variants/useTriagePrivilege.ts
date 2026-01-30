@@ -8,10 +8,20 @@ export const useTriagePrivilege = (variantConfig: TriageVariantConfig | undefine
     return false;
   }
 
-  const userPrivileges = session?.user?.privileges || [];
+  if (!session?.user) {
+    return false;
+  }
+
+  const privilegesRaw = session.user.privileges;
+
+  if (!Array.isArray(privilegesRaw)) {
+    return false;
+  }
+
+  const userPrivileges = privilegesRaw;
   const requiredPrivilege = variantConfig.privilege;
 
   return userPrivileges.some(
-    (privilege: any) => privilege.name === requiredPrivilege || privilege.display === requiredPrivilege,
+    (privilege: any) => privilege?.name === requiredPrivilege || privilege?.display === requiredPrivilege,
   );
 };

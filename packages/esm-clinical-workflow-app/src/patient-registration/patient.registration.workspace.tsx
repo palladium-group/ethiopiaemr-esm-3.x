@@ -93,14 +93,19 @@ const patientRegistrationSchema = z
 
 export type PatientRegistrationFormData = z.infer<typeof patientRegistrationSchema>;
 
-const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
+type PatientRegistrationProps = DefaultWorkspaceProps & {
+  onPatientRegistered?: (patientUuid: string) => void;
+};
+
+const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   closeWorkspace,
   closeWorkspaceWithSavedChanges,
   promptBeforeClosing,
+  onPatientRegistered,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { visitTypeUuid, identifierSourceUuid, defaultIdentifierTypeUuid, medicoLegalCasesAttributeTypeUuid } =
+  const { identifierSourceUuid, defaultIdentifierTypeUuid, medicoLegalCasesAttributeTypeUuid } =
     useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
@@ -187,6 +192,14 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
           kind: 'success',
           isLowContrast: true,
         });
+
+        if (onPatientRegistered) {
+          try {
+            onPatientRegistered(patientUuid);
+          } catch (callbackError) {
+            console.error('Error in onPatientRegistered callback:', callbackError);
+          }
+        }
 
         closeWorkspaceWithSavedChanges();
       }

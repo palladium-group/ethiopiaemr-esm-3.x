@@ -4,20 +4,7 @@
     "fhir2": ">=1.2",
     "webservices.rest": "^2.24.0"
   },
-  "pages": [
-    {
-      "component": "centralTriagePage",
-      "route": "triage-central"
-    },
-    {
-      "component": "emergencyTriagePage",
-      "route": "triage-emergency"
-    },
-    {
-      "component": "pediatricTriagePage",
-      "route": "triage-pediatric"
-    }
-  ],
+  "pages": [],
   "extensions": [
     {
       "name": "central-triage-dashboard-link",
@@ -27,8 +14,16 @@
       "meta": {
         "name": "central-triage",
         "title": "Central Triage",
-        "path": "triage-central"
+        "path": "triage-central",
+        "slot": "central-triage-dashboard-slot"
       }
+    },
+    {
+      "name": "central-triage-dashboard",
+      "component": "centralTriageDashboard",
+      "slot": "central-triage-dashboard-slot",
+      "online": true,
+      "offline": false
     },
     {
       "name": "emergency-triage-dashboard-link",
@@ -38,8 +33,16 @@
       "meta": {
         "name": "emergency-triage",
         "title": "Emergency Triage",
-        "path": "triage-emergency"
+        "path": "triage-emergency",
+        "slot": "emergency-triage-dashboard-slot"
       }
+    },
+    {
+      "name": "emergency-triage-dashboard",
+      "component": "emergencyTriageDashboard",
+      "slot": "emergency-triage-dashboard-slot",
+      "online": true,
+      "offline": false
     },
     {
       "name": "pediatric-triage-dashboard-link",
@@ -49,8 +52,16 @@
       "meta": {
         "name": "pediatric-triage",
         "title": "Pediatric Triage",
-        "path": "triage-pediatric"
+        "path": "triage-pediatric",
+        "slot": "pediatric-triage-dashboard-slot"
       }
+    },
+    {
+      "name": "pediatric-triage-dashboard",
+      "component": "pediatricTriageDashboard",
+      "slot": "pediatric-triage-dashboard-slot",
+      "online": true,
+      "offline": false
     },
     {
       "name": "ewf-mru-dashboard-link",
