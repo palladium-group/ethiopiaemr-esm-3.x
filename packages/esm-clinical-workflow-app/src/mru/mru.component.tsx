@@ -45,9 +45,12 @@ const PatientSearch: React.FC = () => {
   const { activeVisit } = useVisit(patientUuid);
 
   // TODO: Add ability for user to edit billing information
-  const hasAtLeastOneBillingInformation = activeVisit?.attributes?.some(
-    (attribute) => attribute.attributeType.uuid === billingVisitAttributeTypes.paymentMethod,
-  );
+
+  const hasAtLeastOneBillingInformation =
+    !activeVisit ||
+    activeVisit?.attributes?.some(
+      (attribute) => attribute.attributeType.uuid === billingVisitAttributeTypes.paymentMethod,
+    );
 
   const handleLaunchBillingInformationWorkspace = () => {
     launchWorkspace('billing-information-workspace', {
