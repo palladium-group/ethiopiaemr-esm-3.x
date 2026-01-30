@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import classNames from 'classnames';
 import {
@@ -28,6 +29,7 @@ import { BillingConfig } from '../../../../config-schema';
 import { processBillItems } from '../../../../billing.resource';
 import { mutate } from 'swr';
 import { useCurrencyFormatting } from '../../../../helpers/currency';
+import { usePaymentPoints } from '../../../payment-points/payment-points.resource';
 
 type CreateBillWorkspaceProps = DefaultWorkspaceProps & {
   patientUuid: string;
@@ -43,6 +45,7 @@ const createBillFormSchema = z.object({
   text: z.string().min(1),
   unitPrice: z.string().min(1),
   quantity: z.number().min(1),
+  cashPoint: z.string().min(1, 'Cash Point is required'),
 });
 
 type CreateBillFormSchema = z.infer<typeof createBillFormSchema>;
@@ -76,6 +79,7 @@ const BillForm: React.FC<BillFormProps> = ({
 }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
+  const { paymentPoints } = usePaymentPoints();
 
   return (
     <Stack gap={4}>
@@ -84,6 +88,27 @@ const BillForm: React.FC<BillFormProps> = ({
           <label className={styles.label}>{t('item', 'Item')}</label>
           <div className={styles.value}>{billableItem?.name ?? 'Service Not Found'}</div>
         </div>
+      </Column>
+      <Column>
+        <Controller
+          control={createBillForm.control}
+          name="cashPoint"
+          render={({ field }) => (
+            <Dropdown
+              {...field}
+              items={paymentPoints}
+              onChange={({ selectedItem }) => {
+                field.onChange(selectedItem?.uuid ?? '');
+              }}
+              id="cashPoint"
+              label={t('cashPoint', 'Cash Point')}
+              titleText={t('selectCashPoint', 'Select Cash Point')}
+              itemToString={(item) => item?.name ?? ''}
+              invalid={!!errors.cashPoint}
+              invalidText={errors.cashPoint?.message}
+            />
+          )}
+        />
       </Column>
       <Column>
         <Controller
@@ -157,7 +182,7 @@ const CreateBillWorkspace: React.FC<CreateBillWorkspaceProps> = ({
   const { format: formatCurrency } = useCurrencyFormatting();
   const defaultPaymentStatus = 'PENDING';
   const isTablet = useLayoutType() === 'tablet';
-  const { cashPointUuid, cashierUuid } = useConfig<BillingConfig>();
+  const { cashierUuid } = useConfig<BillingConfig>();
   const drugUuid = order?.drug?.uuid;
   const { billableItem, isLoading } = useBillableItem(order?.concept?.uuid ?? order?.drug?.concept?.uuid, drugUuid);
 
@@ -169,11 +194,13 @@ const CreateBillWorkspace: React.FC<CreateBillWorkspaceProps> = ({
     })) ?? [];
 
   const createBillForm = useForm<CreateBillFormSchema>({
+    resolver: zodResolver(createBillFormSchema),
     defaultValues: {
       id: '',
       text: '',
       unitPrice: '0',
       quantity: medicationRequestBundle?.request?.dispenseRequest?.quantity?.value ?? 1,
+      cashPoint: '',
     },
   });
 
@@ -192,7 +219,7 @@ const CreateBillWorkspace: React.FC<CreateBillWorkspaceProps> = ({
   const handleCreateBill = async (formData: CreateBillFormSchema) => {
     const unitPrice = parseFloat(formData.unitPrice);
     const createBillPayload = {
-      cashPoint: cashPointUuid,
+      cashPoint: formData.cashPoint,
       cashier: cashierUuid,
       patient: patientUuid,
       status: 'PENDING',
