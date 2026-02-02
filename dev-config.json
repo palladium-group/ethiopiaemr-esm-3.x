@@ -236,6 +236,11 @@
           "past-visits-detail-overview"
         ]
       },
+      "patient-actions-slot": {
+        "remove": [         
+          "start-visit-button"
+        ]                       
+      },   
       "extra-visit-attribute-slot": {
         "remove": [
           "billing-check-in-form"
