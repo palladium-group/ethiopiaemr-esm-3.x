@@ -11,14 +11,16 @@ import {
   DefaultWorkspaceProps,
   ResponsiveWrapper,
 } from '@openmrs/esm-framework';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import type { ClinicalWorkflowConfig } from '../config-schema';
-import { registerNewPatient, buildPatientRegistrationPayload } from './patient-registration.resource';
-import { useStartVisitAndLaunchTriageForm } from '../triage/useStartVisitAndLaunchTriageForm';
-import { getTriageFormForLocation } from '../triage/triage.resource';
+import {
+  registerNewPatient,
+  buildPatientRegistrationPayload,
+  calculateDOBFromAgeFields,
+} from './patient-registration.resource';
 import { useGenerateIdentifier } from './useGenerateIdentifier';
 import styles from './patient.registration.workspace.scss';
 import classNames from 'classnames';
@@ -52,6 +54,14 @@ const patientRegistrationSchema = z
       .union([z.number().min(0).max(31), z.null()])
       .optional()
       .nullable(),
+    ageHours: z
+      .union([z.number().min(0).max(23), z.null()])
+      .optional()
+      .nullable(),
+    ageMinutes: z
+      .union([z.number().min(0).max(59), z.null()])
+      .optional()
+      .nullable(),
     isEstimatedDOB: z.boolean().optional().default(true),
     dateOfBirth: z
       .date({
@@ -70,7 +80,9 @@ const patientRegistrationSchema = z
       const hasAgeFields =
         (data.ageYears !== undefined && data.ageYears !== null && data.ageYears >= 0) ||
         (data.ageMonths !== undefined && data.ageMonths !== null && data.ageMonths >= 0) ||
-        (data.ageDays !== undefined && data.ageDays !== null && data.ageDays >= 0);
+        (data.ageDays !== undefined && data.ageDays !== null && data.ageDays >= 0) ||
+        (data.ageHours !== undefined && data.ageHours !== null && data.ageHours >= 0) ||
+        (data.ageMinutes !== undefined && data.ageMinutes !== null && data.ageMinutes >= 0);
       return hasDateOfBirth || hasAgeFields;
     },
     {
@@ -81,29 +93,27 @@ const patientRegistrationSchema = z
 
 export type PatientRegistrationFormData = z.infer<typeof patientRegistrationSchema>;
 
-const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
+type PatientRegistrationProps = DefaultWorkspaceProps & {
+  onPatientRegistered?: (patientUuid: string) => void;
+};
+
+const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   closeWorkspace,
   closeWorkspaceWithSavedChanges,
   promptBeforeClosing,
+  onPatientRegistered,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
-  const {
-    visitTypeUuid,
-    identifierSourceUuid,
-    defaultIdentifierTypeUuid,
-    triageLocationForms,
-    medicoLegalCasesAttributeTypeUuid,
-  } = useConfig<ClinicalWorkflowConfig>();
+  const { identifierSourceUuid, defaultIdentifierTypeUuid, medicoLegalCasesAttributeTypeUuid } =
+    useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
-
-  const triageFormConfig = getTriageFormForLocation(sessionLocation?.uuid, triageLocationForms);
 
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting, isDirty, isSubmitted },
   } = useForm<PatientRegistrationFormData>({
     resolver: zodResolver(patientRegistrationSchema),
@@ -119,11 +129,40 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
       ageYears: null,
       ageMonths: null,
       ageDays: null,
+      ageHours: null,
+      ageMinutes: null,
       isEstimatedDOB: true,
       dateOfBirth: null,
       isMedicoLegalCase: false,
     },
   });
+
+  const ageYears = useWatch({ control, name: 'ageYears' });
+  const ageMonths = useWatch({ control, name: 'ageMonths' });
+  const ageDays = useWatch({ control, name: 'ageDays' });
+  const ageHours = useWatch({ control, name: 'ageHours' });
+  const ageMinutes = useWatch({ control, name: 'ageMinutes' });
+
+  const dobManuallySetRef = useRef(false);
+  const lastCalculatedDOBRef = useRef<Date | null>(null);
+
+  useEffect(() => {
+    const calculatedDOB = calculateDOBFromAgeFields(ageYears, ageMonths, ageDays, ageHours, ageMinutes);
+
+    if (calculatedDOB && !dobManuallySetRef.current) {
+      if (!lastCalculatedDOBRef.current || calculatedDOB.getTime() !== lastCalculatedDOBRef.current.getTime()) {
+        setValue('dateOfBirth', calculatedDOB, { shouldDirty: true });
+        lastCalculatedDOBRef.current = calculatedDOB;
+      }
+    } else if (!calculatedDOB) {
+      lastCalculatedDOBRef.current = null;
+    }
+  }, [ageYears, ageMonths, ageDays, ageHours, ageMinutes, setValue]);
+
+  useEffect(() => {
+    // Reset the manual flag when age fields change, allowing auto-calculation to resume
+    dobManuallySetRef.current = false;
+  }, [ageYears, ageMonths, ageDays, ageHours, ageMinutes]);
 
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
@@ -140,7 +179,6 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
         sessionLocation.uuid,
         data.isMedicoLegalCase,
         medicoLegalCasesAttributeTypeUuid,
-        triageFormConfig?.name,
       );
 
       const patient = await registerNewPatient(registrationPayload);
@@ -155,19 +193,14 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
           isLowContrast: true,
         });
 
-        if (triageFormConfig) {
-          await handleStartVisitAndLaunchTriageForm(patientUuid, triageFormConfig.formUuid, triageFormConfig.name);
-        } else {
-          showSnackbar({
-            title: t('noTriageFormConfigured', 'No triage form configured'),
-            subtitle: t(
-              'noTriageFormConfiguredForLocation',
-              'No triage form is configured for the current location. Please configure a form for this location.',
-            ),
-            kind: 'warning',
-            isLowContrast: true,
-          });
+        if (onPatientRegistered) {
+          try {
+            onPatientRegistered(patientUuid);
+          } catch (callbackError) {
+            console.error('Error in onPatientRegistered callback:', callbackError);
+          }
         }
+
         closeWorkspaceWithSavedChanges();
       }
     } catch (error) {
@@ -370,6 +403,68 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
                 return <NumberInput {...numberInputProps} />;
               }}
             />
+            <Controller
+              name="ageHours"
+              control={control}
+              render={({ field: { onChange, value } }) => {
+                const invalidValue = isSubmitted && !!errors.ageHours;
+                const invalidTextValue = isSubmitted && errors.ageHours ? errors.ageHours.message : undefined;
+                const displayValue = value !== undefined && value !== null ? value : '';
+                const numberInputProps: any = {
+                  id: 'age-hours',
+                  label: t('hours', 'Hours'),
+                  value: displayValue === '' ? undefined : displayValue,
+                  onChange: (e: any, { value: newValue }: any) => {
+                    const numValue =
+                      newValue === '' || newValue === null || newValue === undefined ? undefined : Number(newValue);
+                    onChange(numValue);
+                  },
+                  invalid: invalidValue || false,
+                  invalidText: invalidTextValue,
+                  warn: false,
+                  placeholder: t('enterHours', 'Enter hours'),
+                  size: 'md',
+                  disabled: isSubmitting,
+                  allowEmpty: true,
+                };
+                if (isSubmitted) {
+                  numberInputProps.min = 0;
+                  numberInputProps.max = 23;
+                }
+                return <NumberInput {...numberInputProps} />;
+              }}
+            />
+            <Controller
+              name="ageMinutes"
+              control={control}
+              render={({ field: { onChange, value } }) => {
+                const invalidValue = isSubmitted && !!errors.ageMinutes;
+                const invalidTextValue = isSubmitted && errors.ageMinutes ? errors.ageMinutes.message : undefined;
+                const displayValue = value !== undefined && value !== null ? value : '';
+                const numberInputProps: any = {
+                  id: 'age-minutes',
+                  label: t('minutes', 'Minutes'),
+                  value: displayValue === '' ? undefined : displayValue,
+                  onChange: (e: any, { value: newValue }: any) => {
+                    const numValue =
+                      newValue === '' || newValue === null || newValue === undefined ? undefined : Number(newValue);
+                    onChange(numValue);
+                  },
+                  invalid: invalidValue || false,
+                  invalidText: invalidTextValue,
+                  warn: false,
+                  placeholder: t('enterMinutes', 'Enter minutes'),
+                  size: 'md',
+                  disabled: isSubmitting,
+                  allowEmpty: true,
+                };
+                if (isSubmitted) {
+                  numberInputProps.min = 0;
+                  numberInputProps.max = 59;
+                }
+                return <NumberInput {...numberInputProps} />;
+              }}
+            />
           </FormGroup>
         </ResponsiveWrapper>
 
@@ -400,7 +495,10 @@ const PatientRegistration: React.FC<DefaultWorkspaceProps> = ({
                 value={value}
                 invalid={isSubmitted && !!errors.dateOfBirth}
                 invalidText={isSubmitted && errors.dateOfBirth ? errors.dateOfBirth.message : ''}
-                onChange={(date) => onChange(date)}
+                onChange={(date) => {
+                  dobManuallySetRef.current = true;
+                  onChange(date);
+                }}
                 isDisabled={isSubmitting}
               />
             </ResponsiveWrapper>
