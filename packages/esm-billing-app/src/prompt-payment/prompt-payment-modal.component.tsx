@@ -15,19 +15,18 @@ import {
 } from '@carbon/react';
 import styles from './prompt-payment.scss';
 import { extractString } from '../helpers';
-import { navigate, useConfig } from '@openmrs/esm-framework';
+import { navigate, useConfig, usePatient } from '@openmrs/esm-framework';
 import { BillingConfig } from '../config-schema';
 import { useBillingPrompt } from './prompt-payment.resource';
 import { useCurrencyFormatting } from '../helpers/currency';
-import { useParams } from 'react-router-dom';
 
 type PromptPaymentModalProps = {};
 
 const PromptPaymentModal: React.FC<PromptPaymentModalProps> = () => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
-
-  const { patientUuid } = useParams();
+  const { patient } = usePatient();
+  const patientUuid = patient?.id ?? '';
   const { shouldShowBillingPrompt, isLoading, bills } = useBillingPrompt(patientUuid, 'patient-chart');
   const [showModal, setShowModal] = useState({ loadingModal: true, billingModal: true });
   const { enforceBillPayment } = useConfig<BillingConfig>();
