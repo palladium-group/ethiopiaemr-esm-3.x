@@ -1,102 +1,73 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, InlineNotification } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { ExtensionSlot, TriagePictogram, launchWorkspace, PageHeader, useConfig } from '@openmrs/esm-framework';
-import type { ClinicalWorkflowConfig } from '../../config-schema';
-import PatientBanner from '../patient-banner.component';
-import { useStartVisitAndLaunchTriageForm } from '../useStartVisitAndLaunchTriageForm';
-import EmptyState from './empty-state.component';
+import { TriagePictogram, PageHeader, launchWorkspace, ExtensionSlot } from '@openmrs/esm-framework';
 import styles from '../triage-dashboard.scss';
+
+import { useTriageVariant } from './useTriageVariant';
+import { TriageConfigurationGuard } from './triage-configuration-guard.component';
+import { TriageContent } from './triage-content.component';
+import { useStartVisitAndLaunchTriageForm } from '../useStartVisitAndLaunchTriageForm';
+import { Button } from '@carbon/react';
 
 interface TriageVariantDashboardProps {
   variant: string;
 }
 
 const TriageVariantDashboard: React.FC<TriageVariantDashboardProps> = ({ variant }) => {
-  const { t } = useTranslation();
-  const { triageVariants, enforceTriagePrivileges } = useConfig<ClinicalWorkflowConfig>();
+  const { variantConfig, variantKey, isValid, pathSegment } = useTriageVariant(variant);
   const [patientUuid, setPatientUuid] = useState<string | null>(null);
-  const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
 
-  const variantConfig = triageVariants[variant];
+  useEffect(() => setPatientUuid(null), [pathSegment]);
 
-  const handleRegisterNewPatient = useCallback(() => {
-    launchWorkspace('patient-registration-workspace', {
-      workspaceTitle: t('registerNewPatient', 'Register New Patient'),
-      onPatientRegistered: (uuid: string) => {
-        if (variantConfig?.formUuid && variantConfig?.name) {
-          handleStartVisitAndLaunchTriageForm(uuid, variantConfig.formUuid, variantConfig.name);
-        }
-      },
-    });
-  }, [t, handleStartVisitAndLaunchTriageForm, variantConfig]);
-
-  if (!variantConfig || !variantConfig.formUuid) {
-    return (
-      <div className={styles.triageDashboardContainer}>
-        <PageHeader title={t('triage', 'Triage')} illustration={<TriagePictogram />} />
-        <InlineNotification
-          kind="error"
-          title={t('triageNotConfigured', 'Triage not configured')}
-          subtitle={t('configureTriageVariant', 'Please configure the {{variant}} triage form.', { variant })}
-        />
-      </div>
-    );
+  if (!isValid) {
+    return <TriageConfigurationGuard variantKey={variantKey} />;
   }
-
-  // const hasPrivilege = useTriagePrivilege(variantConfig);
-
-  // if (enforceTriagePrivileges && !hasPrivilege) {
-  //   return (
-  //     <div className={styles.triageDashboardContainer}>
-  //       <PageHeader title={variantConfig.displayName} illustration={<TriagePictogram />} />
-  //       <InlineNotification
-  //         kind="error"
-  //         title={t('accessDenied', 'Access Denied')}
-  //         subtitle={t(
-  //           'missingTriagePrivilege',
-  //           'You do not have the required privilege ({{privilege}}) to access {{triageName}}.',
-  //           {
-  //             privilege: variantConfig.privilege,
-  //             triageName: variantConfig.displayName,
-  //           },
-  //         )}
-  //       />
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className={styles.triageDashboardContainer}>
       <PageHeader className={styles.pageHeader} title={variantConfig.displayName} illustration={<TriagePictogram />} />
 
-      <div className={styles.headerActions}>
-        <ExtensionSlot
-          className={styles.patientSearchBar}
-          name="patient-search-bar-slot"
-          state={{
-            selectPatientAction: (patientUuid: string) => setPatientUuid(patientUuid),
-            buttonProps: { kind: 'secondary' },
-          }}
-        />
-        <Button onClick={handleRegisterNewPatient} kind="tertiary" renderIcon={Add}>
-          {t('registerNewPatient', 'Register New Patient')}
-        </Button>
-      </div>
+      <TriageActions onPatientSelect={setPatientUuid} variantConfig={variantConfig} />
 
-      {!patientUuid ? (
-        <EmptyState />
-      ) : (
-        <PatientBanner
-          patientUuid={patientUuid}
-          formUuid={variantConfig.formUuid}
-          formName={variantConfig.name}
-          setPatientUuid={setPatientUuid}
-        />
-      )}
+      <TriageContent
+        patientUuid={patientUuid}
+        variantConfig={variantConfig}
+        pathSegment={pathSegment}
+        onClearPatient={() => setPatientUuid(null)}
+      />
     </div>
   );
 };
 
 export default TriageVariantDashboard;
+
+const TriageActions = ({ onPatientSelect, variantConfig }) => {
+  const { t } = useTranslation();
+  const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
+
+  const handleRegister = useCallback(() => {
+    launchWorkspace('patient-registration-workspace', {
+      workspaceTitle: t('registerNewPatient', 'Register New Patient'),
+      onPatientRegistered: (uuid) => {
+        handleStartVisitAndLaunchTriageForm(uuid, variantConfig.formUuid, variantConfig.name);
+      },
+    });
+  }, [t, handleStartVisitAndLaunchTriageForm, variantConfig]);
+
+  return (
+    <div className={styles.headerActions}>
+      <ExtensionSlot
+        className={styles.patientSearchBar}
+        name="patient-search-bar-slot"
+        state={{
+          selectPatientAction: onPatientSelect,
+          buttonProps: { kind: 'secondary' },
+        }}
+      />
+      <Button onClick={handleRegister} kind="tertiary" renderIcon={Add}>
+        {t('registerNewPatient', 'Register New Patient')}
+      </Button>
+    </div>
+  );
+};

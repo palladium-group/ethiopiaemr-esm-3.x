@@ -13,9 +13,11 @@ import {
   OverflowMenu,
   OverflowMenuItem,
 } from '@carbon/react';
-import { ErrorState, navigate, useLayoutType } from '@openmrs/esm-framework';
+import { ErrorState, showModal, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
+
+import { type PaymentPoint } from '../../types';
 
 const headers = [
   { header: 'Name', key: 'name' },
@@ -26,6 +28,14 @@ export const PaymentPointsTable = () => {
   const { paymentPoints, error, isLoading } = usePaymentPoints();
   const { t } = useTranslation();
   const layout = useLayoutType();
+
+  const handleEditPaymentPoint = (paymentPoint: PaymentPoint) => {
+    const dispose = showModal('create-payment-point', { paymentPoint, closeModal: () => dispose() });
+  };
+
+  const handleDeletePaymentPoint = (paymentPoint: PaymentPoint) => {
+    const dispose = showModal('delete-payment-point-modal', { paymentPoint, closeModal: () => dispose() });
+  };
 
   if (isLoading) {
     return (
@@ -73,7 +83,7 @@ export const PaymentPointsTable = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row) => (
+              {rows.map((row, index) => (
                 <TableRow
                   key={row.id}
                   {...getRowProps({
@@ -85,8 +95,12 @@ export const PaymentPointsTable = () => {
                   <TableCell className="cds--table-column-menu">
                     <OverflowMenu size="sm" flipped>
                       <OverflowMenuItem
-                        itemText={t('view', 'View')}
-                        onClick={() => navigate({ to: `\${openmrsSpaBase}/payment-points/${row.id}` })}
+                        itemText={t('edit', 'Edit')}
+                        onClick={() => handleEditPaymentPoint(paymentPoints[index])}
+                      />
+                      <OverflowMenuItem
+                        itemText={t('delete', 'Delete')}
+                        onClick={() => handleDeletePaymentPoint(paymentPoints[index])}
                       />
                     </OverflowMenu>
                   </TableCell>
