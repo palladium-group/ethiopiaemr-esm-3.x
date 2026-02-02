@@ -124,7 +124,11 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
             );
           }
 
-          visit = visitResponse.data;
+          visit = await getCurrentVisitForPatient(patientUuid);
+
+          if (!visit) {
+            throw new Error('Failed to retrieve newly created visit');
+          }
         }
 
         // Launch triage form workspace with visit

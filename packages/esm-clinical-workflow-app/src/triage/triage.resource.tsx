@@ -32,13 +32,3 @@ export const fetchQueueEntryForPatient = async (patientUuid: string): Promise<an
   const { data } = await openmrsFetch<{ results: Array<unknown> }>(url);
   return data.results[0];
 };
-
-export const getTriageFormForLocation = (
-  locationUuid: string | undefined,
-  triageLocationForms: ClinicalWorkflowConfig['triageLocationForms'],
-): { formUuid: string; name: string } | undefined => {
-  if (!locationUuid) {
-    return undefined;
-  }
-  return triageLocationForms[locationUuid];
-};

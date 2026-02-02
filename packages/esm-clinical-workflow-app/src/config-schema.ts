@@ -2,18 +2,39 @@ import { Type } from '@openmrs/esm-framework';
 import notesConfigSchema, { type VisitNoteConfigObject } from './patient-notes/visit-note-config-schema';
 
 export const configSchema = {
-  triageLocationForms: {
-    _type: Type.Object,
+  enforceTriagePrivileges: {
+    _type: Type.Boolean,
     _description:
-      'Mapping of location UUIDs to their triage form configurations. Each location can have one triage form.',
+      'Enable role-based access control for triage variants. When false (default), all authenticated users can access all triage variants. When true, users must have specific privileges assigned.',
+    _default: false,
+  },
+  triageVariants: {
+    _type: Type.Object,
+    _description: 'Mapping of triage variants with form configs and required privileges.',
     _default: {
-      '44c3efb0-2583-4c80-a79e-1f756a03c0a1': {
-        formUuid: '35093e6c-f35e-48a7-ae42-17b988d86c17',
+      central: {
+        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
         name: 'Central Triage Form',
+        displayName: 'Central Triage',
+        enabled: true,
+        order: 0,
+        privilege: 'Central Triage Access',
       },
-      '8d9045ad-50f0-45b8-93c8-3ed4bce19dbf': {
-        formUuid: 'ffbe6be3-3b72-4271-a2f4-803907ca4ef4',
+      emergency: {
+        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
         name: 'Emergency Triage Form',
+        displayName: 'Emergency Triage',
+        enabled: true,
+        order: 1,
+        privilege: 'Emergency Triage Access',
+      },
+      pediatric: {
+        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
+        name: 'Pediatric Triage Form',
+        displayName: 'Pediatric Triage',
+        enabled: false,
+        order: 2,
+        privilege: 'Pediatric Triage Access',
       },
     },
   },
@@ -25,22 +46,24 @@ export const configSchema = {
       creditType: '5cd1eb62-e006-4146-bd22-80bc4d5bd2f7',
       creditTypeDetails: 'd824aa96-d2c7-4a52-aa8d-03f60a516083',
       freeType: '7523ecfe-b8f1-4e7f-80a7-1a495b15ace4',
+      paymentAttributesSummary: '3cc0102e-6c1f-41db-af72-4be6aa9eb27a',
     },
   },
+
   visitTypeUuid: {
     _type: Type.String,
     _description: 'Visit type UUID',
-    _default: '7b0f5697-27e3-40c4-8bae-f4049abfb4ed', // Outpatient
+    _default: '3371a4d4-f66f-4454-a86d-92c7b3da990c', // Outpatient
   },
   identifierSourceUuid: {
     _type: Type.String,
     _description: 'Identifier source UUID',
-    _default: '8549f706-7e85-4c1d-9424-217d50a2988b',
+    _default: 'fb034aac-2353-4940-abe2-7bc94e7c1e71',
   },
   defaultIdentifierTypeUuid: {
     _type: Type.String,
     _description: 'OpenMRS ID',
-    _default: '05a29f94-c0ed-11e2-94be-8c13b969e334',
+    _default: 'dfacd928-0370-4315-99d7-6ec1c9f7ae76',
   },
   medicoLegalCasesAttributeTypeUuid: {
     _type: Type.String,
@@ -112,19 +135,24 @@ export const configSchema = {
   },
 };
 
+export interface TriageVariantConfig {
+  formUuid: string;
+  name: string;
+  displayName: string;
+  enabled: boolean;
+  order: number;
+  privilege: string;
+}
+
 export type ClinicalWorkflowConfig = {
-  triageLocationForms: Record<
-    string,
-    {
-      formUuid: string;
-      name: string;
-    }
-  >;
+  enforceTriagePrivileges: boolean;
+  triageVariants: Record<string, TriageVariantConfig>;
   billingVisitAttributeTypes: {
     paymentMethod: string;
     creditType: string;
     creditTypeDetails: string;
     freeType: string;
+    paymentAttributesSummary: string;
   };
   visitTypeUuid: string;
   identifierSourceUuid: string;
