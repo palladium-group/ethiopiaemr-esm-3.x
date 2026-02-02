@@ -2,6 +2,46 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import type { PatientRegistrationFormData } from './patient.registration.workspace';
 
+export const calculateDOBFromAgeFields = (
+  ageYears?: number | null,
+  ageMonths?: number | null,
+  ageDays?: number | null,
+  ageHours?: number | null,
+  ageMinutes?: number | null,
+): Date | null => {
+  const hasAgeFields =
+    (ageYears !== undefined && ageYears !== null && ageYears >= 0) ||
+    (ageMonths !== undefined && ageMonths !== null && ageMonths >= 0) ||
+    (ageDays !== undefined && ageDays !== null && ageDays >= 0) ||
+    (ageHours !== undefined && ageHours !== null && ageHours >= 0) ||
+    (ageMinutes !== undefined && ageMinutes !== null && ageMinutes >= 0);
+
+  if (!hasAgeFields) {
+    return null;
+  }
+
+  const currentDate = dayjs();
+  let calculatedDate = currentDate;
+
+  if (ageYears !== undefined && ageYears !== null) {
+    calculatedDate = calculatedDate.subtract(ageYears, 'year');
+  }
+  if (ageMonths !== undefined && ageMonths !== null) {
+    calculatedDate = calculatedDate.subtract(ageMonths, 'month');
+  }
+  if (ageDays !== undefined && ageDays !== null) {
+    calculatedDate = calculatedDate.subtract(ageDays, 'day');
+  }
+  if (ageHours !== undefined && ageHours !== null) {
+    calculatedDate = calculatedDate.subtract(ageHours, 'hour');
+  }
+  if (ageMinutes !== undefined && ageMinutes !== null) {
+    calculatedDate = calculatedDate.subtract(ageMinutes, 'minute');
+  }
+
+  return calculatedDate.toDate();
+};
+
 const calculateBirthdate = (
   formData: PatientRegistrationFormData,
 ): { formattedBirthDate: string; birthdateEstimated: boolean } => {
@@ -9,43 +49,75 @@ const calculateBirthdate = (
   let birthdateEstimated = false;
 
   if (formData.dateOfBirth) {
-    formattedBirthDate = dayjs(formData.dateOfBirth).format('YYYY-M-D');
+    const hasTimeComponent =
+      (formData.ageDays !== undefined && formData.ageDays !== null) ||
+      (formData.ageHours !== undefined && formData.ageHours !== null) ||
+      (formData.ageMinutes !== undefined && formData.ageMinutes !== null);
+    if (hasTimeComponent) {
+      formattedBirthDate = dayjs(formData.dateOfBirth).format('YYYY-M-D HH:mm:ss');
+    } else {
+      formattedBirthDate = dayjs(formData.dateOfBirth).format('YYYY-M-D');
+    }
     birthdateEstimated = formData.isEstimatedDOB || false;
   } else if (
     formData.isEstimatedDOB &&
-    (formData.ageYears !== undefined || formData.ageMonths !== undefined || formData.ageDays !== undefined)
+    (formData.ageYears !== undefined ||
+      formData.ageMonths !== undefined ||
+      formData.ageDays !== undefined ||
+      formData.ageHours !== undefined ||
+      formData.ageMinutes !== undefined)
   ) {
-    const currentDate = dayjs();
-    let calculatedDate = currentDate;
-
-    if (formData.ageYears !== undefined && formData.ageYears !== null) {
-      calculatedDate = calculatedDate.subtract(formData.ageYears, 'year');
+    const calculatedDOB = calculateDOBFromAgeFields(
+      formData.ageYears,
+      formData.ageMonths,
+      formData.ageDays,
+      formData.ageHours,
+      formData.ageMinutes,
+    );
+    if (calculatedDOB) {
+      const hasTimeComponent =
+        (formData.ageDays !== undefined && formData.ageDays !== null) ||
+        (formData.ageHours !== undefined && formData.ageHours !== null) ||
+        (formData.ageMinutes !== undefined && formData.ageMinutes !== null);
+      if (hasTimeComponent) {
+        formattedBirthDate = dayjs(calculatedDOB).format('YYYY-M-D HH:mm:ss');
+      } else {
+        formattedBirthDate = dayjs(calculatedDOB).format('YYYY-M-D');
+      }
+      birthdateEstimated = true;
+    } else {
+      formattedBirthDate = dayjs().format('YYYY-M-D');
+      birthdateEstimated = false;
     }
-    if (formData.ageMonths !== undefined && formData.ageMonths !== null) {
-      calculatedDate = calculatedDate.subtract(formData.ageMonths, 'month');
+  } else if (
+    formData.ageYears !== undefined ||
+    formData.ageMonths !== undefined ||
+    formData.ageDays !== undefined ||
+    formData.ageHours !== undefined ||
+    formData.ageMinutes !== undefined
+  ) {
+    const calculatedDOB = calculateDOBFromAgeFields(
+      formData.ageYears,
+      formData.ageMonths,
+      formData.ageDays,
+      formData.ageHours,
+      formData.ageMinutes,
+    );
+    if (calculatedDOB) {
+      const hasTimeComponent =
+        (formData.ageDays !== undefined && formData.ageDays !== null) ||
+        (formData.ageHours !== undefined && formData.ageHours !== null) ||
+        (formData.ageMinutes !== undefined && formData.ageMinutes !== null);
+      if (hasTimeComponent) {
+        formattedBirthDate = dayjs(calculatedDOB).format('YYYY-M-D HH:mm:ss');
+      } else {
+        formattedBirthDate = dayjs(calculatedDOB).format('YYYY-M-D');
+      }
+      birthdateEstimated = false;
+    } else {
+      formattedBirthDate = dayjs().format('YYYY-M-D');
+      birthdateEstimated = false;
     }
-    if (formData.ageDays !== undefined && formData.ageDays !== null) {
-      calculatedDate = calculatedDate.subtract(formData.ageDays, 'day');
-    }
-
-    formattedBirthDate = calculatedDate.format('YYYY-M-D');
-    birthdateEstimated = true;
-  } else if (formData.ageYears !== undefined || formData.ageMonths !== undefined || formData.ageDays !== undefined) {
-    const currentDate = dayjs();
-    let calculatedDate = currentDate;
-
-    if (formData.ageYears !== undefined && formData.ageYears !== null) {
-      calculatedDate = calculatedDate.subtract(formData.ageYears, 'year');
-    }
-    if (formData.ageMonths !== undefined && formData.ageMonths !== null) {
-      calculatedDate = calculatedDate.subtract(formData.ageMonths, 'month');
-    }
-    if (formData.ageDays !== undefined && formData.ageDays !== null) {
-      calculatedDate = calculatedDate.subtract(formData.ageDays, 'day');
-    }
-
-    formattedBirthDate = calculatedDate.format('YYYY-M-D');
-    birthdateEstimated = false;
   } else {
     formattedBirthDate = dayjs().format('YYYY-M-D');
     birthdateEstimated = false;
@@ -62,14 +134,13 @@ export const buildPatientRegistrationPayload = (
   locationUuid: string,
   isMedicoLegalCase?: boolean,
   medicoLegalCasesAttributeTypeUuid?: string,
-  triageFormName?: string,
 ) => {
   const { formattedBirthDate, birthdateEstimated } = calculateBirthdate(formData);
 
   const genderCode = formData.gender === 'Male' ? 'M' : 'F';
 
   const attributes: Array<{ attributeType: string; value: string }> = [];
-  if (isMedicoLegalCase === true && medicoLegalCasesAttributeTypeUuid && triageFormName === 'Emergency Triage Form') {
+  if (isMedicoLegalCase === true && medicoLegalCasesAttributeTypeUuid) {
     attributes.push({
       attributeType: medicoLegalCasesAttributeTypeUuid,
       value: 'true',
