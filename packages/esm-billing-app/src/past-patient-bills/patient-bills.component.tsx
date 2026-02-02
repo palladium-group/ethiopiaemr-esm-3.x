@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction, useEffect, useMemo } from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 import {
   DataTable,
   TableContainer,
@@ -13,8 +13,7 @@ import {
 } from '@carbon/react';
 import { Add, Close } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { ConfigurableLink, getPatientName, usePatient, setCurrentVisit } from '@openmrs/esm-framework';
-import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { ConfigurableLink, getPatientName, usePatient, useVisit, launchWorkspace } from '@openmrs/esm-framework';
 import capitalize from 'lodash/capitalize';
 
 import { type MappedBill } from '../types';
@@ -128,13 +127,25 @@ type PatientHeaderProps = {
 
 export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient, onCancel }) => {
   const { t } = useTranslation();
+  const { activeVisit, isLoading: isVisitLoading } = useVisit(patient.id);
   const patientName = getPatientName(patient);
   const identifier = patient?.identifier[0]?.value ?? '--';
-  const launchPatientWorkspace = useLaunchWorkspaceRequiringVisit(patient.id, 'billing-form');
 
   const handleAddNewBill = () => {
-    setCurrentVisit(patient.id, null);
-    launchPatientWorkspace({ workspaceTitle: t('billingForm', 'Billing Form'), patientUuid: patient.id, patient });
+    launchWorkspace('billing-form-workspace', {
+      patientUuid: patient.id,
+      patient,
+    });
+  };
+
+  const getAddBillButtonContent = () => {
+    if (isVisitLoading) {
+      return <InlineLoading status="active" description={t('loading', 'Loading...')} />;
+    }
+    if (activeVisit) {
+      return t('addNewBillItem', 'Add New Bill Item');
+    }
+    return t('startVisit', 'Start Visit');
   };
 
   return (
@@ -148,8 +159,8 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient, onCancel 
         <Button kind="ghost" onClick={() => onCancel('')} renderIcon={Close}>
           {t('close', 'Close')}
         </Button>
-        <Button kind="ghost" onClick={handleAddNewBill} renderIcon={Add}>
-          {t('addNewBillItem', 'Add New Bill Item')}
+        <Button disabled={!activeVisit} kind="ghost" onClick={handleAddNewBill} renderIcon={Add}>
+          {getAddBillButtonContent()}
         </Button>
       </div>
     </div>
