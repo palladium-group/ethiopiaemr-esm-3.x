@@ -43,9 +43,10 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
   const pendingLineItems: Array<LineItem> = uniqBy(
     patientBills
       ?.filter((bill) => bill.status !== PaymentStatus.PAID && bill.status !== PaymentStatus.EXEMPTED)
-      .map((bill) => bill.lineItems)
-      .flat() ?? [],
+      .flatMap((bill) => bill.lineItems) ?? [],
     'uuid',
+  )?.filter(
+    (lineItem) => lineItem.paymentStatus !== PaymentStatus.PAID && lineItem.paymentStatus !== PaymentStatus.EXEMPTED,
   );
 
   const transactionTypes = Object.entries(BILL_DEPOSIT_TRANSACTION_TYPES).map(([key, value]) => ({
@@ -53,20 +54,35 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
     value,
   }));
 
-  const depositTransactionFormSchema = z.object({
-    billLineItem: z.string().min(1),
-    amount: z
-      .number()
-      .min(1)
-      .max(deposit?.availableBalance ?? 0),
-    transactionType: z.string().min(1),
-    reason: z.string().min(1),
-  });
+  const depositTransactionFormSchema = z
+    .object({
+      billLineItem: z.string().min(1),
+      amount: z.number().min(1),
+      transactionType: z.string().min(1),
+      reason: z.string().min(1),
+    })
+    .refine(
+      (data) => {
+        const selectedLineItem = pendingLineItems?.find((item) => item.uuid === data.billLineItem);
+        const maxFromBalance = deposit?.availableBalance ?? 0;
+        const maxFromLineItem = selectedLineItem?.price ?? Infinity;
+        const maxAmount = Math.min(maxFromBalance, maxFromLineItem);
+        return data.amount <= maxAmount;
+      },
+      {
+        message: t(
+          'amountExceedsLimit',
+          'Amount must not exceed the available balance or the selected line item amount',
+        ),
+        path: ['amount'],
+      },
+    );
   type DepositTransactionFormType = z.infer<typeof depositTransactionFormSchema>;
 
   const {
     control,
     handleSubmit,
+    watch,
     formState: { isDirty, isSubmitting, errors },
   } = useForm({
     resolver: zodResolver(depositTransactionFormSchema),
@@ -124,6 +140,13 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
       closeWorkspaceWithSavedChanges();
     }
   };
+  const selectedBillLineItemUuid = watch('billLineItem');
+  const selectedLineItem = pendingLineItems?.find((item) => item.uuid === selectedBillLineItemUuid);
+  const maxAmount =
+    selectedLineItem == null
+      ? deposit?.availableBalance ?? 0
+      : Math.min(deposit?.availableBalance ?? 0, selectedLineItem.price);
+
   const handleError = (error: any) => {
     console.error('Error submitting form:', error);
   };
@@ -189,7 +212,7 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
                 invalidText={errors.amount?.message}
                 label={t('amount', 'Amount')}
                 onChange={({ target }, { value }) => field.onChange(Number(value))}
-                max={deposit?.availableBalance}
+                max={maxAmount}
                 min={0}
                 size="md"
                 hideSteppers
