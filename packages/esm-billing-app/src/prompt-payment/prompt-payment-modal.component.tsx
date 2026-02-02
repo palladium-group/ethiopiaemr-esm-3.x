@@ -19,7 +19,6 @@ import { navigate, useConfig, usePatient } from '@openmrs/esm-framework';
 import { BillingConfig } from '../config-schema';
 import { useBillingPrompt } from './prompt-payment.resource';
 import { useCurrencyFormatting } from '../helpers/currency';
-import { useParams } from 'react-router-dom';
 
 type PromptPaymentModalProps = {};
 
