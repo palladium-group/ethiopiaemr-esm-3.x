@@ -26,11 +26,8 @@ export const usePaymentModes = () => {
   };
 };
 
-export const createPaymentMode = (paymentMode: Partial<PaymentMode>, uuid?: string, paymentMethodsUuid?: string) => {
-  const url =
-    uuid && paymentMethodsUuid
-      ? `${restBaseUrl}/cashier/${paymentMethodsUuid}/${uuid}`
-      : `${restBaseUrl}/cashier/paymentMode`;
+export const createPaymentMode = (paymentMode: Partial<PaymentMode>, uuid?: string) => {
+  const url = uuid ? `${restBaseUrl}/cashier/paymentMode/${uuid}` : `${restBaseUrl}/cashier/paymentMode`;
 
   return openmrsFetch(url, {
     method: 'POST',

@@ -84,11 +84,7 @@ const PaymentModeWorkspace: React.FC<PaymentModeWorkspaceProps> = ({
     };
 
     try {
-      const response = await createPaymentMode(
-        payload,
-        initialPaymentMode?.uuid ?? '',
-        visitAttributeTypes.paymentMethods,
-      );
+      const response = await createPaymentMode(payload, initialPaymentMode?.uuid ?? '');
       if (response.ok) {
         showSnackbar({
           title: t('paymentModeCreated', 'Payment mode created successfully'),
