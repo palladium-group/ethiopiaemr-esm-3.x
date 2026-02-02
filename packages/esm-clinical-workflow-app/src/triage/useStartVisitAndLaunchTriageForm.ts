@@ -102,6 +102,18 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
         return;
       }
 
+      if (!formName?.trim()) {
+        const validationError = new Error('Form name is required');
+        setError(validationError);
+        showSnackbar({
+          title: t('triageDashboardError', 'Error'),
+          kind: 'error',
+          subtitle: t('triageDashboardInvalidFormName', 'Invalid form name'),
+          isLowContrast: true,
+        });
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
 
