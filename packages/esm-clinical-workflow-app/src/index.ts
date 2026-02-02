@@ -9,6 +9,7 @@ import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
+import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
 
 const moduleName = '@ethiopia/esm-clinical-workflow-app';
 
@@ -103,3 +104,8 @@ export const transferNotesOverview = getAsyncLifecycle(
   () => import('./patient-transfer/transfer-notes-overview.extension'),
   options,
 );
+
+export const startVisitActionButton = getSyncLifecycle(startVisitActionButtonComponent, {
+  featureName: 'patient-action-start-visit',
+  moduleName,
+});
