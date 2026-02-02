@@ -323,6 +323,7 @@
   "SHIF": "Social Health Insurance Fund",
   "shortName": "Short Name",
   "startDate": "Start date",
+  "startVisit": "Start Visit",
   "status": "Status",
   "stockItem": "Stock Item",
   "stockItemError": "Stock Item",
