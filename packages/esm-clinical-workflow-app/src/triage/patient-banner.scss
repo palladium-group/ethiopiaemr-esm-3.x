@@ -12,3 +12,9 @@
   justify-content: flex-end;
   align-items: center;
 }
+
+.patientTypeDropdown {
+  flex: 1;
+  max-width: 280px;
+  margin-right: layout.$spacing-05;
+}
