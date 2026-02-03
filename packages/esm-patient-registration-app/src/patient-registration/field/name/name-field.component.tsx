@@ -86,6 +86,7 @@ export const NameField = () => {
       name="middleName"
       labelText={t('middleNameLabelText', 'Middle Name')}
       checkWarning={checkNumber}
+      required
     />
   );
 
