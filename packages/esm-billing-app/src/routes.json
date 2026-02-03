@@ -332,7 +332,7 @@
       "type": "other-form"
     },
     {
-      "name": "billing-form",
+      "name": "billing-form-workspace",
       "component": "billingForm",
       "title": "Billing Form",
       "type": "other-form",
@@ -421,6 +421,10 @@
     {
       "name": "require-billing-modal",
       "component": "requirePaymentModal"
+    },
+    {
+      "name": "delete-payment-point-modal",
+      "component": "deletePaymentPointModal"
     }
   ]
 }

@@ -6,9 +6,7 @@ import {
   restBaseUrl,
   showSnackbar,
   useLayoutType,
-  useConfig,
 } from '@openmrs/esm-framework';
-import type { BillingConfig } from '../../config-schema';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import styles from './payment-mode.workspace.scss';
 import { TextInput, ButtonSet, Button, InlineLoading, Stack, Toggle } from '@carbon/react';
@@ -33,10 +31,12 @@ const PaymentModeWorkspace: React.FC<PaymentModeWorkspaceProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { visitAttributeTypes } = useConfig<BillingConfig>();
   const { paymentModeFormSchema } = usePaymentModeFormSchema();
   type PaymentModeFormSchema = z.infer<typeof paymentModeFormSchema>;
   const formDefaultValues = Object.keys(initialPaymentMode).length > 0 ? initialPaymentMode : {};
+
+  // show payment mode toggle, hide the toggle for now untill the CRUD logic is properly implemented
+  const showPaymentModeToggle = false;
 
   const formMethods = useForm<PaymentModeFormSchema>({
     resolver: zodResolver(paymentModeFormSchema),
@@ -169,22 +169,26 @@ const PaymentModeWorkspace: React.FC<PaymentModeWorkspaceProps> = ({
                 )}
               />
             </ResponsiveWrapper>
-            <ResponsiveWrapper>
-              <Controller
-                name="retired"
-                control={formMethods.control}
-                render={({ field }) => (
-                  <Toggle
-                    labelText={t('enablePaymentMode', 'Enable payment mode')}
-                    labelA="Off"
-                    labelB="On"
-                    toggled={field.value}
-                    id="retired"
-                    onToggle={(value) => (value ? field.onChange(true) : field.onChange(false))}
-                  />
-                )}
-              />
-            </ResponsiveWrapper>
+
+            {showPaymentModeToggle && (
+              <ResponsiveWrapper>
+                <Controller
+                  name="retired"
+                  control={formMethods.control}
+                  render={({ field }) => (
+                    <Toggle
+                      labelText={t('enablePaymentMode', 'Enable payment mode')}
+                      labelA="Off"
+                      labelB="On"
+                      toggled={field.value}
+                      id="retired"
+                      onToggle={(value) => (value ? field.onChange(true) : field.onChange(false))}
+                    />
+                  )}
+                />
+              </ResponsiveWrapper>
+            )}
+
             <Button size="sm" kind="tertiary" renderIcon={Add} onClick={() => appendAttributeType({})}>
               {t('addAttributeType', 'Add attribute type')}
             </Button>
