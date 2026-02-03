@@ -19,7 +19,7 @@ const EmergencyTriagePage: React.FC = () => {
 
   const handleRegisterNewPatient = useCallback(() => {
     launchWorkspace('patient-registration-workspace', {
-      workspaceTitle: t('registerNewPatient', 'Register New Emergency Triage Patient'),
+      workspaceTitle: t('registerNewPatient', 'Register New Patient'),
       onPatientRegistered: (uuid: string) => {
         if (variantConfig?.patientTypes && Object.keys(variantConfig.patientTypes).length > 0) {
           setPatientUuid(uuid);
