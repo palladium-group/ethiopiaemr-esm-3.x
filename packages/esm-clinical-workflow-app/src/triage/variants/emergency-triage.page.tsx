@@ -9,23 +9,25 @@ import { useStartVisitAndLaunchTriageForm } from '../useStartVisitAndLaunchTriag
 import EmptyState from './empty-state.component';
 import styles from '../triage-dashboard.scss';
 
-interface TriageVariantDashboardProps {
-  variant: string;
-}
-
-const TriageVariantDashboard: React.FC<TriageVariantDashboardProps> = ({ variant }) => {
+const EmergencyTriagePage: React.FC = () => {
   const { t } = useTranslation();
   const { triageVariants, enforceTriagePrivileges } = useConfig<ClinicalWorkflowConfig>();
   const [patientUuid, setPatientUuid] = useState<string | null>(null);
   const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
 
-  const variantConfig = triageVariants[variant];
+  const variantConfig = triageVariants['emergency'];
 
   const handleRegisterNewPatient = useCallback(() => {
     launchWorkspace('patient-registration-workspace', {
-      workspaceTitle: t('registerNewPatient', 'Register New Patient'),
+      workspaceTitle: t('registerNewPatient', 'Register New Emergency Triage Patient'),
       onPatientRegistered: (uuid: string) => {
-        if (variantConfig?.formUuid && variantConfig?.name) {
+        if (variantConfig?.patientTypes && Object.keys(variantConfig.patientTypes).length > 0) {
+          setPatientUuid(uuid);
+          launchWorkspace('patient-type-selection-workspace', {
+            patientUuid: uuid,
+            variantConfig,
+          });
+        } else if (variantConfig?.formUuid && variantConfig?.name) {
           handleStartVisitAndLaunchTriageForm(uuid, variantConfig.formUuid, variantConfig.name);
         }
       },
@@ -39,37 +41,15 @@ const TriageVariantDashboard: React.FC<TriageVariantDashboardProps> = ({ variant
         <InlineNotification
           kind="error"
           title={t('triageNotConfigured', 'Triage not configured')}
-          subtitle={t('configureTriageVariant', 'Please configure the {{variant}} triage form.', { variant })}
+          subtitle={t('configureTriageVariant', 'Please configure the Emergency Triage form.')}
         />
       </div>
     );
   }
 
-  // const hasPrivilege = useTriagePrivilege(variantConfig);
-
-  // if (enforceTriagePrivileges && !hasPrivilege) {
-  //   return (
-  //     <div className={styles.triageDashboardContainer}>
-  //       <PageHeader title={variantConfig.displayName} illustration={<TriagePictogram />} />
-  //       <InlineNotification
-  //         kind="error"
-  //         title={t('accessDenied', 'Access Denied')}
-  //         subtitle={t(
-  //           'missingTriagePrivilege',
-  //           'You do not have the required privilege ({{privilege}}) to access {{triageName}}.',
-  //           {
-  //             privilege: variantConfig.privilege,
-  //             triageName: variantConfig.displayName,
-  //           },
-  //         )}
-  //       />
-  //     </div>
-  //   );
-  // }
-
   return (
     <div className={styles.triageDashboardContainer}>
-      <PageHeader className={styles.pageHeader} title={variantConfig.displayName} illustration={<TriagePictogram />} />
+      <PageHeader className={styles.pageHeader} title="Emergency Triage" illustration={<TriagePictogram />} />
 
       <div className={styles.headerActions}>
         <ExtensionSlot
@@ -88,15 +68,10 @@ const TriageVariantDashboard: React.FC<TriageVariantDashboardProps> = ({ variant
       {!patientUuid ? (
         <EmptyState />
       ) : (
-        <PatientBanner
-          patientUuid={patientUuid}
-          formUuid={variantConfig.formUuid}
-          formName={variantConfig.name}
-          setPatientUuid={setPatientUuid}
-        />
+        <PatientBanner patientUuid={patientUuid} variantConfig={variantConfig} setPatientUuid={setPatientUuid} />
       )}
     </div>
   );
 };
 
-export default TriageVariantDashboard;
+export default EmergencyTriagePage;

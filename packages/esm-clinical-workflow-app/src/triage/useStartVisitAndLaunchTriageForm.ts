@@ -8,6 +8,7 @@ import {
   showModal,
   showSnackbar,
   useConfig,
+  useSession,
   Visit,
 } from '@openmrs/esm-framework';
 
@@ -33,27 +34,24 @@ export const launchTriageFormWorkspace = (
     throw new Error('Invalid visit data received');
   }
 
-  // Launch triage form workspace
-  launchWorkspace2(
-    'clinical-workflow-patient-form-entry-workspace',
-    {
-      formEntryWorkspaceName: formName,
-      patient,
-      visitContext: visit,
-      form: {
-        visitUuid: visit.uuid,
-        uuid: formUuid,
-        visitTypeUuid: visit.visitType.uuid,
-      },
-      encounterUuid: '',
-      handlePostResponse: handleShowModal,
+  const workspaceData = {
+    formEntryWorkspaceName: formName,
+    patient,
+    visitContext: visit,
+    form: {
+      visitUuid: visit.uuid,
+      uuid: formUuid,
+      visitTypeUuid: visit.visitType.uuid,
     },
-    {
-      patientUuid: patientUuid,
-      patient: patient,
-      visitContext: visit,
-    },
-  );
+    encounterUuid: '',
+    handlePostResponse: handleShowModal,
+  };
+
+  launchWorkspace2('clinical-workflow-patient-form-entry-workspace', workspaceData, {
+    patient: patient,
+    patientUuid: patientUuid,
+    visitContext: visit,
+  });
 
   // Set z-index for workspace container
   setTimeout(() => {
@@ -75,6 +73,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
   const { visitTypeUuid } = useConfig<ClinicalWorkflowConfig>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const { sessionLocation } = useSession();
 
   const handleStartVisitAndLaunchTriageForm = useCallback(
     async (patientUuid: string, formUuid: string, formName: string) => {
@@ -127,7 +126,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
 
         let visit = await getCurrentVisitForPatient(patientUuid);
         if (!visit) {
-          const visitResponse = await createVisitForPatient(patientUuid, visitTypeUuid);
+          const visitResponse = await createVisitForPatient(patientUuid, visitTypeUuid, sessionLocation.uuid);
 
           if (!visitResponse.ok) {
             throw new Error(
@@ -161,7 +160,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
         setIsLoading(false);
       }
     },
-    [t, visitTypeUuid],
+    [t, visitTypeUuid, sessionLocation],
   );
 
   return {

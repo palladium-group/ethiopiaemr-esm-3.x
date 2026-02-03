@@ -13,28 +13,37 @@ export const configSchema = {
     _description: 'Mapping of triage variants with form configs and required privileges.',
     _default: {
       central: {
-        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
+        formUuid: 'd9375924-49da-45f8-b74e-7d0454ac1c29',
         name: 'Central Triage Form',
         displayName: 'Central Triage',
         enabled: true,
         order: 0,
         privilege: 'Central Triage Access',
+        patientTypes: {
+          adult: {
+            displayName: 'Adult',
+            formUuid: 'd9375924-49da-45f8-b74e-7d0454ac1c29',
+            formName: 'Central Triage - Adult',
+          },
+          pediatric: {
+            displayName: 'Pediatric',
+            formUuid: 'd9375924-49da-45f8-b74e-7d0454ac1c29',
+            formName: 'Central Triage - Pediatric',
+          },
+          gynecology: {
+            displayName: 'Gynecology',
+            formUuid: 'd9375924-49da-45f8-b74e-7d0454ac1c29',
+            formName: 'Central Triage - Gynecology',
+          },
+        },
       },
       emergency: {
-        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
+        formUuid: '61c4de68-1721-45a6-b42e-f5ca6439493f',
         name: 'Emergency Triage Form',
         displayName: 'Emergency Triage',
         enabled: true,
         order: 1,
         privilege: 'Emergency Triage Access',
-      },
-      pediatric: {
-        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
-        name: 'Pediatric Triage Form',
-        displayName: 'Pediatric Triage',
-        enabled: false,
-        order: 2,
-        privilege: 'Pediatric Triage Access',
       },
     },
   },
@@ -135,6 +144,12 @@ export const configSchema = {
   },
 };
 
+export interface PatientTypeConfig {
+  displayName: string;
+  formUuid: string;
+  formName: string;
+}
+
 export interface TriageVariantConfig {
   formUuid: string;
   name: string;
@@ -142,6 +157,7 @@ export interface TriageVariantConfig {
   enabled: boolean;
   order: number;
   privilege: string;
+  patientTypes?: Record<string, PatientTypeConfig>;
 }
 
 export type ClinicalWorkflowConfig = {
