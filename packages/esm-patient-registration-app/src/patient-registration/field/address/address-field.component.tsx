@@ -26,6 +26,7 @@ export const AddressComponent: React.FC = () => {
     fieldConfigurations: {
       address: {
         useAddressHierarchy: { enabled: addressHierarchyEnabled, useQuickSearch, searchAddressByLevel },
+        validation,
       },
     },
   } = config;
@@ -44,10 +45,10 @@ export const AddressComponent: React.FC = () => {
         id: codeName,
         name: codeName,
         label: displayText,
-        required: Boolean(allRequiredFields[codeName]),
+        required: Boolean(allRequiredFields[codeName]) || validation?.required,
       };
     });
-  }, [addressTemplate]);
+  }, [addressTemplate, validation]);
 
   const [selected, setSelected] = useState('');
 

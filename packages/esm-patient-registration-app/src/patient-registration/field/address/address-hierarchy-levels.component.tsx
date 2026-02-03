@@ -42,6 +42,12 @@ const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute }) => {
     [updateChildElements, meta.value, setValue],
   );
 
+  const handleDropdownClose = useCallback(() => {
+    if (!entries?.includes(field?.value)) {
+      setValue('');
+    }
+  }, [setValue, field?.value, entries]);
+
   return (
     <ComboInput
       entries={entries}
@@ -54,6 +60,7 @@ const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute }) => {
         required: attribute?.required,
       }}
       handleInputChange={handleInputChange}
+      onDropdownClose={handleDropdownClose}
     />
   );
 };

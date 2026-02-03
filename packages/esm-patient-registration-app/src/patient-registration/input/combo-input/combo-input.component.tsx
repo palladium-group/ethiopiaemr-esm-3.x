@@ -16,9 +16,17 @@ interface ComboInputProps {
   } & Omit<TextInputProps, 'value' | 'labelText' | 'id' | 'onChange' | 'onFocus' | 'autoComplete' | 'onKeyDown'>;
   handleInputChange: (newValue: string) => void;
   handleSelection: (newSelection: string) => void;
+  onDropdownClose?: () => void;
 }
 
-const ComboInput: React.FC<ComboInputProps> = ({ entries, name, fieldProps, handleInputChange, handleSelection }) => {
+const ComboInput: React.FC<ComboInputProps> = ({
+  entries,
+  name,
+  fieldProps,
+  handleInputChange,
+  handleSelection,
+  onDropdownClose,
+}) => {
   const [highlightedEntry, setHighlightedEntry] = useState(-1);
   const { value = '' } = fieldProps;
   const [showEntries, setShowEntries] = useState(false);
@@ -80,6 +88,12 @@ const ComboInput: React.FC<ComboInputProps> = ({ entries, name, fieldProps, hand
       window.removeEventListener('click', listener);
     };
   });
+
+  useEffect(() => {
+    if (!showEntries && value !== '') {
+      onDropdownClose && onDropdownClose();
+    }
+  }, [showEntries]);
 
   return (
     <div className={styles.comboInput} ref={comboInputRef}>
