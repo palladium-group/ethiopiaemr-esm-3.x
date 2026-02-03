@@ -62,9 +62,10 @@ import PaymentModeWorkspace from './bill-administration/payment-modes/payment-mo
 import RequirePaymentModal from './prompt-payment/prompt-payment-modal.component';
 
 // Payment Points Components
-import { CreatePaymentPoint } from './bill-administration/payment-points/create-payment-point.component';
+import { PaymentPointForm } from './bill-administration/payment-points/payment-point-form.component';
 import { ClockIn } from './bill-administration/payment-points/payment-point/clock-in.modal';
 import { ClockOut } from './bill-administration/payment-points/payment-point/clock-out.modal';
+import { DeletePaymentPointModal } from './bill-administration/payment-points/delete-payment-point.modal';
 
 // Print Preview Components
 import PrintPreviewModal from './print-preview/print-preview.modal';
@@ -121,9 +122,10 @@ export const deletePaymentModeModal = getSyncLifecycle(DeletePaymentModeModal, o
 export const paymentWorkspace = getSyncLifecycle(PaymentWorkspace, options);
 
 // Payment Points Components
-export const createPaymentPoint = getSyncLifecycle(CreatePaymentPoint, options);
+export const createPaymentPoint = getSyncLifecycle(PaymentPointForm, options);
 export const clockIn = getSyncLifecycle(ClockIn, options);
 export const clockOut = getSyncLifecycle(ClockOut, options);
+export const deletePaymentPointModal = getSyncLifecycle(DeletePaymentPointModal, options);
 
 // Service Management Components
 export const addServiceForm = getSyncLifecycle(AddServiceForm, options);

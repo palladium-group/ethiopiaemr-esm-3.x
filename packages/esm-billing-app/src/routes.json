@@ -421,6 +421,10 @@
     {
       "name": "require-billing-modal",
       "component": "requirePaymentModal"
+    },
+    {
+      "name": "delete-payment-point-modal",
+      "component": "deletePaymentPointModal"
     }
   ]
 }

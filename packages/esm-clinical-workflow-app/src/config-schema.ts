@@ -13,7 +13,7 @@ export const configSchema = {
     _description: 'Mapping of triage variants with form configs and required privileges.',
     _default: {
       central: {
-        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
+        formUuid: '37f6bd8d-586a-4169-95fa-5781f987fe62',
         name: 'Central Triage Form',
         displayName: 'Central Triage',
         enabled: true,
@@ -21,7 +21,7 @@ export const configSchema = {
         privilege: 'Central Triage Access',
       },
       emergency: {
-        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
+        formUuid: '4ff622f8-212e-4f0f-b6a6-1aa19d776ffb',
         name: 'Emergency Triage Form',
         displayName: 'Emergency Triage',
         enabled: true,
@@ -29,7 +29,7 @@ export const configSchema = {
         privilege: 'Emergency Triage Access',
       },
       pediatric: {
-        formUuid: '716cb78f-ef6e-4bf2-91cc-4349e71521e9',
+        formUuid: '37f6bd8d-586a-4169-95fa-5781f987fe62',
         name: 'Pediatric Triage Form',
         displayName: 'Pediatric Triage',
         enabled: false,
