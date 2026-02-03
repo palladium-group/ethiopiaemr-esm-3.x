@@ -46,11 +46,9 @@ const PatientSearch: React.FC = () => {
 
   // TODO: Add ability for user to edit billing information
 
-  const hasAtLeastOneBillingInformation =
-    !activeVisit ||
-    activeVisit?.attributes?.some(
-      (attribute) => attribute.attributeType.uuid === billingVisitAttributeTypes.paymentMethod,
-    );
+  const hasAtLeastOneBillingInformation = activeVisit?.attributes?.some(
+    (attribute) => attribute.attributeType.uuid === billingVisitAttributeTypes.paymentMethod,
+  );
 
   const handleLaunchBillingInformationWorkspace = () => {
     launchWorkspace('billing-information-workspace', {
@@ -83,12 +81,14 @@ const PatientSearch: React.FC = () => {
               {t('editPatientInformation', 'Edit Patient Information')}
             </Button>
             <Button
-              disabled={hasAtLeastOneBillingInformation}
+              disabled={!activeVisit}
               kind="ghost"
               size="md"
               renderIcon={Money}
               onClick={handleLaunchBillingInformationWorkspace}>
-              {t('addBillingInformation', 'Add Billing Information')}
+              {hasAtLeastOneBillingInformation
+                ? t('editBillingInformation', 'Edit Billing Information')
+                : t('addBillingInformation', 'Add Billing Information')}
             </Button>
             <Button kind="ghost" size="md" renderIcon={Close} onClick={() => setPatientUuid(undefined)}>
               {t('close', 'Close')}
