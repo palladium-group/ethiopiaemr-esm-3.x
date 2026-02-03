@@ -126,6 +126,13 @@
         "fullWidth": false
       },
       "order": 6
+    },
+    {
+      "name": "start-visit-button2",
+      "component": "startVisitActionButton",
+      "slot": "patient-actions-slot",
+      "online": true,
+      "offline": true
     }
   ],
   "workspaces": [
