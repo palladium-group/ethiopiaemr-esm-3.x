@@ -124,10 +124,80 @@ export const createBillingInformationVisitAttribute = (
   return visitAttributePayload;
 };
 
-export const updateVisitWithBillingInformation = (
+/**
+ * Updates a single visit attribute using the update endpoint
+ */
+export const updateVisitAttribute = (visitUuid: string, attributeUuid: string, value: string) => {
+  return openmrsFetch(`${restBaseUrl}/visit/${visitUuid}/attribute/${attributeUuid}`, {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json',
+    },
+    body: {
+      value: value,
+    },
+  });
+};
+
+export type VisitAttribute = {
+  uuid: string;
+  attributeType: {
+    uuid: string;
+  };
+  value: string;
+};
+
+/**
+ * Creates or updates visit attributes with billing information
+ * If attributes already exist, uses the update endpoint for each attribute
+ * Otherwise, uses the create endpoint
+ */
+export const updateVisitWithBillingInformation = async (
   visitAttributePayload: Array<{ attributeType: { uuid: string } | string; value: string }>,
   visitUuid: string,
+  existingVisitAttributes?: VisitAttribute[],
 ) => {
+  if (!visitUuid) {
+    throw new Error('Visit UUID is required');
+  }
+
+  // If we have existing attributes, update them individually
+  if (existingVisitAttributes && existingVisitAttributes.length > 0) {
+    const updatePromises: Promise<any>[] = [];
+
+    for (const payload of visitAttributePayload) {
+      const attributeTypeUuid =
+        typeof payload.attributeType === 'string' ? payload.attributeType : payload.attributeType.uuid;
+
+      // Find existing attribute with matching attribute type
+      const existingAttribute = existingVisitAttributes.find((attr) => attr.attributeType.uuid === attributeTypeUuid);
+
+      if (existingAttribute) {
+        // Update existing attribute
+        updatePromises.push(updateVisitAttribute(visitUuid, existingAttribute.uuid, payload.value));
+      } else {
+        // Create new attribute using the original endpoint
+        updatePromises.push(
+          openmrsFetch(`${restBaseUrl}/visit/${visitUuid}`, {
+            method: 'POST',
+            headers: {
+              'Content-type': 'application/json',
+            },
+            body: {
+              attributes: [payload],
+            },
+          }),
+        );
+      }
+    }
+
+    // Wait for all updates to complete
+    const results = await Promise.all(updatePromises);
+    // Return the first successful response (they should all succeed or all fail)
+    return results[0];
+  }
+
+  // No existing attributes, use the create endpoint
   return openmrsFetch(`${restBaseUrl}/visit/${visitUuid}`, {
     method: 'POST',
     headers: {
