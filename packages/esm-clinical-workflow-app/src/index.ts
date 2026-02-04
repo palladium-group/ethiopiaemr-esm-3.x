@@ -8,6 +8,7 @@ import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
+import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
 import CentralTriagePage from './triage/variants/central-triage.page';
 import EmergencyTriagePage from './triage/variants/emergency-triage.page';
 import PatientTypeSelectionWorkspace from './triage/patient-type-selection.workspace';
@@ -126,3 +127,8 @@ export const transferNotesOverview = getAsyncLifecycle(
   () => import('./patient-transfer/transfer-notes-overview.extension'),
   options,
 );
+
+export const startVisitActionButton = getSyncLifecycle(startVisitActionButtonComponent, {
+  featureName: 'patient-action-start-visit',
+  moduleName,
+});
