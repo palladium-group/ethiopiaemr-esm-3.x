@@ -60,7 +60,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     isInitialValuesEmpty,
   });
 
-  const { setValue } = userFormMethods;
+  const { setValue, trigger } = userFormMethods;
 
   const {
     steps,
@@ -76,6 +76,19 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     getSubmitButtonType,
     getSubmitButtonIcon,
   } = useUserFormSteps({ t, closeWorkspace });
+
+  const handleNextWithValidation = useCallback(
+    async (e: React.MouseEvent) => {
+      if (hasDemographicInfo) {
+        const isValid = await trigger(['givenName', 'familyName', 'gender']);
+        if (!isValid) {
+          return;
+        }
+      }
+      handleNextClick(e);
+    },
+    [hasDemographicInfo, trigger, handleNextClick],
+  );
 
   const { onSubmit, handleError } = useUserFormSubmission({
     attributeTypeMapping,
@@ -218,7 +231,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                     disabled={isSubmitting || Object.keys(errors).length > 0}
                     renderIcon={getSubmitButtonIcon()}
                     className={styles.btn}
-                    onClick={handleNextClick}>
+                    onClick={handleNextWithValidation}>
                     {isSubmitting ? (
                       <span style={{ display: 'flex', alignItems: 'center' }}>
                         {t('submitting', 'Submitting...')} <InlineLoading status="active" />
