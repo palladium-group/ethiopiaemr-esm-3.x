@@ -62,6 +62,33 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
 
   const { setValue, trigger } = userFormMethods;
 
+  const isStepValid = useCallback(
+    (stepIndex: number) => {
+      switch (stepIndex) {
+        case 0:
+          return !errors.givenName && !errors.familyName && !errors.gender;
+        case 1:
+          if (isInitialValuesEmpty) {
+            return !errors.username && !errors.password && !errors.confirmPassword;
+          }
+          return !errors.username;
+        case 2:
+        case 3:
+        default:
+          return true;
+      }
+    },
+    [
+      errors.givenName,
+      errors.familyName,
+      errors.gender,
+      errors.username,
+      errors.password,
+      errors.confirmPassword,
+      isInitialValuesEmpty,
+    ],
+  );
+
   const {
     steps,
     currentIndex,
@@ -69,25 +96,33 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     hasLoginInfo,
     hasProviderAccount,
     hasRoles,
+    markStepComplete,
+    isStepEnabled,
     handleBackClick,
     handleNextClick,
     handleStepChange,
     getSubmitButtonText,
     getSubmitButtonType,
     getSubmitButtonIcon,
-  } = useUserFormSteps({ t, closeWorkspace });
+  } = useUserFormSteps({ t, closeWorkspace, isInitialValuesEmpty, isStepValid });
 
   const handleNextWithValidation = useCallback(
     async (e: React.MouseEvent) => {
+      let isValid = true;
       if (hasDemographicInfo) {
-        const isValid = await trigger(['givenName', 'familyName', 'gender']);
-        if (!isValid) {
-          return;
-        }
+        isValid = await trigger(['givenName', 'familyName', 'gender']);
+      } else if (hasLoginInfo) {
+        isValid = isInitialValuesEmpty
+          ? await trigger(['username', 'password', 'confirmPassword'])
+          : await trigger(['username']);
       }
+      if (!isValid) {
+        return;
+      }
+      markStepComplete(currentIndex);
       handleNextClick(e);
     },
-    [hasDemographicInfo, trigger, handleNextClick],
+    [hasDemographicInfo, hasLoginInfo, isInitialValuesEmpty, currentIndex, trigger, markStepComplete, handleNextClick],
   );
 
   const { onSubmit, handleError } = useUserFormSubmission({
@@ -176,8 +211,13 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
             vertical={true}
             className={styles.progressIndicator}
             onChange={handleStepChange}>
-            {steps.map((step) => (
-              <ProgressStep key={step.id} label={step.label} className={styles.ProgresStep} />
+            {steps.map((step, index) => (
+              <ProgressStep
+                key={step.id}
+                label={step.label}
+                className={styles.ProgresStep}
+                disabled={!isStepEnabled(index)}
+              />
             ))}
           </ProgressIndicator>
           <div className={styles.sections}>
