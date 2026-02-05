@@ -60,6 +60,8 @@ export function useInitialFormValues(
     address: {},
     birthdate: null,
     birthdateEstimated: false,
+    birthtime: undefined,
+    birthtimeFormat: 'AM',
     deathCause: '',
     deathDate: undefined,
     deathTime: undefined,

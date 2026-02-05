@@ -327,6 +327,7 @@ export class FormManager {
         gender: values.gender.charAt(0).toUpperCase(),
         birthdate,
         birthdateEstimated: values.birthdateEstimated,
+        ...(values.birthtime ? { birthtime: values.birthtime } : {}),
         attributes: FormManager.getPatientAttributes(isNewPatient, values, patientUuidMap),
         addresses: [values.address],
         ...FormManager.getPatientDeathInfo(values, config),

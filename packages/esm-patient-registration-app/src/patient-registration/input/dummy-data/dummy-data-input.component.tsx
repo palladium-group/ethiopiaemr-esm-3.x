@@ -23,6 +23,8 @@ export const dummyFormValues: FormValues = {
   yearsEstimated: 1,
   monthsEstimated: 2,
   birthdateEstimated: true,
+  birthtime: undefined,
+  birthtimeFormat: 'AM',
   telephoneNumber: '0800001066',
   isDead: false,
   deathDate: '',

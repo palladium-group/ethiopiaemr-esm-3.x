@@ -110,6 +110,7 @@ export type Patient = {
     gender: string;
     birthdate: string;
     birthdateEstimated: boolean;
+    birthtime?: string;
     attributes: Array<AttributeValue>;
     addresses: Array<Record<string, string>>;
     dead: boolean;
@@ -167,6 +168,8 @@ export interface FormValues {
   };
   birthdate: Date | string;
   birthdateEstimated: boolean;
+  birthtime: string;
+  birthtimeFormat: 'AM' | 'PM';
   deathCause: string;
   deathDate: string | Date;
   deathTime: string;
