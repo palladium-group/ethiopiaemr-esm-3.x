@@ -28,13 +28,10 @@ import {
   WorkspaceContainer,
   isDesktop,
   usePagination,
-  showModal,
 } from '@openmrs/esm-framework';
 import { CardHeader, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
-import capitalize from 'lodash-es/capitalize';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { ROLE_CATEGORIES } from '../../../../constants';
 import EmptyState from '../../../empty-state/empty-state-log.components';
 import { useSystemUserRoleConfigSetting } from '../../../hook/useSystemRoleSetting';
 import { useProvider, useUsers } from './user-list.resource';
@@ -63,13 +60,10 @@ const UserList: React.FC = () => {
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
   const { users, isLoading: isLoadingUsers, error: usersError } = useUsers();
   const { provider, isLoading, error: providerError } = useProvider();
-  const [syncLoading, setSyncLoading] = useState(false);
   const {
     licenseNumberUuid,
     licenseExpiryDateUuid,
     providerNationalIdUuid,
-    licenseBodyUuid,
-    passportNumberUuid,
     providerUniqueIdentifierAttributeTypeUuid,
   } = useConfig<ConfigObject>();
 
@@ -77,13 +71,7 @@ const UserList: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('allUsers');
 
-  const { rolesConfig, error } = useSystemUserRoleConfigSetting();
-
-  const extractInventoryRoleNames = (rolesConfig) => {
-    return rolesConfig.find((category) => category.category === ROLE_CATEGORIES.CORE_INVENTORY)?.roles || [];
-  };
-
-  const inventoryRoleNames = extractInventoryRoleNames(rolesConfig);
+  const { error } = useSystemUserRoleConfigSetting();
 
   const isActiveLicensed = useCallback(
     (provider) => {
@@ -127,12 +115,6 @@ const UserList: React.FC = () => {
     },
     [providerNationalIdUuid, licenseNumberUuid],
   );
-
-  const handleOpenSyncModal = useCallback((provider) => {
-    setSyncLoading(true);
-    showModal('hwr-syncing-modal', { provider });
-    setSyncLoading(false);
-  }, []);
 
   const filteredUsers = useMemo(() => {
     let filtered = users;
@@ -220,7 +202,6 @@ const UserList: React.FC = () => {
   ];
 
   const rowData = results?.map((user) => {
-    const userHasInventoryRole = user.roles.some((role) => inventoryRoleNames.includes(role.display));
     const userProvider = provider.find((p) => p.person?.uuid === user.person.uuid);
 
     const licenseNumberAttribute = userProvider?.attributes.find(
@@ -236,14 +217,6 @@ const UserList: React.FC = () => {
       (attr) => attr?.attributeType?.uuid === providerUniqueIdentifierAttributeTypeUuid,
     );
     const providerUniqueIdentifier = providerUniqueIdentifierAttribute ? providerUniqueIdentifierAttribute.value : '--';
-
-    const providerNationalId = userProvider?.attributes.find(
-      (attr) => attr?.attributeType?.uuid === providerNationalIdUuid,
-    );
-    const registrationNumber = userProvider?.attributes.find((attr) => attr?.attributeType?.uuid === licenseBodyUuid);
-    const passPortNumber = userProvider?.attributes.find((attr) => attr?.attributeType?.uuid === passportNumberUuid);
-
-    const isSyncEnabled = !!(providerNationalId?.value || registrationNumber?.value || passPortNumber?.value);
 
     return {
       id: user.uuid,
@@ -271,22 +244,6 @@ const UserList: React.FC = () => {
               }
             }}
             itemText={t('editUser', 'Edit user')}
-          />
-          <OverflowMenuItem
-            itemText={t('sync', 'Sync')}
-            onClick={() => handleOpenSyncModal(userProvider)}
-            disabled={!isSyncEnabled || syncLoading}
-          />
-          <OverflowMenuItem
-            hasDivider
-            disabled={!userHasInventoryRole}
-            onClick={() => {
-              launchWorkspace('user-role-scope-workspace', {
-                workspaceTitle: t('manageUserRoleScope', 'Manage user role scope'),
-                user: user,
-              });
-            }}
-            itemText={t('manageUserRoleScope', 'Manage user role scope')}
           />
         </OverflowMenu>
       ),
