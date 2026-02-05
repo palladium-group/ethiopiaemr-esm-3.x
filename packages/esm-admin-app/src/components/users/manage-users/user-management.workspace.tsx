@@ -42,7 +42,6 @@ const EMPTY_FORM_VALUES: Partial<UserFormSchema> = {
   username: '',
   password: '',
   confirmPassword: '',
-  forcePasswordChange: false,
   roles: [],
   providerUniqueIdentifier: '',
   nationalId: '',
@@ -111,10 +110,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
         case 0:
           return !errors.givenName && !errors.familyName && !errors.gender && !errors.phoneNumber && !errors.email;
         case 1:
-          if (isInitialValuesEmpty) {
-            return !errors.username && !errors.password && !errors.confirmPassword;
-          }
-          return !errors.username;
+          return !errors.username && !errors.password && !errors.confirmPassword;
         case 2:
         case 3:
         default:
@@ -130,7 +126,6 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
       errors.username,
       errors.password,
       errors.confirmPassword,
-      isInitialValuesEmpty,
     ],
   );
 
@@ -157,9 +152,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
       if (hasDemographicInfo) {
         isValid = await trigger(['givenName', 'familyName', 'gender', 'phoneNumber', 'email']);
       } else if (hasLoginInfo) {
-        isValid = isInitialValuesEmpty
-          ? await trigger(['username', 'password', 'confirmPassword'])
-          : await trigger(['username']);
+        isValid = await trigger(['username', 'password', 'confirmPassword']);
       }
       if (!isValid) {
         return;
@@ -167,7 +160,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
       markStepComplete(currentIndex);
       handleNextClick(e);
     },
-    [hasDemographicInfo, hasLoginInfo, isInitialValuesEmpty, currentIndex, trigger, markStepComplete, handleNextClick],
+    [hasDemographicInfo, hasLoginInfo, currentIndex, trigger, markStepComplete, handleNextClick],
   );
 
   const { onSubmit, handleError } = useUserFormSubmission({
@@ -298,14 +291,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                         provider={providerSource}
                       />
                     )}
-                    {hasLoginInfo && (
-                      <LoginSection
-                        control={userFormMethods.control}
-                        errors={errors}
-                        isInitialValuesEmpty={isInitialValuesEmpty}
-                        watch={userFormMethods.watch}
-                      />
-                    )}
+                    {hasLoginInfo && <LoginSection control={userFormMethods.control} errors={errors} />}
                     {hasRoles && (
                       <RolesSection
                         control={userFormMethods.control}

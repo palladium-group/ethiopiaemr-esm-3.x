@@ -143,9 +143,12 @@ export function useUserFormSubmission({
       ].filter((attr) => attr.value),
     };
 
+    const includePassword =
+      isInitialValuesEmpty || (sanitizedData.password && sanitizedData.password.trim().length > 0);
+
     const payload: Partial<User> = {
       username: sanitizedData.username,
-      password: sanitizedData.password,
+      ...(includePassword ? { password: sanitizedData.password } : {}),
       person: selectedProvider?.person?.uuid
         ? { uuid: selectedProvider.person.uuid, gender: selectedProvider.person.gender ?? '' }
         : {
