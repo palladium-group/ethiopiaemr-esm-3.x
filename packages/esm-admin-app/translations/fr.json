@@ -103,6 +103,7 @@
   "shaContractExpiry": "Date d’expiration du contrat SHA",
   "shalicenceNumber": "Numéro de licence SHA",
   "shaStatus": "Statut SHA",
+  "reset": "Réinitialiser",
   "startTime": "Heure de début",
   "stockLocation": "Emplacement du stock",
   "stockOperation": "Opération de stock",

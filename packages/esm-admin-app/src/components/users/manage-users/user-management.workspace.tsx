@@ -16,9 +16,9 @@ import { User } from '../../../types';
 import { ConfigObject } from '../../../config-schema';
 import { useUsers } from './user-list/user-list.resource';
 import { type ProviderSearchResult } from './provider-search.resource';
-import { extractNameParts, extractProviderFormValues } from './user-management.utils';
+import { extractNameParts, extractProviderFormValues, hasExternalOrIhrisAttributes } from './user-management.utils';
 import { useProviderAttributeMapping } from './hooks/useProviderAttributeMapping';
-import { useUserManagementForm } from './hooks/useUserManagementForm';
+import { useUserManagementForm, type UserFormSchema } from './hooks/useUserManagementForm';
 import { useUserFormSteps } from './hooks/useUserFormSteps';
 import { useUserFormSubmission } from './hooks/useUserFormSubmission';
 import { DemographicSection } from './sections/demographic-section.component';
@@ -31,6 +31,30 @@ type ManageUserWorkspaceProps = DefaultWorkspaceProps & {
   initialProvider?: ProviderSearchResult | ProviderWithAttributes;
 };
 
+const EMPTY_FORM_VALUES: Partial<UserFormSchema> = {
+  givenName: '',
+  middleName: '',
+  familyName: '',
+  gender: undefined,
+  phoneNumber: '',
+  email: '',
+  providerIdentifiers: false,
+  username: '',
+  password: '',
+  confirmPassword: '',
+  forcePasswordChange: false,
+  roles: [],
+  providerUniqueIdentifier: '',
+  nationalId: '',
+  passportNumber: '',
+  providerLicense: '',
+  registrationNumber: '',
+  qualification: '',
+  licenseExpiryDate: undefined,
+  systemId: '',
+  isEditProvider: false,
+};
+
 const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
   closeWorkspace,
   promptBeforeClosing,
@@ -41,6 +65,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const [selectedProvider, setSelectedProvider] = useState<ProviderSearchResult | null>(null);
+  const [formResetKey, setFormResetKey] = useState(0);
 
   // Gets providers by name and returns all rows if there is no match
   const { provider = [], loadingProvider, providerError } = useProvider(initialUserValue?.person?.display);
@@ -60,6 +85,8 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
   const { roles = [], isLoading } = useRoles();
   const { rolesConfig } = useSystemUserRoleConfigSetting();
   const config = useConfig<ConfigObject>();
+
+  const isProviderReadOnly = providerSource.length > 0 && hasExternalOrIhrisAttributes(providerSource[0], config);
 
   const { attributeTypeMapping, providerValues } = useProviderAttributeMapping({
     provider: providerSource,
@@ -145,6 +172,9 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     selectedProvider,
     initialUserValue,
     provider: providerSource,
+    providerValues,
+    isProviderReadOnly,
+    isInitialValuesEmpty,
     personPhonenumberAttributeUuid: config.personPhonenumberAttributeUuid,
     personEmailAttributeUuid: config.personEmailAttributeUuid,
     licenseBodyUuid: config.licenseBodyUuid,
@@ -193,6 +223,8 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
           : undefined,
         { shouldDirty: true },
       );
+      setValue('phoneNumber', values.phoneNumber, { shouldDirty: true });
+      setValue('email', values.email, { shouldDirty: true });
       if (providerData.identifier) {
         setValue('systemId', providerData.identifier, { shouldDirty: true });
       }
@@ -201,12 +233,19 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
   );
 
   const handleProviderSelected = useCallback(
-    (providerData: ProviderSearchResult) => {
+    async (providerData: ProviderSearchResult) => {
       setPersonValuesFromProvider(providerData);
       setProviderValuesFromProvider(providerData);
+      await trigger(['givenName', 'familyName', 'gender']);
     },
-    [setPersonValuesFromProvider, setProviderValuesFromProvider],
+    [setPersonValuesFromProvider, setProviderValuesFromProvider, trigger],
   );
+
+  const handleFormReset = useCallback(() => {
+    setSelectedProvider(null);
+    userFormMethods.reset(EMPTY_FORM_VALUES, { keepDefaultValues: false });
+    setFormResetKey((k) => k + 1);
+  }, [userFormMethods]);
 
   return (
     <div className={styles.leftContainer}>
@@ -237,7 +276,12 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                         control={userFormMethods.control}
                         errors={errors}
                         isInitialValuesEmpty={isInitialValuesEmpty}
+                        isProviderReadOnly={isProviderReadOnly}
                         onProviderSelected={handleProviderSelected}
+                        onFormReset={handleFormReset}
+                        showResetButton={isInitialValuesEmpty}
+                        formResetKey={formResetKey}
+                        isFormDirty={isDirty}
                       />
                     )}
                     {hasProviderAccount && (
@@ -245,6 +289,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                         control={userFormMethods.control}
                         errors={errors}
                         isInitialValuesEmpty={isInitialValuesEmpty}
+                        isProviderReadOnly={isProviderReadOnly}
                         loadingProvider={initialProvider ? false : loadingProvider}
                         providerError={providerError}
                         provider={providerSource}

@@ -1,4 +1,6 @@
 import type { ProviderWithAttributes } from '../../../user-management.resources';
+import type { ConfigObject } from '../../../config-schema';
+import type { ProviderSearchResult } from './provider-search.resource';
 import { EXCLUDED_ROLE_CATEGORY } from './user-management.constants';
 
 export interface ProviderWithAttributesMinimal {
@@ -49,6 +51,21 @@ export function extractAttributeFromProvider(providerData: ProviderWithAttribute
     return '';
   }
   return typeof attr.value === 'string' ? attr.value : attr.value?.name ?? '';
+}
+
+export function hasExternalOrIhrisAttributes(
+  provider: ProviderWithAttributes | ProviderSearchResult,
+  config: Pick<ConfigObject, 'providerExternalIdAttributeTypeUuid' | 'providerIHRISIdentifierAttributeTypeUuid'>,
+): boolean {
+  const externalId = extractAttributeFromProvider(
+    provider as ProviderWithAttributes,
+    config.providerExternalIdAttributeTypeUuid,
+  );
+  const ihrisIdentifier = extractAttributeFromProvider(
+    provider as ProviderWithAttributes,
+    config.providerIHRISIdentifierAttributeTypeUuid,
+  );
+  return !!(externalId || ihrisIdentifier);
 }
 
 export function extractProviderFormValues(

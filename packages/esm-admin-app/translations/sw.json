@@ -127,6 +127,7 @@
   "shaContractExpiry": "SHA Contract Expiry Date",
   "shalicenceNumber": "SHA License Number",
   "shaStatus": "SHA Status",
+  "reset": "Reset",
   "startTime": "Start time",
   "stockLocation": "Stock Location",
   "stockOperation": "Stock Operation",
