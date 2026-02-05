@@ -1,7 +1,14 @@
 import { useTranslation } from 'react-i18next';
-import { optional, z } from 'zod';
+import { z } from 'zod';
 
-const UserManagementFormSchema = (existingUsernames: Array<string>, isEdit?: boolean) => {
+const PHONE_REGEX = /^\+?[\d\s\-()]+$/;
+const MIN_PHONE_DIGITS = 9;
+
+const UserManagementFormSchema = (
+  existingUsernames: Array<string>,
+  isEdit?: boolean,
+  shouldValidatePhoneEmail = true,
+) => {
   const { t } = useTranslation();
 
   const userManagementFormSchema = z.object({
@@ -13,8 +20,29 @@ const UserManagementFormSchema = (existingUsernames: Array<string>, isEdit?: boo
         message: t('genderRequired', 'Gender is required'),
       }),
     }),
-    phoneNumber: z.string().optional(),
-    email: z.string().optional(),
+    phoneNumber: shouldValidatePhoneEmail
+      ? z
+          .string()
+          .optional()
+          .refine(
+            (val) => {
+              if (!val || val.trim() === '') {
+                return true;
+              }
+              const digitsOnly = val.replace(/\D/g, '');
+              return PHONE_REGEX.test(val) && digitsOnly.length >= MIN_PHONE_DIGITS;
+            },
+            { message: t('invalidPhoneNumber', 'Invalid phone number') },
+          )
+      : z.string().optional(),
+    email: shouldValidatePhoneEmail
+      ? z
+          .string()
+          .optional()
+          .refine((val) => !val || val.trim() === '' || z.string().email().safeParse(val).success, {
+            message: t('invalidEmail', 'Invalid email address'),
+          })
+      : z.string().optional(),
     providerIdentifiers: z.boolean().optional(),
     username: z
       .string()

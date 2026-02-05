@@ -53,6 +53,8 @@
   "hieSynchronizationError": "An error occurred while synchronizing with HIE",
   "home": "Home",
   "identifierProvider": "Identifier:",
+  "invalidEmail": "Invalid email address",
+  "invalidPhoneNumber": "Invalid phone number",
   "kephLevel": "Keph Level",
   "Licensed expiring soon": "Licensed expiring soon",
   "licenseExpired": "License has expired",

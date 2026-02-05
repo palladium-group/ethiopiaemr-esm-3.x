@@ -100,6 +100,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     providerValues,
     loadingProvider,
     isInitialValuesEmpty,
+    isProviderReadOnly,
   });
 
   const { setValue, trigger } = userFormMethods;
@@ -108,7 +109,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     (stepIndex: number) => {
       switch (stepIndex) {
         case 0:
-          return !errors.givenName && !errors.familyName && !errors.gender;
+          return !errors.givenName && !errors.familyName && !errors.gender && !errors.phoneNumber && !errors.email;
         case 1:
           if (isInitialValuesEmpty) {
             return !errors.username && !errors.password && !errors.confirmPassword;
@@ -124,6 +125,8 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
       errors.givenName,
       errors.familyName,
       errors.gender,
+      errors.phoneNumber,
+      errors.email,
       errors.username,
       errors.password,
       errors.confirmPassword,
@@ -152,7 +155,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     async (e: React.MouseEvent) => {
       let isValid = true;
       if (hasDemographicInfo) {
-        isValid = await trigger(['givenName', 'familyName', 'gender']);
+        isValid = await trigger(['givenName', 'familyName', 'gender', 'phoneNumber', 'email']);
       } else if (hasLoginInfo) {
         isValid = isInitialValuesEmpty
           ? await trigger(['username', 'password', 'confirmPassword'])
@@ -236,7 +239,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     async (providerData: ProviderSearchResult) => {
       setPersonValuesFromProvider(providerData);
       setProviderValuesFromProvider(providerData);
-      await trigger(['givenName', 'familyName', 'gender']);
+      await trigger(['givenName', 'familyName', 'gender', 'phoneNumber', 'email']);
     },
     [setPersonValuesFromProvider, setProviderValuesFromProvider, trigger],
   );

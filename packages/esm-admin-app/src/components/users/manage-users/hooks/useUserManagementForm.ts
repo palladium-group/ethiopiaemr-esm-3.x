@@ -37,6 +37,7 @@ interface UseUserManagementFormParams {
   providerValues: ProviderValues;
   loadingProvider: boolean;
   isInitialValuesEmpty: boolean;
+  isProviderReadOnly?: boolean;
 }
 
 export function useUserManagementForm({
@@ -45,8 +46,9 @@ export function useUserManagementForm({
   providerValues,
   loadingProvider,
   isInitialValuesEmpty,
+  isProviderReadOnly = false,
 }: UseUserManagementFormParams) {
-  const { userManagementFormSchema } = UserManagementFormSchema(usernames);
+  const { userManagementFormSchema } = UserManagementFormSchema(usernames, undefined, !isProviderReadOnly);
 
   const formDefaultValues = useMemo(() => {
     if (isInitialValuesEmpty) {
