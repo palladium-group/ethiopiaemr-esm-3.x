@@ -1,16 +1,19 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Controller, Control, FieldErrors } from 'react-hook-form';
-import { ResponsiveWrapper } from '@openmrs/esm-framework';
+import { ResponsiveWrapper, useConfig } from '@openmrs/esm-framework';
 import { TextInput, CheckboxGroup, Checkbox, DatePicker, DatePickerInput, InlineLoading } from '@carbon/react';
 import type { UserFormSchema } from '../hooks/useUserManagementForm';
 import type { ProviderWithAttributes } from '../../../../user-management.resources';
+import type { ConfigObject } from '../../../../config-schema';
+import { extractAttributeFromProvider } from '../user-management.utils';
 import styles from '../user-management.workspace.scss';
 
 interface ProviderSectionProps {
   control: Control<UserFormSchema>;
   errors: FieldErrors<UserFormSchema>;
   isInitialValuesEmpty: boolean;
+  isProviderReadOnly?: boolean;
   loadingProvider: boolean;
   providerError: unknown;
   provider: ProviderWithAttributes[];
@@ -20,11 +23,19 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
   control,
   errors,
   isInitialValuesEmpty,
+  isProviderReadOnly = false,
   loadingProvider,
   providerError,
   provider,
 }) => {
   const { t } = useTranslation();
+  const config = useConfig<ConfigObject>();
+  const externalId =
+    provider.length > 0 ? extractAttributeFromProvider(provider[0], config.providerExternalIdAttributeTypeUuid) : '';
+  const ihrisIdentifier =
+    provider.length > 0
+      ? extractAttributeFromProvider(provider[0], config.providerIHRISIdentifierAttributeTypeUuid)
+      : '';
 
   return (
     <ResponsiveWrapper>
@@ -40,12 +51,37 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
               type="text"
               labelText={t('providerUniqueIdentifier', 'Provider Unique Identifier')}
               placeholder={t('providerUniqueIdentifierPlaceholder', 'Enter Provider Unqiue Identifier')}
+              disabled={isProviderReadOnly}
               invalid={!!errors.providerUniqueIdentifier}
               invalidText={errors.providerUniqueIdentifier?.message}
             />
           )}
         />
       </ResponsiveWrapper>
+      {externalId && (
+        <ResponsiveWrapper>
+          <TextInput
+            id="externalId"
+            type="text"
+            labelText={t('externalId', 'External ID')}
+            value={externalId}
+            readOnly
+            className={styles.checkboxLabelSingleLine}
+          />
+        </ResponsiveWrapper>
+      )}
+      {ihrisIdentifier && (
+        <ResponsiveWrapper>
+          <TextInput
+            id="ihrisIdentifier"
+            type="text"
+            labelText={t('ihrisIdentifier', 'IHRIS Identifier')}
+            value={ihrisIdentifier}
+            readOnly
+            className={styles.checkboxLabelSingleLine}
+          />
+        </ResponsiveWrapper>
+      )}
       <ResponsiveWrapper>
         <Controller
           name="nationalId"
@@ -54,7 +90,7 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
             <TextInput
               {...field}
               id="nationalId"
-              disabled={isInitialValuesEmpty}
+              disabled={isProviderReadOnly}
               type="text"
               labelText={t('nationalID', 'National id')}
               placeholder={t('nationalID', 'National id')}
@@ -73,7 +109,7 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
             <TextInput
               {...field}
               id="passportNumber"
-              disabled={isInitialValuesEmpty}
+              disabled={isProviderReadOnly}
               type="text"
               labelText={t('passportNumber', 'Passport number')}
               placeholder={t('passportNumber', 'Passport number')}
@@ -93,7 +129,7 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
               {...field}
               id="providerLicense"
               type="text"
-              disabled={isInitialValuesEmpty}
+              disabled={isProviderReadOnly}
               labelText={t('providerLicense', 'License Number')}
               placeholder={t('providerLicense', 'License Number')}
               className={styles.checkboxLabelSingleLine}
@@ -110,7 +146,7 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
               {...field}
               id="registrationNumber"
               type="text"
-              disabled={isInitialValuesEmpty}
+              disabled={isProviderReadOnly}
               labelText={t('registrationNumber', 'Registration Number')}
               placeholder={t('registrationNumber', 'Registration Number')}
               className={styles.checkboxLabelSingleLine}
@@ -127,7 +163,7 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
               {...field}
               id="qualification"
               type="qualification"
-              disabled
+              disabled={isProviderReadOnly}
               labelText={t('qualification', 'Qualification')}
               placeholder={t('qualification', 'Qualification')}
               invalid={!!errors.qualification}
@@ -157,7 +193,7 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
                 labelText={t('licenseExpiryDate', 'License Expiry Date')}
                 id="formLicenseDatePicker"
                 size="md"
-                disabled
+                disabled={isProviderReadOnly}
                 invalid={!!errors.licenseExpiryDate}
                 invalidText={errors.licenseExpiryDate?.message}
               />
@@ -180,29 +216,32 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
                   type="text"
                   labelText={t('providerId', 'Provider Id')}
                   placeholder={t('providerId', 'Provider Id')}
+                  disabled={isProviderReadOnly}
                   invalid={!!errors.systemId}
                   invalidText={errors.systemId?.message}
                   className={styles.checkboxLabelSingleLine}
                 />
               )}
             />
-            <Controller
-              name="isEditProvider"
-              control={control}
-              render={({ field }) => (
-                <CheckboxGroup
-                  legendText={t('editProvider', 'Edit Provider Details')}
-                  className={styles.multilineCheckboxLabel}>
-                  <Checkbox
-                    className={styles.checkboxLabelSingleLine}
-                    id="isEditProvider"
-                    labelText={t('EditProviderDetails', 'Edit provider details?')}
-                    checked={field.value || false}
-                    onChange={(e) => field.onChange(e.target.checked)}
-                  />
-                </CheckboxGroup>
-              )}
-            />
+            {!isProviderReadOnly && (
+              <Controller
+                name="isEditProvider"
+                control={control}
+                render={({ field }) => (
+                  <CheckboxGroup
+                    legendText={t('editProvider', 'Edit Provider Details')}
+                    className={styles.multilineCheckboxLabel}>
+                    <Checkbox
+                      className={styles.checkboxLabelSingleLine}
+                      id="isEditProvider"
+                      labelText={t('EditProviderDetails', 'Edit provider details?')}
+                      checked={field.value || false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  </CheckboxGroup>
+                )}
+              />
+            )}
           </ResponsiveWrapper>
         </>
       ) : (

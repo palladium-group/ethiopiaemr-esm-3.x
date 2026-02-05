@@ -17,7 +17,6 @@ export type UserFormSchema = {
   username: string;
   password?: string;
   confirmPassword?: string;
-  forcePasswordChange?: boolean;
   roles?: Array<{ uuid: string; display: string; description?: string | null }>;
   primaryRole?: string;
   systemId?: string;
@@ -37,6 +36,7 @@ interface UseUserManagementFormParams {
   providerValues: ProviderValues;
   loadingProvider: boolean;
   isInitialValuesEmpty: boolean;
+  isProviderReadOnly?: boolean;
 }
 
 export function useUserManagementForm({
@@ -45,8 +45,14 @@ export function useUserManagementForm({
   providerValues,
   loadingProvider,
   isInitialValuesEmpty,
+  isProviderReadOnly = false,
 }: UseUserManagementFormParams) {
-  const { userManagementFormSchema } = UserManagementFormSchema(usernames);
+  const { userManagementFormSchema } = UserManagementFormSchema(
+    usernames,
+    undefined,
+    !isProviderReadOnly,
+    isInitialValuesEmpty,
+  );
 
   const formDefaultValues = useMemo(() => {
     if (isInitialValuesEmpty) {

@@ -15,11 +15,6 @@
       "slot": "admin-left-panel-slot"
     }, 
     {
-      "component": "etlAdministrationLeftPannelLink",
-      "name": "etl-administration-left-panel-link",
-      "slot": "admin-left-panel-slot"
-    },
-    {
       "component": "locationsLeftPanelLink",
       "name": "locations-left-panel-link",
       "slot": "admin-left-panel-slot"

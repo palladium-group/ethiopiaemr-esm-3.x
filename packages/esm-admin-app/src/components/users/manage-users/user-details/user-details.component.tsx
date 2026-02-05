@@ -43,6 +43,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({ provider, user }) => {
     emailAddress: 'Provider Address',
     passportNumber: 'Provider passport number',
     providerUniqueIdentifier: 'Provider unique identifier',
+    providerExternalIdAttributeTypeUuid: 'ExternalId',
   };
 
   const attributes: ProviderAttributes = Object.entries(attributeMap).reduce((acc, [key, display]) => {
