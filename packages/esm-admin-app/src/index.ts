@@ -35,10 +35,6 @@ export const userManagementLeftPannelLink = getSyncLifecycle(
   options,
 );
 
-export const etlAdministrationLeftPannelLink = getSyncLifecycle(
-  createLeftPanelLink({ title: 'ETL Administration', name: 'etl-administration' }),
-  options,
-);
 export const locationsLeftPanelLink = getSyncLifecycle(
   createLeftPanelLink({ title: 'Locations', name: 'locations' }),
   options,
