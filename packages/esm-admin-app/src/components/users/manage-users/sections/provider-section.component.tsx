@@ -1,10 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Controller, Control, FieldErrors } from 'react-hook-form';
-import { ResponsiveWrapper } from '@openmrs/esm-framework';
+import { ResponsiveWrapper, useConfig } from '@openmrs/esm-framework';
 import { TextInput, CheckboxGroup, Checkbox, DatePicker, DatePickerInput, InlineLoading } from '@carbon/react';
 import type { UserFormSchema } from '../hooks/useUserManagementForm';
 import type { ProviderWithAttributes } from '../../../../user-management.resources';
+import type { ConfigObject } from '../../../../config-schema';
+import { extractAttributeFromProvider } from '../user-management.utils';
 import styles from '../user-management.workspace.scss';
 
 interface ProviderSectionProps {
@@ -25,6 +27,13 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
   provider,
 }) => {
   const { t } = useTranslation();
+  const config = useConfig<ConfigObject>();
+  const externalId =
+    provider.length > 0 ? extractAttributeFromProvider(provider[0], config.providerExternalIdAttributeTypeUuid) : '';
+  const ihrisIdentifier =
+    provider.length > 0
+      ? extractAttributeFromProvider(provider[0], config.providerIHRISIdentifierAttributeTypeUuid)
+      : '';
 
   return (
     <ResponsiveWrapper>
@@ -46,6 +55,32 @@ export const ProviderSection: React.FC<ProviderSectionProps> = ({
           )}
         />
       </ResponsiveWrapper>
+      {provider.length > 0 && (
+        <ResponsiveWrapper>
+          <TextInput
+            id="externalId"
+            type="text"
+            labelText={t('externalId', 'External ID')}
+            value={externalId}
+            disabled
+            readOnly
+            className={styles.checkboxLabelSingleLine}
+          />
+        </ResponsiveWrapper>
+      )}
+      {provider.length > 0 && (
+        <ResponsiveWrapper>
+          <TextInput
+            id="ihrisIdentifier"
+            type="text"
+            labelText={t('ihrisIdentifier', 'IHRIS Identifier')}
+            value={ihrisIdentifier}
+            disabled
+            readOnly
+            className={styles.checkboxLabelSingleLine}
+          />
+        </ResponsiveWrapper>
+      )}
       <ResponsiveWrapper>
         <Controller
           name="nationalId"

@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import type { AttributeType } from '../../../../types';
 import type { ConfigObject } from '../../../../config-schema';
+import { extractProviderFormValues } from '../user-management.utils';
 
 export interface AttributeTypeMapping {
   licenseNumber: string;
@@ -84,23 +85,22 @@ export function useProviderAttributeMapping({
   );
 
   const providerValues = useMemo<ProviderValues>(() => {
-    const getVal = (uuid: string) => {
-      const v = getProviderAttributeValue(uuid);
-      return (typeof v === 'string' ? v : (v as { name?: string })?.name ?? '') as string;
-    };
-    const licenseExpiryVal = getVal(attributeTypeMapping.licenseExpiry);
-    return {
-      providerLicenseNumber: getVal(attributeTypeMapping.licenseNumber),
-      licenseExpiryDate: licenseExpiryVal ? new Date(licenseExpiryVal) : '',
-      qualification: getVal(attributeTypeMapping.qualification),
-      nationalId: getVal(attributeTypeMapping.providerNationalId),
-      passportNumber: getVal(attributeTypeMapping.passportNumber),
-      registrationNumber: getVal(attributeTypeMapping.licenseBody),
-      phoneNumber: getVal(attributeTypeMapping.phoneNumber),
-      email: getVal(attributeTypeMapping.providerAddress),
-      providerUniqueIdentifier: getVal(attributeTypeMapping.providerUniqueIdentifier),
-    };
-  }, [attributeTypeMapping, getProviderAttributeValue]);
+    const firstProvider = provider[0];
+    if (!firstProvider) {
+      return {
+        providerLicenseNumber: '',
+        licenseExpiryDate: '',
+        qualification: '',
+        nationalId: '',
+        passportNumber: '',
+        registrationNumber: '',
+        phoneNumber: '',
+        email: '',
+        providerUniqueIdentifier: '',
+      };
+    }
+    return extractProviderFormValues(firstProvider, attributeTypeMapping);
+  }, [provider, attributeTypeMapping]);
 
   return {
     attributeTypeMapping,

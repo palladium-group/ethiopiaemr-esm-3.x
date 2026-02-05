@@ -5,13 +5,18 @@ import { FormProvider } from 'react-hook-form';
 import styles from './user-management.workspace.scss';
 import { ButtonSet, Button, InlineLoading, Stack, ProgressIndicator, ProgressStep } from '@carbon/react';
 import classNames from 'classnames';
-import { useRoles, useProvider, useProviderAttributeType } from '../../../user-management.resources';
+import {
+  useRoles,
+  useProvider,
+  useProviderAttributeType,
+  type ProviderWithAttributes,
+} from '../../../user-management.resources';
 import { useSystemUserRoleConfigSetting } from '../../hook/useSystemRoleSetting';
 import { User } from '../../../types';
 import { ConfigObject } from '../../../config-schema';
 import { useUsers } from './user-list/user-list.resource';
 import { type ProviderSearchResult } from './provider-search.resource';
-import { extractNameParts, extractAttributeFromProvider } from './user-management.utils';
+import { extractNameParts, extractProviderFormValues } from './user-management.utils';
 import { useProviderAttributeMapping } from './hooks/useProviderAttributeMapping';
 import { useUserManagementForm } from './hooks/useUserManagementForm';
 import { useUserFormSteps } from './hooks/useUserFormSteps';
@@ -23,6 +28,7 @@ import { RolesSection } from './sections/roles-section.component';
 
 type ManageUserWorkspaceProps = DefaultWorkspaceProps & {
   initialUserValue?: User;
+  initialProvider?: ProviderSearchResult | ProviderWithAttributes;
 };
 
 const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
@@ -30,12 +36,21 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
   promptBeforeClosing,
   closeWorkspaceWithSavedChanges,
   initialUserValue = {} as User,
+  initialProvider,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const [selectedProvider, setSelectedProvider] = useState<ProviderSearchResult | null>(null);
 
-  const { provider = [], loadingProvider, providerError } = useProvider(initialUserValue.systemId);
+  // Gets providers by name and returns all rows if there is no match
+  const { provider = [], loadingProvider, providerError } = useProvider(initialUserValue?.person?.display);
+
+  const providerSource: ProviderWithAttributes[] = selectedProvider
+    ? [selectedProvider as ProviderWithAttributes]
+    : initialProvider
+    ? [initialProvider as ProviderWithAttributes]
+    : provider;
+
   const { users } = useUsers();
   const usernames =
     users?.map((user) => user.username).filter((username) => username !== initialUserValue?.username) || [];
@@ -47,7 +62,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
   const config = useConfig<ConfigObject>();
 
   const { attributeTypeMapping, providerValues } = useProviderAttributeMapping({
-    provider,
+    provider: providerSource,
     providerAttributeType,
     config,
   });
@@ -129,7 +144,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     attributeTypeMapping,
     selectedProvider,
     initialUserValue,
-    provider,
+    provider: providerSource,
     personPhonenumberAttributeUuid: config.personPhonenumberAttributeUuid,
     personEmailAttributeUuid: config.personEmailAttributeUuid,
     licenseBodyUuid: config.licenseBodyUuid,
@@ -162,30 +177,22 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
 
   const setProviderValuesFromProvider = useCallback(
     (providerData: ProviderSearchResult) => {
+      const values = extractProviderFormValues(providerData, attributeTypeMapping);
+      setValue('providerUniqueIdentifier', values.providerUniqueIdentifier, { shouldDirty: true });
+      setValue('nationalId', values.nationalId, { shouldDirty: true });
+      setValue('passportNumber', values.passportNumber, { shouldDirty: true });
+      setValue('providerLicense', values.providerLicenseNumber, { shouldDirty: true });
+      setValue('registrationNumber', values.registrationNumber, { shouldDirty: true });
+      setValue('qualification', values.qualification, { shouldDirty: true });
       setValue(
-        'providerUniqueIdentifier',
-        extractAttributeFromProvider(providerData, attributeTypeMapping.providerUniqueIdentifier),
+        'licenseExpiryDate',
+        values.licenseExpiryDate
+          ? values.licenseExpiryDate instanceof Date
+            ? values.licenseExpiryDate
+            : parseDate(values.licenseExpiryDate)
+          : undefined,
         { shouldDirty: true },
       );
-      setValue('nationalId', extractAttributeFromProvider(providerData, attributeTypeMapping.providerNationalId), {
-        shouldDirty: true,
-      });
-      setValue('passportNumber', extractAttributeFromProvider(providerData, attributeTypeMapping.passportNumber), {
-        shouldDirty: true,
-      });
-      setValue('providerLicense', extractAttributeFromProvider(providerData, attributeTypeMapping.licenseNumber), {
-        shouldDirty: true,
-      });
-      setValue('registrationNumber', extractAttributeFromProvider(providerData, attributeTypeMapping.licenseBody), {
-        shouldDirty: true,
-      });
-      setValue('qualification', extractAttributeFromProvider(providerData, attributeTypeMapping.qualification), {
-        shouldDirty: true,
-      });
-      const licenseExpiryStr = extractAttributeFromProvider(providerData, attributeTypeMapping.licenseExpiry);
-      setValue('licenseExpiryDate', licenseExpiryStr ? parseDate(licenseExpiryStr) : undefined, {
-        shouldDirty: true,
-      });
       if (providerData.identifier) {
         setValue('systemId', providerData.identifier, { shouldDirty: true });
       }
@@ -238,9 +245,9 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                         control={userFormMethods.control}
                         errors={errors}
                         isInitialValuesEmpty={isInitialValuesEmpty}
-                        loadingProvider={loadingProvider}
+                        loadingProvider={initialProvider ? false : loadingProvider}
                         providerError={providerError}
-                        provider={provider}
+                        provider={providerSource}
                       />
                     )}
                     {hasLoginInfo && (

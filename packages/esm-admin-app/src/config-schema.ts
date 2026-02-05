@@ -62,6 +62,16 @@ export const configSchema = {
     _description: 'UUID for provider unique identifier attribute type',
     _default: 'dace9d99-9f29-4653-9eae-c05929f34a32',
   },
+  providerExternalIdAttributeTypeUuid: {
+    _type: Type.String,
+    _description: 'UUID for provider external id attribute type',
+    _default: 'bbdf67e8-c020-40ff-8ad6-74ba34893882',
+  },
+  providerIHRISIdentifierAttributeTypeUuid: {
+    _type: Type.String,
+    _description: 'UUID for provider IHRIS identifier attribute type',
+    _default: '5dd3eb8a-c901-4eab-bb32-a28493781aae',
+  },
   identifierTypes: {
     _type: Type.Array,
     _elements: {
@@ -119,6 +129,8 @@ export interface ConfigObject {
   personEmailAttributeUuid: string;
   personPhonenumberAttributeUuid: string;
   licenseExpiryDateUuid: string;
+  providerExternalIdAttributeTypeUuid: string;
+  providerIHRISIdentifierAttributeTypeUuid: string;
   identifierTypes: Array<{
     key: string;
     name: string;

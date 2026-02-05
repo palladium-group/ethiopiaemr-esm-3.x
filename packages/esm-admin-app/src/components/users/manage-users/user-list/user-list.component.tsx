@@ -264,6 +264,7 @@ const UserList: React.FC = () => {
                 launchWorkspace('manage-user-workspace', {
                   workspaceTitle: t('editUser', 'Edit User'),
                   initialUserValue: user,
+                  initialProvider: userProvider,
                 });
               } else {
                 console.error('User not found:', user.uuid);
