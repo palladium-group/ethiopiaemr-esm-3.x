@@ -3,12 +3,16 @@ import type { ClinicalWorkflowConfig } from '../config-schema';
 
 const queueEntryCustomRepresentation =
   'custom:(uuid,display,queue,status,patient:(uuid,display,person,identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
-
-export const createVisitForPatient = async (patientUuid: string, visitTypeUuid: string) => {
+export const createVisitForPatient = async (
+  patientUuid: string,
+  visitTypeUuid: string,
+  sessionLocationUuid: string,
+) => {
   const url = `${restBaseUrl}/visit?v=full`;
   const payload = {
     patient: patientUuid,
     visitType: visitTypeUuid,
+    location: sessionLocationUuid,
   };
 
   return openmrsFetch<Visit>(url, {

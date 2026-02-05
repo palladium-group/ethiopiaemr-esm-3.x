@@ -14,7 +14,7 @@
       "meta": {
         "name": "central-triage",
         "title": "Central Triage",
-        "path": "triage-central",
+        "path": "central-triage",
         "slot": "central-triage-dashboard-slot"
       }
     },
@@ -33,7 +33,7 @@
       "meta": {
         "name": "emergency-triage",
         "title": "Emergency Triage",
-        "path": "triage-emergency",
+        "path": "emergency-triage",
         "slot": "emergency-triage-dashboard-slot"
       }
     },
@@ -41,25 +41,6 @@
       "name": "emergency-triage-dashboard",
       "component": "emergencyTriageDashboard",
       "slot": "emergency-triage-dashboard-slot",
-      "online": true,
-      "offline": false
-    },
-    {
-      "name": "pediatric-triage-dashboard-link",
-      "component": "pediatricTriageDashboardLink",
-      "slot": "homepage-dashboard-slot",
-      "order": 2,
-      "meta": {
-        "name": "pediatric-triage",
-        "title": "Pediatric Triage",
-        "path": "triage-pediatric",
-        "slot": "pediatric-triage-dashboard-slot"
-      }
-    },
-    {
-      "name": "pediatric-triage-dashboard",
-      "component": "pediatricTriageDashboard",
-      "slot": "pediatric-triage-dashboard-slot",
       "online": true,
       "offline": false
     },
@@ -126,6 +107,13 @@
         "fullWidth": false
       },
       "order": 6
+    },
+    {
+      "name": "start-visit-button2",
+      "component": "startVisitActionButton",
+      "slot": "patient-actions-slot",
+      "online": true,
+      "offline": true
     }
   ],
   "workspaces": [
@@ -140,6 +128,12 @@
       "name": "billing-information-workspace",
       "component": "billingInformationWorkspace",
       "title": "Billing Information Workspace",
+      "type": "clinical-form"
+    },
+    {
+      "name": "patient-type-selection-workspace",
+      "component": "patientTypeSelectionWorkspace",
+      "title": "Select Patient Type",
       "type": "clinical-form"
     }
   ],

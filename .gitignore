@@ -92,3 +92,4 @@ e2e/storageState.json
 # npm in all directories
 **/package-lock.json
 .qodo
+.claude/**

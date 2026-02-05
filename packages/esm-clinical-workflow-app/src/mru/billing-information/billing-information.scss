@@ -37,6 +37,9 @@
   padding: 6px;
   height: auto;
   overflow: visible;
+  border-bottom: 1px solid colors.$gray-20;
+  padding-bottom: spacing.$spacing-03;
+  margin-bottom: spacing.$spacing-06;
 
   :global(.cds--content-switcher) {
     flex-direction: column;

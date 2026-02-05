@@ -1,22 +1,18 @@
 import React, { useEffect } from 'react';
 import { Button, ButtonSet, InlineLoading, ContentSwitcher, Switch, Form } from '@carbon/react';
-import {
-  DefaultWorkspaceProps,
-  ExtensionSlot,
-  usePatient,
-  useConfig,
-  useVisit,
-  showSnackbar,
-} from '@openmrs/esm-framework';
+import { DefaultWorkspaceProps, ExtensionSlot, usePatient, useConfig, useVisit } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 
-import {
-  type BillingFormData,
-  createBillingInformationVisitAttribute,
-  updateVisitWithBillingInformation,
-} from './billing-information.resource';
 import type { ClinicalWorkflowConfig } from '../../config-schema';
-import { usePaymentModes, useCreditCompanies, useBillingForm, useBillingType } from './hooks';
+import {
+  usePaymentModes,
+  useCreditCompanies,
+  useBillingForm,
+  useBillingType,
+  usePopulateBillingFormFromVisit,
+  useBillingFormSubmission,
+  useBillingFormHandlers,
+} from './hooks';
 import {
   BillingTypeAttributes,
   CreditSubTypeSelection,
@@ -65,54 +61,47 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   // Fetch credit companies conditionally
   const { creditCompanies } = useCreditCompanies(isCreditType && creditSubType === 'creditCompany');
 
-  const onSubmit = async (data: BillingFormData) => {
-    try {
-      const visitAttributePayload = createBillingInformationVisitAttribute(data, billingVisitAttributeTypes);
-      const response = await updateVisitWithBillingInformation(visitAttributePayload, activeVisit?.uuid);
-      if (response.status === 200) {
-        showSnackbar({
-          title: t('updateVisitWithBillingInfo', 'Update Visit With Billing Information'),
-          subtitle: t('updateVisitWithBillingInfoSuccess', 'Update Visit With Billing Information Success'),
-          kind: 'success',
-          isLowContrast: true,
-          timeoutInMs: 5000,
-        });
-        mutateVisit();
-        closeWorkspaceWithSavedChanges();
-      }
-    } catch (error) {
-      showSnackbar({
-        title: t('error', 'Error'),
-        subtitle: t('errorUpdatingBillingInformation', 'Error updating billing information, {{error}}', {
-          error: error.message,
-        }),
-        kind: 'error',
-        isLowContrast: true,
-        timeoutInMs: 5000,
-      });
-    }
-  };
+  // Populate form from visit attributes
+  usePopulateBillingFormFromVisit({
+    activeVisit: activeVisit
+      ? {
+          uuid: activeVisit.uuid,
+          attributes: activeVisit.attributes as Array<{
+            uuid: string;
+            attributeType: { uuid: string };
+            value: string;
+          }>,
+        }
+      : undefined,
+    billingTypes,
+    billingVisitAttributeTypes,
+    setValue,
+  });
 
-  const handleBillingTypeChange = (uuid: string) => {
-    // Clear attributes and sub-types when changing billing type
-    setValue('billingTypeUuid', uuid, { shouldDirty: true });
-    setValue('creditSubType', undefined, { shouldDirty: false });
-    setValue('freeSubType', undefined, { shouldDirty: false });
-    setValue('attributes', {}, { shouldDirty: false });
-  };
+  // Form submission handler
+  const { handleSubmit: handleFormSubmit } = useBillingFormSubmission({
+    activeVisit: activeVisit
+      ? {
+          uuid: activeVisit.uuid,
+          attributes: activeVisit.attributes as Array<{
+            uuid: string;
+            attributeType: { uuid: string };
+            value: string;
+          }>,
+        }
+      : undefined,
+    billingVisitAttributeTypes,
+    mutateVisit,
+    closeWorkspaceWithSavedChanges,
+    t,
+  });
 
-  const getSelectedIndex = () => {
-    if (!billingTypeUuid) {
-      return -1;
-    }
-    return billingTypes.findIndex((bt) => bt.uuid === billingTypeUuid);
-  };
-
-  const handleContentSwitcherChange = ({ index }: { index: number }) => {
-    if (index >= 0 && index < billingTypes.length) {
-      handleBillingTypeChange(billingTypes[index].uuid);
-    }
-  };
+  // Form interaction handlers
+  const { selectedIndex, handleContentSwitcherChange } = useBillingFormHandlers({
+    billingTypeUuid,
+    billingTypes,
+    setValue,
+  });
 
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
@@ -121,8 +110,6 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   if (isLoading) {
     return <InlineLoading status="active" iconDescription="Loading" description="Loading billing information..." />;
   }
-
-  //
 
   return (
     <>
@@ -136,14 +123,14 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
           }}
         />
       )}
-      <Form onSubmit={handleSubmit(onSubmit)}>
+      <Form onSubmit={handleSubmit(handleFormSubmit)}>
         <div className={styles.billingInformationContainer}>
           <p className={styles.sectionTitle}>{t('paymentMethods', 'Payment Methods')}</p>
 
           <ContentSwitcher
             className={styles.paymentTypeSwitcher}
             onChange={handleContentSwitcherChange}
-            selectedIndex={getSelectedIndex()}
+            selectedIndex={selectedIndex}
             size="md">
             {billingTypes?.map((billingType) => (
               <Switch

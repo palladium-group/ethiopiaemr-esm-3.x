@@ -24,19 +24,31 @@ export const usePaymentPoints = () => {
   };
 };
 
-export const createPaymentPoint = (payload: {
+export interface PaymentPointPayload {
   name: string;
   description: string;
   retired: boolean;
   location: string;
-}) => {
-  const url = `/ws/rest/v1/cashier/cashPoint`;
+}
+
+const savePaymentPoint = (payload: PaymentPointPayload, uuid?: string) => {
+  const url = uuid ? `/ws/rest/v1/cashier/cashPoint/${uuid}` : `/ws/rest/v1/cashier/cashPoint`;
   return openmrsFetch(url, {
     method: 'POST',
     body: payload,
     headers: {
       'Content-Type': 'application/json',
     },
+  });
+};
+
+export const createPaymentPoint = (payload: PaymentPointPayload) => savePaymentPoint(payload);
+
+export const updatePaymentPoint = (uuid: string, payload: PaymentPointPayload) => savePaymentPoint(payload, uuid);
+
+export const deletePaymentPoint = (uuid: string) => {
+  return openmrsFetch(`/ws/rest/v1/cashier/cashPoint/${uuid}`, {
+    method: 'DELETE',
   });
 };
 

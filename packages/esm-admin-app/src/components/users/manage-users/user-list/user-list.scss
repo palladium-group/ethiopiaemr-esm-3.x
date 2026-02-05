@@ -1,0 +1,37 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+@use '@carbon/type';
+
+.buttonContainer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: layout.$spacing-02;
+  margin-bottom: layout.$spacing-05;
+
+  .filterByText {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    padding-right: layout.$spacing-03;
+  }
+}
+.dropDownFilter {
+  margin-right: layout.$spacing-03;
+  min-width: 205px;
+  text-align: start;
+}
+
+.widgetCard {
+  background-color: white;
+}
+.Container {
+  margin: layout.$spacing-05;
+}
+.providerContainer {
+  background-color: white;
+  border: 1px solid colors.$gray-20;
+  border-bottom: none;
+  width: 100%;
+  margin: 0 auto;
+}
