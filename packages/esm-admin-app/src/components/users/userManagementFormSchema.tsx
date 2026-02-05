@@ -81,10 +81,10 @@ const UserManagementFormSchema = (
                     count: MIN_PASSWORD_LENGTH,
                   }),
                 )
-                .refine((val) => /[a-z]/.test(val) && /[A-Z]/.test(val), {
+                .refine((val) => /[a-z]/.test(val) && /[A-Z]/.test(val) && /[0-9]/.test(val), {
                   message: t(
                     'passwordCaseRequired',
-                    'Please choose a password that contains atleast one lower and upper character alphabet along with a numeral.',
+                    'Password must contain at least one lowercase letter, one uppercase letter, and one number.',
                   ),
                 }),
             )
@@ -105,7 +105,7 @@ const UserManagementFormSchema = (
       roles: z
         .array(
           z.object({
-            uuid: z.string().min(1, 'UUI is required'),
+            uuid: z.string().min(1, 'UUID is required'),
             display: z.string().min(1, 'Role name is required'),
             description: z.string().nullable().optional(),
           }),
@@ -148,12 +148,12 @@ const UserManagementFormSchema = (
           path: ['password'],
         });
       }
-      if (!/[a-z]/.test(p) || !/[A-Z]/.test(p)) {
+      if (!/[a-z]/.test(p) || !/[A-Z]/.test(p) || !/[0-9]/.test(p)) {
         ctx.addIssue({
           code: 'custom',
           message: t(
             'passwordCaseRequired',
-            'Please choose a password that contains atleast one lower and upper character alphabet along with a numeral.',
+            'Password must contain at least one lowercase letter, one uppercase letter, and one number.',
           ),
           path: ['password'],
         });
