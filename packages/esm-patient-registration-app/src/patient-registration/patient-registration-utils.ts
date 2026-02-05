@@ -6,6 +6,7 @@ import {
   type PatientIdentifierValue,
   type PatientUuidMapType,
 } from './patient-registration.types';
+import { useBirthtimeFromFhirPatient, BIRTHTIME_EXTENSION_URL } from './useBirthtime';
 
 export function scrollIntoView(viewId: string) {
   document.getElementById(viewId).scrollIntoView({
@@ -36,6 +37,16 @@ export function getFormValuesFromFhirPatient(patient: fhir.Patient) {
   result.gender = patient.gender;
   result.birthdate = patient.birthDate ? parseDate(patient.birthDate) : undefined;
   result.telephoneNumber = patient.telecom ? patient.telecom[0].value : '';
+
+  // Extract birthtime from extension or custom property
+  const birthtimeExtension = patient.extension?.find((ext) => ext.url === BIRTHTIME_EXTENSION_URL);
+  const birthtime =
+    (patient as fhir.Patient & { _birthtime?: string })._birthtime ||
+    (birthtimeExtension?.valueDateTime as string | undefined);
+
+  if (birthtime) {
+    result.birthtime = birthtime;
+  }
 
   return {
     ...result,

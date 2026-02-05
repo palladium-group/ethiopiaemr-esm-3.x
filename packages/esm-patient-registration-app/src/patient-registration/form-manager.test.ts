@@ -23,6 +23,8 @@ const formValues: FormValues = {
   yearsEstimated: 1000,
   monthsEstimated: 11,
   birthdateEstimated: false,
+  birthtime: undefined,
+  birthtimeFormat: 'AM',
   telephoneNumber: '',
   isDead: false,
   deathDate: 'string',

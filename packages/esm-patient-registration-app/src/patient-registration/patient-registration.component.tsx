@@ -5,14 +5,8 @@ import { XAxis } from '@carbon/react/icons';
 import { useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Form, Formik, type FormikHelpers, type FormikErrors } from 'formik';
-import {
-  createErrorHandler,
-  interpolateUrl,
-  showSnackbar,
-  useConfig,
-  usePatient,
-  usePatientPhoto,
-} from '@openmrs/esm-framework';
+import { createErrorHandler, interpolateUrl, showSnackbar, useConfig, usePatientPhoto } from '@openmrs/esm-framework';
+import { usePatientWithBirthtime } from './usePatientWithBirthtime';
 import { builtInSections, type RegistrationConfig, type SectionDefinition } from '../config-schema';
 import { cancelRegistration, filterOutUndefinedPatientIdentifiers, scrollIntoView } from './patient-registration-utils';
 import { getValidationSchema } from './validation/patient-registration-validation';
@@ -38,7 +32,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const { currentSession, identifierTypes } = useResourcesContext();
   const { patientUuid: uuidOfPatientToEdit } = useParams();
   const { search } = useLocation();
-  const { isLoading: isLoadingPatientToEdit, patient: patientToEdit } = usePatient(uuidOfPatientToEdit);
+  const { isLoading: isLoadingPatientToEdit, patient: patientToEdit } = usePatientWithBirthtime(uuidOfPatientToEdit);
   const config = useConfig<RegistrationConfig>();
 
   const [initialFormValues, setInitialFormValues] = useInitialFormValues(

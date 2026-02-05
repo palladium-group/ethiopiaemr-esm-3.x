@@ -1,10 +1,11 @@
-import React, { type ChangeEvent, useCallback } from 'react';
-import { ContentSwitcher, Layer, Switch, TextInput } from '@carbon/react';
+import React, { type ChangeEvent, useCallback, useEffect } from 'react';
+import { ContentSwitcher, Layer, SelectItem, Switch, TextInput, TimePicker, TimePickerSelect } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { useField } from 'formik';
 import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
 import { usePatientRegistrationContext } from '../../patient-registration-context';
 import { type RegistrationConfig } from '../../../config-schema';
+import { useBirthtime } from '../../useBirthtime';
 import styles from '../field.scss';
 
 const calcBirthdate = (yearDelta, monthDelta, dateOfBirth) => {
@@ -33,13 +34,34 @@ export const DobField: React.FC = () => {
   const { setFieldValue, setFieldTouched } = usePatientRegistrationContext();
   const today = new Date();
 
+  // Use birthtime hook
+  const {
+    birthTimeField,
+    birthTimeMeta,
+    birthTimeFormatField,
+    getTimeStringFromBirthTime,
+    getFormatFromBirthTime,
+    onBirthTimeChange,
+    onBirthTimeFormatChange,
+    onBirthTimeBlur,
+    initializeBirthtime,
+  } = useBirthtime(birthdate.value);
+
+  // Initialize birthtime when birthdate changes
+  useEffect(() => {
+    initializeBirthtime();
+  }, [birthdate.value, initializeBirthtime]);
+
   const onToggle = useCallback(
     (e: { name?: string | number }) => {
       setFieldValue('birthdateEstimated', e.name === 'unknown');
       setFieldValue('birthdate', '');
+      setFieldValue('birthtime', undefined);
+      setFieldValue('birthtimeFormat', 'AM');
       setFieldValue('yearsEstimated', 0);
       setFieldValue('monthsEstimated', '');
       setFieldTouched('birthdateEstimated', true, false);
+      setFieldTouched('birthtime', false, false); // Don't show validation error when clearing
     },
     [setFieldTouched, setFieldValue],
   );
@@ -104,18 +126,45 @@ export const DobField: React.FC = () => {
       <Layer>
         {!dobUnknown ? (
           <div className={styles.dobField}>
-            <OpenmrsDatePicker
-              id="birthdate"
-              data-testid="birthdate"
-              {...birthdate}
-              onChange={onDateChange}
-              onBlur={() => setFieldTouched('birthdate', true, false)}
-              maxDate={today}
-              labelText={t('dateOfBirthLabelText', 'Date of birth')}
-              isInvalid={!!(birthdateMeta.touched && birthdateMeta.error)}
-              invalidText={t(birthdateMeta.error)}
-              value={birthdate.value}
-            />
+            <div className={styles.grid}>
+              <div>
+                <OpenmrsDatePicker
+                  id="birthdate"
+                  data-testid="birthdate"
+                  {...birthdate}
+                  onChange={onDateChange}
+                  onBlur={() => setFieldTouched('birthdate', true, false)}
+                  maxDate={today}
+                  labelText={t('dateOfBirthLabelText', 'Date of birth')}
+                  isInvalid={!!(birthdateMeta.touched && birthdateMeta.error)}
+                  invalidText={t(birthdateMeta.error)}
+                  value={birthdate.value}
+                />
+              </div>
+              <Layer>
+                <TimePicker
+                  id="birth-time-picker"
+                  labelText={t('timeOfBirthInputLabel', 'Time of birth (hh:mm)')}
+                  className={styles.timeOfDeathField}
+                  pattern="^(1[0-2]|0?[1-9]):([0-5]?[0-9])$"
+                  value={getTimeStringFromBirthTime()}
+                  onChange={onBirthTimeChange}
+                  onBlur={onBirthTimeBlur}
+                  disabled={!birthdate.value}
+                  invalid={!!(birthTimeMeta.touched && birthTimeMeta.error)}
+                  invalidText={birthTimeMeta.touched && birthTimeMeta.error ? t(birthTimeMeta.error) : ''}>
+                  <TimePickerSelect
+                    id="birth-time-format-picker"
+                    aria-label={t('timeFormat', 'Time Format')}
+                    value={getFormatFromBirthTime()}
+                    onChange={onBirthTimeFormatChange}
+                    disabled={!birthdate.value}>
+                    <SelectItem value="AM" text="AM" />
+                    <SelectItem value="PM" text="PM" />
+                  </TimePickerSelect>
+                </TimePicker>
+              </Layer>
+            </div>
           </div>
         ) : (
           <div className={styles.grid}>
