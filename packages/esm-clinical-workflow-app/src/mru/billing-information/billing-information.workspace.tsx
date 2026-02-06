@@ -19,6 +19,8 @@ import {
   FreeSubTypeSelection,
   CreditSubTypeFields,
   FreeSubTypeFields,
+  BillableItemsSelection,
+  CashPointSelection,
 } from './components';
 import styles from './billing-information.scss';
 
@@ -94,6 +96,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
     mutateVisit,
     closeWorkspaceWithSavedChanges,
     t,
+    patientUuid,
   });
 
   // Form interaction handlers
@@ -106,6 +109,11 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
   }, [promptBeforeClosing, isDirty]);
+
+  // Reset billable item when payment method changes
+  useEffect(() => {
+    setValue('billableItem', null, { shouldDirty: true });
+  }, [billingTypeUuid, setValue]);
 
   if (isLoading) {
     return <InlineLoading status="active" iconDescription="Loading" description="Loading billing information..." />;
@@ -195,6 +203,12 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
                 setValue={setValue}
               />
             )}
+
+          {/* Cash Point Selection */}
+          <CashPointSelection control={control} errors={errors} t={t} setValue={setValue} />
+
+          {/* Billable Items Selection */}
+          <BillableItemsSelection control={control} errors={errors} t={t} selectedPaymentModeUuid={billingTypeUuid} />
         </div>
         <ButtonSet className={styles.buttonSet}>
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>

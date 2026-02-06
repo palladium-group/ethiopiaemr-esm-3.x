@@ -5,3 +5,5 @@ export { useBillingType } from './useBillingType';
 export { usePopulateBillingFormFromVisit } from './usePopulateBillingFormFromVisit';
 export { useBillingFormSubmission } from './useBillingFormSubmission';
 export { useBillingFormHandlers } from './useBillingFormHandlers';
+export { useBillableServices } from './useBillableServices';
+export { useCashPoints } from './useCashPoints';
