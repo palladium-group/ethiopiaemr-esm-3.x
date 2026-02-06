@@ -3,6 +3,47 @@ import { z } from 'zod';
 // Create the billing form schema factory with conditional validation based on skip logic
 import type { TFunction } from 'i18next';
 
+/**
+ * Creates a cashier bill for the selected billable item
+ */
+export const createCashierBill = async (
+  billableItem: {
+    id: string;
+    text: string;
+    service: any;
+    price: any;
+  },
+  patientUuid: string,
+  cashPointUuid: string,
+  cashierUuid: string,
+) => {
+  const billPayload = {
+    lineItems: [
+      {
+        billableService: billableItem.service.uuid,
+        quantity: 1,
+        price: billableItem.price.price,
+        priceName: billableItem.price.name || 'Default',
+        priceUuid: billableItem.price.uuid,
+        lineItemOrder: 0,
+        paymentStatus: 'PENDING',
+      },
+    ],
+    cashPoint: cashPointUuid,
+    patient: patientUuid,
+    status: 'PENDING',
+    payments: [],
+  };
+
+  return openmrsFetch(`${restBaseUrl}/cashier/bill`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: billPayload,
+  });
+};
+
 export const createBillingFormSchema = (
   t: TFunction,
   billingTypes?: Array<{ uuid: string; name?: string; attributeTypes?: Array<{ uuid: string; required?: boolean }> }>,
@@ -13,6 +54,16 @@ export const createBillingFormSchema = (
       creditSubType: z.string().optional(),
       freeSubType: z.string().optional(),
       attributes: z.record(z.string(), z.any()).optional(),
+      billableItem: z
+        .object({
+          id: z.string(),
+          text: z.string(),
+          service: z.any(),
+          price: z.any(),
+        })
+        .nullable()
+        .optional(),
+      cashPointUuid: z.string().optional(),
     })
     .superRefine((data, ctx) => {
       // Billing type is required on submit
@@ -44,6 +95,15 @@ export const createBillingFormSchema = (
             }
           });
         }
+      }
+
+      // Validate cash point is required if billable item is selected
+      if (data.billableItem && !data.cashPointUuid) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('cashPointRequired', 'Cash point is required when a billable item is selected'),
+          path: ['cashPointUuid'],
+        });
       }
     });
 };
