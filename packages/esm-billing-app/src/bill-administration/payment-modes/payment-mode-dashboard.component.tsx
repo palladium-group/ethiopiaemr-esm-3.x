@@ -22,10 +22,20 @@ import {
 } from '@carbon/react';
 
 import styles from './payment-mode-dashboard.scss';
-import { formatDate, launchWorkspace, showModal, useDebounce, useLayoutType } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  launchWorkspace,
+  showModal,
+  useDebounce,
+  useLayoutType,
+  userHasAccess,
+  UserHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { PaymentMode } from '../../types';
 import startCase from 'lodash/startCase';
 import BillingHeader from '../../billing-header/billing-header.component';
+import { Permissions } from '../../permission/permissions.constants';
 
 type PaymentModeDashboardProps = {};
 
@@ -34,6 +44,7 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
   const size = useLayoutType() === 'tablet' ? 'md' : 'sm';
   const { paymentModes = [], isLoading } = usePaymentModes(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const session = useSession();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -107,15 +118,17 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
     <div>
       <BillingHeader title={t('paymentModes', 'Payment Modes')} />
       <CardHeader title={t('paymentModes', 'Payment Modes')}>
-        <Button
-          onClick={() =>
-            launchWorkspace('payment-mode-workspace', { workspaceTitle: t('addPaymentMode', 'Add Payment Mode') })
-          }
-          className={styles.addPaymentModeButton}
-          size={size}
-          kind="ghost">
-          {t('addPaymentMode', 'Add Payment Mode')}
-        </Button>
+        <UserHasAccess privilege={Permissions.AddPaymentMode}>
+          <Button
+            onClick={() =>
+              launchWorkspace('payment-mode-workspace', { workspaceTitle: t('addPaymentMode', 'Add Payment Mode') })
+            }
+            className={styles.addPaymentModeButton}
+            size={size}
+            kind="ghost">
+            {t('addPaymentMode', 'Add Payment Mode')}
+          </Button>
+        </UserHasAccess>
       </CardHeader>
       <div className={styles.dataTable}>
         <Search
@@ -158,6 +171,7 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
                         <TableCell className="cds--table-column-menu">
                           <OverflowMenu size={size} iconDescription={t('actions', 'Actions')} flipped>
                             <OverflowMenuItem
+                              disabled={!userHasAccess(Permissions.EditPaymentMode, session?.user)}
                               onClick={() =>
                                 launchWorkspace('payment-mode-workspace', {
                                   workspaceTitle: t('editPaymentMode', 'Edit Payment Mode'),
@@ -169,6 +183,7 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
                             <OverflowMenuItem
                               hasDivider
                               isDelete
+                              disabled={!userHasAccess(Permissions.DeletePaymentMode, session?.user)}
                               onClick={() => showDeletePaymentModeModal(paymentModes[index])}
                               itemText={t('delete', 'Delete')}
                             />

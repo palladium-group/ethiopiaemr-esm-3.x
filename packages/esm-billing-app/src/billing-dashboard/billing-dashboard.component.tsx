@@ -8,6 +8,7 @@ import RootComponent from '../root.component'; // Import your router
 import styles from './billing-dashboard.scss';
 import { ClockOutStrip } from './clock-out-strip.component';
 import { UserHasAccess } from '@openmrs/esm-framework';
+import { Permissions } from '../permission/permissions.constants';
 
 function BillingDashboard() {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ function BillingDashboard() {
       <main className={styles.container}>
         <BillingHeader title={t('home', 'Home')} />
         <ClockOutStrip />
-        <UserHasAccess privilege="o3: View Billing Metrics">
+        <UserHasAccess privilege={Permissions.ViewBillingMetrics}>
           <MetricsCards />
         </UserHasAccess>
         <BillingTabs />

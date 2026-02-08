@@ -1,10 +1,11 @@
 import { Button } from '@carbon/react';
-import { showModal } from '@openmrs/esm-framework';
+import { showModal, UserHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import BillingHeader from '../../billing-header/billing-header.component';
 import styles from './payment-points-styles.scss';
 import { PaymentPointsTable } from './payment-points-table.component';
+import { Permissions } from '../../permission/permissions.constants';
 
 const PaymentPoints = () => {
   const { t } = useTranslation();
@@ -21,9 +22,11 @@ const PaymentPoints = () => {
     <div>
       <BillingHeader title={t('paymentPoints', 'Payment Points')} />
       <div className={styles.paymentPoints}>
-        <Button kind="ghost" onClick={() => openPaymentPointModal()} className={styles.createPaymentPointButton}>
-          {t('createPaymentPoint', 'Create Payment Point')}
-        </Button>
+        <UserHasAccess privilege={Permissions.CreatePaymentPoint}>
+          <Button kind="ghost" onClick={() => openPaymentPointModal()} className={styles.createPaymentPointButton}>
+            {t('createPaymentPoint', 'Create Payment Point')}
+          </Button>
+        </UserHasAccess>
         <PaymentPointsTable />
       </div>
     </div>

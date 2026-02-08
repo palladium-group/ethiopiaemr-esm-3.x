@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Button, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { navigate, showSnackbar, useVisit, useConfig } from '@openmrs/esm-framework';
+import { navigate, showSnackbar, useVisit, useConfig, UserHasAccess } from '@openmrs/esm-framework';
 import type { BillingConfig } from '../../config-schema';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { FormProvider, useFieldArray, useForm, useWatch } from 'react-hook-form';
@@ -20,6 +20,7 @@ import { createPaymentPayload } from './utils';
 import { usePaymentSchema } from '../../hooks/usePaymentSchema';
 import { useCurrencyFormatting } from '../../helpers/currency';
 import useBillableServices from '../../hooks/useBillableServices';
+import { Permissions } from '../../permission/permissions.constants';
 
 type PaymentProps = {
   bill: MappedBill;
@@ -260,11 +261,13 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
             <Button onClick={handleNavigateToBillingDashboard} kind="secondary">
               {t('discard', 'Discard')}
             </Button>
-            <Button
-              onClick={() => handleProcessPayment()}
-              disabled={!formValues?.length || !methods.formState.isValid || hasAmountPaidExceeded}>
-              {t('processPayment', 'Process Payment')}
-            </Button>
+            <UserHasAccess privilege={Permissions.ProcessPayment}>
+              <Button
+                onClick={() => handleProcessPayment()}
+                disabled={!formValues?.length || !methods.formState.isValid || hasAmountPaidExceeded}>
+                {t('processPayment', 'Process Payment')}
+              </Button>
+            </UserHasAccess>
           </div>
         </div>
       </div>

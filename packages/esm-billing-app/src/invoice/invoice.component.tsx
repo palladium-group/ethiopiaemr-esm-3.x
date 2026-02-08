@@ -61,7 +61,9 @@ const Invoice: React.FC = () => {
 
   return (
     <div className={styles.invoiceContainer}>
-      {patient && patientUuid && <ExtensionSlot name="patient-header-slot" state={{ patient, patientUuid }} />}
+      {patient && patientUuid && (
+        <ExtensionSlot name="patient-header-slot" state={{ patient, patientUuid, hideActionsOverflow: true }} />
+      )}
       <InvoiceSummary bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
       <InvoiceTable bill={bill} isLoadingBill={isLoadingBill} onSelectItem={handleSelectItem} />
       <Payments bill={bill} selectedLineItems={selectedLineItems} />

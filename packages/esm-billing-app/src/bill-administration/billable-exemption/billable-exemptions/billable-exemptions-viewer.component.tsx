@@ -21,6 +21,8 @@ import ActionButtons from './action-buttons/action-buttons.component';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 import type { Schema } from '../../../types';
 import styles from './billable-exemptions.scss';
+import { UserHasAccess } from '@openmrs/esm-framework';
+import { Permissions } from '../../../permission/permissions.constants';
 
 interface MarkerProps extends IMarker {
   text: string;
@@ -135,7 +137,9 @@ export const BillableExemptionsViewer = () => {
           <Tabs onChange={handleTabChange} selectedIndex={selectedIndex}>
             <TabList aria-label="Schema previews">
               <Tab>{t('preview', 'Schema Preview')}</Tab>
-              <Tab>{schema ? t('editSchema', 'Edit Schema') : t('addSchema', 'Add Schema')}</Tab>
+              <UserHasAccess privilege={Permissions.AddExcemptionsSchema}>
+                <Tab>{schema ? t('editSchema', 'Edit Schema') : t('addSchema', 'Add Schema')}</Tab>
+              </UserHasAccess>
             </TabList>
             <TabPanels>
               <TabPanel>

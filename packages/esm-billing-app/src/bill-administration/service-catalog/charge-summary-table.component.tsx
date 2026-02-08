@@ -19,7 +19,16 @@ import {
   TableToolbarSearch,
 } from '@carbon/react';
 import { CategoryAdd, Download, Upload, WatsonHealthScalpelSelect } from '@carbon/react/icons';
-import { ErrorState, launchWorkspace, showModal, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import {
+  ErrorState,
+  launchWorkspace,
+  showModal,
+  useLayoutType,
+  usePagination,
+  userHasAccess,
+  UserHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { EmptyState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { ChangeEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,12 +36,16 @@ import styles from './charge-summary-table.scss';
 import { type ChargeAble, useChargeSummaries } from './charge-summary.resource';
 import { downloadExcelTemplateFile, searchTableData } from './form-helper';
 import { useCurrencyFormatting } from '../../helpers/currency';
+import { Permissions } from '../../permission/permissions.constants';
 
 const defaultPageSize = 10;
 
 const ChargeSummaryTable: React.FC = () => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
+  const session = useSession();
+  const clinicalChargesPrivileges = [Permissions.AddChargeService, Permissions.AddChargeItem];
+  const showActionButtons = clinicalChargesPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
 
   const layout = useLayoutType();
   const size = layout === 'tablet' ? 'lg' : 'md';
@@ -141,32 +154,44 @@ const ChargeSummaryTable: React.FC = () => {
                 {isValidating && (
                   <InlineLoading status="active" iconDescription="Loading" description="Loading data..." />
                 )}
-                <ComboButton tooltipAlignment="left" label={t('actions', 'Action')}>
-                  <MenuItem
-                    renderIcon={CategoryAdd}
-                    onClick={() =>
-                      launchWorkspace('billable-service-form', {
-                        workspaceTitle: t('chargeServiceForm', 'Charge Service Form'),
-                      })
-                    }
-                    label={t('addServiceChargeItem', 'Add charge service')}
-                  />
-                  <MenuItem
-                    renderIcon={WatsonHealthScalpelSelect}
-                    onClick={() =>
-                      launchWorkspace('commodity-form', {
-                        workspaceTitle: t('chargeCommodityForm', 'Charge Commodity Form'),
-                      })
-                    }
-                    label={t('addCommodityChargeItem', 'Add charge item')}
-                  />
-                  <MenuItem onClick={openBulkUploadModal} label={t('bulkUpload', 'Bulk Upload')} renderIcon={Upload} />
-                  <MenuItem
-                    onClick={downloadExcelTemplateFile}
-                    label={t('downloadTemplate', 'Download template')}
-                    renderIcon={Download}
-                  />
-                </ComboButton>
+                {showActionButtons && (
+                  <ComboButton tooltipAlignment="left" label={t('actions', 'Action')}>
+                    <UserHasAccess privilege={Permissions.AddChargeService}>
+                      <MenuItem
+                        renderIcon={CategoryAdd}
+                        onClick={() =>
+                          launchWorkspace('billable-service-form', {
+                            workspaceTitle: t('chargeServiceForm', 'Charge Service Form'),
+                          })
+                        }
+                        label={t('addServiceChargeItem', 'Add charge service')}
+                      />
+                    </UserHasAccess>
+                    <UserHasAccess privilege={Permissions.AddChargeItem}>
+                      <MenuItem
+                        renderIcon={WatsonHealthScalpelSelect}
+                        onClick={() =>
+                          launchWorkspace('commodity-form', {
+                            workspaceTitle: t('chargeCommodityForm', 'Charge Commodity Form'),
+                          })
+                        }
+                        label={t('addCommodityChargeItem', 'Add charge item')}
+                      />
+                    </UserHasAccess>
+                    <UserHasAccess privilege={Permissions.AddChargeService}>
+                      <MenuItem
+                        onClick={openBulkUploadModal}
+                        label={t('bulkUpload', 'Bulk Upload')}
+                        renderIcon={Upload}
+                      />
+                      <MenuItem
+                        onClick={downloadExcelTemplateFile}
+                        label={t('downloadTemplate', 'Download template')}
+                        renderIcon={Download}
+                      />
+                    </UserHasAccess>
+                  </ComboButton>
+                )}
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()} aria-label={t('chargeItem', 'Charge items table')}>
@@ -197,10 +222,12 @@ const ChargeSummaryTable: React.FC = () => {
                     <TableCell className="cds--table-column-menu">
                       <OverflowMenu size="sm" flipped>
                         <OverflowMenuItem
+                          disabled={!userHasAccess(Permissions.EditChargeItem, session?.user)}
                           itemText={t('editChargeItem', 'Edit charge item')}
                           onClick={() => handleEdit(results[index])}
                         />
                         <OverflowMenuItem
+                          disabled={!userHasAccess(Permissions.DeleteChargeItem, session?.user)}
                           hasDivider
                           isDelete
                           itemText={t('deleteChargeItem', 'Delete charge item')}
