@@ -24,11 +24,15 @@
   }
 }
 
+.form {
+  height: 100%;
+}
+
 .billingInformationContainer {
   margin: spacing.$spacing-05;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: calc(100vh - 250px); // Account for header, buttons, and margins
+  height: 100%; // Account for header, buttons, and margins
   padding-bottom: spacing.$spacing-05;
 
   // Smooth scrolling

@@ -1,6 +1,13 @@
 import React, { useEffect } from 'react';
 import { Button, ButtonSet, InlineLoading, ContentSwitcher, Switch, Form } from '@carbon/react';
-import { DefaultWorkspaceProps, ExtensionSlot, usePatient, useConfig, useVisit } from '@openmrs/esm-framework';
+import {
+  DefaultWorkspaceProps,
+  ExtensionSlot,
+  usePatient,
+  useConfig,
+  useVisit,
+  useSession,
+} from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 
 import type { ClinicalWorkflowConfig } from '../../config-schema';
@@ -12,6 +19,7 @@ import {
   usePopulateBillingFormFromVisit,
   useBillingFormSubmission,
   useBillingFormHandlers,
+  useCashPoints,
 } from './hooks';
 import {
   BillingTypeAttributes,
@@ -20,7 +28,6 @@ import {
   CreditSubTypeFields,
   FreeSubTypeFields,
   BillableItemsSelection,
-  CashPointSelection,
 } from './components';
 import styles from './billing-information.scss';
 
@@ -38,9 +45,11 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   const { patient, isLoading } = usePatient(patientUuid);
   const { activeVisit, mutate: mutateVisit } = useVisit(patientUuid);
   const { billingVisitAttributeTypes } = useConfig<ClinicalWorkflowConfig>();
+  const { sessionLocation } = useSession();
 
   // Custom hooks for data fetching
   const { billingTypes } = usePaymentModes();
+  const { cashPoints } = useCashPoints();
 
   // Form management hook
   const {
@@ -56,6 +65,11 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   const creditSubType = watch('creditSubType');
   const freeSubType = watch('freeSubType');
   const attributes = watch('attributes') || {};
+
+  // Check if we're in edit mode (if visit has payment method attribute, it means billing info already exists)
+  const isEditMode = activeVisit?.attributes?.some(
+    (attr) => attr.attributeType.uuid === billingVisitAttributeTypes.paymentMethod,
+  );
 
   // Billing type logic hook
   const { selectedBillingType, isCreditType, isFreeType } = useBillingType(billingTypes, billingTypeUuid);
@@ -115,6 +129,19 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
     setValue('billableItem', null, { shouldDirty: true });
   }, [billingTypeUuid, setValue]);
 
+  // Auto-select first cashpoint for the location when creating a bill
+  useEffect(() => {
+    if (sessionLocation?.uuid && cashPoints.length > 0) {
+      const matchingCashPoint = cashPoints.find((cp) => cp.location?.uuid === sessionLocation.uuid);
+      if (matchingCashPoint) {
+        setValue('cashPointUuid', matchingCashPoint.uuid, { shouldDirty: false });
+      } else if (cashPoints.length > 0) {
+        // If no matching cashpoint, select the first one
+        setValue('cashPointUuid', cashPoints[0].uuid, { shouldDirty: false });
+      }
+    }
+  }, [sessionLocation?.uuid, cashPoints, setValue]);
+
   if (isLoading) {
     return <InlineLoading status="active" iconDescription="Loading" description="Loading billing information..." />;
   }
@@ -131,7 +158,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
           }}
         />
       )}
-      <Form onSubmit={handleSubmit(handleFormSubmit)}>
+      <Form className={styles.form} onSubmit={handleSubmit(handleFormSubmit)}>
         <div className={styles.billingInformationContainer}>
           <p className={styles.sectionTitle}>{t('paymentMethods', 'Payment Methods')}</p>
 
@@ -204,11 +231,14 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
               />
             )}
 
-          {/* Cash Point Selection */}
-          <CashPointSelection control={control} errors={errors} t={t} setValue={setValue} />
-
           {/* Billable Items Selection */}
-          <BillableItemsSelection control={control} errors={errors} t={t} selectedPaymentModeUuid={billingTypeUuid} />
+          <BillableItemsSelection
+            control={control}
+            errors={errors}
+            t={t}
+            selectedPaymentModeUuid={billingTypeUuid}
+            isEditMode={isEditMode}
+          />
         </div>
         <ButtonSet className={styles.buttonSet}>
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>

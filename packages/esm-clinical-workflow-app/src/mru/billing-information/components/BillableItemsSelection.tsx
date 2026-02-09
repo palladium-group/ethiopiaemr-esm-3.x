@@ -11,6 +11,7 @@ type BillableItemsSelectionProps = {
   errors: FieldErrors<BillingFormData>;
   t: TFunction;
   selectedPaymentModeUuid?: string;
+  isEditMode?: boolean;
 };
 
 export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
@@ -18,34 +19,26 @@ export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
   errors,
   t,
   selectedPaymentModeUuid,
+  isEditMode = false,
 }) => {
   const { billableServices, isLoading } = useBillableServices();
 
-  // Filter billable services based on selected payment mode
+  // Show all enabled billable services regardless of payment mode
   const filteredBillableServices = useMemo(() => {
-    if (!selectedPaymentModeUuid) {
-      return [];
-    }
-
     return billableServices
       .filter((service) => {
         // Only show enabled services
-        if (service.serviceStatus !== 'ENABLED') {
-          return false;
-        }
-
-        // Check if service has a price for the selected payment mode
-        return service.servicePrices.some((price) => price.paymentMode.uuid === selectedPaymentModeUuid);
+        return service.serviceStatus === 'ENABLED';
       })
       .map((service) => {
-        // Find the price for the selected payment mode
-        const priceForPaymentMode = service.servicePrices.find(
-          (price) => price.paymentMode.uuid === selectedPaymentModeUuid,
-        );
+        // Find the price for the selected payment mode if available, otherwise use first price
+        const priceForPaymentMode = selectedPaymentModeUuid
+          ? service.servicePrices.find((price) => price.paymentMode.uuid === selectedPaymentModeUuid)
+          : service.servicePrices[0];
 
         return {
           id: service.uuid,
-          text: `${service.name} - ${priceForPaymentMode?.price || 0}`,
+          text: `${service.name}${priceForPaymentMode ? ` - ${priceForPaymentMode.price}` : ''}`,
           service: service,
           price: priceForPaymentMode,
         };
@@ -65,29 +58,41 @@ export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
       <Controller
         name="billableItem"
         control={control}
-        render={({ field: { onChange, value } }) => (
-          <ComboBox
-            id="billable-item-select"
-            titleText={t('selectBillableItem', 'Select Billable Item')}
-            items={filteredBillableServices}
-            itemToString={(item) => (item ? item.text : '')}
-            onChange={({ selectedItem }) => {
-              onChange(selectedItem || null);
-            }}
-            selectedItem={value || null}
-            placeholder={t('selectBillableItemPlaceholder', 'Select a billable item')}
-            disabled={!selectedPaymentModeUuid || isLoading}
-            invalid={!!fieldError}
-            invalidText={errorMessage}
-            helperText={
-              !selectedPaymentModeUuid
-                ? t('selectPaymentModeFirst', 'Please select a payment method first')
-                : filteredBillableServices.length === 0
-                ? t('noBillableItemsAvailable', 'No billable items available for the selected payment method')
-                : undefined
-            }
-          />
-        )}
+        rules={
+          !isEditMode
+            ? {
+                required: t('billableServiceRequired', 'Billable service is required'),
+              }
+            : undefined
+        }
+        render={({ field: { onChange, value } }) => {
+          // Update selected item's price when payment mode changes
+          const selectedItemWithUpdatedPrice = value
+            ? filteredBillableServices.find((item) => item.id === value.id) || value
+            : null;
+
+          return (
+            <ComboBox
+              id="billable-item-select"
+              titleText={t('selectBillableService', 'Select Billable Service')}
+              items={filteredBillableServices}
+              itemToString={(item) => (item ? item.text : '')}
+              onChange={({ selectedItem }) => {
+                onChange(selectedItem || null);
+              }}
+              selectedItem={selectedItemWithUpdatedPrice}
+              placeholder={t('selectBillableServicePlaceholder', 'Select a billable service')}
+              disabled={isEditMode || isLoading}
+              invalid={!!fieldError}
+              invalidText={errorMessage}
+              helperText={
+                filteredBillableServices.length === 0
+                  ? t('noBillableItemsAvailable', 'No billable items available')
+                  : undefined
+              }
+            />
+          );
+        }}
       />
     </FormGroup>
   );
