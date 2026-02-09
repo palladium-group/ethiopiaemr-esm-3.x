@@ -13,11 +13,12 @@ import {
   OverflowMenu,
   OverflowMenuItem,
 } from '@carbon/react';
-import { ErrorState, showModal, useLayoutType } from '@openmrs/esm-framework';
+import { ErrorState, showModal, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 
 import { type PaymentPoint } from '../../types';
+import { Permissions } from '../../permission/permissions.constants';
 
 const headers = [
   { header: 'Name', key: 'name' },
@@ -28,6 +29,7 @@ export const PaymentPointsTable = () => {
   const { paymentPoints, error, isLoading } = usePaymentPoints();
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const session = useSession();
 
   const handleEditPaymentPoint = (paymentPoint: PaymentPoint) => {
     const dispose = showModal('create-payment-point', { paymentPoint, closeModal: () => dispose() });
@@ -95,10 +97,12 @@ export const PaymentPointsTable = () => {
                   <TableCell className="cds--table-column-menu">
                     <OverflowMenu size="sm" flipped>
                       <OverflowMenuItem
+                        disabled={!userHasAccess(Permissions.EditPaymentPoint, session?.user)}
                         itemText={t('edit', 'Edit')}
                         onClick={() => handleEditPaymentPoint(paymentPoints[index])}
                       />
                       <OverflowMenuItem
+                        disabled={!userHasAccess(Permissions.DeletePaymentPoint, session?.user)}
                         itemText={t('delete', 'Delete')}
                         onClick={() => handleDeletePaymentPoint(paymentPoints[index])}
                       />

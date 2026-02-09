@@ -15,11 +15,19 @@ import {
   OverflowMenuItem,
   Pagination,
 } from '@carbon/react';
-import { launchWorkspace, showModal, usePagination } from '@openmrs/esm-framework';
+import {
+  launchWorkspace,
+  showModal,
+  usePagination,
+  userHasAccess,
+  UserHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import { type FormattedDeposit } from '../../../types/bill-deposit.types';
 import { BILL_DEPOSIT_STATUS } from '../../../constants/bill-deposit.constants';
 import TransactionList from './transaction-list/transaction-list.component';
+import { Permissions } from '../../../../../permission/permissions.constants';
 
 interface DepositTableProps {
   deposits: Array<FormattedDeposit>;
@@ -39,6 +47,10 @@ const DepositTable: React.FC<DepositTableProps> = ({ deposits }) => {
     { header: t('availableBalance', 'Available Balance'), key: 'availableBalance' },
     { header: t('status', 'Status'), key: 'status' },
   ];
+
+  const session = useSession();
+  const tableActionPrivileges = [Permissions.ApplyDeposit, Permissions.AddDeposit];
+  const showTableActions = tableActionPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
 
   const handleEditDeposit = (deposit: FormattedDeposit) => {
     launchWorkspace('add-deposit-workspace', {
@@ -98,14 +110,18 @@ const DepositTable: React.FC<DepositTableProps> = ({ deposits }) => {
                         {deposits[index].status !== BILL_DEPOSIT_STATUS.USED && (
                           <>
                             <OverflowMenuItem
+                              disabled={!userHasAccess(Permissions.ApplyDeposit, session?.user)}
                               itemText={t('applyDepositToBill', 'Apply Deposit to Bill')}
                               onClick={() => handleApplyDepositToBill(deposits[index])}
                             />
+                            {/* Edit and Delete Deposit uses Add Deposit privilege */}
                             <OverflowMenuItem
+                              disabled={!userHasAccess(Permissions.AddDeposit, session?.user)}
                               itemText={t('editDeposit', 'Edit Deposit')}
                               onClick={() => handleEditDeposit(deposits[index])}
                             />
                             <OverflowMenuItem
+                              disabled={!userHasAccess(Permissions.AddDeposit, session?.user)}
                               hasDivider
                               isDelete
                               itemText={t('deleteDeposit', 'Delete Deposit')}

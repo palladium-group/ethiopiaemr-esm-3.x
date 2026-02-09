@@ -128,6 +128,9 @@ describe('Payment', () => {
     const submitButton = screen.getByRole('button', { name: /Process Payment/i });
     await user.click(submitButton);
 
+    const confirmButton = screen.getByRole('button', { name: /Confirm/i });
+    await user.click(confirmButton);
+
     expect(mockProcessBillPayment).toHaveBeenCalledTimes(1);
     expect(mockProcessBillPayment).toHaveBeenCalledWith(
       {
@@ -279,6 +282,9 @@ describe('Payment', () => {
 
     const submitButton = screen.getByRole('button', { name: /Process Payment/i });
     await user.click(submitButton);
+
+    const confirmButton = screen.getByRole('button', { name: /Confirm/i });
+    await user.click(confirmButton);
 
     expect(mockProcessBillPayment).toHaveBeenCalledTimes(1);
     expect(mockProcessBillPayment).toHaveBeenCalledWith(

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { formatDate, launchWorkspace, parseDate } from '@openmrs/esm-framework';
+import { formatDate, launchWorkspace, parseDate, UserHasAccess } from '@openmrs/esm-framework';
 import { useBillDeposit } from '../../hooks/useBillDeposit';
 import { Button, InlineLoading } from '@carbon/react';
 import styles from './bill-deposit-search.scss';
@@ -9,6 +9,7 @@ import PatientSearch from './components/patient-search';
 import PatientInfo from './components/patient-info';
 import DepositTable from './components/deposit-table';
 import EmptyPatientBill from '../../../../past-patient-bills/patient-bills-dashboard/empty-patient-bill.component';
+import { Permissions } from '../../../../permission/permissions.constants';
 
 const BillDepositSearch: React.FC = () => {
   const { t } = useTranslation();
@@ -68,11 +69,13 @@ const BillDepositSearch: React.FC = () => {
       <>
         <div className={styles.depositResultsHeader}>
           <PatientInfo patientUuid={selectedPatientUuid} />
-          <div className={styles.actions}>
-            <Button renderIcon={Add} kind="ghost" onClick={handleLaunchDepositForm}>
-              {t('newDeposit', 'New Deposit')}
-            </Button>
-          </div>
+          <UserHasAccess privilege={Permissions.AddDeposit}>
+            <div className={styles.actions}>
+              <Button renderIcon={Add} kind="ghost" onClick={handleLaunchDepositForm}>
+                {t('newDeposit', 'New Deposit')}
+              </Button>
+            </div>
+          </UserHasAccess>
         </div>
         {deposits.length === 0 ? (
           <EmptyPatientBill

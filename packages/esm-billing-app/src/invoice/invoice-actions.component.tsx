@@ -13,6 +13,8 @@ import {
   showSnackbar,
   showToast,
   updateVisit,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +26,7 @@ import { useCheckShareGnum } from './invoice.resource';
 import styles from './invoice.scss';
 import startCase from 'lodash-es/startCase';
 import { useCurrencyFormatting } from '../helpers/currency';
+import { Permissions } from '../permission/permissions.constants';
 
 interface InvoiceActionsProps {
   readonly bill: MappedBill;
@@ -40,6 +43,10 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
   const { checkSHARegNum } = useCheckShareGnum();
   const { patientUuid: visitStorePatientUuid, manuallySetVisitUuid } = useVisitContextStore();
   const isProcessClaimsFormEnabled = useFeatureFlag('healthInformationExchange');
+
+  const session = useSession();
+  const printPrivileges = [Permissions.PrintInvoice, Permissions.PrintReceipt, Permissions.PrintBillStatement];
+  const hasAnyPrintPrivilege = printPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
 
   const isInsurancePayment = (payments) => {
     return payments?.some((payment) => payment.instanceType.name === 'Insurance');
@@ -126,62 +133,77 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
 
   return (
     <div className="invoiceSummaryActions">
-      <Popover isTabTip align="bottom-right" onKeyDown={() => {}} onRequestClose={() => setIsOpen(false)} open={isOpen}>
-        <button
-          className={styles.printButton}
-          aria-expanded
-          aria-label="Settings"
-          onClick={() => setIsOpen(!isOpen)}
-          type="button">
-          <span className={styles.printButtonContent}>
-            <span className={styles.printButtonText}>{t('print', 'Print')}</span>
-            <Printer />
-          </span>
-        </button>
-        <PopoverContent>
-          <div className={styles.popoverContent}>
-            <Button
-              kind="ghost"
-              size="sm"
-              onClick={() =>
-                handlePrint(
-                  'invoice',
-                  `${t('invoice', 'Invoice')} ${bill?.receiptNumber} - ${startCase(bill?.patientName)}`,
-                )
-              }
-              renderIcon={Printer}>
-              {t('printInvoice', 'Print Invoice')}
-            </Button>
-            <Button
-              kind="ghost"
-              size="sm"
-              onClick={() => {
-                const dispose = showModal('print-preview-modal', {
-                  onClose: () => dispose(),
-                  title: `${t('receipt', 'Receipt')} ${bill?.receiptNumber} - ${startCase(bill?.patientName)}`,
-                  documentUrl: `/openmrs${restBaseUrl}/cashier/receipt?billId=${bill.id}`,
-                });
-              }}
-              renderIcon={Printer}>
-              {t('printReceipt', 'Print Receipt')}
-            </Button>
-            <Button
-              kind="ghost"
-              size="sm"
-              onClick={() =>
-                handlePrint(
-                  'billstatement',
-                  `${t('billStatement', 'Bill Statement')} ${bill?.receiptNumber} - ${startCase(bill?.patientName)}`,
-                )
-              }
-              renderIcon={Printer}>
-              {t('printBillStatement', 'Print Bill Statement')}
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+      {hasAnyPrintPrivilege && (
+        <Popover
+          isTabTip
+          align="bottom-right"
+          onKeyDown={() => {}}
+          onRequestClose={() => setIsOpen(false)}
+          open={isOpen}>
+          <button
+            className={styles.printButton}
+            aria-expanded
+            aria-label="Settings"
+            onClick={() => setIsOpen(!isOpen)}
+            type="button">
+            <span className={styles.printButtonContent}>
+              <span className={styles.printButtonText}>{t('print', 'Print')}</span>
+              <Printer />
+            </span>
+          </button>
+          <PopoverContent>
+            <div className={styles.popoverContent}>
+              <UserHasAccess privilege={Permissions.PrintInvoice}>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  onClick={() =>
+                    handlePrint(
+                      'invoice',
+                      `${t('invoice', 'Invoice')} ${bill?.receiptNumber} - ${startCase(bill?.patientName)}`,
+                    )
+                  }
+                  renderIcon={Printer}>
+                  {t('printInvoice', 'Print Invoice')}
+                </Button>
+              </UserHasAccess>
+              <UserHasAccess privilege={Permissions.PrintReceipt}>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const dispose = showModal('print-preview-modal', {
+                      onClose: () => dispose(),
+                      title: `${t('receipt', 'Receipt')} ${bill?.receiptNumber} - ${startCase(bill?.patientName)}`,
+                      documentUrl: `/openmrs${restBaseUrl}/cashier/receipt?billId=${bill.id}`,
+                    });
+                  }}
+                  renderIcon={Printer}>
+                  {t('printReceipt', 'Print Receipt')}
+                </Button>
+              </UserHasAccess>
+              <UserHasAccess privilege={Permissions.PrintBillStatement}>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  onClick={() =>
+                    handlePrint(
+                      'billstatement',
+                      `${t('billStatement', 'Bill Statement')} ${bill?.receiptNumber} - ${startCase(
+                        bill?.patientName,
+                      )}`,
+                    )
+                  }
+                  renderIcon={Printer}>
+                  {t('printBillStatement', 'Print Bill Statement')}
+                </Button>
+              </UserHasAccess>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
       {shouldCloseBill && (
-        <UserHasAccess privilege="Close Cashier Bills">
+        <UserHasAccess privilege={Permissions.CloseCashierBills}>
           <Button
             kind="danger--ghost"
             size="sm"
@@ -194,7 +216,7 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
         </UserHasAccess>
       )}
       {bill?.closed && (
-        <UserHasAccess privilege="Reopen Cashier Bills">
+        <UserHasAccess privilege={Permissions.ReOpenCashierBills}>
           <Button
             kind="ghost"
             size="sm"
@@ -206,22 +228,24 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
           </Button>
         </UserHasAccess>
       )}
-      <Button
-        kind="ghost"
-        size="sm"
-        renderIcon={Wallet}
-        iconDescription="Add"
-        tooltipPosition="right"
-        onClick={() =>
-          launchWorkspace('payment-workspace', {
-            bill,
-            workspaceTitle: t('additionalPayment', 'Additional Payment (Balance {{billBalance}})', {
-              billBalance: formatCurrency(bill.balance),
-            }),
-          })
-        }>
-        {t('additionalPayment', 'Additional Payment')}
-      </Button>
+      <UserHasAccess privilege={Permissions.ProcessPayment}>
+        <Button
+          kind="ghost"
+          size="sm"
+          renderIcon={Wallet}
+          iconDescription="Add"
+          tooltipPosition="right"
+          onClick={() =>
+            launchWorkspace('payment-workspace', {
+              bill,
+              workspaceTitle: t('additionalPayment', 'Additional Payment (Balance {{billBalance}})', {
+                billBalance: formatCurrency(bill.balance),
+              }),
+            })
+          }>
+          {t('additionalPayment', 'Additional Payment')}
+        </Button>
+      </UserHasAccess>
 
       {isProcessClaimsFormEnabled && isInsurancePayment(bill?.payments) && (
         <Button

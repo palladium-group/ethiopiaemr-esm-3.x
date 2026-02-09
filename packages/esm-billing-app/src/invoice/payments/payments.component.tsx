@@ -1,7 +1,15 @@
-import React, { useEffect, useRef } from 'react';
-import { Button, InlineNotification } from '@carbon/react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Button,
+  ComposedModal,
+  InlineLoading,
+  InlineNotification,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+} from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { navigate, showSnackbar, useVisit, useConfig } from '@openmrs/esm-framework';
+import { navigate, showSnackbar, useVisit, useConfig, UserHasAccess } from '@openmrs/esm-framework';
 import type { BillingConfig } from '../../config-schema';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { FormProvider, useFieldArray, useForm, useWatch } from 'react-hook-form';
@@ -20,6 +28,7 @@ import { createPaymentPayload } from './utils';
 import { usePaymentSchema } from '../../hooks/usePaymentSchema';
 import { useCurrencyFormatting } from '../../helpers/currency';
 import useBillableServices from '../../hooks/useBillableServices';
+import { Permissions } from '../../permission/permissions.constants';
 
 type PaymentProps = {
   bill: MappedBill;
@@ -29,6 +38,8 @@ type PaymentProps = {
 const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { lineItems } = bill;
   const { visitAttributeTypes } = useConfig<BillingConfig>();
 
@@ -153,7 +164,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
       to: window.getOpenmrsSpaBase() + 'home/billing',
     });
 
-  const handleProcessPayment = () => {
+  const handleProcessPayment = async (): Promise<boolean> => {
     const { remove } = formArrayMethods;
     const paymentPayload = createPaymentPayload(
       bill,
@@ -163,31 +174,42 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
       selectedLineItems,
       globalActiveSheet,
     );
-    remove();
 
-    processBillPayment(paymentPayload, bill.uuid).then(
-      (resp) => {
-        showSnackbar({
-          title: t('billPayment', 'Bill payment'),
-          subtitle: 'Bill payment processing has been successful',
-          kind: 'success',
-          timeoutInMs: 3000,
-        });
-        const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
-        mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
-      },
-      (error) => {
-        showSnackbar({
-          title: t('failedBillPayment', 'Bill payment failed'),
-          subtitle: `An unexpected error occurred while processing your bill payment. Please contact the system administrator and provide them with the following error details: ${extractErrorMessagesFromResponse(
-            error.responseBody,
-          )}`,
-          kind: 'error',
-          timeoutInMs: 3000,
-          isLowContrast: true,
-        });
-      },
-    );
+    try {
+      await processBillPayment(paymentPayload, bill.uuid);
+      remove();
+      showSnackbar({
+        title: t('billPayment', 'Bill payment'),
+        subtitle: 'Bill payment processing has been successful',
+        kind: 'success',
+        timeoutInMs: 3000,
+      });
+      const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
+      mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
+      return true;
+    } catch (error) {
+      setIsProcessing(false);
+      setShowConfirmModal(false);
+      showSnackbar({
+        title: t('failedBillPayment', 'Bill payment failed'),
+        subtitle: `An unexpected error occurred while processing your bill payment. Please contact the system administrator and provide them with the following error details: ${extractErrorMessagesFromResponse(
+          error.responseBody,
+        )}`,
+        kind: 'error',
+        timeoutInMs: 3000,
+        isLowContrast: true,
+      });
+      return false;
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    setIsProcessing(true);
+    const success = await handleProcessPayment();
+    setIsProcessing(false);
+    if (success) {
+      setShowConfirmModal(false);
+    }
   };
 
   const amountDueDisplay = (amount: number) => (amount < 0 ? 'Client balance' : 'Amount Due');
@@ -260,14 +282,50 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
             <Button onClick={handleNavigateToBillingDashboard} kind="secondary">
               {t('discard', 'Discard')}
             </Button>
-            <Button
-              onClick={() => handleProcessPayment()}
-              disabled={!formValues?.length || !methods.formState.isValid || hasAmountPaidExceeded}>
-              {t('processPayment', 'Process Payment')}
-            </Button>
+            <UserHasAccess privilege={Permissions.ProcessPayment}>
+              <Button
+                onClick={() => setShowConfirmModal(true)}
+                disabled={!formValues?.length || !methods.formState.isValid || hasAmountPaidExceeded}>
+                {t('processPayment', 'Process Payment')}
+              </Button>
+            </UserHasAccess>
           </div>
         </div>
       </div>
+
+      <ComposedModal
+        open={showConfirmModal}
+        onClose={() => !isProcessing && setShowConfirmModal(false)}
+        preventCloseOnClickOutside={isProcessing}>
+        <ModalHeader
+          closeModal={!isProcessing ? () => setShowConfirmModal(false) : undefined}
+          title={t('confirmPayment', 'Confirm Payment')}
+        />
+        <ModalBody>
+          <p className={styles.confirmMessage}>
+            {t(
+              'confirmPaymentMessage',
+              'Are you sure you want to process this payment? Total amount tendered: {{totalAmountTendered}}. Amount due: {{amountDue}}.',
+              {
+                totalAmountTendered: formatCurrency(totalAmountTendered),
+                amountDue: formatCurrency(amountDue),
+              },
+            )}
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button kind="secondary" onClick={() => setShowConfirmModal(false)} disabled={isProcessing}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button kind="primary" onClick={handleConfirmPayment} disabled={isProcessing}>
+            {isProcessing ? (
+              <InlineLoading description={t('processingPayment', 'Processing Payment')} />
+            ) : (
+              t('confirm', 'Confirm')
+            )}
+          </Button>
+        </ModalFooter>
+      </ComposedModal>
     </FormProvider>
   );
 };

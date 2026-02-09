@@ -2,12 +2,13 @@ import React from 'react';
 import { Button } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { IbmCloudSysdigSecure, Shuffle, Location as LocationIcon } from '@carbon/react/icons';
-import { formatDate, parseDate, showModal, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate, parseDate, showModal, useLayoutType, UserHasAccess } from '@openmrs/esm-framework';
 
 import { useClockInStatus } from '../bill-administration/payment-points/use-clock-in-status';
 
 import ClockInButton from './clock-in-button.component';
 import styles from './billing-dashboard.scss';
+import { Permissions } from '../permission/permissions.constants';
 
 export const ClockOutStrip = () => {
   const { isClockedIn, globalActiveSheet } = useClockInStatus();
@@ -17,7 +18,9 @@ export const ClockOutStrip = () => {
   if (!isClockedIn) {
     return (
       <div className={styles.clockInContainer}>
-        <ClockInButton />
+        <UserHasAccess privilege={Permissions.ClockInOut}>
+          <ClockInButton />
+        </UserHasAccess>
       </div>
     );
   }
@@ -46,17 +49,21 @@ export const ClockOutStrip = () => {
         <p className={styles.cashPointName}>{globalActiveSheet.cashPoint.name}</p>
       </div>
       <div>
-        <Button size={controlSize} kind="ghost" renderIcon={Shuffle} onClick={openClockInModal}>
-          {t('switchPaymentPoint', 'Switch Payment Point')}
-        </Button>
-        <Button
-          size={controlSize}
-          className={styles.clockIn}
-          onClick={openClockOutModal}
-          kind="danger"
-          renderIcon={IbmCloudSysdigSecure}>
-          {t('clockOut', 'Clock Out')}
-        </Button>
+        <UserHasAccess privilege={Permissions.SwitchPaymentPoint}>
+          <Button size={controlSize} kind="ghost" renderIcon={Shuffle} onClick={openClockInModal}>
+            {t('switchPaymentPoint', 'Switch Payment Point')}
+          </Button>
+        </UserHasAccess>
+        <UserHasAccess privilege={Permissions.ClockInOut}>
+          <Button
+            size={controlSize}
+            className={styles.clockIn}
+            onClick={openClockOutModal}
+            kind="danger"
+            renderIcon={IbmCloudSysdigSecure}>
+            {t('clockOut', 'Clock Out')}
+          </Button>
+        </UserHasAccess>
       </div>
     </div>
   );
