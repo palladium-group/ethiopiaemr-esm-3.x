@@ -92,7 +92,7 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
       // Reset to page 1 when page size changes
       goToLocalPage(1);
     }
-  }, [pageSize, useLocalPagination]);
+  }, [pageSize, useLocalPagination, goToLocalPage, localCurrentPage]);
 
   // Use paginated results for local pagination, otherwise use search results
   const displayVisits = useLocalPagination ? paginatedResults : searchResults;
