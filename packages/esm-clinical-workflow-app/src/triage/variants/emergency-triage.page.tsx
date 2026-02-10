@@ -6,16 +6,39 @@ import { ExtensionSlot, TriagePictogram, launchWorkspace, PageHeader, useConfig 
 import type { ClinicalWorkflowConfig } from '../../config-schema';
 import PatientBanner from '../patient-banner.component';
 import { useStartVisitAndLaunchTriageForm } from '../useStartVisitAndLaunchTriageForm';
-import EmptyState from './empty-state.component';
+import VisitsTable from '../../patient-scoreboard/visits-table/visits-table.component';
+import { useActiveVisits } from '../../patient-scoreboard/hooks/useVisitList';
+import { DEFAULT_PAGE_SIZE } from '../../constants';
 import styles from '../triage-dashboard.scss';
 
 const EmergencyTriagePage: React.FC = () => {
   const { t } = useTranslation();
   const { triageVariants, enforceTriagePrivileges } = useConfig<ClinicalWorkflowConfig>();
   const [patientUuid, setPatientUuid] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
   const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
 
   const variantConfig = triageVariants['emergency'];
+
+  // Calculate startIndex for pagination
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginationParams = {
+    startIndex,
+    limit: pageSize,
+  };
+
+  // Fetch active visits for the table (only when no patient is selected)
+  const {
+    visits: activeVisits,
+    isLoading: isLoadingVisits,
+    count: activeCount,
+  } = useActiveVisits(!patientUuid ? paginationParams : undefined);
+
+  const handlePaginationChange = ({ page, pageSize: newPageSize }: { page: number; pageSize: number }) => {
+    setCurrentPage(page);
+    setPageSize(newPageSize);
+  };
 
   const handleRegisterNewPatient = useCallback(() => {
     launchWorkspace('patient-registration-workspace', {
@@ -56,7 +79,10 @@ const EmergencyTriagePage: React.FC = () => {
           className={styles.patientSearchBar}
           name="patient-search-bar-slot"
           state={{
-            selectPatientAction: (patientUuid: string) => setPatientUuid(patientUuid),
+            selectPatientAction: (patientUuid: string) => {
+              setPatientUuid(patientUuid);
+              setCurrentPage(1); // Reset to page 1 when selecting a patient
+            },
             buttonProps: { kind: 'secondary' },
           }}
         />
@@ -66,7 +92,16 @@ const EmergencyTriagePage: React.FC = () => {
       </div>
 
       {!patientUuid ? (
-        <EmptyState />
+        <VisitsTable
+          visits={activeVisits}
+          isLoading={isLoadingVisits}
+          tableHeading={t('activeVisits', 'Active Visits')}
+          totalCount={activeCount}
+          pageSize={pageSize}
+          currentPage={currentPage}
+          onPaginationChange={handlePaginationChange}
+          useLocalPagination={false}
+        />
       ) : (
         <PatientBanner patientUuid={patientUuid} variantConfig={variantConfig} setPatientUuid={setPatientUuid} />
       )}
