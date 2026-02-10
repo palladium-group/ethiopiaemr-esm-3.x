@@ -19,6 +19,7 @@ import styles from './mru.scss';
 import { type ClinicalWorkflowConfig } from '../config-schema';
 import VisitsTable from '../patient-scoreboard/visits-table/visits-table.component';
 import { useActiveVisits } from '../patient-scoreboard/hooks/useVisitList';
+import { DEFAULT_PAGE_SIZE } from '../constants';
 const MRU: React.FC = () => {
   const { t } = useTranslation();
 
@@ -41,7 +42,7 @@ const PatientSearch: React.FC = () => {
   const { t } = useTranslation();
   const { billingVisitAttributeTypes } = useConfig<ClinicalWorkflowConfig>();
   const [patientUuid, setPatientUuid] = React.useState<string>(params.patientUuid || undefined);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
   const { data: patient, isLoading } = useSWR(patientUuid ? ['patient', patientUuid] : null, () =>
     fetchCurrentPatient(patientUuid!),

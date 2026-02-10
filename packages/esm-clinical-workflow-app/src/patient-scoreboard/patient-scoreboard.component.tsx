@@ -9,6 +9,7 @@ import PastVisitsCard from './visit-cards/scheduled-visits.card';
 import TotalVisitsCard from './visit-cards/total-visits.card';
 import VisitsTable from './visits-table/visits-table.component';
 import { useActiveVisits, usePastVisits, useTotalVisits } from './hooks/useVisitList';
+import { DEFAULT_PAGE_SIZE } from '../constants';
 
 type VisitType = 'active' | 'past' | 'all';
 
@@ -17,7 +18,7 @@ const PatientScoreboard: React.FC = () => {
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'md';
   const [selectedVisitType, setSelectedVisitType] = useState<VisitType>('active');
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Calculate startIndex based on currentPage and pageSize

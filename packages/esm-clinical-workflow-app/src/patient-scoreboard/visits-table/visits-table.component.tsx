@@ -23,6 +23,7 @@ import {
   usePagination,
   type Visit,
 } from '@openmrs/esm-framework';
+import { DEFAULT_PAGE_SIZES } from '../../constants';
 import styles from './visits-table.component.scss';
 
 interface VisitsTableProps {
@@ -199,7 +200,7 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
           page={useLocalPagination ? localCurrentPage : currentPage}
           pageNumberText={t('pageNumber', 'Page number')}
           pageSize={pageSize}
-          pageSizes={[10, 25, 50, 100]}
+          pageSizes={DEFAULT_PAGE_SIZES}
           totalItems={useLocalPagination ? searchResults.length : totalCount}
           size={responsiveSize}
           onChange={({ page, pageSize: newPageSize }) => {
