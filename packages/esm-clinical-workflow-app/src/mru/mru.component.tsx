@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, InlineLoading, Layer } from '@carbon/react';
 import {
   ExtensionSlot,
@@ -17,6 +17,8 @@ import { useParams } from 'react-router-dom';
 
 import styles from './mru.scss';
 import { type ClinicalWorkflowConfig } from '../config-schema';
+import VisitsTable from '../patient-scoreboard/visits-table/visits-table.component';
+import { useActiveVisits } from '../patient-scoreboard/hooks/useVisitList';
 const MRU: React.FC = () => {
   const { t } = useTranslation();
 
@@ -39,10 +41,31 @@ const PatientSearch: React.FC = () => {
   const { t } = useTranslation();
   const { billingVisitAttributeTypes } = useConfig<ClinicalWorkflowConfig>();
   const [patientUuid, setPatientUuid] = React.useState<string>(params.patientUuid || undefined);
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
   const { data: patient, isLoading } = useSWR(patientUuid ? ['patient', patientUuid] : null, () =>
     fetchCurrentPatient(patientUuid!),
   );
   const { activeVisit } = useVisit(patientUuid);
+
+  // Calculate startIndex for pagination
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginationParams = {
+    startIndex,
+    limit: pageSize,
+  };
+
+  // Fetch active visits for the table (only when no patient is selected)
+  const {
+    visits: activeVisits,
+    isLoading: isLoadingVisits,
+    count: activeCount,
+  } = useActiveVisits(!patientUuid ? paginationParams : undefined);
+
+  const handlePaginationChange = ({ page, pageSize: newPageSize }: { page: number; pageSize: number }) => {
+    setCurrentPage(page);
+    setPageSize(newPageSize);
+  };
 
   // TODO: Add ability for user to edit billing information
 
@@ -66,7 +89,10 @@ const PatientSearch: React.FC = () => {
         <ExtensionSlot
           name="patient-search-bar-slot"
           state={{
-            selectPatientAction: (patientUuid: string) => setPatientUuid(patientUuid),
+            selectPatientAction: (patientUuid: string) => {
+              setPatientUuid(patientUuid);
+              setCurrentPage(1); // Reset to page 1 when selecting a patient
+            },
             buttonProps: {
               kind: 'secondary',
             },
@@ -90,7 +116,14 @@ const PatientSearch: React.FC = () => {
                 ? t('editBillingInformation', 'Edit Billing Information')
                 : t('addBillingInformation', 'Add Billing Information')}
             </Button>
-            <Button kind="ghost" size="md" renderIcon={Close} onClick={() => setPatientUuid(undefined)}>
+            <Button
+              kind="ghost"
+              size="md"
+              renderIcon={Close}
+              onClick={() => {
+                setPatientUuid(undefined);
+                setCurrentPage(1); // Reset to page 1 when closing patient
+              }}>
               {t('close', 'Close')}
             </Button>
           </div>
@@ -103,6 +136,18 @@ const PatientSearch: React.FC = () => {
             }}
           />
         </div>
+      )}
+      {!patientUuid && (
+        <VisitsTable
+          visits={activeVisits}
+          isLoading={isLoadingVisits}
+          tableHeading={t('activeVisits', 'Active Visits')}
+          totalCount={activeCount}
+          pageSize={pageSize}
+          currentPage={currentPage}
+          onPaginationChange={handlePaginationChange}
+          useLocalPagination={false}
+        />
       )}
     </div>
   );

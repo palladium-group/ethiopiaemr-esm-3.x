@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import {
@@ -19,8 +19,8 @@ import {
   formatDatetime,
   isDesktop,
   useLayoutType,
-  usePagination,
   useConfig,
+  usePagination,
   type Visit,
 } from '@openmrs/esm-framework';
 import styles from './visits-table.component.scss';
@@ -29,11 +29,24 @@ interface VisitsTableProps {
   visits: Array<Visit>;
   isLoading: boolean;
   tableHeading: string;
+  totalCount: number;
+  pageSize: number;
+  currentPage: number;
+  onPaginationChange: (params: { page: number; pageSize: number }) => void;
+  useLocalPagination?: boolean;
 }
 
-const VisitsTable: React.FC<VisitsTableProps> = ({ visits, isLoading, tableHeading }) => {
+const VisitsTable: React.FC<VisitsTableProps> = ({
+  visits,
+  isLoading,
+  tableHeading,
+  totalCount,
+  pageSize,
+  currentPage,
+  onPaginationChange,
+  useLocalPagination = false,
+}) => {
   const { t } = useTranslation();
-  const [pageSize, setPageSize] = useState(25);
   const [searchString, setSearchString] = useState('');
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
@@ -41,6 +54,7 @@ const VisitsTable: React.FC<VisitsTableProps> = ({ visits, isLoading, tableHeadi
   const customPatientChartUrl =
     config?.customPatientChartUrl || '${openmrsSpaBase}/patient/${patientUuid}/chart/Visits';
 
+  // Client-side search filtering
   const searchResults = useMemo(() => {
     if (!visits || visits.length === 0) {
       return [];
@@ -65,7 +79,23 @@ const VisitsTable: React.FC<VisitsTableProps> = ({ visits, isLoading, tableHeadi
     });
   }, [visits, searchString]);
 
-  const { results, goTo, currentPage } = usePagination(searchResults, pageSize);
+  // Local pagination for Past visits (when useLocalPagination is true)
+  const {
+    results: paginatedResults,
+    goTo: goToLocalPage,
+    currentPage: localCurrentPage,
+  } = usePagination(useLocalPagination ? searchResults : visits, useLocalPagination ? pageSize : visits.length);
+
+  // Sync local pagination page size when it changes from parent
+  useEffect(() => {
+    if (useLocalPagination && localCurrentPage !== 1) {
+      // Reset to page 1 when page size changes
+      goToLocalPage(1);
+    }
+  }, [pageSize, useLocalPagination]);
+
+  // Use paginated results for local pagination, otherwise use search results
+  const displayVisits = useLocalPagination ? paginatedResults : searchResults;
 
   const headerData = [
     { header: t('patientName', 'Patient Name'), key: 'patientName' },
@@ -77,7 +107,7 @@ const VisitsTable: React.FC<VisitsTableProps> = ({ visits, isLoading, tableHeadi
     { header: t('status', 'Status'), key: 'status' },
   ];
 
-  const rowData = results?.map((visit) => {
+  const rowData = displayVisits?.map((visit) => {
     const patientUuid = visit.patient?.uuid;
     const patientName = visit.patient?.person?.display || '--';
     const identifier = visit.patient?.identifiers?.[0]?.identifier || '--';
@@ -106,8 +136,11 @@ const VisitsTable: React.FC<VisitsTableProps> = ({ visits, isLoading, tableHeadi
   });
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    goTo(1);
     setSearchString(e.target.value);
+    // Reset to page 1 when searching with local pagination
+    if (useLocalPagination) {
+      goToLocalPage(1);
+    }
   };
 
   if (isLoading) {
@@ -158,19 +191,25 @@ const VisitsTable: React.FC<VisitsTableProps> = ({ visits, isLoading, tableHeadi
           </TableContainer>
         )}
       </DataTable>
-      {searchResults.length > pageSize && (
+      {totalCount > 0 && (
         <Pagination
           backwardText={t('previousPage', 'Previous page')}
           forwardText={t('nextPage', 'Next page')}
           itemsPerPageText={t('itemsPerPage', 'Items per page:')}
-          page={currentPage}
+          page={useLocalPagination ? localCurrentPage : currentPage}
           pageNumberText={t('pageNumber', 'Page number')}
           pageSize={pageSize}
           pageSizes={[10, 25, 50, 100]}
-          totalItems={searchResults.length}
-          onChange={({ page, pageSize }) => {
-            setPageSize(pageSize);
-            goTo(page);
+          totalItems={useLocalPagination ? searchResults.length : totalCount}
+          size={responsiveSize}
+          onChange={({ page, pageSize: newPageSize }) => {
+            if (useLocalPagination) {
+              goToLocalPage(page);
+              // Update parent pageSize, page doesn't matter for local pagination
+              onPaginationChange({ page: 1, pageSize: newPageSize });
+            } else {
+              onPaginationChange({ page, pageSize: newPageSize });
+            }
           }}
         />
       )}
