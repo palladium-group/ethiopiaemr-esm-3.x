@@ -33,7 +33,8 @@ export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
       .map((service) => {
         // Find the price for the selected payment mode if available, otherwise use first price
         const priceForPaymentMode = selectedPaymentModeUuid
-          ? service.servicePrices.find((price) => price.paymentMode.uuid === selectedPaymentModeUuid)
+          ? service.servicePrices.find((price) => price.paymentMode.uuid === selectedPaymentModeUuid) ||
+            service.servicePrices[0]
           : service.servicePrices[0];
 
         return {
