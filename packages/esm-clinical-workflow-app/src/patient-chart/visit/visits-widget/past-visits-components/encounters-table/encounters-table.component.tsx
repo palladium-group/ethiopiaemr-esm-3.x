@@ -302,7 +302,7 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                                   }}
                                 />
                               ) : (
-                                <EncounterObservations observations={encounter.obs} />
+                                <EncounterObservations observations={encounter.obs} form={encounter.form} />
                               )}
                               <>
                                 {canEditEncounter && (

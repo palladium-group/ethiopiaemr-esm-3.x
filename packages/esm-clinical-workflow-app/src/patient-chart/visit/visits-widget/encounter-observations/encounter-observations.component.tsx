@@ -2,15 +2,19 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
 import { type Obs, useConfig } from '@openmrs/esm-framework';
+import { type Form } from '@openmrs/esm-patient-common-lib';
+import { useFormSchema } from './useFormSchema';
 import styles from './styles.scss';
 
 interface EncounterObservationsProps {
   observations: Array<Obs>;
+  form?: Form;
 }
 
-const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observations }) => {
+const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observations, form }) => {
   const { t } = useTranslation();
   const { obsConceptUuidsToHide = [] } = useConfig();
+  const { conceptToLabelMap, isLoading: isLoadingSchema } = useFormSchema(form);
 
   function getAnswerFromDisplay(display: string): string {
     const colonIndex = display.indexOf(':');
@@ -21,13 +25,21 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
     }
   }
 
+  function getLabel(conceptUuid: string, defaultDisplay: string): string {
+    return conceptToLabelMap.get(conceptUuid) || defaultDisplay;
+  }
+
   const filteredObservations = !!obsConceptUuidsToHide.length
     ? observations?.filter((obs) => {
         return !obsConceptUuidsToHide.includes(obs?.concept?.uuid);
       })
     : observations;
 
-  if (!filteredObservations || filteredObservations.length == 0) {
+  if (isLoadingSchema) {
+    return <SkeletonText />;
+  }
+
+  if (!filteredObservations || filteredObservations.length === 0) {
     return (
       <div className={styles.observation}>
         <p>{t('noObservationsFound', 'No observations found')}</p>
@@ -41,11 +53,11 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
         if (obs.groupMembers) {
           return (
             <React.Fragment key={index}>
-              <span className={styles.parentConcept}>{obs.concept.display}</span>
+              <span className={styles.parentConcept}>{getLabel(obs.concept.uuid, obs.concept.display)}</span>
               <span />
-              {obs.groupMembers.map((member) => (
-                <React.Fragment key={index}>
-                  <span className={styles.childConcept}>{member.concept.display}</span>
+              {obs.groupMembers.map((member, memberIndex) => (
+                <React.Fragment key={`${index}-${memberIndex}`}>
+                  <span className={styles.childConcept}>{getLabel(member.concept.uuid, member.concept.display)}</span>
                   <span>{getAnswerFromDisplay(member.display)}</span>
                 </React.Fragment>
               ))}
@@ -54,7 +66,7 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
         } else {
           return (
             <React.Fragment key={index}>
-              <span>{obs.concept.display}</span>
+              <span>{getLabel(obs.concept.uuid, obs.concept.display)}</span>
               <span>{getAnswerFromDisplay(obs.display)}</span>
             </React.Fragment>
           );
