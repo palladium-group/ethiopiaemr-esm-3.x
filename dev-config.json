@@ -2,7 +2,7 @@
     "@palladium-ethiopia/esm-clinical-workflow-app": {
         "triageVariants": {
           "central": {
-            "formUuid": "d9375924-49da-45f8-b74e-7d0454ac1c29",
+            "formUuid": "ff723d59-0650-4b84-858d-c1045b690683",
             "name": "Central Triage Form",
             "displayName": "Central Triage",
             "enabled": true,
@@ -11,23 +11,23 @@
             "patientTypes": {
               "adult": {
                 "displayName": "Adult",
-                "formUuid": "d9375924-49da-45f8-b74e-7d0454ac1c29",
+                "formUuid": "ff723d59-0650-4b84-858d-c1045b690683",
                 "formName": "Central Triage - Adult"
               },
               "pediatric": {
                 "displayName": "Pediatric",
-                "formUuid": "d9375924-49da-45f8-b74e-7d0454ac1c29",
+                "formUuid": "070e7d10-c6b8-4540-9718-5908738039c3",
                 "formName": "Central Triage - Pediatric"
               },
               "gynecology": {
                 "displayName": "Gynecology",
-                "formUuid": "d9375924-49da-45f8-b74e-7d0454ac1c29",
+                "formUuid": "1df88856-d54e-43e9-8ed2-dafde77c6081",
                 "formName": "Central Triage - Gynecology"
               }
             }
           },
           "emergency": {
-            "formUuid": "61c4de68-1721-45a6-b42e-f5ca6439493f",
+            "formUuid": "4ff622f8-212e-4f0f-b6a6-1aa19d776ffb",
             "name": "Emergency Triage Form",
             "displayName": "Emergency Triage",
             "enabled": true,

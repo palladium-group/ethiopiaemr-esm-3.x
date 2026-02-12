@@ -193,6 +193,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
           isLowContrast: true,
         });
 
+        closeWorkspaceWithSavedChanges();
+
         if (onPatientRegistered) {
           try {
             onPatientRegistered(patientUuid);
@@ -200,8 +202,6 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
             console.error('Error in onPatientRegistered callback:', callbackError);
           }
         }
-
-        closeWorkspaceWithSavedChanges();
       }
     } catch (error) {
       const errorMessage =
@@ -530,7 +530,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
           {isSubmitting ? (
             <InlineLoading className={styles.spinner} description={t('saving', 'Saving') + '...'} />
           ) : (
-            <span>{t('saveAndClose', 'Save & close')}</span>
+            <span>{t('registerPatient', 'Register Patient')}</span>
           )}
         </Button>
       </ButtonSet>

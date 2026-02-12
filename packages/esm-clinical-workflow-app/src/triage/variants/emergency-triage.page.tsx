@@ -44,18 +44,16 @@ const EmergencyTriagePage: React.FC = () => {
     launchWorkspace('patient-registration-workspace', {
       workspaceTitle: t('registerNewPatient', 'Register New Patient'),
       onPatientRegistered: (uuid: string) => {
-        if (variantConfig?.patientTypes && Object.keys(variantConfig.patientTypes).length > 0) {
-          setPatientUuid(uuid);
-          launchWorkspace('patient-type-selection-workspace', {
-            patientUuid: uuid,
-            variantConfig,
-          });
-        } else if (variantConfig?.formUuid && variantConfig?.name) {
-          handleStartVisitAndLaunchTriageForm(uuid, variantConfig.formUuid, variantConfig.name);
-        }
+        setPatientUuid(uuid);
+        launchWorkspace('emergency-queue-selection-workspace', {
+          patientUuid: uuid,
+          variantConfig,
+          formUuid: variantConfig.formUuid,
+          formName: variantConfig.name,
+        });
       },
     });
-  }, [t, handleStartVisitAndLaunchTriageForm, variantConfig]);
+  }, [t, variantConfig]);
 
   if (!variantConfig || !variantConfig.formUuid) {
     return (
@@ -92,18 +90,25 @@ const EmergencyTriagePage: React.FC = () => {
       </div>
 
       {!patientUuid ? (
-        <VisitsTable
-          visits={activeVisits}
-          isLoading={isLoadingVisits}
-          tableHeading={t('activeVisits', 'Active Visits')}
-          totalCount={activeCount}
-          pageSize={pageSize}
-          currentPage={currentPage}
-          onPaginationChange={handlePaginationChange}
-          useLocalPagination={false}
-        />
+        <div className={styles.visitsTableWrapper}>
+          <VisitsTable
+            visits={activeVisits}
+            isLoading={isLoadingVisits}
+            tableHeading={t('activeVisits', 'Active Visits')}
+            totalCount={activeCount}
+            pageSize={pageSize}
+            currentPage={currentPage}
+            onPaginationChange={handlePaginationChange}
+            useLocalPagination={false}
+          />
+        </div>
       ) : (
-        <PatientBanner patientUuid={patientUuid} variantConfig={variantConfig} setPatientUuid={setPatientUuid} />
+        <PatientBanner
+          patientUuid={patientUuid}
+          variantConfig={variantConfig}
+          setPatientUuid={setPatientUuid}
+          variantType="emergency"
+        />
       )}
     </div>
   );
