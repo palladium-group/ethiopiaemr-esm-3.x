@@ -1,3 +1,4 @@
+import useSWR from 'swr';
 import {
   openmrsFetch,
   restBaseUrl,
@@ -140,5 +141,16 @@ export interface Diagnosis {
     coded: {
       display: string;
     };
+  };
+}
+
+export function useActiveVisit(patientUuid: string) {
+  const apiUrl = `${restBaseUrl}/visit?patient=${patientUuid}&includeInactive=false&v=custom:(uuid)`;
+  const { data, error, isLoading } = useSWR<{ data: { results: Visit[] } }>(patientUuid ? apiUrl : null, openmrsFetch);
+
+  return {
+    activeVisit: data?.data?.results?.[0] ?? null,
+    isLoading,
+    error,
   };
 }

@@ -57,6 +57,7 @@ import {
   updateVisitNote,
   useVisitNotes,
 } from './visit-notes.resource';
+import { useActiveVisit } from '../patient-chart/visit/visits-widget/visit.resource';
 import styles from './visit-notes-form.scss';
 
 type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images'> & {
@@ -199,6 +200,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const currentImages = watch('images');
 
   const { mutateVisitNotes } = useVisitNotes(patientUuid);
+  const { activeVisit } = useActiveVisit(patientUuid);
   const { mutate: globalMutate } = useSWRConfig();
 
   const mutateAttachments = useCallback(
@@ -395,6 +397,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                 },
               ]
             : [],
+          visit: activeVisit?.uuid,
         };
 
         const abortController = new AbortController();
@@ -477,6 +480,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       isEditing,
       encounter,
       isPrimaryDiagnosisRequired,
+      activeVisit,
       selectedPrimaryDiagnoses.length,
       combinedDiagnoses,
       clinicianEncounterRole,
