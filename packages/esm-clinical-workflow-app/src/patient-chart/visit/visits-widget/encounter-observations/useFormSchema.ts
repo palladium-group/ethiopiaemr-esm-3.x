@@ -32,6 +32,7 @@ export function useFormSchema(form?: Form) {
   );
 
   const conceptToLabelMap = new Map<string, string>();
+  const answerToLabelMap = new Map<string, string>();
 
   if (schema) {
     // Process pages > sections > questions
@@ -40,15 +41,27 @@ export function useFormSchema(form?: Form) {
         section.questions?.forEach((question) => {
           if (question.questionOptions?.concept) {
             conceptToLabelMap.set(question.questionOptions.concept, question.label);
+
+            if (question.questionOptions.answers) {
+              question.questionOptions.answers.forEach((answer) => {
+                if (answer.concept) {
+                  answerToLabelMap.set(`${question.questionOptions.concept}:${answer.concept}`, answer.label);
+                }
+              });
+            }
           }
-          // Handle questions within questions (e.g. obs groups provided as separate questions if any)
-          // The typical structure is questions have 'questions' array for groups or just individual questions.
-          // Let's recurse or check sub-questions if the schema structure supports it.
-          // For now, flatten the structure as much as possible.
           if (question.questions) {
             question.questions.forEach((subQuestion) => {
               if (subQuestion.questionOptions?.concept) {
                 conceptToLabelMap.set(subQuestion.questionOptions.concept, subQuestion.label);
+
+                if (subQuestion.questionOptions.answers) {
+                  subQuestion.questionOptions.answers.forEach((answer) => {
+                    if (answer.concept) {
+                      answerToLabelMap.set(`${subQuestion.questionOptions.concept}:${answer.concept}`, answer.label);
+                    }
+                  });
+                }
               }
             });
           }
@@ -59,6 +72,7 @@ export function useFormSchema(form?: Form) {
 
   return {
     conceptToLabelMap,
+    answerToLabelMap,
     isLoading,
   };
 }

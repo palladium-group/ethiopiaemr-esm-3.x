@@ -14,7 +14,7 @@ interface EncounterObservationsProps {
 const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observations, form }) => {
   const { t } = useTranslation();
   const { obsConceptUuidsToHide = [] } = useConfig();
-  const { conceptToLabelMap, isLoading: isLoadingSchema } = useFormSchema(form);
+  const { conceptToLabelMap, answerToLabelMap, isLoading: isLoadingSchema } = useFormSchema(form);
 
   function getAnswerFromDisplay(display: string): string {
     const colonIndex = display.indexOf(':');
@@ -27,6 +27,15 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
 
   function getLabel(conceptUuid: string, defaultDisplay: string): string {
     return conceptToLabelMap.get(conceptUuid) || defaultDisplay;
+  }
+
+  function getAnswerLabel(obs: Obs): string {
+    if (obs.value && typeof obs.value === 'object' && 'uuid' in obs.value) {
+      // It is a coded answer
+      const key = `${obs.concept.uuid}:${obs.value.uuid}`;
+      return answerToLabelMap.get(key) || getAnswerFromDisplay(obs.display);
+    }
+    return getAnswerFromDisplay(obs.display);
   }
 
   const filteredObservations = !!obsConceptUuidsToHide.length
@@ -58,7 +67,7 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
               {obs.groupMembers.map((member, memberIndex) => (
                 <React.Fragment key={`${index}-${memberIndex}`}>
                   <span className={styles.childConcept}>{getLabel(member.concept.uuid, member.concept.display)}</span>
-                  <span>{getAnswerFromDisplay(member.display)}</span>
+                  <span>{getAnswerLabel(member)}</span>
                 </React.Fragment>
               ))}
             </React.Fragment>
@@ -67,7 +76,7 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
           return (
             <React.Fragment key={index}>
               <span>{getLabel(obs.concept.uuid, obs.concept.display)}</span>
-              <span>{getAnswerFromDisplay(obs.display)}</span>
+              <span>{getAnswerLabel(obs)}</span>
             </React.Fragment>
           );
         }
