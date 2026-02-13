@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ExtensionSlot, launchWorkspace, usePatient, useVisit } from '@openmrs/esm-framework';
 import { Button, Dropdown, InlineLoading } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
@@ -54,14 +54,18 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, variantConfi
     }
   };
 
-  const patientTypeItems = variantConfig.patientTypes
-    ? Object.entries(variantConfig.patientTypes).map(([key, config]) => ({
-        id: key,
-        label: t(`patientType_${key}`, config.displayName),
-        formUuid: config.formUuid,
-        formName: config.formName,
-      }))
-    : [];
+  const patientTypeItems = useMemo(
+    () =>
+      variantConfig.patientTypes
+        ? Object.entries(variantConfig.patientTypes).map(([key, config]) => ({
+            id: key,
+            label: t(`patientType_${key}`, config.displayName),
+            formUuid: config.formUuid,
+            formName: config.formName,
+          }))
+        : [],
+    [variantConfig.patientTypes, t],
+  );
 
   if (isLoading || isVisitLoading || (variantType === 'emergency' && isLoadingQueueEntry)) {
     return <InlineLoading description={t('loading', 'Loading...')} />;

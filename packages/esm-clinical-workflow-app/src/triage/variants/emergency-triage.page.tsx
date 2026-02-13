@@ -26,12 +26,12 @@ const EmergencyTriagePage: React.FC = () => {
     limit: pageSize,
   };
 
-  // Fetch active visits for the table (only when no patient is selected)
+  // Fetch active visits for the table (skip when patient selected - table hidden)
   const {
     visits: activeVisits,
     isLoading: isLoadingVisits,
     count: activeCount,
-  } = useActiveVisits(!patientUuid ? paginationParams : undefined);
+  } = useActiveVisits(patientUuid ? { skip: true } : paginationParams);
 
   const handlePaginationChange = ({ page, pageSize: newPageSize }: { page: number; pageSize: number }) => {
     setCurrentPage(page);

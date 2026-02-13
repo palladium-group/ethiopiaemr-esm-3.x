@@ -13,7 +13,6 @@ import {
 import {
   DefaultWorkspaceProps,
   ExtensionSlot,
-  fetchCurrentPatient,
   showSnackbar,
   useConfig,
   usePatient,
@@ -69,18 +68,29 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
   const { queueLocations, isLoading: isLoadingLocations } = useQueueLocations();
   const { queues, isLoading: isLoadingQueues } = useQueues(selectedLocation);
 
-  const locationOptions = queueLocations.map((loc) => ({
-    id: loc.id,
-    text: loc.name,
-  }));
+  const locationOptions = useMemo(
+    () =>
+      queueLocations.map((loc) => ({
+        id: loc.id,
+        text: loc.name,
+      })),
+    [queueLocations],
+  );
 
-  const queueOptions = queues.map((queue) => ({
-    id: queue.uuid,
-    text: queue.display,
-    allowedPriorities: queue.allowedPriorities || [],
-  }));
+  const queueOptions = useMemo(
+    () =>
+      queues.map((queue) => ({
+        id: queue.uuid,
+        text: queue.display,
+        allowedPriorities: queue.allowedPriorities || [],
+      })),
+    [queues],
+  );
 
-  const selectedQueueData = queueOptions.find((q) => q.id === selectedQueue);
+  const selectedQueueData = useMemo(
+    () => queueOptions.find((q) => q.id === selectedQueue),
+    [queueOptions, selectedQueue],
+  );
   const priorityOptions = useMemo(
     () =>
       selectedQueueData?.allowedPriorities.map((priority) => ({
@@ -160,8 +170,10 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
         isLowContrast: true,
       });
 
-      const patientData = await fetchCurrentPatient(patientUuid);
-      launchEmergencyTriageFormWorkspace(patientData, patientUuid, visit, formUuid, formName, t);
+      if (!patient) {
+        throw new Error('Patient data not available');
+      }
+      launchEmergencyTriageFormWorkspace(patient, patientUuid, visit, formUuid, formName, t);
 
       invalidateVisitCache(patientUuid);
 
@@ -179,6 +191,7 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
   }, [
     isFormValid,
     activeVisit,
+    patient,
     patientUuid,
     visitTypeUuid,
     sessionLocation,
