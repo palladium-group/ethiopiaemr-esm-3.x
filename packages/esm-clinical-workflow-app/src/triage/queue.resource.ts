@@ -12,9 +12,8 @@ export async function createQueueEntry(
   statusUuid: string,
   sortWeight: number,
   locationUuid: string,
+  visitQueueNumberAttributeUuid?: string,
 ): Promise<any> {
-  const visitQueueNumberAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
-
   const { postQueueEntry } = await import(
     '@openmrs/esm-service-queues-app/src/create-queue-entry/queue-fields/queue-fields.resource'
   );
@@ -27,6 +26,6 @@ export async function createQueueEntry(
     statusUuid,
     sortWeight,
     locationUuid,
-    visitQueueNumberAttributeUuid,
+    visitQueueNumberAttributeUuid ?? '14d4f066-15f5-102d-96e4-000c29c2a5d7',
   );
 }

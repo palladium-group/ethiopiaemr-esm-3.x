@@ -5,7 +5,6 @@ import { Add } from '@carbon/react/icons';
 import { ExtensionSlot, TriagePictogram, launchWorkspace, PageHeader, useConfig } from '@openmrs/esm-framework';
 import type { ClinicalWorkflowConfig } from '../../config-schema';
 import PatientBanner from '../patient-banner.component';
-import { useStartVisitAndLaunchTriageForm } from '../useStartVisitAndLaunchTriageForm';
 import VisitsTable from '../../patient-scoreboard/visits-table/visits-table.component';
 import { useActiveVisits } from '../../patient-scoreboard/hooks/useVisitList';
 import { DEFAULT_PAGE_SIZE } from '../../constants';
@@ -13,11 +12,10 @@ import styles from '../triage-dashboard.scss';
 
 const EmergencyTriagePage: React.FC = () => {
   const { t } = useTranslation();
-  const { triageVariants, enforceTriagePrivileges } = useConfig<ClinicalWorkflowConfig>();
+  const { triageVariants } = useConfig<ClinicalWorkflowConfig>();
   const [patientUuid, setPatientUuid] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
-  const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
 
   const variantConfig = triageVariants['emergency'];
 
@@ -44,7 +42,6 @@ const EmergencyTriagePage: React.FC = () => {
     launchWorkspace('patient-registration-workspace', {
       workspaceTitle: t('registerNewPatient', 'Register New Patient'),
       onPatientRegistered: (uuid: string) => {
-        setPatientUuid(uuid);
         launchWorkspace('emergency-queue-selection-workspace', {
           patientUuid: uuid,
           variantConfig,
@@ -70,7 +67,11 @@ const EmergencyTriagePage: React.FC = () => {
 
   return (
     <div className={styles.triageDashboardContainer}>
-      <PageHeader className={styles.pageHeader} title="Emergency Triage" illustration={<TriagePictogram />} />
+      <PageHeader
+        className={styles.pageHeader}
+        title={t('emergencyTriage', 'Emergency Triage')}
+        illustration={<TriagePictogram />}
+      />
 
       <div className={styles.headerActions}>
         <ExtensionSlot

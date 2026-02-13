@@ -45,7 +45,6 @@ const CentralTriagePage: React.FC = () => {
       workspaceTitle: t('registerNewPatient', 'Register New Patient'),
       onPatientRegistered: (uuid: string) => {
         if (variantConfig?.patientTypes && Object.keys(variantConfig.patientTypes).length > 0) {
-          setPatientUuid(uuid);
           launchWorkspace('patient-type-selection-workspace', {
             patientUuid: uuid,
             variantConfig,
@@ -72,7 +71,11 @@ const CentralTriagePage: React.FC = () => {
 
   return (
     <div className={styles.triageDashboardContainer}>
-      <PageHeader className={styles.pageHeader} title="Central Triage" illustration={<TriagePictogram />} />
+      <PageHeader
+        className={styles.pageHeader}
+        title={t('centralTriage', 'Central Triage')}
+        illustration={<TriagePictogram />}
+      />
 
       <div className={styles.headerActions}>
         <ExtensionSlot

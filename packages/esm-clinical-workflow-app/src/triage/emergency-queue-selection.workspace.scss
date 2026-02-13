@@ -1,0 +1,17 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.workspaceContent {
+  padding: layout.$spacing-05;
+}
+
+.heading {
+  @include type.type-style('productive-heading-02');
+  color: colors.$gray-100;
+  margin-bottom: layout.$spacing-03;
+}
+
+.continueButton {
+  margin-top: layout.$spacing-05;
+}

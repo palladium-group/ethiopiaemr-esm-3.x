@@ -76,8 +76,8 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, variantConfi
             className={styles.patientTypeDropdown}
             items={patientTypeItems}
             itemToString={(item) => item?.label || ''}
-            titleText={t('selectPatientType', 'Record Vitals')}
-            label={t('selectPatientType', 'Select Triage Type')}
+            titleText={t('selectTriageType', 'Select Triage Type')}
+            label={t('selectTriageType', 'Select Triage Type')}
             onChange={({ selectedItem }) => {
               if (selectedItem) {
                 handleLaunchTriageForm(selectedItem.formUuid, selectedItem.formName);

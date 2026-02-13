@@ -25,6 +25,7 @@ import type { TriageVariantConfig, ClinicalWorkflowConfig } from '../config-sche
 import { useQueueLocations, useQueues, createQueueEntry } from './queue.resource';
 import { getCurrentVisitForPatient, createVisitForPatient, invalidateVisitCache } from './triage.resource';
 import { launchEmergencyTriageFormWorkspace } from './useStartVisitAndLaunchTriageForm';
+import styles from './emergency-queue-selection.workspace.scss';
 
 type EmergencyQueueSelectionWorkspaceProps = DefaultWorkspaceProps & {
   patientUuid: string;
@@ -41,7 +42,21 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
-  const { visitTypeUuid } = useConfig<ClinicalWorkflowConfig>();
+
+  const getErrorMessage = (error: unknown): string => {
+    const err = error as { data?: { error?: { message?: string } } };
+    const apiMessage = err?.data?.error?.message;
+    if (apiMessage) {
+      return apiMessage;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return t('unexpectedError', 'An unexpected error occurred');
+  };
+
+  const { visitTypeUuid, defaultQueueStatusUuid, visitQueueNumberAttributeTypeUuid } =
+    useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
   const { activeVisit, isLoading: isVisitLoading } = useVisit(patientUuid);
@@ -78,9 +93,7 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
 
   const isFormValid = selectedLocation && selectedQueue && selectedPriority;
 
-  const getPriorityTagColor = (
-    priorityDisplay: string,
-  ): 'red' | 'magenta' | 'green' | 'gray' | 'blue' | 'cyan' | 'purple' | 'teal' | 'warm-gray' | 'cool-gray' => {
+  const getPriorityTagColor = (priorityDisplay: string): 'red' | 'magenta' | 'green' | 'gray' => {
     const displayLower = priorityDisplay.toLowerCase();
     if (displayLower.includes('emergency')) {
       return 'red';
@@ -121,23 +134,23 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
         if (!visitResponse.ok) {
           throw new Error('Failed to create visit');
         }
-        visit = await getCurrentVisitForPatient(patientUuid);
+        visit = visitResponse.data ?? (await getCurrentVisitForPatient(patientUuid));
         if (!visit) {
           throw new Error('Failed to retrieve newly created visit');
         }
       }
 
       const selectedPriorityData = priorityOptions.find((p) => p.id === selectedPriority);
-      const defaultStatusUuid = '167407AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'; // Waiting status
 
       await createQueueEntry(
         visit.uuid,
         selectedQueue,
         patientUuid,
         selectedPriority,
-        defaultStatusUuid,
+        defaultQueueStatusUuid,
         selectedPriorityData?.sortWeight || 0,
         selectedLocation,
+        visitQueueNumberAttributeTypeUuid,
       );
 
       showSnackbar({
@@ -154,11 +167,10 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
 
       closeWorkspace();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       showSnackbar({
         title: t('errorCreatingQueueEntry', 'Error creating queue entry'),
         kind: 'error',
-        subtitle: errorMessage,
+        subtitle: getErrorMessage(error),
         isLowContrast: true,
       });
     } finally {
@@ -174,6 +186,8 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
     selectedPriority,
     priorityOptions,
     selectedLocation,
+    defaultQueueStatusUuid,
+    visitQueueNumberAttributeTypeUuid,
     formUuid,
     formName,
     t,
@@ -189,9 +203,9 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
       {patient && (
         <ExtensionSlot name="patient-header-slot" state={{ patient, patientUuid, hideActionsOverflow: true }} />
       )}
-      <div style={{ padding: '1rem' }}>
+      <div className={styles.workspaceContent}>
         <Stack gap={5}>
-          <h4>{t('selectQueueForEmergencyTriage', 'Select Queue for Emergency Triage')}</h4>
+          <h3 className={styles.heading}>{t('selectQueueForEmergencyTriage', 'Select Queue for Emergency Triage')}</h3>
 
           {isLoadingLocations ? (
             <InlineLoading description={t('loadingLocations', 'Loading locations...')} />
@@ -248,23 +262,14 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
 
           {selectedQueue && priorityOptions.length > 0 && (
             <FormGroup legendText={t('priority', 'Priority')}>
-              {priorityOptions.length === 0 ? (
-                <InlineNotification
-                  kind="warning"
-                  title={t('noPriorities', 'No priorities available')}
-                  subtitle={t('noPrioritiesForQueue', 'The selected queue does not have any allowed priorities')}
-                  lowContrast
-                />
-              ) : (
-                <RadioButtonGroup
-                  name="priority"
-                  valueSelected={selectedPriority}
-                  onChange={(uuid) => setSelectedPriority(String(uuid))}>
-                  {priorityOptions.map(({ id, text }) => (
-                    <RadioButton key={id} labelText={<Tag type={getPriorityTagColor(text)}>{text}</Tag>} value={id} />
-                  ))}
-                </RadioButtonGroup>
-              )}
+              <RadioButtonGroup
+                name="priority"
+                valueSelected={selectedPriority}
+                onChange={(uuid) => setSelectedPriority(String(uuid))}>
+                {priorityOptions.map(({ id, text }) => (
+                  <RadioButton key={id} labelText={<Tag type={getPriorityTagColor(text)}>{text}</Tag>} value={id} />
+                ))}
+              </RadioButtonGroup>
             </FormGroup>
           )}
 
@@ -272,7 +277,7 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
             kind="primary"
             onClick={handleContinue}
             disabled={!isFormValid || isSubmitting}
-            style={{ marginTop: '1rem' }}>
+            className={styles.continueButton}>
             {isSubmitting ? t('pleaseWait', 'Please wait...') : t('continueToTriage', 'Continue to Triage')}
           </Button>
         </Stack>
