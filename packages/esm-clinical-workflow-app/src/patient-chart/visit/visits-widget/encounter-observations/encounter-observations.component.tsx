@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonText } from '@carbon/react';
 import { type Obs, useConfig } from '@openmrs/esm-framework';
@@ -14,7 +14,7 @@ interface EncounterObservationsProps {
 const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observations, form }) => {
   const { t } = useTranslation();
   const { obsConceptUuidsToHide = [] } = useConfig();
-  const { conceptToLabelMap, answerToLabelMap, isLoading: isLoadingSchema } = useFormSchema(form);
+  const { conceptToLabelMap, answerToLabelMap, fieldOrder, isLoading: isLoadingSchema } = useFormSchema(form);
 
   function getAnswerFromDisplay(display: string): string {
     const colonIndex = display.indexOf(':');
@@ -44,11 +44,37 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
       })
     : observations;
 
+  const sortedObservations = useMemo(() => {
+    if (!filteredObservations) {
+      return [];
+    }
+    if (!fieldOrder || fieldOrder.length === 0) {
+      return filteredObservations;
+    }
+
+    return [...filteredObservations].sort((a, b) => {
+      const indexA = fieldOrder.indexOf(a.concept.uuid);
+      const indexB = fieldOrder.indexOf(b.concept.uuid);
+
+      if (indexA === -1 && indexB === -1) {
+        return 0;
+      }
+      if (indexA === -1) {
+        return 1;
+      }
+      if (indexB === -1) {
+        return -1;
+      }
+
+      return indexA - indexB;
+    });
+  }, [filteredObservations, fieldOrder]);
+
   if (isLoadingSchema) {
     return <SkeletonText />;
   }
 
-  if (!filteredObservations || filteredObservations.length === 0) {
+  if (!sortedObservations || sortedObservations.length === 0) {
     return (
       <div className={styles.observation}>
         <p>{t('noObservationsFound', 'No observations found')}</p>
@@ -58,7 +84,7 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
 
   return (
     <div className={styles.observation}>
-      {filteredObservations?.map((obs, index) => {
+      {sortedObservations?.map((obs, index) => {
         if (obs.groupMembers) {
           return (
             <React.Fragment key={index}>

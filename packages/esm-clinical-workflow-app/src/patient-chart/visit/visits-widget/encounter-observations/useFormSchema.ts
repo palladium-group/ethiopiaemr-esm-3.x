@@ -33,6 +33,7 @@ export function useFormSchema(form?: Form) {
 
   const conceptToLabelMap = new Map<string, string>();
   const answerToLabelMap = new Map<string, string>();
+  const fieldOrder: string[] = [];
 
   if (schema) {
     // Process pages > sections > questions
@@ -41,6 +42,7 @@ export function useFormSchema(form?: Form) {
         section.questions?.forEach((question) => {
           if (question.questionOptions?.concept) {
             conceptToLabelMap.set(question.questionOptions.concept, question.label);
+            fieldOrder.push(question.questionOptions.concept);
 
             if (question.questionOptions.answers) {
               question.questionOptions.answers.forEach((answer) => {
@@ -54,6 +56,7 @@ export function useFormSchema(form?: Form) {
             question.questions.forEach((subQuestion) => {
               if (subQuestion.questionOptions?.concept) {
                 conceptToLabelMap.set(subQuestion.questionOptions.concept, subQuestion.label);
+                fieldOrder.push(subQuestion.questionOptions.concept);
 
                 if (subQuestion.questionOptions.answers) {
                   subQuestion.questionOptions.answers.forEach((answer) => {
@@ -73,6 +76,7 @@ export function useFormSchema(form?: Form) {
   return {
     conceptToLabelMap,
     answerToLabelMap,
+    fieldOrder,
     isLoading,
   };
 }
