@@ -113,7 +113,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const config = useConfig<VisitNoteConfig>();
   const { isPrimaryDiagnosisRequired, visitNoteConfig } = config;
   const memoizedState = useMemo(() => ({ patientUuid }), [patientUuid]);
-  const { clinicianEncounterRole, encounterNoteTextConceptUuid, encounterTypeUuid, formConceptUuid } = visitNoteConfig;
+  const { clinicianEncounterRole, encounterNoteTextConceptUuid, encounterTypeUuid } = visitNoteConfig;
 
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
@@ -378,7 +378,6 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
         const visitNotePayload: VisitNotePayload = {
           encounterDatetime: finalNoteDate?.format(),
-          form: formConceptUuid,
           patient: patientUuid,
           location: locationUuid,
           encounterProviders: [
@@ -487,7 +486,6 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       providerUuid,
       locationUuid,
       encounterTypeUuid,
-      formConceptUuid,
       encounterNoteTextConceptUuid,
       patientUuid,
       globalMutate,
