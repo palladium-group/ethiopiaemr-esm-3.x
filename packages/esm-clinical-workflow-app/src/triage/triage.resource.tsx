@@ -1,4 +1,5 @@
 import { openmrsFetch, restBaseUrl, Visit } from '@openmrs/esm-framework';
+import { mutate } from 'swr';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 
 const queueEntryCustomRepresentation =
@@ -35,4 +36,13 @@ export const fetchQueueEntryForPatient = async (patientUuid: string): Promise<an
   const url = `${restBaseUrl}/queue-entry?v=${queueEntryCustomRepresentation}&patient=${patientUuid}&includeInactive=false`;
   const { data } = await openmrsFetch<{ results: Array<unknown> }>(url);
   return data.results[0];
+};
+
+export const invalidateVisitCache = (patientUuid: string): void => {
+  mutate(
+    (key) =>
+      typeof key === 'string' && key.startsWith(`${restBaseUrl}/visit`) && key.includes(`patient=${patientUuid}`),
+    undefined,
+    { revalidate: true },
+  );
 };

@@ -28,12 +28,12 @@ const CentralTriagePage: React.FC = () => {
     limit: pageSize,
   };
 
-  // Fetch active visits for the table (only when no patient is selected)
+  // Fetch active visits for the table (skip when patient selected - table hidden)
   const {
     visits: activeVisits,
     isLoading: isLoadingVisits,
     count: activeCount,
-  } = useActiveVisits(!patientUuid ? paginationParams : undefined);
+  } = useActiveVisits(patientUuid ? { skip: true } : paginationParams);
 
   const handlePaginationChange = ({ page, pageSize: newPageSize }: { page: number; pageSize: number }) => {
     setCurrentPage(page);
@@ -45,7 +45,6 @@ const CentralTriagePage: React.FC = () => {
       workspaceTitle: t('registerNewPatient', 'Register New Patient'),
       onPatientRegistered: (uuid: string) => {
         if (variantConfig?.patientTypes && Object.keys(variantConfig.patientTypes).length > 0) {
-          setPatientUuid(uuid);
           launchWorkspace('patient-type-selection-workspace', {
             patientUuid: uuid,
             variantConfig,
@@ -72,7 +71,11 @@ const CentralTriagePage: React.FC = () => {
 
   return (
     <div className={styles.triageDashboardContainer}>
-      <PageHeader className={styles.pageHeader} title="Central Triage" illustration={<TriagePictogram />} />
+      <PageHeader
+        className={styles.pageHeader}
+        title={t('centralTriage', 'Central Triage')}
+        illustration={<TriagePictogram />}
+      />
 
       <div className={styles.headerActions}>
         <ExtensionSlot
