@@ -12,29 +12,25 @@ import {
   Visit,
 } from '@openmrs/esm-framework';
 
-import { createVisitForPatient, getCurrentVisitForPatient } from './triage.resource';
+import { createVisitForPatient, getCurrentVisitForPatient, invalidateVisitCache } from './triage.resource';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 
-export const launchTriageFormWorkspace = (
+/**
+ * Private helper function to build workspace data for triage form entry
+ * Follows DRY principle by extracting common logic
+ */
+const buildFormWorkspaceData = (
   patient: Awaited<ReturnType<typeof fetchCurrentPatient>>,
-  patientUuid: string,
   visit: Visit,
   formUuid: string,
   formName: string,
-  t: TFunction<'translation', undefined>,
+  handlePostResponse?: (encounter: Encounter) => void,
 ) => {
-  const handleShowModal = (encounter: Encounter) => {
-    const dispose = showModal('transition-patient-to-latest-queue-modal', {
-      activeVisit: visit,
-      closeModal: () => dispose(),
-    });
-  };
-
   if (!visit?.uuid || !visit?.visitType?.uuid) {
     throw new Error('Invalid visit data received');
   }
 
-  const workspaceData = {
+  return {
     formEntryWorkspaceName: formName,
     patient,
     visitContext: visit,
@@ -44,8 +40,71 @@ export const launchTriageFormWorkspace = (
       visitTypeUuid: visit.visitType.uuid,
     },
     encounterUuid: '',
-    handlePostResponse: handleShowModal,
+    handlePostResponse,
   };
+};
+
+/**
+ * Launches triage form workspace for central triage workflow
+ * Shows queue modal after form submission
+ */
+export const launchTriageFormWorkspace = (
+  patient: Awaited<ReturnType<typeof fetchCurrentPatient>>,
+  patientUuid: string,
+  visit: Visit,
+  formUuid: string,
+  formName: string,
+  t: TFunction<'translation', undefined>,
+) => {
+  // Queue modal handler - for central triage workflow
+  const handleShowModal = (encounter: Encounter) => {
+    const dispose = showModal('transition-patient-to-latest-queue-modal', {
+      activeVisit: visit,
+      closeModal: () => dispose(),
+    });
+  };
+
+  const workspaceData = buildFormWorkspaceData(patient, visit, formUuid, formName, handleShowModal);
+
+  launchWorkspace2('clinical-workflow-patient-form-entry-workspace', workspaceData, {
+    patient: patient,
+    patientUuid: patientUuid,
+    visitContext: visit,
+  });
+
+  // Set z-index for workspace container
+  setTimeout(() => {
+    const workspaceContainer = document.getElementById('omrs-workspaces-container');
+    if (workspaceContainer) {
+      workspaceContainer.style.zIndex = '100';
+    }
+  }, 0);
+};
+
+/**
+ * Launches triage form workspace for emergency triage workflow
+ * Shows success message after form submission (no queue modal)
+ * Use this when patient is already queued before form entry
+ */
+export const launchEmergencyTriageFormWorkspace = (
+  patient: Awaited<ReturnType<typeof fetchCurrentPatient>>,
+  patientUuid: string,
+  visit: Visit,
+  formUuid: string,
+  formName: string,
+  t: TFunction<'translation', undefined>,
+) => {
+  // Success message handler - for emergency triage workflow
+  const handleShowSuccessMessage = (encounter: Encounter) => {
+    showSnackbar({
+      title: t('triageFormSubmitted', 'Triage form submitted'),
+      kind: 'success',
+      subtitle: t('triageFormSubmittedSuccessfully', 'The triage form has been submitted successfully'),
+      isLowContrast: true,
+    });
+  };
+
+  const workspaceData = buildFormWorkspaceData(patient, visit, formUuid, formName, handleShowSuccessMessage);
 
   launchWorkspace2('clinical-workflow-patient-form-entry-workspace', workspaceData, {
     patient: patient,
@@ -141,6 +200,9 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
             throw new Error('Failed to retrieve newly created visit');
           }
         }
+
+        // Ensure visit-dependent UI (e.g., PatientBanner) sees the latest active visit
+        invalidateVisitCache(patientUuid);
 
         // Launch triage form workspace with visit
         launchTriageFormWorkspace(patient, patientUuid, visit, formUuid, formName, t);

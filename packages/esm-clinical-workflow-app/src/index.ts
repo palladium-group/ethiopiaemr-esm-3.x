@@ -37,7 +37,6 @@ export function startupApp() {
     }
   };
 
-  // Try immediately and also subscribe to handle cases where the core module registers later
   removeCoreButton();
   workspace2Store.subscribe(removeCoreButton);
 }
@@ -82,6 +81,11 @@ export const mruLeftPanelLink = getSyncLifecycle(
 
 export const billingInformationWorkspace = getSyncLifecycle(BillingInformationWorkspace, options);
 export const patientTypeSelectionWorkspace = getSyncLifecycle(PatientTypeSelectionWorkspace, options);
+
+export const emergencyQueueSelectionWorkspace = getAsyncLifecycle(
+  () => import('./triage/emergency-queue-selection.workspace'),
+  options,
+);
 
 export const patientScoreboardLink = getSyncLifecycle(
   createDashboardLink({

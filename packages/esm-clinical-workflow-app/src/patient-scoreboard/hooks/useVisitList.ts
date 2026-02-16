@@ -10,6 +10,7 @@ export interface VisitResponse {
 interface PaginationParams {
   startIndex?: number;
   limit?: number;
+  skip?: boolean;
 }
 
 export const useActiveVisits = (paginationParams?: PaginationParams) => {
@@ -19,8 +20,10 @@ export const useActiveVisits = (paginationParams?: PaginationParams) => {
   const customRepresentation =
     'custom:(uuid,patient:(uuid,identifiers:(identifier,uuid),person:(age,display,gender,uuid)),visitType:(uuid,name,display),location:(uuid,name,display),startDatetime,stopDatetime)';
 
+  const shouldSkip = paginationParams?.skip === true;
+
   const getUrl = () => {
-    if (!sessionLocation) {
+    if (shouldSkip || !sessionLocation) {
       return null;
     }
     let url = `${restBaseUrl}/visit?v=${customRepresentation}&`;
@@ -46,10 +49,10 @@ export const useActiveVisits = (paginationParams?: PaginationParams) => {
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(getUrl, openmrsFetch);
 
   return {
-    visits: data?.data?.results ?? [],
-    count: data?.data?.totalCount ?? 0,
-    error,
-    isLoading,
+    visits: shouldSkip ? [] : data?.data?.results ?? [],
+    count: shouldSkip ? 0 : data?.data?.totalCount ?? 0,
+    error: shouldSkip ? null : error,
+    isLoading: shouldSkip ? false : isLoading,
   };
 };
 

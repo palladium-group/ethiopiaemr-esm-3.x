@@ -135,6 +135,12 @@
       "component": "patientTypeSelectionWorkspace",
       "title": "Select Patient Type",
       "type": "clinical-form"
+    },
+    {
+      "name": "emergency-queue-selection-workspace",
+      "component": "emergencyQueueSelectionWorkspace",
+      "title": "Select Queue",
+      "type": "clinical-form"
     }
   ],
   "workspaces2": [
