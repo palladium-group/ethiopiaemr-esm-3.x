@@ -95,7 +95,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   });
 
   // Form submission handler
-  const { handleSubmit: handleFormSubmit } = useBillingFormSubmission({
+  const { handleSubmit: handleFormSubmit, isSubmitting } = useBillingFormSubmission({
     activeVisit: activeVisit
       ? {
           uuid: activeVisit.uuid,
@@ -111,6 +111,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
     closeWorkspaceWithSavedChanges,
     t,
     patientUuid,
+    isEditMode,
   });
 
   // Form interaction handlers
@@ -241,10 +242,18 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
           />
         </div>
         <ButtonSet className={styles.buttonSet}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          <Button
+            className={styles.button}
+            kind="secondary"
+            onClick={() => closeWorkspace()}
+            disabled={isEditMode ? isSubmitting : false}>
             {t('discard', 'Discard')}
           </Button>
-          <Button disabled={!isDirty} className={styles.button} kind="primary" type="submit">
+          <Button
+            disabled={!isDirty || (isEditMode ? isSubmitting : false)}
+            className={styles.button}
+            kind="primary"
+            type="submit">
             {t('saveAndClose', 'Save & Close')}
           </Button>
         </ButtonSet>
