@@ -22,17 +22,11 @@ export default {
     _description:
       'Encounter where a full or abbreviated examination is done, usually leading to a presumptive or confirmed diagnosis, recorded by the examining clinician.',
   },
-  formConceptUuid: {
-    _type: Type.UUID,
-    _default: 'c75f120a-04ec-11e3-8780-2b40bef9a44b',
-    _description: 'The UUID of the Visit Note form to be associated with visit note encounters',
-  },
 };
 
 export interface VisitNoteConfigObject {
   clinicianEncounterRole: string;
   encounterNoteTextConceptUuid: string;
   encounterTypeUuid: string;
-  formConceptUuid: string;
   visitDiagnosesConceptUuid: string;
 }
