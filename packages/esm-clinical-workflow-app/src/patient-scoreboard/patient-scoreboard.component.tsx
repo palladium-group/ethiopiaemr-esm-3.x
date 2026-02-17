@@ -1,17 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ContentSwitcher, Switch } from '@carbon/react';
-import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, useLayoutType, type Visit } from '@openmrs/esm-framework';
 
 import styles from './patient-scoreboard.component.scss';
 import ActiveVisitsCard from './visit-cards/active-visits.card';
-import PastVisitsCard from './visit-cards/scheduled-visits.card';
+import ScheduledVisitsCard from './visit-cards/scheduled-visits.card';
 import TotalVisitsCard from './visit-cards/total-visits.card';
 import VisitsTable from './visits-table/visits-table.component';
-import { useActiveVisits, usePastVisits, useTotalVisits } from './hooks/useVisitList';
+import { useActiveVisits, useTotalVisits } from './hooks/useVisitList';
+import { useScheduledAppointments, type Appointment } from './hooks/useAppointmentList';
 import { DEFAULT_PAGE_SIZE } from '../constants';
 
-type VisitType = 'active' | 'past' | 'all';
+type VisitType = 'active' | 'total' | 'scheduled';
+
+// Transform appointments to visit-like format for display in the table
+const transformAppointmentToVisit = (appointment: Appointment): Visit => {
+  return {
+    uuid: appointment.uuid,
+    patient: {
+      uuid: appointment.patient.uuid,
+      person: {
+        display: appointment.patient.name,
+        uuid: appointment.patient.uuid,
+      },
+      identifiers: [
+        {
+          identifier: appointment.patient.identifier,
+          uuid: '',
+        },
+      ],
+    },
+    visitType: {
+      display: appointment.service.name,
+      uuid: appointment.service.uuid,
+      name: appointment.service.name,
+    },
+    location: appointment.location
+      ? {
+          display: appointment.location.name,
+          uuid: appointment.location.uuid,
+          name: appointment.location.name,
+        }
+      : undefined,
+    startDatetime: appointment.startDateTime,
+    stopDatetime: appointment.endDateTime,
+  } as Visit;
+};
 
 const PatientScoreboard: React.FC = () => {
   const { t } = useTranslation();
@@ -31,9 +66,14 @@ const PatientScoreboard: React.FC = () => {
   };
 
   const { visits: activeVisits, isLoading: isLoadingActive, count: activeCount } = useActiveVisits(paginationParams);
-  // Past visits: fetch all without pagination, will do local pagination
-  const { visits: allPastVisits, isLoading: isLoadingPast, count: pastCount } = usePastVisits();
-  const { visits: totalVisits, isLoading: isLoadingTotal, count: totalVisitsCount } = useTotalVisits(paginationParams);
+  // Completed visits: fetch all without pagination, will do local pagination (filtered to completed today)
+  const { visits: totalVisits, isLoading: isLoadingTotal, count: totalVisitsCount } = useTotalVisits();
+  const { appointments, isLoading: isLoadingScheduled, count: scheduledCount } = useScheduledAppointments();
+
+  // Transform appointments to visit-like format
+  const scheduledVisits = useMemo(() => {
+    return appointments.map(transformAppointmentToVisit);
+  }, [appointments]);
 
   // Reset to page 1 when switching visit types
   useEffect(() => {
@@ -50,21 +90,21 @@ const PatientScoreboard: React.FC = () => {
           totalCount: activeCount,
           useLocalPagination: false, // API pagination
         };
-      case 'past':
-        return {
-          visits: allPastVisits,
-          isLoading: isLoadingPast,
-          heading: t('pastVisits', 'Past Visits'),
-          totalCount: pastCount,
-          useLocalPagination: true, // Local pagination
-        };
-      case 'all':
+      case 'total':
         return {
           visits: totalVisits,
           isLoading: isLoadingTotal,
-          heading: t('allVisits', 'All Visits'),
+          heading: t('completedVisits', 'Completed Visits'),
           totalCount: totalVisitsCount,
-          useLocalPagination: false, // API pagination
+          useLocalPagination: true, // Local pagination (filtered client-side)
+        };
+      case 'scheduled':
+        return {
+          visits: scheduledVisits,
+          isLoading: isLoadingScheduled,
+          heading: t('scheduledForToday', 'Scheduled for Today'),
+          totalCount: scheduledCount,
+          useLocalPagination: true, // Local pagination
         };
       default:
         return { visits: [], isLoading: false, heading: '', totalCount: 0, useLocalPagination: false };
@@ -87,8 +127,8 @@ const PatientScoreboard: React.FC = () => {
       <h1>Patient Scoreboard</h1>
       <div className={styles.cardsGrid}>
         <ActiveVisitsCard />
-        <PastVisitsCard />
         <TotalVisitsCard />
+        <ScheduledVisitsCard />
       </div>
 
       <div className={styles.visitsSection}>
@@ -96,10 +136,10 @@ const PatientScoreboard: React.FC = () => {
           className={styles.switcher}
           size={responsiveSize}
           onChange={handleVisitTypeChange}
-          selectedIndex={['active', 'past', 'all'].indexOf(selectedVisitType)}>
+          selectedIndex={['active', 'total', 'scheduled'].indexOf(selectedVisitType)}>
           <Switch name="active" text={t('active', 'Active')} />
-          <Switch name="past" text={t('past', 'Past')} />
-          <Switch name="all" text={t('all', 'All')} />
+          <Switch name="total" text={t('completed', 'Completed')} />
+          <Switch name="scheduled" text={t('scheduledForToday', 'Scheduled for Today')} />
         </ContentSwitcher>
 
         <VisitsTable

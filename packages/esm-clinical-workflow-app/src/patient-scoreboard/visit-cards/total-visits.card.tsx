@@ -2,17 +2,17 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import MetricsCard from '../metrics-card/metrics-card.component';
-import { useTodayVisits } from '../hooks/useVisitList';
+import { useTotalVisitsCount } from '../hooks/useVisitList';
 
 export default function TotalVisitsCard() {
   const { t } = useTranslation();
-  const { totalCount, isLoading } = useTodayVisits();
+  const { count, isLoading } = useTotalVisitsCount();
 
   return (
     <MetricsCard
-      headerLabel={t('totalVisits', 'Total Visits')}
+      headerLabel={t('completedVisits', 'Completed Visits')}
       label={t('visits', 'Visits')}
-      value={isLoading ? '...' : totalCount}
+      value={isLoading ? '...' : count}
     />
   );
 }

@@ -16,7 +16,6 @@ interface PaginationParams {
 export const useActiveVisits = (paginationParams?: PaginationParams) => {
   const session = useSession();
   const sessionLocation = session?.sessionLocation?.uuid;
-  const startDate = dayjs().format('YYYY-MM-DD');
   const customRepresentation =
     'custom:(uuid,patient:(uuid,identifiers:(identifier,uuid),person:(age,display,gender,uuid)),visitType:(uuid,name,display),location:(uuid,name,display),startDatetime,stopDatetime)';
 
@@ -31,7 +30,7 @@ export const useActiveVisits = (paginationParams?: PaginationParams) => {
 
     urlSearchParams.append('includeParentLocations', 'true');
     urlSearchParams.append('includeInactive', 'false');
-    urlSearchParams.append('fromStartDate', startDate);
+    // Removed fromStartDate to show all active visits regardless of date
     urlSearchParams.append('totalCount', 'true');
     urlSearchParams.append('location', `${sessionLocation}`);
 
@@ -142,6 +141,7 @@ export const useTodayVisits = () => {
   };
 };
 
+// Fetch all visits for today without pagination, then filter locally for completed visits
 export const useTotalVisits = (paginationParams?: PaginationParams) => {
   const session = useSession();
   const sessionLocation = session?.sessionLocation?.uuid;
@@ -161,15 +161,50 @@ export const useTotalVisits = (paginationParams?: PaginationParams) => {
     urlSearchParams.append('v', customRepresentation);
     urlSearchParams.append('fromStartDate', startDate);
     urlSearchParams.append('location', sessionLocation);
-    urlSearchParams.append('totalCount', 'true');
+    // Don't add pagination parameters - fetch all, will do local pagination
 
-    // Add pagination parameters
-    if (paginationParams?.startIndex !== undefined) {
-      urlSearchParams.append('startIndex', paginationParams.startIndex.toString());
+    return url + urlSearchParams.toString();
+  };
+
+  const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(getUrl, openmrsFetch);
+
+  // Filter to only show completed visits (have stopDatetime) from today
+  const completedTodayVisits =
+    data?.data?.results?.filter((visit) => {
+      // Must have stopDatetime (completed)
+      return !!visit.stopDatetime;
+    }) ?? [];
+
+  const shouldSkip = paginationParams?.skip === true;
+
+  return {
+    visits: shouldSkip ? [] : completedTodayVisits,
+    count: completedTodayVisits.length,
+    error,
+    isLoading,
+  };
+};
+
+// Hook to get count of all active visits (for card display)
+export const useActiveVisitsCount = () => {
+  const session = useSession();
+  const sessionLocation = session?.sessionLocation?.uuid;
+  const customRepresentation =
+    'custom:(uuid,patient:(uuid,identifiers:(identifier,uuid),person:(age,display,gender,uuid)),visitType:(uuid,name,display),location:(uuid,name,display),startDatetime,stopDatetime)';
+
+  const getUrl = () => {
+    if (!sessionLocation) {
+      return null;
     }
-    if (paginationParams?.limit !== undefined) {
-      urlSearchParams.append('limit', paginationParams.limit.toString());
-    }
+    let url = `${restBaseUrl}/visit?v=${customRepresentation}&`;
+    let urlSearchParams = new URLSearchParams();
+
+    urlSearchParams.append('includeParentLocations', 'true');
+    urlSearchParams.append('includeInactive', 'false');
+    urlSearchParams.append('totalCount', 'true');
+    urlSearchParams.append('location', `${sessionLocation}`);
+    // Fetch minimal results (limit=1) to get totalCount efficiently
+    urlSearchParams.append('limit', '1');
 
     return url + urlSearchParams.toString();
   };
@@ -177,8 +212,46 @@ export const useTotalVisits = (paginationParams?: PaginationParams) => {
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(getUrl, openmrsFetch);
 
   return {
-    visits: data?.data?.results ?? [],
     count: data?.data?.totalCount ?? 0,
+    error,
+    isLoading,
+  };
+};
+
+// Hook to get count of all completed visits from today (for card display)
+export const useTotalVisitsCount = () => {
+  const session = useSession();
+  const sessionLocation = session?.sessionLocation?.uuid;
+  const startDate = dayjs().format('YYYY-MM-DD');
+  const customRepresentation =
+    'custom:(uuid,patient:(uuid,identifiers:(identifier,uuid),person:(age,display,gender,uuid)),visitType:(uuid,name,display),location:(uuid,name,display),startDatetime,stopDatetime)';
+
+  const getUrl = () => {
+    if (!sessionLocation) {
+      return null;
+    }
+    let url = `${restBaseUrl}/visit?`;
+    let urlSearchParams = new URLSearchParams();
+
+    urlSearchParams.append('includeInactive', 'true');
+    urlSearchParams.append('includeParentLocations', 'true');
+    urlSearchParams.append('v', customRepresentation);
+    urlSearchParams.append('fromStartDate', startDate);
+    urlSearchParams.append('location', sessionLocation);
+
+    return url + urlSearchParams.toString();
+  };
+
+  const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(getUrl, openmrsFetch);
+
+  // Filter to only count completed visits (have stopDatetime) from today
+  const completedTodayCount =
+    data?.data?.results?.filter((visit) => {
+      return !!visit.stopDatetime;
+    }).length ?? 0;
+
+  return {
+    count: completedTodayCount,
     error,
     isLoading,
   };

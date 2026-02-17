@@ -2,17 +2,17 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import MetricsCard from '../metrics-card/metrics-card.component';
-import { useTodayVisits } from '../hooks/useVisitList';
+import { useScheduledAppointments } from '../hooks/useAppointmentList';
 
-export default function PastVisitsCard() {
+export default function ScheduledVisitsCard() {
   const { t } = useTranslation();
-  const { pastCount, isLoading } = useTodayVisits();
+  const { count, isLoading } = useScheduledAppointments();
 
   return (
     <MetricsCard
-      headerLabel={t('pastVisits', 'Past Visits')}
-      label={t('visits', 'Visits')}
-      value={isLoading ? '...' : pastCount}
+      headerLabel={t('scheduledForToday', 'Scheduled for Today')}
+      label={t('appointments', 'Appointments')}
+      value={isLoading ? '...' : count}
     />
   );
 }
