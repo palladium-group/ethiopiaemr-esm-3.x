@@ -36,9 +36,9 @@ const genderOptions = [
 
 const patientRegistrationSchema = z
   .object({
-    firstName: z.string().min(1, 'First name is required'),
-    middleName: z.string().min(1, 'Middle name is required'),
-    lastName: z.string().min(1, 'Last name is required'),
+    firstName: z.string().min(1, 'Given name is required'),
+    middleName: z.string().min(1, "Father's name is required"),
+    lastName: z.string().min(1, "Grandfather's name is required"),
     gender: z.enum(['Male', 'Female'], {
       required_error: 'Gender is required',
     }),
@@ -234,12 +234,12 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
             <ResponsiveWrapper>
               <TextInput
                 id="first-name"
-                labelText={t('firstName', 'First Name')}
+                labelText={t('firstName', 'Given Name')}
                 value={value || ''}
                 onChange={(e) => onChange(e.target.value)}
                 invalid={isSubmitted && !!errors.firstName}
                 invalidText={isSubmitted ? errors.firstName?.message : ''}
-                placeholder={t('enterFirstName', 'Enter Your First Name')}
+                placeholder={t('enterFirstName', 'Enter Given Name')}
                 size="md"
                 type="text"
                 disabled={isSubmitting}
@@ -255,12 +255,12 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
             <ResponsiveWrapper>
               <TextInput
                 id="middle-name"
-                labelText={t('middleName', 'Middle Name')}
+                labelText={t('middleName', "Father's Name")}
                 value={value || ''}
                 onChange={(e) => onChange(e.target.value)}
                 invalid={isSubmitted && !!errors.middleName}
                 invalidText={isSubmitted ? errors.middleName?.message : ''}
-                placeholder={t('enterMiddleName', 'Enter Middle Name')}
+                placeholder={t('enterMiddleName', "Enter Father's Name")}
                 size="md"
                 type="text"
                 disabled={isSubmitting}
@@ -276,12 +276,12 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
             <ResponsiveWrapper>
               <TextInput
                 id="last-name"
-                labelText={t('lastName', 'Last Name')}
+                labelText={t('lastName', "Grandfather's Name")}
                 value={value || ''}
                 onChange={(e) => onChange(e.target.value)}
                 invalid={isSubmitted && !!errors.lastName}
                 invalidText={isSubmitted ? errors.lastName?.message : ''}
-                placeholder={t('enterLastName', 'Enter Last Name')}
+                placeholder={t('enterLastName', "Enter Grandfather's Name")}
                 size="md"
                 type="text"
                 disabled={isSubmitting}
