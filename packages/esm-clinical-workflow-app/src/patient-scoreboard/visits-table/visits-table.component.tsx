@@ -35,6 +35,7 @@ interface VisitsTableProps {
   currentPage: number;
   onPaginationChange: (params: { page: number; pageSize: number }) => void;
   useLocalPagination?: boolean;
+  onClickPatient?: (patientUuid: string) => void;
 }
 
 const VisitsTable: React.FC<VisitsTableProps> = ({
@@ -46,6 +47,7 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
   currentPage,
   onPaginationChange,
   useLocalPagination = false,
+  onClickPatient,
 }) => {
   const { t } = useTranslation();
   const [searchString, setSearchString] = useState('');
@@ -118,15 +120,41 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
     const endTime = visit.stopDatetime ? formatDatetime(new Date(visit.stopDatetime)) : '--';
     const status = visit.stopDatetime ? t('ended', 'Ended') : t('active', 'Active');
 
-    return {
-      id: visit.uuid,
-      patientName: patientUuid ? (
+    // Render patient name with custom onClick handler if provided, otherwise use default navigation
+    const renderPatientName = () => {
+      if (!patientUuid) {
+        return patientName;
+      }
+
+      if (onClickPatient) {
+        return (
+          <span
+            className={styles.link}
+            onClick={() => onClickPatient(patientUuid)}
+            style={{ cursor: 'pointer' }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClickPatient(patientUuid);
+              }
+            }}>
+            {patientName}
+          </span>
+        );
+      }
+
+      return (
         <ConfigurableLink className={styles.link} to={customPatientChartUrl} templateParams={{ patientUuid }}>
           {patientName}
         </ConfigurableLink>
-      ) : (
-        patientName
-      ),
+      );
+    };
+
+    return {
+      id: visit.uuid,
+      patientName: renderPatientName(),
       identifier,
       visitType,
       location,

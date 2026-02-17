@@ -148,6 +148,10 @@ const PatientSearch: React.FC = () => {
           currentPage={currentPage}
           onPaginationChange={handlePaginationChange}
           useLocalPagination={false}
+          onClickPatient={(patientUuid) => {
+            setPatientUuid(patientUuid);
+            setCurrentPage(1); // Reset to page 1 when selecting a patient
+          }}
         />
       )}
     </div>
