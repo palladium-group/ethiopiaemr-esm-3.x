@@ -40,7 +40,7 @@ const EmergencyTriagePage: React.FC = () => {
 
   const handleRegisterNewPatient = useCallback(() => {
     launchWorkspace('patient-registration-workspace', {
-      workspaceTitle: t('registerNewPatient', 'Register New Patient'),
+      workspaceTitle: t('newPatient', 'New Patient'),
       onPatientRegistered: (uuid: string) => {
         launchWorkspace('emergency-queue-selection-workspace', {
           patientUuid: uuid,
@@ -86,7 +86,7 @@ const EmergencyTriagePage: React.FC = () => {
           }}
         />
         <Button onClick={handleRegisterNewPatient} kind="tertiary" renderIcon={Add}>
-          {t('registerNewPatient', 'Register New Patient')}
+          {t('newPatient', 'New Patient')}
         </Button>
       </div>
 
