@@ -89,6 +89,11 @@ export const configSchema = {
     _description: 'Patient attribute type UUID for Medico Legal Cases',
     _default: '',
   },
+  disabilityStatusAttributeTypeUuid: {
+    _type: Type.String,
+    _description: 'Patient attribute type UUID for Disability Status',
+    _default: '',
+  },
   diagnosisConceptClass: {
     _type: Type.UUID,
     _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
@@ -186,6 +191,7 @@ export type ClinicalWorkflowConfig = {
   identifierSourceUuid: string;
   defaultIdentifierTypeUuid: string;
   medicoLegalCasesAttributeTypeUuid: string;
+  disabilityStatusAttributeTypeUuid: string;
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;
