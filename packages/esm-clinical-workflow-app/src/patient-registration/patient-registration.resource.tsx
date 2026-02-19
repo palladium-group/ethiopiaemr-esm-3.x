@@ -134,6 +134,8 @@ export const buildPatientRegistrationPayload = (
   locationUuid: string,
   isMedicoLegalCase?: boolean,
   medicoLegalCasesAttributeTypeUuid?: string,
+  hasDisability?: boolean,
+  disabilityStatusAttributeTypeUuid?: string,
 ) => {
   const { formattedBirthDate, birthdateEstimated } = calculateBirthdate(formData);
 
@@ -143,6 +145,12 @@ export const buildPatientRegistrationPayload = (
   if (isMedicoLegalCase === true && medicoLegalCasesAttributeTypeUuid) {
     attributes.push({
       attributeType: medicoLegalCasesAttributeTypeUuid,
+      value: 'true',
+    });
+  }
+  if (hasDisability === true && disabilityStatusAttributeTypeUuid) {
+    attributes.push({
+      attributeType: disabilityStatusAttributeTypeUuid,
       value: 'true',
     });
   }

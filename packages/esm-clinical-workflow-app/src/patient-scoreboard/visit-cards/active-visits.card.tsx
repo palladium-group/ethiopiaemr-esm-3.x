@@ -2,11 +2,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import MetricsCard from '../metrics-card/metrics-card.component';
-import { useActiveVisits } from '../hooks/useVisitList';
+import { useActiveVisitsCount } from '../hooks/useVisitList';
 
 export default function ActiveVisitsCard() {
   const { t } = useTranslation();
-  const { count, isLoading } = useActiveVisits();
+  const { count, isLoading } = useActiveVisitsCount();
 
   return (
     <MetricsCard

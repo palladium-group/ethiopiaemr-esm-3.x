@@ -64,6 +64,16 @@ export const configSchema = {
     _description: 'Visit type UUID',
     _default: '3371a4d4-f66f-4454-a86d-92c7b3da990c', // Outpatient
   },
+  defaultQueueStatusUuid: {
+    _type: Type.String,
+    _description: 'Default queue entry status UUID (e.g. Waiting status)',
+    _default: '167407AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
+  visitQueueNumberAttributeTypeUuid: {
+    _type: Type.String,
+    _description: 'Visit attribute type UUID for queue number',
+    _default: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
+  },
   identifierSourceUuid: {
     _type: Type.String,
     _description: 'Identifier source UUID',
@@ -77,6 +87,11 @@ export const configSchema = {
   medicoLegalCasesAttributeTypeUuid: {
     _type: Type.String,
     _description: 'Patient attribute type UUID for Medico Legal Cases',
+    _default: '',
+  },
+  disabilityStatusAttributeTypeUuid: {
+    _type: Type.String,
+    _description: 'Patient attribute type UUID for Disability Status',
     _default: '',
   },
   diagnosisConceptClass: {
@@ -163,6 +178,8 @@ export interface TriageVariantConfig {
 export type ClinicalWorkflowConfig = {
   enforceTriagePrivileges: boolean;
   triageVariants: Record<string, TriageVariantConfig>;
+  defaultQueueStatusUuid: string;
+  visitQueueNumberAttributeTypeUuid: string;
   billingVisitAttributeTypes: {
     paymentMethod: string;
     creditType: string;
@@ -174,6 +191,7 @@ export type ClinicalWorkflowConfig = {
   identifierSourceUuid: string;
   defaultIdentifierTypeUuid: string;
   medicoLegalCasesAttributeTypeUuid: string;
+  disabilityStatusAttributeTypeUuid: string;
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;

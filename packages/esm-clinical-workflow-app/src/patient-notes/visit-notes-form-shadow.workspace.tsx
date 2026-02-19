@@ -57,6 +57,7 @@ import {
   updateVisitNote,
   useVisitNotes,
 } from './visit-notes.resource';
+import { useActiveVisit } from '../patient-chart/visit/visits-widget/visit.resource';
 import styles from './visit-notes-form.scss';
 
 type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images'> & {
@@ -112,7 +113,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const config = useConfig<VisitNoteConfig>();
   const { isPrimaryDiagnosisRequired, visitNoteConfig } = config;
   const memoizedState = useMemo(() => ({ patientUuid }), [patientUuid]);
-  const { clinicianEncounterRole, encounterNoteTextConceptUuid, encounterTypeUuid, formConceptUuid } = visitNoteConfig;
+  const { clinicianEncounterRole, encounterNoteTextConceptUuid, encounterTypeUuid } = visitNoteConfig;
 
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
@@ -199,6 +200,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const currentImages = watch('images');
 
   const { mutateVisitNotes } = useVisitNotes(patientUuid);
+  const { activeVisit } = useActiveVisit(patientUuid);
   const { mutate: globalMutate } = useSWRConfig();
 
   const mutateAttachments = useCallback(
@@ -376,7 +378,6 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
         const visitNotePayload: VisitNotePayload = {
           encounterDatetime: finalNoteDate?.format(),
-          form: formConceptUuid,
           patient: patientUuid,
           location: locationUuid,
           encounterProviders: [
@@ -395,6 +396,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                 },
               ]
             : [],
+          visit: activeVisit?.uuid,
         };
 
         const abortController = new AbortController();
@@ -477,13 +479,13 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       isEditing,
       encounter,
       isPrimaryDiagnosisRequired,
+      activeVisit,
       selectedPrimaryDiagnoses.length,
       combinedDiagnoses,
       clinicianEncounterRole,
       providerUuid,
       locationUuid,
       encounterTypeUuid,
-      formConceptUuid,
       encounterNoteTextConceptUuid,
       patientUuid,
       globalMutate,

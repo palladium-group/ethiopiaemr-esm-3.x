@@ -59,3 +59,34 @@ export const useAppointmentList = (appointmentStatus: string, date?: string) => 
 
   return { appointmentList: data ?? [], isLoading, error, mutate };
 };
+
+// Fetch all appointments scheduled for today using appointment/all?forDate=...
+export const useScheduledAppointments = (paginationParams?: {
+  startIndex?: number;
+  limit?: number;
+  skip?: boolean;
+}) => {
+  // Format date as: 2026-02-15T00:00:00.000Z (with h:m:s set to 00)
+  const forDate = dayjs().format('YYYY-MM-DD') + 'T00:00:00.000Z';
+  const appointmentUrl = `${restBaseUrl}/appointment/all?forDate=${forDate}`;
+
+  const shouldSkip = paginationParams?.skip === true;
+
+  const fetcher = async (url: string) => {
+    const response = await openmrsFetch<Array<Appointment>>(url);
+    return response.data;
+  };
+
+  const { data, error, isLoading } = useSWR<Array<Appointment>>(shouldSkip ? null : appointmentUrl, fetcher, {
+    errorRetryCount: 2,
+  });
+
+  const appointments = shouldSkip ? [] : data ?? [];
+
+  return {
+    appointments,
+    count: appointments.length,
+    isLoading,
+    error,
+  };
+};

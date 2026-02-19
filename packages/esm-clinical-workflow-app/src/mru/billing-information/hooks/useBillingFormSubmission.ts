@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { showSnackbar, useSession } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import {
@@ -27,6 +27,7 @@ type UseBillingFormSubmissionParams = {
   closeWorkspaceWithSavedChanges: () => void;
   t: TFunction;
   patientUuid: string;
+  isEditMode?: boolean;
 };
 
 /**
@@ -39,20 +40,28 @@ export const useBillingFormSubmission = ({
   closeWorkspaceWithSavedChanges,
   t,
   patientUuid,
+  isEditMode = false,
 }: UseBillingFormSubmissionParams) => {
   const { currentProvider } = useSession();
   const cashierUuid = currentProvider?.uuid;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = useCallback(
     async (data: BillingFormData) => {
+      setIsSubmitting(true);
       try {
         // Create cashier bill if billable item is selected
+        // Use fallback price from service if price is not set
+        const billableItemPrice =
+          data.billableItem?.price ||
+          (data.billableItem?.service?.servicePrices && data.billableItem.service.servicePrices[0]);
+
         if (
           data.billableItem &&
           data.billableItem.id &&
           data.billableItem.text &&
           data.billableItem.service &&
-          data.billableItem.price &&
+          billableItemPrice &&
           data.cashPointUuid
         ) {
           if (!cashierUuid) {
@@ -71,7 +80,7 @@ export const useBillingFormSubmission = ({
                   id: data.billableItem.id,
                   text: data.billableItem.text,
                   service: data.billableItem.service,
-                  price: data.billableItem.price,
+                  price: billableItemPrice,
                 },
                 patientUuid,
                 data.cashPointUuid,
@@ -127,6 +136,8 @@ export const useBillingFormSubmission = ({
           isLowContrast: true,
           timeoutInMs: 5000,
         });
+      } finally {
+        setIsSubmitting(false);
       }
     },
     [
@@ -138,8 +149,9 @@ export const useBillingFormSubmission = ({
       t,
       patientUuid,
       cashierUuid,
+      isEditMode,
     ],
   );
 
-  return { handleSubmit };
+  return { handleSubmit, isSubmitting };
 };
