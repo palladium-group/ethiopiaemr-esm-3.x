@@ -105,6 +105,10 @@ const CentralTriagePage: React.FC = () => {
             currentPage={currentPage}
             onPaginationChange={handlePaginationChange}
             useLocalPagination={false}
+            onClickPatient={(patientUuid) => {
+              setPatientUuid(patientUuid);
+              setCurrentPage(1);
+            }}
           />
         </div>
       ) : (
