@@ -3635,6 +3635,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-patient-orders-app@workspace:packages/esm-patient-orders-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-patient-orders-app@workspace:packages/esm-patient-orders-app"
+  dependencies:
+    "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-patient-common-lib": "npm:next"
+    lodash-es: "npm:^4.17.23"
+    webpack: "npm:^5.99.9"
+  peerDependencies:
+    "@openmrs/esm-framework": 9.x
+    "@openmrs/esm-patient-common-lib": 12.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-patient-registration-app@workspace:packages/esm-patient-registration-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-patient-registration-app@workspace:packages/esm-patient-registration-app"
@@ -14798,7 +14818,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash-es@npm:^4.17.11":
+"lodash-es@npm:^4.17.11, lodash-es@npm:^4.17.23":
   version: 4.17.23
   resolution: "lodash-es@npm:4.17.23"
   checksum: 10/1feae200df22eb0bd93ca86d485e77784b8a9fb1d13e91b66e9baa7a7e5e04be088c12a7e20c2250fc0bd3db1bc0ef0affc7d9e3810b6af2455a3c6bf6dde59e
