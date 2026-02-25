@@ -94,6 +94,18 @@ export const configSchema = {
     _description: 'Patient attribute type UUID for Disability Status',
     _default: '',
   },
+  healthIdLookupUrl: {
+    _type: Type.String,
+    _description:
+      'Base URL for the Health ID lookup API. The healthId will be appended as a query parameter (e.g. openmrs/ws/rest/v1/module/mpi/patient → ?healthId=<value>).',
+    _default: 'openmrs/ws/rest/v1/ethiopiaemrcustommodule/mpi/patient',
+  },
+  healthIdIdentifierTypeUuid: {
+    _type: Type.String,
+    _description:
+      'Patient identifier type UUID used to store the Health ID in OpenMRS. Required to persist the health ID alongside the default OpenMRS identifier.',
+    _default: 'cce42242-9e55-40a6-8739-1e6be1369bbe',
+  },
   diagnosisConceptClass: {
     _type: Type.UUID,
     _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
@@ -192,6 +204,8 @@ export type ClinicalWorkflowConfig = {
   defaultIdentifierTypeUuid: string;
   medicoLegalCasesAttributeTypeUuid: string;
   disabilityStatusAttributeTypeUuid: string;
+  healthIdLookupUrl: string;
+  healthIdIdentifierTypeUuid: string;
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;
