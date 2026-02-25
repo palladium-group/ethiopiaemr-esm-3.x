@@ -38,7 +38,10 @@
         "visitTypeUuid": "3371a4d4-f66f-4454-a86d-92c7b3da990c",
         "identifierSourceUuid": "fb034aac-2353-4940-abe2-7bc94e7c1e71",
         "facilityCode": "HOSP",
-        "defaultIdentifierTypeUuid": "dfacd928-0370-4315-99d7-6ec1c9f7ae76"
+        "defaultIdentifierTypeUuid": "dfacd928-0370-4315-99d7-6ec1c9f7ae76",
+        "disabilityStatusAttributeTypeUuid": "54d4a066-15f5-102d-96e4-000c29c2a5d7",
+        "healthIdLookupUrl": "openmrs/ws/rest/v1/ethiopiaemrcustommodule/mpi/patient",
+        "healthIdIdentifierTypeUuid": "cce42242-9e55-40a6-8739-1e6be1369bbe"
       },
   "@openmrs/esm-patient-chart-app": {
     "extensionSlots": {

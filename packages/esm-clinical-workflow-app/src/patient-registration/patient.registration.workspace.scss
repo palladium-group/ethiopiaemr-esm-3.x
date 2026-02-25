@@ -93,3 +93,18 @@
   gap: layout.$spacing-05;
   align-items: center;
 }
+
+.healthIdSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  padding-bottom: layout.$spacing-05;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.healthIdRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: layout.$spacing-03;
+  align-items: flex-end;
+}
