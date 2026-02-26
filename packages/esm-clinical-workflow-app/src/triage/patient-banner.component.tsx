@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ExtensionSlot, launchWorkspace, usePatient, useVisit } from '@openmrs/esm-framework';
+import { ExtensionSlot, launchWorkspace, usePatient, UserHasAccess, useVisit } from '@openmrs/esm-framework';
 import { Button, Dropdown, InlineLoading } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { Close, Stethoscope } from '@carbon/react/icons';
@@ -12,6 +12,7 @@ import { useLatestQueueEntry } from './queue.resource';
 
 import type { TriageVariantConfig } from '../config-schema';
 import styles from './patient-banner.scss';
+import { Permissions } from '../permission/permissions.constants';
 
 type PatientBannerProps = {
   patientUuid: string;
@@ -74,28 +75,30 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, variantConfi
   return (
     <div className={styles.patientBannerContainer}>
       <div className={styles.patientBannerHeader}>
-        {patientTypeItems.length > 0 ? (
-          <Dropdown
-            id="patient-type-dropdown"
-            className={styles.patientTypeDropdown}
-            items={patientTypeItems}
-            itemToString={(item) => item?.label || ''}
-            titleText={t('selectTriageType', 'Select Triage Type')}
-            label={t('selectTriageType', 'Select Triage Type')}
-            onChange={({ selectedItem }) => {
-              if (selectedItem) {
-                handleLaunchTriageForm(selectedItem.formUuid, selectedItem.formName);
-              }
-            }}
-          />
-        ) : (
-          <Button
-            kind="ghost"
-            renderIcon={Stethoscope}
-            onClick={() => handleLaunchTriageForm(variantConfig.formUuid, variantConfig.name)}>
-            {t('triageForm', 'Triage form')}
-          </Button>
-        )}
+        <UserHasAccess privilege={Permissions.AddTriageForm}>
+          {patientTypeItems.length > 0 ? (
+            <Dropdown
+              id="patient-type-dropdown"
+              className={styles.patientTypeDropdown}
+              items={patientTypeItems}
+              itemToString={(item) => item?.label || ''}
+              titleText={t('selectTriageType', 'Select Triage Type')}
+              label={t('selectTriageType', 'Select Triage Type')}
+              onChange={({ selectedItem }) => {
+                if (selectedItem) {
+                  handleLaunchTriageForm(selectedItem.formUuid, selectedItem.formName);
+                }
+              }}
+            />
+          ) : (
+            <Button
+              kind="ghost"
+              renderIcon={Stethoscope}
+              onClick={() => handleLaunchTriageForm(variantConfig.formUuid, variantConfig.name)}>
+              {t('triageForm', 'Triage form')}
+            </Button>
+          )}
+        </UserHasAccess>
         <Button kind="danger--ghost" renderIcon={Close} onClick={() => setPatientUuid(undefined)}>
           {t('close', 'Close')}
         </Button>

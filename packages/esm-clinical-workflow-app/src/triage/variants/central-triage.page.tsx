@@ -2,7 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, InlineNotification } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { ExtensionSlot, TriagePictogram, launchWorkspace, PageHeader, useConfig } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  TriagePictogram,
+  launchWorkspace,
+  PageHeader,
+  useConfig,
+  UserHasAccess,
+} from '@openmrs/esm-framework';
 import type { ClinicalWorkflowConfig } from '../../config-schema';
 import PatientBanner from '../patient-banner.component';
 import { useStartVisitAndLaunchTriageForm } from '../useStartVisitAndLaunchTriageForm';
@@ -10,6 +17,7 @@ import VisitsTable from '../../patient-scoreboard/visits-table/visits-table.comp
 import { useActiveVisits } from '../../patient-scoreboard/hooks/useVisitList';
 import { DEFAULT_PAGE_SIZE } from '../../constants';
 import styles from '../triage-dashboard.scss';
+import { Permissions } from '../../permission/permissions.constants';
 
 const CentralTriagePage: React.FC = () => {
   const { t } = useTranslation();
@@ -89,9 +97,11 @@ const CentralTriagePage: React.FC = () => {
             buttonProps: { kind: 'secondary' },
           }}
         />
-        <Button onClick={handleRegisterNewPatient} kind="tertiary" renderIcon={Add}>
-          {t('newPatient', 'New Patient')}
-        </Button>
+        <UserHasAccess privilege={Permissions.RegisterNewPatient}>
+          <Button onClick={handleRegisterNewPatient} kind="tertiary" renderIcon={Add}>
+            {t('newPatient', 'New Patient')}
+          </Button>
+        </UserHasAccess>
       </div>
 
       {!patientUuid ? (

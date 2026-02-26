@@ -1,5 +1,7 @@
 export enum Permissions {
-  // EthiopiaEMR permissions
+  // Common permissions
+  RegisterNewPatient = 'o3: Register Patient',
+  EditPatient = 'o3: Edit Patient',
 
   // Encounter permissions
   ViewEncounter = 'o3: View Encounters',
@@ -17,4 +19,12 @@ export enum Permissions {
   AddLabOrder = 'o3: View Test Order Form',
   AddImagingOrder = 'o3: View Imaging Order Form',
   AddProcedureOrder = 'o3: View Patient Chart Order Dashboard',
+
+  // Triage Permissions
+  ViewTriage = 'ethioemr: Triage: View Triage',
+  AddTriageForm = 'ethioemr: Triage: Add Triage Form',
+
+  // MRU Permissions
+  ViewMRU = 'ethioemr: MRU: View MRU',
+  EditBillingInformation = 'ethioemr: MRU: Edit Billing Information',
 }
