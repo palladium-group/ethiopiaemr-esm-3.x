@@ -106,6 +106,15 @@ export const configSchema = {
       'Patient identifier type UUID used to store the Health ID in OpenMRS. Required to persist the health ID alongside the default OpenMRS identifier.',
     _default: 'cce42242-9e55-40a6-8739-1e6be1369bbe',
   },
+  emergencyLocationTags: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.String,
+    },
+    _description:
+      'Location tag names for emergency locations. Can specify multiple tags to support future OPD/IPD emergency separation.',
+    _default: ['Emergency'],
+  },
   diagnosisConceptClass: {
     _type: Type.UUID,
     _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
@@ -206,6 +215,7 @@ export type ClinicalWorkflowConfig = {
   disabilityStatusAttributeTypeUuid: string;
   healthIdLookupUrl: string;
   healthIdIdentifierTypeUuid: string;
+  emergencyLocationTags: string[];
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;

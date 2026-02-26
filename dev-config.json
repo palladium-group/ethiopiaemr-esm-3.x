@@ -41,7 +41,8 @@
         "defaultIdentifierTypeUuid": "dfacd928-0370-4315-99d7-6ec1c9f7ae76",
         "disabilityStatusAttributeTypeUuid": "54d4a066-15f5-102d-96e4-000c29c2a5d7",
         "healthIdLookupUrl": "openmrs/ws/rest/v1/ethiopiaemrcustommodule/mpi/patient",
-        "healthIdIdentifierTypeUuid": "cce42242-9e55-40a6-8739-1e6be1369bbe"
+        "healthIdIdentifierTypeUuid": "cce42242-9e55-40a6-8739-1e6be1369bbe",
+        "emergencyLocationTags": ["Emergency"]
       },
   "@openmrs/esm-patient-chart-app": {
     "extensionSlots": {
