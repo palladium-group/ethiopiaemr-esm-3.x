@@ -21,7 +21,8 @@ import {
 } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import type { TriageVariantConfig, ClinicalWorkflowConfig } from '../config-schema';
-import { useQueueLocations, useQueues, createQueueEntry } from './queue.resource';
+import { useQueues, createQueueEntry } from './queue.resource';
+import { useLocationsByTag } from '../hooks/useLocationsByTag';
 import { getCurrentVisitForPatient, createVisitForPatient, invalidateVisitCache } from './triage.resource';
 import { launchEmergencyTriageFormWorkspace } from './useStartVisitAndLaunchTriageForm';
 import styles from './emergency-queue-selection.workspace.scss';
@@ -54,7 +55,7 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
     return t('unexpectedError', 'An unexpected error occurred');
   };
 
-  const { visitTypeUuid, defaultQueueStatusUuid, visitQueueNumberAttributeTypeUuid } =
+  const { visitTypeUuid, defaultQueueStatusUuid, visitQueueNumberAttributeTypeUuid, emergencyLocationTags } =
     useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
@@ -65,16 +66,16 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
   const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { queueLocations, isLoading: isLoadingLocations } = useQueueLocations();
+  const { locations: emergencyLocations, isLoading: isLoadingLocations } = useLocationsByTag(emergencyLocationTags);
   const { queues, isLoading: isLoadingQueues } = useQueues(selectedLocation);
 
   const locationOptions = useMemo(
     () =>
-      queueLocations.map((loc) => ({
+      emergencyLocations.map((loc) => ({
         id: loc.id,
         text: loc.name,
       })),
-    [queueLocations],
+    [emergencyLocations],
   );
 
   const queueOptions = useMemo(
@@ -222,11 +223,14 @@ const EmergencyQueueSelectionWorkspace: React.FC<EmergencyQueueSelectionWorkspac
 
           {isLoadingLocations ? (
             <InlineLoading description={t('loadingLocations', 'Loading locations...')} />
-          ) : queueLocations.length === 0 ? (
+          ) : emergencyLocations.length === 0 ? (
             <InlineNotification
               kind="warning"
-              title={t('noLocationsAvailable', 'No locations available')}
-              subtitle={t('contactAdministrator', 'Please contact your administrator')}
+              title={t('noEmergencyLocationsAvailable', 'No emergency locations available')}
+              subtitle={t(
+                'contactAdministratorEmergencyTag',
+                'Please tag emergency locations with "Emergency" to enable emergency triage',
+              )}
               lowContrast
             />
           ) : (
