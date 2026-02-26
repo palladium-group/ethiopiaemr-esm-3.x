@@ -2,6 +2,7 @@ export enum Permissions {
   // EthiopiaEMR permissions
 
   // Encounter permissions
+  ViewEncounter = 'o3: View Encounters',
   EditEncounter = 'o3: Edit Encounters',
   DeleteEncounter = 'o3: Delete Encounters',
 
