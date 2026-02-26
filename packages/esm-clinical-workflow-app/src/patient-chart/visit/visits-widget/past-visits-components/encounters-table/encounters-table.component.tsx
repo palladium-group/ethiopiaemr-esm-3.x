@@ -51,6 +51,7 @@ import {
 import EncounterObservations from '../../encounter-observations';
 import styles from './encounters-table.scss';
 import { type ChartConfig } from '../../../../../config-schema';
+import { Permissions } from '../../../../../permission/permissions.constants';
 
 /**
  * This components is used by the AllEncountersTable and VisitEncountersTable to display
@@ -229,7 +230,7 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                     const encounterAgeInMinutes = (Date.now() - new Date(encounter.datetime).getTime()) / (1000 * 60);
 
                     const canDeleteEncounter =
-                      userHasAccess(encounter.editPrivilege, session?.user) &&
+                      userHasAccess(Permissions.DeleteEncounter, session?.user) &&
                       (encounterEditableDuration === 0 ||
                         (encounterEditableDuration > 0 && encounterAgeInMinutes <= encounterEditableDuration) ||
                         encounterEditableDurationOverridePrivileges.some((privilege) =>
@@ -237,7 +238,8 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                         ));
 
                     const canEditEncounter =
-                      canDeleteEncounter && (encounter.form?.uuid || isVisitNoteEncounter(encounter));
+                      userHasAccess(Permissions.EditEncounter, session?.user) &&
+                      (encounter.form?.uuid || isVisitNoteEncounter(encounter));
 
                     return (
                       <React.Fragment key={encounter.id}>
