@@ -227,7 +227,8 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                       encounter.form?.uuid &&
                       encounter.form.resources?.some((resource) => resource.name === jsonSchemaResourceName);
 
-                    const encounterAgeInMinutes = (Date.now() - new Date(encounter.datetime).getTime()) / (1000 * 60);
+                    const encounterAgeInMinutes =
+                      (Date.now() - new Date(encounter.encounterDatetime).getTime()) / (1000 * 60);
 
                     // Check if the encounter duration is valid
                     const isValidEncounterDuration =
