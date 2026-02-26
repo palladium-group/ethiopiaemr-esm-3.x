@@ -1,6 +1,7 @@
 export enum Permissions {
   // Common permissions
   RegisterNewPatient = 'o3: Register Patient',
+  EditPatient = 'o3: Edit Patient',
 
   // Encounter permissions
   ViewEncounter = 'o3: View Encounters',
@@ -22,4 +23,8 @@ export enum Permissions {
   // Triage Permissions
   ViewTriage = 'ethioemr: Triage: View Triage',
   AddTriageForm = 'ethioemr: Triage: Add Triage Form',
+
+  // MRU Permissions
+  ViewMRU = 'ethioemr: MRU: View MRU',
+  EditBillingInformation = 'ethioemr: MRU: Edit Billing Information',
 }

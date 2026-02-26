@@ -4,6 +4,7 @@ import {
   ExtensionSlot,
   PageHeader,
   RegistrationPictogram,
+  UserHasAccess,
   fetchCurrentPatient,
   launchWorkspace,
   navigate,
@@ -20,6 +21,7 @@ import { type ClinicalWorkflowConfig } from '../config-schema';
 import VisitsTable from '../patient-scoreboard/visits-table/visits-table.component';
 import { useActiveVisits } from '../patient-scoreboard/hooks/useVisitList';
 import { DEFAULT_PAGE_SIZE } from '../constants';
+import { Permissions } from '../permission/permissions.constants';
 const MRU: React.FC = () => {
   const { t } = useTranslation();
 
@@ -104,19 +106,27 @@ const PatientSearch: React.FC = () => {
       {patient && (
         <div className={styles.patientHeaderContainer}>
           <div className={styles.patientHeaderActions}>
-            <Button kind="ghost" size="md" renderIcon={Edit} onClick={handlePatientInformationEdit}>
-              {t('editPatientInformation', 'Edit Patient Information')}
-            </Button>
-            <Button
-              disabled={!activeVisit}
-              kind="ghost"
-              size="md"
-              renderIcon={Money}
-              onClick={handleLaunchBillingInformationWorkspace}>
-              {hasAtLeastOneBillingInformation
-                ? t('editBillingInformation', 'Edit Billing Information')
-                : t('addBillingInformation', 'Add Billing Information')}
-            </Button>
+            {/* Edit Patient Information */}
+            <UserHasAccess privilege={Permissions.EditPatient}>
+              <Button kind="ghost" size="md" renderIcon={Edit} onClick={handlePatientInformationEdit}>
+                {t('editPatientInformation', 'Edit Patient Information')}
+              </Button>
+            </UserHasAccess>
+
+            {/* Edit Billing Information */}
+            <UserHasAccess privilege={Permissions.EditBillingInformation}>
+              <Button
+                disabled={!activeVisit}
+                kind="ghost"
+                size="md"
+                renderIcon={Money}
+                onClick={handleLaunchBillingInformationWorkspace}>
+                {hasAtLeastOneBillingInformation
+                  ? t('editBillingInformation', 'Edit Billing Information')
+                  : t('addBillingInformation', 'Add Billing Information')}
+              </Button>
+            </UserHasAccess>
+
             <Button
               kind="ghost"
               size="md"
