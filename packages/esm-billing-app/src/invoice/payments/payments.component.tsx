@@ -46,7 +46,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
   const paymentSchema = usePaymentSchema(bill);
   const { globalActiveSheet } = useClockInStatus();
   const { activeVisit } = useVisit(bill.patientUuid);
-  const activeVisitPaymentMethod = activeVisit.attributes.find(
+  const activeVisitPaymentMethod = activeVisit?.attributes?.find(
     (attribute) => attribute.attributeType.uuid === visitAttributeTypes.paymentMethods,
   );
   const { paymentModes, isLoading: isLoadingPaymentModes, error: errorPaymentModes } = usePaymentModes();
