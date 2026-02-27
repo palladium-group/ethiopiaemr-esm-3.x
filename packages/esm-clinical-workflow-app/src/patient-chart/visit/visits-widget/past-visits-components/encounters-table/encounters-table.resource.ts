@@ -28,6 +28,22 @@ export interface EncountersTableProps {
   setPageSize: React.Dispatch<React.SetStateAction<number>>;
 }
 
+export interface EncounterOrder {
+  uuid?: string;
+  display?: string;
+  orderType?: { uuid?: string; display?: string };
+  drug?: { display?: string; strength?: string };
+  concept?: { display?: string; uuid?: string };
+  dose?: number;
+  doseUnits?: { display?: string };
+  route?: { display?: string };
+  frequency?: { display?: string };
+  dosingInstructions?: string;
+  orderNumber?: string;
+  dateActivated?: string;
+  instructions?: string;
+}
+
 export interface MappedEncounter {
   datetime: string;
   diagnoses: Array<Diagnosis>;
@@ -37,6 +53,7 @@ export interface MappedEncounter {
   formName: string;
   id: string;
   obs: Array<Obs>;
+  orders?: Array<EncounterOrder>;
   provider: string;
   visitStartDatetime?: string;
   visitStopDatetime?: string;
@@ -53,7 +70,7 @@ export function deleteEncounter(encounterUuid: string, abortController: AbortCon
 }
 
 export function usePaginatedEncounters(patientUuid: string, encounterType: string, pageSize: number) {
-  const customRep = `custom:(uuid,display,diagnoses:(uuid,display,rank,diagnosis,certainty,voided),encounterDatetime,form:(uuid,display,name,description,encounterType,version,resources:(uuid,display,name,valueReference)),encounterType,visit,patient,obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterProviders:(provider:(person)))`;
+  const customRep = `custom:(uuid,display,diagnoses:(uuid,display,rank,diagnosis,certainty,voided),encounterDatetime,form:(uuid,display,name,description,encounterType,version,resources:(uuid,display,name,valueReference)),encounterType,visit,patient,orders:(uuid,display,orderType:(uuid,display),orderer:(display),drug:(display,strength),concept:(uuid,display),dose,doseUnits:(display),route:(display),frequency:(display),dosingInstructions,orderNumber,dateActivated,instructions),obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterProviders:(provider:(person)))`;
   const url = new URL(makeUrl(`${restBaseUrl}/encounter`), window.location.toString());
   url.searchParams.set('patient', patientUuid);
   url.searchParams.set('v', customRep);
@@ -86,8 +103,12 @@ export function mapEncounter(encounter: Encounter): MappedEncounter {
     form: encounter.form as Form,
     formName: encounter.form?.display ?? '--',
     obs: encounter.obs,
+    orders: (encounter as Encounter & { orders?: Array<EncounterOrder> }).orders,
     provider:
-      encounter.encounterProviders?.length > 0 ? encounter.encounterProviders[0].provider?.person?.display : '--',
+      encounter.encounterProviders?.length > 0
+        ? encounter.encounterProviders[0].provider?.person?.display
+        : (encounter as Encounter & { orders?: Array<{ orderer?: { display?: string } }> }).orders?.[0]?.orderer
+            ?.display ?? '--',
     visitStartDatetime: encounter.visit?.startDatetime,
     visitStopDatetime: encounter.visit?.stopDatetime,
     visitType: encounter.visit?.visitType?.display,
