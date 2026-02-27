@@ -2,10 +2,13 @@
 
 # EthiopiaEMR 3.x custom packages
 
-This repository contains frontend modules for the EthiopiaEMR 3.x. These modules provide clinical workflow and patient notes functionality. The modules within this repository include:
+This repository contains frontend modules for the EthiopiaEMR 3.x. These modules provide clinical workflow, patient registration, billing, patient notes, and admin functionality. The modules within this repository include:
 
-- [Clinical Workflow App](packages/esm-clinical-workflow-app/) - Express workflow app for OpenMRS 3, providing patient registration, triage, patient scoreboard, and MRU (Medical Recording Unit) functionality
+- [Clinical Workflow App](packages/esm-clinical-workflow-app/) - Express workflow app for OpenMRS 3, providing triage, patient scoreboard, and MRU (Medical Recording Unit) functionality
+- [Patient Registration App](packages/esm-patient-registration-app/) - Patient registration microfrontend with Health ID integration and disability status support
+- [Billing App](packages/esm-billing-app/) - Billing and payment management functionality
 - [Patient Notes App](packages/esm-patient-notes-app/) - Patient notes microfrontend providing a tabular overview of visit notes and forms for recording new visit notes
+- [Admin App](packages/esm-admin-app/) - Administrative functionality for user and provider management
 
 ## Setup
 
@@ -29,27 +32,34 @@ To set up environment variables for the project, follow these steps:
 
 Note: These variables are currently only used for end-to-end tests.
 
-To start a dev server running all the modules simultaneously, run:
+To start a dev server, run:
 
 ```bash
 yarn start
 ```
 
-This command uses the [openmrs](https://www.npmjs.com/package/openmrs) tooling to fire up a dev server running `esm-patient-chart` as well as the specified module.
+By default, this runs the clinical workflow, billing, patient registration, and admin apps. This command uses the [openmrs](https://www.npmjs.com/package/openmrs) tooling to fire up a dev server running `esm-patient-chart` as well as the specified modules.
 
-Note that this is very resource-intensive.
+Note that running all modules is very resource-intensive.
 
-To start a dev server for a specific module, run:
+To start a dev server for specific modules only, use the `--sources` flag:
 
 ```bash
 yarn start --sources 'packages/esm-<insert-package-name>-app'
 ```
 
-You could provide `yarn start` with as many `sources` arguments as you require. For example, to run both the clinical workflow and patient notes modules, use:
+You can provide multiple `--sources` arguments to run several modules. For example, to run only clinical workflow and patient notes:
 
 ```bash
 yarn start --sources 'packages/esm-clinical-workflow-app' --sources 'packages/esm-patient-notes-app'
 ```
+
+Available modules to add:
+- `packages/esm-clinical-workflow-app`
+- `packages/esm-patient-registration-app`
+- `packages/esm-billing-app`
+- `packages/esm-patient-notes-app`
+- `packages/esm-admin-app`
 
 ## Troubleshooting
 
