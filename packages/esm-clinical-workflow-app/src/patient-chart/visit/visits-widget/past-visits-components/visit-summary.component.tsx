@@ -10,6 +10,7 @@ import {
   parseDate,
   useAssignedExtensions,
   useConfig,
+  UserHasAccess,
   type Visit,
 } from '@openmrs/esm-framework';
 import { DiagnosisTags } from '../../visit-history-table/diagnosis-tags.component';
@@ -22,6 +23,7 @@ import VisitEncountersTable from './encounters-table/visit-encounters-table.comp
 import VisitTimeline from '../single-visit-details/visit-timeline/visit-timeline.component';
 import { type ChartConfig } from '../../../../config-schema';
 import styles from './visit-summary.scss';
+import { Permissions } from '../../../../permission/permissions.constants';
 
 interface VisitSummaryProps {
   visit: Visit;
@@ -116,12 +118,14 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
           <Tab className={classNames(styles.tab, styles.bodyLong01)} id="timeline-tab">
             {t('timeline', 'Timeline')}
           </Tab>
-          <Tab
-            className={classNames(styles.tab, styles.bodyLong01)}
-            id="notes-tab"
-            disabled={notes.length <= 0 && config.disableEmptyTabs}>
-            {t('notes', 'Notes')}
-          </Tab>
+          <UserHasAccess privilege={Permissions.ViewVisitNote}>
+            <Tab
+              className={classNames(styles.tab, styles.bodyLong01)}
+              id="notes-tab"
+              disabled={notes.length <= 0 && config.disableEmptyTabs}>
+              {t('notes', 'Notes')}
+            </Tab>
+          </UserHasAccess>
           <Tab className={styles.tab} id="tests-tab" disabled={testsFilter.length <= 0 && config.disableEmptyTabs}>
             {t('tests', 'Tests')}
           </Tab>
@@ -131,12 +135,14 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
             disabled={medications.length <= 0 && config.disableEmptyTabs}>
             {t('medications', 'Medications')}
           </Tab>
-          <Tab
-            className={styles.tab}
-            id="encounters-tab"
-            disabled={visit?.encounters.length <= 0 && config.disableEmptyTabs}>
-            {t('encounters_title', 'Encounters')}
-          </Tab>
+          <UserHasAccess privilege={Permissions.ViewEncounter}>
+            <Tab
+              className={styles.tab}
+              id="encounters-tab"
+              disabled={visit?.encounters.length <= 0 && config.disableEmptyTabs}>
+              {t('encounters_title', 'Encounters')}
+            </Tab>
+          </UserHasAccess>
           {extensions?.map((extension, index) => (
             <Tab key={index} className={styles.tab} id={`${extension.meta.title || index}-tab`}>
               {t(extension.meta.title, {
