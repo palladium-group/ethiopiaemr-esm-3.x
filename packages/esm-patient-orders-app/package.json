@@ -53,6 +53,8 @@
   },
   "devDependencies": {
     "@openmrs/esm-patient-common-lib": "next",
+    "@openmrs/esm-patient-medications-app": "next",
+    "@openmrs/esm-patient-tests-app": "next",
     "webpack": "^5.99.9"
   }
 }

@@ -18,7 +18,11 @@
     "moduleResolution": "node",
     "noEmit": true,
     "paths": {
-      "@openmrs/*": ["./node_modules/@openmrs/*"]
+      "@openmrs/*": ["./node_modules/@openmrs/*"],
+      "tools": ["./tools"],
+      "tools/*": ["./tools/*"],
+      "__mocks__": ["./__mocks__"],
+      "__mocks__/*": ["./__mocks__/*"]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
