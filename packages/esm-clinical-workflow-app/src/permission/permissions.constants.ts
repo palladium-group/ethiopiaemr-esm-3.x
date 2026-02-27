@@ -21,10 +21,10 @@ export enum Permissions {
   AddProcedureOrder = 'o3: View Patient Chart Order Dashboard',
 
   // Triage Permissions
-  ViewTriage = 'ethioemr: Triage: View Triage',
-  AddTriageForm = 'ethioemr: Triage: Add Triage Form',
+  ViewTriage = 'ethiopiaemr: Triage: View Triage',
+  AddTriageForm = 'ethiopiaemr: Triage: Add Triage Form',
 
   // MRU Permissions
-  ViewMRU = 'ethioemr: MRU: View MRU',
-  EditBillingInformation = 'ethioemr: MRU: Edit Billing Information',
+  ViewMRU = 'ethiopiaemr: MRU: View MRU',
+  EditBillingInformation = 'ethiopiaemr: MRU: Edit Billing Information',
 }
