@@ -47,6 +47,7 @@ export const createCashierBill = async (
 export const createBillingFormSchema = (
   t: TFunction,
   billingTypes?: Array<{ uuid: string; name?: string; attributeTypes?: Array<{ uuid: string; required?: boolean }> }>,
+  isEditMode = false,
 ) => {
   return z
     .object({
@@ -74,6 +75,15 @@ export const createBillingFormSchema = (
           path: ['billingTypeUuid'],
         });
         return;
+      }
+
+      // Billable service is required when creating billing information (not in edit mode)
+      if (!isEditMode && !data.billableItem) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('billableServiceRequired', 'Billable service is required'),
+          path: ['billableItem'],
+        });
       }
 
       // Validate required attributes for the selected billing type

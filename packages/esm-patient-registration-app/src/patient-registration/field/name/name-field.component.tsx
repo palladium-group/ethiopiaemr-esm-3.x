@@ -74,7 +74,7 @@ export const NameField = () => {
     <Input
       id="givenName"
       name="givenName"
-      labelText={t('givenNameLabelText', 'First Name')}
+      labelText={t('givenNameLabel', 'Given Name')}
       checkWarning={checkNumber}
       required
     />
@@ -84,7 +84,7 @@ export const NameField = () => {
     <Input
       id="middleName"
       name="middleName"
-      labelText={t('middleNameLabelText', 'Middle Name')}
+      labelText={t('middleNameLabel', 'Father’s Name')}
       checkWarning={checkNumber}
       required
     />
@@ -94,7 +94,7 @@ export const NameField = () => {
     <Input
       id="familyName"
       name="familyName"
-      labelText={t('familyNameLabelText', 'Family Name')}
+      labelText={t('familyNameLabel', 'Grandfather’s Name')}
       checkWarning={checkNumber}
       required
     />
