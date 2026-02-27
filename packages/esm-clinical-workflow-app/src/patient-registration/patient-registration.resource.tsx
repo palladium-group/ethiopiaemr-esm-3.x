@@ -2,6 +2,33 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import type { PatientRegistrationFormData } from './patient.registration.workspace';
 
+export interface HealthIdPatient {
+  fhir: {
+    uuid?: string;
+    person: {
+      names: Array<{ givenName: string; middleName: string; familyName: string }>;
+      gender: string;
+      birthdate: string;
+    };
+    healthId: string;
+  };
+  message: string;
+  success: boolean;
+}
+
+export async function fetchPatientByHealthId(healthId: string, lookupUrl: string): Promise<HealthIdPatient> {
+  const url = new URL(lookupUrl, window.location.origin);
+  url.searchParams.set('healthId', healthId);
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Health ID lookup failed with status ${response.status}`);
+  }
+  return response.json();
+}
+
 export const calculateDOBFromAgeFields = (
   ageYears?: number | null,
   ageMonths?: number | null,
@@ -136,6 +163,8 @@ export const buildPatientRegistrationPayload = (
   medicoLegalCasesAttributeTypeUuid?: string,
   hasDisability?: boolean,
   disabilityStatusAttributeTypeUuid?: string,
+  healthId?: string,
+  healthIdIdentifierTypeUuid?: string,
 ) => {
   const { formattedBirthDate, birthdateEstimated } = calculateBirthdate(formData);
 
@@ -152,6 +181,24 @@ export const buildPatientRegistrationPayload = (
     attributes.push({
       attributeType: disabilityStatusAttributeTypeUuid,
       value: 'true',
+    });
+  }
+
+  const identifiers: Array<{ identifier: string; identifierType: string; location: string; preferred: boolean }> = [
+    {
+      identifier: identifier,
+      identifierType: defaultIdentifierTypeUuid,
+      location: locationUuid,
+      preferred: true,
+    },
+  ];
+
+  if (healthId && healthIdIdentifierTypeUuid) {
+    identifiers.push({
+      identifier: healthId,
+      identifierType: healthIdIdentifierTypeUuid,
+      location: locationUuid,
+      preferred: false,
     });
   }
 
@@ -174,14 +221,7 @@ export const buildPatientRegistrationPayload = (
       addresses: [{}],
       dead: false,
     },
-    identifiers: [
-      {
-        identifier: identifier,
-        identifierType: defaultIdentifierTypeUuid,
-        location: locationUuid,
-        preferred: true,
-      },
-    ],
+    identifiers,
   };
 };
 

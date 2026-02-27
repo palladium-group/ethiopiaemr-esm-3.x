@@ -1,6 +1,18 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, ButtonSet, Checkbox, Dropdown, FormGroup, InlineLoading, NumberInput, TextInput } from '@carbon/react';
+import {
+  Button,
+  ButtonSet,
+  Checkbox,
+  Dropdown,
+  FormGroup,
+  InlineLoading,
+  InlineNotification,
+  NumberInput,
+  Search,
+  TextInput,
+} from '@carbon/react';
+import { Search as SearchIcon } from '@carbon/react/icons';
 import {
   OpenmrsDatePicker,
   showSnackbar,
@@ -22,6 +34,7 @@ import {
   calculateDOBFromAgeFields,
 } from './patient-registration.resource';
 import { useGenerateIdentifier } from './useGenerateIdentifier';
+import { useHealthIdLookup } from './useHealthIdLookup';
 import styles from './patient.registration.workspace.scss';
 import classNames from 'classnames';
 
@@ -111,9 +124,22 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     defaultIdentifierTypeUuid,
     medicoLegalCasesAttributeTypeUuid,
     disabilityStatusAttributeTypeUuid,
+    healthIdLookupUrl,
+    healthIdIdentifierTypeUuid,
   } = useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
+
+  const [healthIdInput, setHealthIdInput] = useState('');
+  const [submittedHealthId, setSubmittedHealthId] = useState<string | null>(null);
+  const [resolvedHealthId, setResolvedHealthId] = useState<string | null>(null);
+  const [isLockedByHealthId, setIsLockedByHealthId] = useState(false);
+
+  const {
+    patient: healthIdPatient,
+    isLoading: isSearchingHealthId,
+    isNotFound: healthIdNotFound,
+  } = useHealthIdLookup(submittedHealthId, healthIdLookupUrl);
 
   const {
     control,
@@ -174,6 +200,48 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     promptBeforeClosing(() => isDirty);
   }, [promptBeforeClosing, isDirty]);
 
+  useEffect(() => {
+    if (!healthIdPatient) {
+      return;
+    }
+    const { names, gender, birthdate } = healthIdPatient.fhir.person;
+    const name = names?.[0];
+    if (name) {
+      setValue('firstName', name.givenName ?? '', { shouldDirty: true });
+      setValue('middleName', name.middleName ?? '', { shouldDirty: true });
+      setValue('lastName', name.familyName ?? '', { shouldDirty: true });
+    }
+    const mappedGender =
+      gender?.toLowerCase() === 'male' ? 'Male' : gender?.toLowerCase() === 'female' ? 'Female' : null;
+    if (mappedGender) {
+      setValue('gender', mappedGender as 'Male' | 'Female', { shouldDirty: true });
+    }
+    if (birthdate) {
+      setValue('dateOfBirth', new Date(birthdate), { shouldDirty: true });
+    }
+    setResolvedHealthId(healthIdPatient.fhir.healthId ?? null);
+    setIsLockedByHealthId(true);
+  }, [healthIdPatient, setValue]);
+
+  const handleHealthIdSearch = () => {
+    const trimmed = healthIdInput.trim();
+    if (trimmed) {
+      setSubmittedHealthId(trimmed);
+    }
+  };
+
+  const handleHealthIdClear = () => {
+    setHealthIdInput('');
+    setSubmittedHealthId(null);
+    setResolvedHealthId(null);
+    setIsLockedByHealthId(false);
+    setValue('firstName', '', { shouldDirty: false });
+    setValue('middleName', '', { shouldDirty: false });
+    setValue('lastName', '', { shouldDirty: false });
+    setValue('gender', null, { shouldDirty: false });
+    setValue('dateOfBirth', null, { shouldDirty: false });
+  };
+
   const onSubmit = async (data: PatientRegistrationFormData) => {
     const uuid = generateOfflineUuid()?.replace('OFFLINE+', '');
     try {
@@ -187,6 +255,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         medicoLegalCasesAttributeTypeUuid,
         data.hasDisability,
         disabilityStatusAttributeTypeUuid,
+        resolvedHealthId ?? undefined,
+        healthIdIdentifierTypeUuid || undefined,
       );
 
       const patient = await registerNewPatient(registrationPayload);
@@ -227,6 +297,65 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   return (
     <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className={styles.formContainer}>
+        <div className={styles.healthIdSection}>
+          <div className={styles.healthIdRow}>
+            <Search
+              id="health-id-search"
+              labelText={t('searchByHealthId', 'Search by Health ID')}
+              placeholder={t('enterHealthId', 'Enter Health ID')}
+              value={healthIdInput}
+              onChange={(e) => {
+                setHealthIdInput(e.target.value);
+                if (!e.target.value) {
+                  handleHealthIdClear();
+                }
+              }}
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                  handleHealthIdSearch();
+                }
+              }}
+              onClear={handleHealthIdClear}
+              disabled={isSearchingHealthId}
+              size="md"
+            />
+            <Button
+              hasIconOnly
+              renderIcon={isSearchingHealthId ? InlineLoading : SearchIcon}
+              iconDescription={t('search', 'Search')}
+              tooltipPosition="bottom"
+              kind="primary"
+              size="md"
+              onClick={handleHealthIdSearch}
+              disabled={!healthIdInput.trim() || isSearchingHealthId || !healthIdLookupUrl}
+            />
+          </div>
+          {healthIdNotFound && (
+            <InlineNotification
+              kind="info"
+              title=""
+              subtitle={t(
+                'healthIdNotFound',
+                'No patient found with this Health ID. You can fill in the details manually.',
+              )}
+              lowContrast
+              hideCloseButton
+            />
+          )}
+          {isLockedByHealthId && (
+            <InlineNotification
+              kind="success"
+              title=""
+              subtitle={t(
+                'healthIdFound',
+                'Patient information has been automatically populated from the Health ID system.',
+              )}
+              lowContrast
+              hideCloseButton
+            />
+          )}
+        </div>
+
         <Controller
           name="firstName"
           control={control}

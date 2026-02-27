@@ -162,6 +162,12 @@
   ],
   "workspaceWindows2": [
     {
+      "name": "patient-chart-order-basket-shadow",
+      "icon": "orderBasketActionButton",
+      "group": "patient-chart",
+      "order": 1
+    },
+    {
       "name": "clinical-workflow-window",
       "group": "clinical-workflow-group",
       "width": "wider",

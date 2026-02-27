@@ -51,6 +51,7 @@ import {
 import EncounterObservations from '../../encounter-observations';
 import styles from './encounters-table.scss';
 import { type ChartConfig } from '../../../../../config-schema';
+import { Permissions } from '../../../../../permission/permissions.constants';
 
 /**
  * This components is used by the AllEncountersTable and VisitEncountersTable to display
@@ -226,18 +227,36 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                       encounter.form?.uuid &&
                       encounter.form.resources?.some((resource) => resource.name === jsonSchemaResourceName);
 
-                    const encounterAgeInMinutes = (Date.now() - new Date(encounter.datetime).getTime()) / (1000 * 60);
+                    const encounterAgeInMinutes =
+                      (Date.now() - new Date(encounter.encounterDatetime).getTime()) / (1000 * 60);
 
-                    const canDeleteEncounter =
-                      userHasAccess(encounter.editPrivilege, session?.user) &&
-                      (encounterEditableDuration === 0 ||
-                        (encounterEditableDuration > 0 && encounterAgeInMinutes <= encounterEditableDuration) ||
-                        encounterEditableDurationOverridePrivileges.some((privilege) =>
-                          userHasAccess(privilege, session?.user),
-                        ));
+                    // Check if the encounter duration is valid
+                    const isValidEncounterDuration =
+                      encounterEditableDuration === 0 ||
+                      (encounterEditableDuration > 0 && encounterAgeInMinutes <= encounterEditableDuration) ||
+                      encounterEditableDurationOverridePrivileges.some((privilege) =>
+                        userHasAccess(privilege, session?.user),
+                      );
 
-                    const canEditEncounter =
-                      canDeleteEncounter && (encounter.form?.uuid || isVisitNoteEncounter(encounter));
+                    const canEditVisitNote = userHasAccess(Permissions.EditVisitNote, session?.user);
+                    const canDeleteVisitNote = userHasAccess(Permissions.DeleteVisitNote, session?.user);
+
+                    const getCanDeleteEncounter = () => {
+                      if (isVisitNoteEncounter(encounter)) {
+                        return canDeleteVisitNote;
+                      }
+                      return userHasAccess(Permissions.DeleteEncounter, session?.user) && isValidEncounterDuration;
+                    };
+
+                    const getCanEditEncounter = () => {
+                      if (isVisitNoteEncounter(encounter)) {
+                        return canEditVisitNote;
+                      }
+                      return userHasAccess(Permissions.EditEncounter, session?.user);
+                    };
+
+                    const canDeleteEncounter = getCanDeleteEncounter();
+                    const canEditEncounter = getCanEditEncounter();
 
                     return (
                       <React.Fragment key={encounter.id}>
@@ -247,7 +266,7 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                           ))}
                           <TableCell className="cds--table-column-menu">
                             <Layer className={styles.layer}>
-                              {canDeleteEncounter && ( // equivalent to canDeleteEncounter || canEditEncounter
+                              {(canDeleteEncounter || canEditEncounter) && (
                                 <OverflowMenu
                                   aria-label={t('encounterTableActionsMenu', 'Encounter table actions menu')}
                                   flipped
