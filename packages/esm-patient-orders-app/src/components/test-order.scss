@@ -1,0 +1,39 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '../lab-results/interpretation';
+
+.testOrder {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid colors.$gray-20;
+  border-bottom: none;
+  border-top: none;
+
+  :global(.cds--data-table th) {
+    padding: layout.$spacing-03 !important;
+  }
+}
+
+.table {
+  table-layout: fixed;
+  width: 100%;
+
+  td {
+    padding-left: layout.$spacing-03 !important;
+  }
+}
+
+.col-testType {
+  width: 50%;
+}
+
+.col-result {
+  width: 25%;
+}
+
+.col-normalRange {
+  width: 25%;
+}
+
+@include interpretation.styles;

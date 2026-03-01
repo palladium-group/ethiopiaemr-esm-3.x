@@ -1,0 +1,75 @@
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import { configSchema } from './config-schema';
+import { ordersDashboardMeta } from './dashboard.meta';
+import OrdersSummary from './orders-summary/orders-summary.component';
+
+export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
+
+const moduleName = '@palladium-ethiopia/esm-patient-orders-app';
+
+const options = {
+  featureName: 'patient-orders',
+  moduleName,
+};
+
+export function startupApp() {
+  defineConfigSchema(moduleName, configSchema);
+}
+
+export const orderBasketWorkspace = getAsyncLifecycle(() => import('./order-basket/order-basket.workspace'), options);
+
+export const exportedOrderBasketWorkspace = getAsyncLifecycle(
+  () => import('./order-basket/exported-order-basket.workspace'),
+  options,
+);
+
+export const testResultsFormWorkspace = getAsyncLifecycle(
+  () => import('./lab-results/lab-results-form.workspace'),
+  options,
+);
+
+export const exportedTestResultsFormWorkspace = getAsyncLifecycle(
+  () => import('./lab-results/exported-lab-results-form.workspace'),
+  options,
+);
+
+export const orderPriceDetailsExtension = getAsyncLifecycle(
+  () => import('./components/order-price-details.component'),
+  options,
+);
+export const orderStockDetailsExtension = getAsyncLifecycle(
+  () => import('./components/order-stock-details.component'),
+  options,
+);
+
+export const ShoppingCartIcon = getAsyncLifecycle(
+  () => import('./order-basket-action-button/order-basket-action-button.component'),
+  options,
+);
+
+export const ordersDashboardLink =
+  // t('Orders', 'Orders')
+  getSyncLifecycle(
+    createDashboardLink({
+      ...ordersDashboardMeta,
+    }),
+    options,
+  );
+
+export const ordersDashboard = getSyncLifecycle(OrdersSummary, options);
+export const labResult = getAsyncLifecycle(() => import('./lab-results/lab-result.component'), options);
+export const printLabResultModal = getAsyncLifecycle(
+  () => import('./lab-results/print-results/print-modal/print-results-modal'),
+  options,
+);
+
+export const addGeneralOrderWorkspace = getAsyncLifecycle(
+  () => import('./order-basket/general-order-type/add-general-order/add-general-order.workspace'),
+  options,
+);
+
+export const exportedAddGeneralOrderWorkspace = getAsyncLifecycle(
+  () => import('./order-basket/general-order-type/add-general-order/exported-add-general-order.workspace'),
+  options,
+);
