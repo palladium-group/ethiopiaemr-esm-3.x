@@ -47,6 +47,11 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   const { billingVisitAttributeTypes } = useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
 
+  // Check if we're in edit mode (if visit has payment method attribute, it means billing info already exists)
+  const isEditMode = activeVisit?.attributes?.some(
+    (attr) => attr.attributeType.uuid === billingVisitAttributeTypes.paymentMethod,
+  );
+
   // Custom hooks for data fetching
   const { billingTypes } = usePaymentModes();
   const { cashPoints } = useCashPoints();
@@ -58,18 +63,13 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
     watch,
     setValue,
     formState: { errors, isDirty },
-  } = useBillingForm(t, billingTypes);
+  } = useBillingForm(t, billingTypes, isEditMode);
 
   // Watch form values
   const billingTypeUuid = watch('billingTypeUuid');
   const creditSubType = watch('creditSubType');
   const freeSubType = watch('freeSubType');
   const attributes = watch('attributes') || {};
-
-  // Check if we're in edit mode (if visit has payment method attribute, it means billing info already exists)
-  const isEditMode = activeVisit?.attributes?.some(
-    (attr) => attr.attributeType.uuid === billingVisitAttributeTypes.paymentMethod,
-  );
 
   // Billing type logic hook
   const { selectedBillingType, isCreditType, isFreeType } = useBillingType(billingTypes, billingTypeUuid);

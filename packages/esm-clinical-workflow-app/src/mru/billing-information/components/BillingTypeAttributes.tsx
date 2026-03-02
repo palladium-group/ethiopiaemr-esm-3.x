@@ -45,9 +45,14 @@ export const BillingTypeAttributes: React.FC<BillingTypeAttributesProps> = ({
         ? String(fieldError)
         : undefined;
 
-    // Determine field type based on format
+    // Determine field type based on format and name
+    const formatLower = attrType.format?.toLowerCase() || '';
+    const nameLower = attrType.name?.toLowerCase() || '';
     const isDateField =
-      attrType.format?.toLowerCase().includes('date') || attrType.format === 'org.openmrs.util.AttributableDate';
+      formatLower.includes('date') ||
+      attrType.format === 'org.openmrs.util.AttributableDate' ||
+      nameLower.includes('expiry') ||
+      nameLower.includes('expiration');
 
     if (isDateField) {
       return (
