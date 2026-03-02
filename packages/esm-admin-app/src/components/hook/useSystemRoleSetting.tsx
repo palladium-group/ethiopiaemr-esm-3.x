@@ -8,7 +8,7 @@ export interface RoleCategory {
 
 export function useSystemUserRoleConfigSetting() {
   const { data, error, isLoading, mutate } = useSWRImmutable<{ data: { results: Array<OpenmrsResource> } }, Error>(
-    `/ws/rest/v1/systemsetting?q=kenyaemr.userRole.config&v=custom:(uuid,value,property)`,
+    `/ws/rest/v1/systemsetting?q=ethiopiaemr.userRole.config&v=custom:(uuid,value,property)`,
     openmrsFetch,
     {
       revalidateOnFocus: false,
@@ -17,7 +17,7 @@ export function useSystemUserRoleConfigSetting() {
   );
 
   const userRolesConfigResource = data?.data?.results?.find(
-    (resource) => resource.property === 'kenyaemr.userRole.config',
+    (resource) => resource.property === 'ethiopiaemr.userRole.config',
   );
 
   let rolesConfig: RoleCategory[] = [];
