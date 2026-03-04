@@ -29,6 +29,7 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import { type ConfigObject } from '../config-schema';
 import { type Provider, useOrderEncounterForSystemWithVisitDisabled, useProviders } from '../api/api';
+import { useLabOrderBilling } from '../hooks/useLabOrderBilling';
 import GeneralOrderPanel from './general-order-type/general-order-panel.component';
 import styles from './order-basket.scss';
 
@@ -61,6 +62,7 @@ const OrderBasket: React.FC<OrderBasketProps> = ({
     sessionLocation,
     user: { person },
   } = useSession();
+  const cashierUuid = _currentProvider?.uuid;
   const currentProvider: Provider = useMemo(() => ({ ..._currentProvider, person }), [_currentProvider, person]);
   const { orders, clearOrders } = useOrderBasket(patient);
   const [ordersWithErrors, setOrdersWithErrors] = useState<OrderBasketItem[]>([]);
@@ -75,6 +77,7 @@ const OrderBasket: React.FC<OrderBasketProps> = ({
   const [creatingEncounterError, setCreatingEncounterError] = useState('');
   const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
   const { mutate } = useSWRConfig();
+  const { createBillForLabOrder } = useLabOrderBilling(visitContext);
 
   const [orderLocationUuid, setOrderLocationUuid] = useState(sessionLocation.uuid);
 
@@ -125,6 +128,15 @@ const OrderBasket: React.FC<OrderBasketProps> = ({
         await mutateOrders();
         onOrderBasketSubmitted?.(postedEncounter.uuid, postedEncounter.orders);
 
+        const labOrderToBill = postedEncounter.orders?.find((order) => {
+          const labOrder: any = order as any;
+          return labOrder?.concept?.conceptClass?.display?.toLowerCase().includes('lab');
+        });
+
+        if (labOrderToBill) {
+          await createBillForLabOrder(labOrderToBill, patientUuid, orderLocationUuid, cashierUuid);
+        }
+
         /* Translation keys used by showOrderSuccessToast:
          * t('discontinued', 'Discontinued')
          * t('orderDiscontinued', 'Order discontinued')
@@ -169,6 +181,15 @@ const OrderBasket: React.FC<OrderBasketProps> = ({
         await mutateOrders();
         invalidateVisitAndEncounterData(mutate, patientUuid);
         onOrderBasketSubmitted?.(orderEncounterUuid, postedOrders);
+
+        const labOrderToBill = postedOrders?.find((order) => {
+          const labOrder: any = order as any;
+          return labOrder?.concept?.conceptClass?.display?.toLowerCase().includes('lab');
+        });
+
+        if (labOrderToBill) {
+          await createBillForLabOrder(labOrderToBill, patientUuid, orderLocationUuid, cashierUuid);
+        }
       } catch (e) {
         console.error(e);
         setCreatingEncounterError(
@@ -195,6 +216,8 @@ const OrderBasket: React.FC<OrderBasketProps> = ({
     orderer,
     orderLocationUuid,
     onOrderBasketSubmitted,
+    cashierUuid,
+    createBillForLabOrder,
   ]);
 
   const handleCancel = useCallback(() => {
