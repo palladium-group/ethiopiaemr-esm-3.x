@@ -2,60 +2,60 @@ export enum Permissions {
   // EthiopiaEMR permissions
 
   // Clock In-Out permissions
-  ClockInOut = 'ethioemr: Billing: Clock In-Out',
+  ClockInOut = 'ethiopiaemr: Billing: Clock In-Out',
 
   // Payment permissions
-  ProcessPayment = 'ethioemr: Billing: Process Payment',
-  DiscardPayment = 'ethioemr: Billing: Discard Payment',
+  ProcessPayment = 'ethiopiaemr: Billing: Process Payment',
+  DiscardPayment = 'ethiopiaemr: Billing: Discard Payment',
 
   // Invoice permissions
-  PrintInvoice = 'ethioemr: Billing: Print Invoice',
-  PrintReceipt = 'ethioemr: Billing: Print Receipt',
-  PrintBillStatement = 'ethioemr: Billing: Print Bill Statement',
+  PrintInvoice = 'ethiopiaemr: Billing: Print Invoice',
+  PrintReceipt = 'ethiopiaemr: Billing: Print Receipt',
+  PrintBillStatement = 'ethiopiaemr: Billing: Print Bill Statement',
 
   // Deposit permissions
-  ViewDeposit = 'ethioemr: Billing: View Deposit',
-  AddDeposit = 'ethioemr: Billing: Add Deposit',
-  ApplyDeposit = 'ethioemr: Billing: Apply Deposit',
+  ViewDeposit = 'ethiopiaemr: Billing: View Deposit',
+  AddDeposit = 'ethiopiaemr: Billing: Add Deposit',
+  ApplyDeposit = 'ethiopiaemr: Billing: Apply Deposit',
 
   // Payment History permissions
-  ViewPaymentHistory = 'ethioemr: Billing: View Payment History',
+  ViewPaymentHistory = 'ethiopiaemr: Billing: View Payment History',
 
   // Payment Point permissions
-  ViewPaymentPoint = 'ethioemr: Billing: View Payment Point',
-  SwitchPaymentPoint = 'ethioemr: Billing: Switch Payment Point',
-  CreatePaymentPoint = 'ethioemr: Billing: Create Payment Point',
-  EditPaymentPoint = 'ethioemr: Billing: Edit Payment Point',
-  DeletePaymentPoint = 'ethioemr: Billing: Delete Payment Point',
+  ViewPaymentPoint = 'ethiopiaemr: Billing: View Payment Point',
+  SwitchPaymentPoint = 'ethiopiaemr: Billing: Switch Payment Point',
+  CreatePaymentPoint = 'ethiopiaemr: Billing: Create Payment Point',
+  EditPaymentPoint = 'ethiopiaemr: Billing: Edit Payment Point',
+  DeletePaymentPoint = 'ethiopiaemr: Billing: Delete Payment Point',
 
   // Payment Mode permissions
-  ViewPaymentMode = 'ethioemr: Billing: View Payment Mode',
-  AddPaymentMode = 'ethioemr: Billing: Add Payment Mode',
-  EditPaymentMode = 'ethioemr: Billing: Edit Payment Mode',
-  DeletePaymentMode = 'ethioemr: Billing: Delete Payment Mode',
+  ViewPaymentMode = 'ethiopiaemr: Billing: View Payment Mode',
+  AddPaymentMode = 'ethiopiaemr: Billing: Add Payment Mode',
+  EditPaymentMode = 'ethiopiaemr: Billing: Edit Payment Mode',
+  DeletePaymentMode = 'ethiopiaemr: Billing: Delete Payment Mode',
 
   // Bill Manager permissions
-  ViewBillManager = 'ethioemr: Billing: View Bill Manager',
-  WaiveBill = 'ethioemr: Billing: Waive Bill',
-  EditBillItem = 'ethioemr: Billing: Edit Bill Item',
-  CancelBillItem = 'ethioemr: Billing: Cancel Bill Item',
-  DeleteBill = 'ethioemr: Billing: Delete Bill',
+  ViewBillManager = 'ethiopiaemr: Billing: View Bill Manager',
+  WaiveBill = 'ethiopiaemr: Billing: Waive Bill',
+  EditBillItem = 'ethiopiaemr: Billing: Edit Bill Item',
+  CancelBillItem = 'ethiopiaemr: Billing: Cancel Bill Item',
+  DeleteBill = 'ethiopiaemr: Billing: Delete Bill',
 
   // Charge Item permissions
-  ViewChargeItems = 'ethioemr: Billing: View Charge Items',
+  ViewChargeItems = 'ethiopiaemr: Billing: View Charge Items',
 
   // Charge Service permissions
-  AddChargeService = 'ethioemr: Billing: Add Charge Service',
-  EditChargeService = 'ethioemr: Billing: Edit Charge Service',
-  DeleteChargeService = 'ethioemr: Billing: Delete Charge Service',
+  AddChargeService = 'ethiopiaemr: Billing: Add Charge Service',
+  EditChargeService = 'ethiopiaemr: Billing: Edit Charge Service',
+  DeleteChargeService = 'ethiopiaemr: Billing: Delete Charge Service',
   // For now, use the same permission chart item and charge service
-  AddChargeItem = 'ethioemr: Billing: Add Charge Service',
-  EditChargeItem = 'ethioemr: Billing: Edit Charge Service',
-  DeleteChargeItem = 'ethioemr: Billing: Delete Charge Service',
+  AddChargeItem = 'ethiopiaemr: Billing: Add Charge Service',
+  EditChargeItem = 'ethiopiaemr: Billing: Edit Charge Service',
+  DeleteChargeItem = 'ethiopiaemr: Billing: Delete Charge Service',
 
   // Exemptions Schema permissions
-  ViewExemptionsSchema = 'ethioemr: Billing: View Exemptions Schema',
-  AddExcemptionsSchema = 'ethioemr: Billing: Add Excemptions Schema',
+  ViewExemptionsSchema = 'ethiopiaemr: Billing: View Exemptions Schema',
+  AddExcemptionsSchema = 'ethiopiaemr: Billing: Add Excemptions Schema',
 
   // Legacy permissions
   ViewBillingAdminDashboard = 'o3: View Billing Admin Dashboard',
