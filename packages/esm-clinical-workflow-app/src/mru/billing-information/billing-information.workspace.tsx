@@ -23,6 +23,7 @@ import {
 } from './hooks';
 import {
   BillingTypeAttributes,
+  CbhiBillingAttributes,
   CreditSubTypeSelection,
   FreeSubTypeSelection,
   CreditSubTypeFields,
@@ -221,7 +222,17 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             !isCreditType &&
             !isFreeType &&
             selectedBillingType.attributeTypes &&
-            selectedBillingType.attributeTypes.length > 0 && (
+            selectedBillingType.attributeTypes.length > 0 &&
+            (selectedBillingType.name?.toLowerCase() === 'cbhi' ? (
+              <CbhiBillingAttributes
+                control={control}
+                errors={errors}
+                t={t}
+                attributeTypes={selectedBillingType.attributeTypes}
+                attributes={attributes}
+                setValue={setValue}
+              />
+            ) : (
               <BillingTypeAttributes
                 control={control}
                 errors={errors}
@@ -230,7 +241,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
                 attributes={attributes}
                 setValue={setValue}
               />
-            )}
+            ))}
 
           {/* Billable Items Selection */}
           <BillableItemsSelection
@@ -250,7 +261,40 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             {t('discard', 'Discard')}
           </Button>
           <Button
-            disabled={!isDirty || (isEditMode ? isSubmitting : false)}
+            disabled={
+              !isDirty ||
+              (isEditMode ? isSubmitting : false) ||
+              (() => {
+                const isCbhiBillingType = selectedBillingType?.name?.toLowerCase() === 'cbhi';
+                if (!isCbhiBillingType || !selectedBillingType?.attributeTypes) {
+                  return false;
+                }
+
+                const lowerNameIncludes = (attr: { name: string }, term: string) =>
+                  attr.name?.toLowerCase().includes(term.toLowerCase());
+
+                const cbhiIdAttr =
+                  selectedBillingType.attributeTypes.find(
+                    (a) =>
+                      lowerNameIncludes(a, 'cbhi') && (lowerNameIncludes(a, 'id') || lowerNameIncludes(a, 'number')),
+                  ) || selectedBillingType.attributeTypes[0];
+
+                const cbhiExpiryAttr =
+                  selectedBillingType.attributeTypes.find(
+                    (a) =>
+                      lowerNameIncludes(a, 'expiry') ||
+                      lowerNameIncludes(a, 'expiration') ||
+                      lowerNameIncludes(a, 'end'),
+                  ) ||
+                  selectedBillingType.attributeTypes.find((a) => a.uuid !== cbhiIdAttr?.uuid) ||
+                  selectedBillingType.attributeTypes[0];
+
+                const cbhiIdValue = attributes?.[cbhiIdAttr.uuid];
+                const cbhiExpiryValue = attributes?.[cbhiExpiryAttr.uuid];
+
+                return !cbhiIdValue || !cbhiExpiryValue;
+              })()
+            }
             className={styles.button}
             kind="primary"
             type="submit">
