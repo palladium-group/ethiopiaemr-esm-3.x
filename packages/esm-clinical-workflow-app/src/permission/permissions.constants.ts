@@ -30,4 +30,7 @@ export enum Permissions {
 
   // Patient Transfer Permissions
   TransferPatient = 'ethiopiaemr: Transfer Patient',
+
+  // Clinical Forms Permissions
+  ViewClinicalForms = 'o3: View Patient Forms',
 }
