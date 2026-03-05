@@ -49,6 +49,7 @@ import {
   type MappedEncounter,
 } from './encounters-table.resource';
 import EncounterObservations from '../../encounter-observations';
+import EncounterOrdersSummary from '../../encounter-observations/encounter-orders-summary.component';
 import styles from './encounters-table.scss';
 import { type ChartConfig } from '../../../../../config-schema';
 import { Permissions } from '../../../../../permission/permissions.constants';
@@ -320,6 +321,8 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                                     promptBeforeClosing: () => {},
                                   }}
                                 />
+                              ) : encounter.orders?.length ? (
+                                <EncounterOrdersSummary orders={encounter.orders} />
                               ) : (
                                 <EncounterObservations observations={encounter.obs} form={encounter.form} />
                               )}

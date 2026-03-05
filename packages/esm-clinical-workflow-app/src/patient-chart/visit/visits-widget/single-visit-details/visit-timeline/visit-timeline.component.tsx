@@ -68,15 +68,16 @@ function VisitTimeline({ patientUuid, visitUuid }: VisitTimelineProps) {
             <div className={styles.timelineDot} />
             <span className={styles.encounterType}>{encounter.encounterType.display}</span>
             <span>&middot;</span>
-            {encounter.encounterProviders.length === 0 ? (
-              <span>{t('noProvider', 'No provider')}</span>
-            ) : (
-              <span>
-                {encounter.encounterProviders
-                  .map((encounterProvider) => encounterProvider.provider.person.display)
-                  .join(', ')}
-              </span>
-            )}
+            {(() => {
+              const providerDisplay =
+                encounter.encounterProviders?.length > 0
+                  ? encounter.encounterProviders
+                      .map((ep) => ep.provider?.person?.display)
+                      .filter(Boolean)
+                      .join(', ')
+                  : (encounter as { orders?: Array<{ orderer?: { display?: string } }> }).orders?.[0]?.orderer?.display;
+              return providerDisplay ? <span>{providerDisplay}</span> : <span>{t('noProvider', 'No provider')}</span>;
+            })()}
             <span>&middot;</span>{' '}
             <span>
               {formatDate(new Date(encounter.encounterDatetime), {

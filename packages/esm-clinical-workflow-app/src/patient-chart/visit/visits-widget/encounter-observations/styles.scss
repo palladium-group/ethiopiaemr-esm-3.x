@@ -20,3 +20,12 @@
 .childConcept {
   padding-inline-start: layout.$spacing-04;
 }
+
+.orderLabel {
+  font-weight: 500;
+}
+
+.orderMeta {
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+}
