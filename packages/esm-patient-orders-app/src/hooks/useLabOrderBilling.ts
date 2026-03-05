@@ -29,15 +29,15 @@ async function createCashierBillForLabOrder(
     }
 
     const labOrder: any = order as any;
-    const conceptUuid: string | undefined = labOrder?.concept?.uuid ?? labOrder?.drug?.concept?.uuid;
+    const conceptUuid: string | undefined = labOrder?.testType?.conceptUuid;
 
     if (!conceptUuid) {
       return;
     }
 
     const url = `${restBaseUrl}/cashier/billableService?v=custom:(uuid,concept:(uuid),servicePrices:(uuid,name,price,paymentMode:(uuid,name)))`;
-    const response = await openmrsFetch<{ data: { results: Array<BillableService> } }>(url);
-    const billableService = response?.data?.data?.results?.find((item) => item?.concept?.uuid === conceptUuid) ?? null;
+    const response = await openmrsFetch<{ results: Array<BillableService> }>(url);
+    const billableService = response?.data?.results?.find((item) => item?.concept?.uuid === conceptUuid) ?? null;
 
     if (!billableService || !billableService.servicePrices?.length) {
       return;
@@ -64,7 +64,6 @@ async function createCashierBillForLabOrder(
           priceUuid: chosenPrice.uuid,
           lineItemOrder: 0,
           paymentStatus: 'PENDING',
-          order: labOrder.uuid,
         },
       ],
       cashPoint: cashPointUuid,
@@ -91,28 +90,28 @@ export function useLabOrderBilling(visitContext: Visit) {
     if (!attributes?.length) {
       return undefined;
     }
-    const paymentMethodAttributeTypeUuid = 'e6cb0c3b-04b0-4117-9bc6-ce24adbda802';
-    const paymentAttr = attributes.find((attr) => attr.attributeType?.uuid === paymentMethodAttributeTypeUuid);
+
+    const paymentAttr = attributes.find((attr) => attr.attributeType?.name === 'Payment Method');
     return paymentAttr?.value as string | undefined;
   }, [visitContext]);
 
   const createBillForLabOrder = async (
-    order: Order,
+    orders: any,
     patientUuid: string,
     cashPointUuid: string,
     cashierUuid?: string,
   ) => {
-    const labOrder: any = order as any;
-    const isLabOrder =
-      labOrder?.concept?.conceptClass?.display &&
-      typeof labOrder.concept.conceptClass.display === 'string' &&
-      labOrder.concept.conceptClass.display.toLowerCase().includes('lab');
+    const labOrders: any = orders as any;
 
-    if (!isLabOrder) {
+    if (!labOrders) {
       return;
     }
 
-    await createCashierBillForLabOrder(order, patientUuid, cashPointUuid, cashierUuid, selectedPaymentModeUuid);
+    const billPromises = labOrders.map(
+      async (order) =>
+        await createCashierBillForLabOrder(order, patientUuid, cashPointUuid, cashierUuid, selectedPaymentModeUuid),
+    );
+    await Promise.all(billPromises);
   };
 
   return {
