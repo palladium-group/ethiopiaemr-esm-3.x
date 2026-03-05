@@ -27,4 +27,7 @@ export enum Permissions {
   // MRU Permissions
   ViewMRU = 'ethiopiaemr: MRU: View MRU',
   EditBillingInformation = 'ethiopiaemr: MRU: Edit Billing Information',
+
+  // Patient Transfer Permissions
+  TransferPatient = 'ethiopiaemr: Transfer Patient',
 }
