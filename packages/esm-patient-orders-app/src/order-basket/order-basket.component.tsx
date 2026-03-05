@@ -109,6 +109,7 @@ const OrderBasket: React.FC<OrderBasketProps> = ({
     // orderEncounterUuid should only be preset if the system does not support visits, and the user has an order encounter today.
     // If orderEncounterUuid is not present, then create an encounter along with the orders.
     // If orderEncounterUuid is present, then just post the orders to that encounter.
+
     if (!orderEncounterUuid) {
       try {
         const postedEncounter = await postOrdersOnNewEncounter(
@@ -119,22 +120,23 @@ const OrderBasket: React.FC<OrderBasketProps> = ({
           orderer.uuid,
           abortController,
         );
+
         await closeWorkspace({ discardUnsavedChanges: true });
         mutateEncounterUuid();
+
         // Only revalidate current visit since orders create new encounters
         mutateVisitContext?.();
         invalidateVisitAndEncounterData(mutate, patientUuid);
         clearOrders();
         await mutateOrders();
         onOrderBasketSubmitted?.(postedEncounter.uuid, postedEncounter.orders);
-
-        const labOrderToBill = postedEncounter.orders?.find((order) => {
+        const labOrdersToBill = orders?.filter((order) => {
           const labOrder: any = order as any;
-          return labOrder?.concept?.conceptClass?.display?.toLowerCase().includes('lab');
+          return labOrder?.testType?.conceptUuid;
         });
 
-        if (labOrderToBill) {
-          await createBillForLabOrder(labOrderToBill, patientUuid, orderLocationUuid, cashierUuid);
+        if (labOrdersToBill.length > 0) {
+          await createBillForLabOrder(labOrdersToBill, patientUuid, orderLocationUuid, cashierUuid);
         }
 
         /* Translation keys used by showOrderSuccessToast:
@@ -182,13 +184,13 @@ const OrderBasket: React.FC<OrderBasketProps> = ({
         invalidateVisitAndEncounterData(mutate, patientUuid);
         onOrderBasketSubmitted?.(orderEncounterUuid, postedOrders);
 
-        const labOrderToBill = postedOrders?.find((order) => {
+        const labOrdersToBill = orders?.filter((order) => {
           const labOrder: any = order as any;
-          return labOrder?.concept?.conceptClass?.display?.toLowerCase().includes('lab');
+          return labOrder?.testType?.conceptUuid;
         });
 
-        if (labOrderToBill) {
-          await createBillForLabOrder(labOrderToBill, patientUuid, orderLocationUuid, cashierUuid);
+        if (labOrdersToBill) {
+          await createBillForLabOrder(labOrdersToBill, patientUuid, orderLocationUuid, cashierUuid);
         }
       } catch (e) {
         console.error(e);
