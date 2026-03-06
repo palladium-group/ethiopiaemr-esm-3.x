@@ -1,13 +1,22 @@
 import React, { type ComponentProps, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowsHorizontal } from '@carbon/react/icons';
-import { ActionMenuButton2, Encounter, launchWorkspace2, showModal, useConfig } from '@openmrs/esm-framework';
+import {
+  ActionMenuButton2,
+  Encounter,
+  launchWorkspace2,
+  showModal,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import {
   useStartVisitIfNeeded,
   type PatientChartWorkspaceActionButtonProps,
   type PatientWorkspaceGroupProps,
 } from '@openmrs/esm-patient-common-lib';
 import type { ClinicalWorkflowConfig } from '../config-schema';
+import { Permissions } from '../permission/permissions.constants';
 
 const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = (props) => {
   const { t } = useTranslation();
@@ -21,6 +30,8 @@ const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonPro
   const transferFormUuid = config?.patientTransferFormUuid;
 
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
+
+  const session = useSession();
 
   const handlePostResponse = useCallback(
     (encounter: Encounter) => {
@@ -93,6 +104,12 @@ const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonPro
     handlePostResponse,
     startVisitIfNeeded,
   ]);
+
+  // Check if user has permission to transfer patient
+  const canTransferPatient = userHasAccess(Permissions.TransferPatient, session?.user);
+  if (!canTransferPatient) {
+    return null;
+  }
 
   if (!groupProps?.patientUuid || !patient) {
     return null;

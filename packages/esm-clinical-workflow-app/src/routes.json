@@ -168,6 +168,12 @@
       "order": 1
     },
     {
+      "name": "patient-chart-clinical-forms-shadow",
+      "icon": "clinicalFormsActionButton",
+      "group": "patient-chart",
+      "order": 2
+    },
+    {
       "name": "clinical-workflow-window",
       "group": "clinical-workflow-group",
       "width": "wider",
