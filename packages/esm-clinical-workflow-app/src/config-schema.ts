@@ -106,6 +106,24 @@ export const configSchema = {
       'Patient identifier type UUID used to store the Health ID in OpenMRS. Required to persist the health ID alongside the default OpenMRS identifier.',
     _default: 'cce42242-9e55-40a6-8739-1e6be1369bbe',
   },
+  bloodTypeAttributeTypeUuid: {
+    _type: Type.String,
+    _description:
+      'Person attribute type UUID for storing blood type (e.g. "A+", "O-", "B+"). If not set, blood type from Health ID lookup will not be persisted.',
+    _default: '',
+  },
+  phoneAttributeTypeUuid: {
+    _type: Type.String,
+    _description:
+      'Person attribute type UUID for storing phone number. If not set, phone number from Health ID lookup will not be persisted.',
+    _default: '',
+  },
+  emailAttributeTypeUuid: {
+    _type: Type.String,
+    _description:
+      'Person attribute type UUID for storing email address. If not set, email from Health ID lookup will not be persisted.',
+    _default: '',
+  },
   emergencyLocationTags: {
     _type: Type.Array,
     _elements: {
@@ -215,6 +233,9 @@ export type ClinicalWorkflowConfig = {
   disabilityStatusAttributeTypeUuid: string;
   healthIdLookupUrl: string;
   healthIdIdentifierTypeUuid: string;
+  bloodTypeAttributeTypeUuid: string;
+  phoneAttributeTypeUuid: string;
+  emailAttributeTypeUuid: string;
   emergencyLocationTags: string[];
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
