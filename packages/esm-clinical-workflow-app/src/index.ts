@@ -6,6 +6,7 @@ import { spaBasePath } from './constants';
 import BillingInformationWorkspace from './mru/billing-information/billing-information.workspace';
 import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component';
 import orderBasketActionButtonExtension from './patient-orders/order-basket-action-button/order-basket-action-button.component';
+import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
@@ -100,6 +101,8 @@ export const patientScoreboardLink = getSyncLifecycle(
 export const patientScoreboard = getSyncLifecycle(PatientScoreboard, options);
 
 export const orderBasketActionButton = getSyncLifecycle(orderBasketActionButtonExtension, options);
+
+export const clinicalFormsActionButton = getSyncLifecycle(clinicalFormsActionButtonExtension, options);
 
 export const visitNoteActionButton = getSyncLifecycle(visitNotesActionButtonExtension, options);
 
