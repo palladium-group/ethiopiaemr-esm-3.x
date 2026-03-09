@@ -1,16 +1,26 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import type { PatientRegistrationFormData } from './patient.registration.workspace';
+import { mapAllergenToCategory, getAllergenCodingSystem } from './allergen-category-mapper';
 
 export interface HealthIdPatient {
   fhir: {
     uuid?: string;
+    email?: string;
+    phone?: string;
     person: {
-      names: Array<{ givenName: string; middleName: string; familyName: string }>;
+      names: Array<{ givenName: string; middleName?: string; familyName: string }>;
       gender: string;
+      addresses?: any[];
       birthdate: string;
     };
     healthId: string;
+    allergies?: string[]; // e.g. ["EGGS", "PEANUTS"]
+    chronicDiseases?: string[]; // e.g. ["ARTHRITIS", "DIABETES"]
+    bloodType?: string; // e.g. "A-", "O+", "B+"
+    attributes?: any[];
+    identifiers?: any[];
+    nationality?: string;
   };
   message: string;
   success: boolean;
@@ -165,6 +175,13 @@ export const buildPatientRegistrationPayload = (
   disabilityStatusAttributeTypeUuid?: string,
   healthId?: string,
   healthIdIdentifierTypeUuid?: string,
+  addresses?: any[],
+  bloodType?: string,
+  bloodTypeAttributeTypeUuid?: string,
+  phone?: string,
+  phoneAttributeTypeUuid?: string,
+  email?: string,
+  emailAttributeTypeUuid?: string,
 ) => {
   const { formattedBirthDate, birthdateEstimated } = calculateBirthdate(formData);
 
@@ -181,6 +198,27 @@ export const buildPatientRegistrationPayload = (
     attributes.push({
       attributeType: disabilityStatusAttributeTypeUuid,
       value: 'true',
+    });
+  }
+
+  // Add Health ID extra fields as person attributes
+  // Only add if both value and UUID are present and UUID is not empty
+  if (bloodType && bloodTypeAttributeTypeUuid && bloodTypeAttributeTypeUuid.trim() !== '') {
+    attributes.push({
+      attributeType: bloodTypeAttributeTypeUuid,
+      value: bloodType,
+    });
+  }
+  if (phone && phoneAttributeTypeUuid && phoneAttributeTypeUuid.trim() !== '') {
+    attributes.push({
+      attributeType: phoneAttributeTypeUuid,
+      value: phone,
+    });
+  }
+  if (email && emailAttributeTypeUuid && emailAttributeTypeUuid.trim() !== '') {
+    attributes.push({
+      attributeType: emailAttributeTypeUuid,
+      value: email,
     });
   }
 
@@ -218,7 +256,7 @@ export const buildPatientRegistrationPayload = (
       birthdate: formattedBirthDate,
       birthdateEstimated: birthdateEstimated,
       attributes: attributes,
-      addresses: [{}],
+      addresses: addresses && addresses.length > 0 ? addresses : [{}],
       dead: false,
     },
     identifiers,
@@ -246,3 +284,156 @@ export const generateIdentifier = (identifierSourceUuid: string) => {
     body: {},
   });
 };
+
+/**
+ * Creates a FHIR AllergyIntolerance resource for a patient.
+ * Used to persist allergies from Health ID lookup to the patient chart.
+ *
+ * @param patientUuid - The UUID of the patient
+ * @param allergyDisplay - The display name of the allergy (e.g., "EGGS", "PEANUTS")
+ */
+export async function createAllergyIntolerance(patientUuid: string, allergyDisplay: string): Promise<void> {
+  // Validate input
+  if (!allergyDisplay || allergyDisplay.trim().length === 0) {
+    console.warn('[AllergyIntolerance] Skipping empty allergen name');
+    return;
+  }
+
+  const normalizedAllergen = allergyDisplay.trim();
+  const category = mapAllergenToCategory(normalizedAllergen);
+
+  const payload = {
+    resourceType: 'AllergyIntolerance',
+    patient: { reference: `Patient/${patientUuid}` },
+    // Category is required by OpenMRS - array of string codes
+    category: [category],
+    // Code requires proper coding structure
+    code: {
+      coding: [
+        {
+          system: getAllergenCodingSystem(),
+          code: normalizedAllergen.toUpperCase().replace(/\s+/g, '_'),
+          display: normalizedAllergen,
+        },
+      ],
+      text: normalizedAllergen,
+    },
+    clinicalStatus: {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+          code: 'active',
+        },
+      ],
+    },
+  };
+
+  try {
+    await openmrsFetch('/ws/fhir2/R4/AllergyIntolerance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/fhir+json' },
+      body: JSON.stringify(payload),
+    });
+
+    // eslint-disable-next-line no-console
+    console.info(`[AllergyIntolerance] Successfully created allergy: ${normalizedAllergen} (category: ${category})`);
+  } catch (error) {
+    console.error(`[AllergyIntolerance] Failed to create allergy: ${normalizedAllergen}`, error);
+    // Include detailed error information for debugging
+    if (error?.response) {
+      try {
+        const errorData = await error.response.json();
+        console.error('[AllergyIntolerance] Response error:', errorData);
+      } catch {
+        const errorText = await error.response.text().catch(() => 'Unable to read response');
+        console.error('[AllergyIntolerance] Response error:', errorText);
+      }
+    }
+    throw error;
+  }
+}
+
+/**
+ * Creates a FHIR Condition resource for a patient.
+ * Used to persist chronic diseases from Health ID lookup to the patient chart.
+ *
+ * @param patientUuid - The UUID of the patient
+ * @param conditionDisplay - The display name of the condition (e.g., "ARTHRITIS", "DIABETES")
+ */
+export async function createCondition(patientUuid: string, conditionDisplay: string): Promise<void> {
+  const payload = {
+    resourceType: 'Condition',
+    subject: { reference: `Patient/${patientUuid}` },
+    code: { text: conditionDisplay },
+    clinicalStatus: {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+          code: 'active',
+        },
+      ],
+    },
+  };
+
+  await openmrsFetch('/ws/fhir2/R4/Condition', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/fhir+json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Sets a person attribute for blood type.
+ * Used to persist blood type from Health ID lookup to patient demographics.
+ *
+ * @param personUuid - The UUID of the person
+ * @param bloodType - The blood type value (e.g., "A+", "O-", "B+")
+ * @param bloodTypeAttributeTypeUuid - The UUID of the blood type person attribute type from config
+ */
+export async function setBloodTypeAttribute(
+  personUuid: string,
+  bloodType: string,
+  bloodTypeAttributeTypeUuid: string,
+): Promise<void> {
+  if (!bloodTypeAttributeTypeUuid) {
+    console.warn('[Health ID] Blood type attribute type UUID not configured, skipping blood type persistence');
+    return;
+  }
+
+  await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      attributeType: bloodTypeAttributeTypeUuid,
+      value: bloodType,
+    }),
+  });
+}
+
+/**
+ * Sets a person attribute for phone number.
+ * Used to persist phone number from Health ID lookup to patient demographics.
+ *
+ * @param personUuid - The UUID of the person
+ * @param phoneNumber - The phone number value
+ * @param phoneAttributeTypeUuid - The UUID of the phone person attribute type from config
+ */
+export async function setPhoneAttribute(
+  personUuid: string,
+  phoneNumber: string,
+  phoneAttributeTypeUuid: string,
+): Promise<void> {
+  if (!phoneAttributeTypeUuid) {
+    console.warn('[Health ID] Phone attribute type UUID not configured, skipping phone number persistence');
+    return;
+  }
+
+  await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      attributeType: phoneAttributeTypeUuid,
+      value: phoneNumber,
+    }),
+  });
+}

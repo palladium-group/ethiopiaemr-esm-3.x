@@ -32,6 +32,8 @@ import {
   registerNewPatient,
   buildPatientRegistrationPayload,
   calculateDOBFromAgeFields,
+  createAllergyIntolerance,
+  createCondition,
 } from './patient-registration.resource';
 import { useGenerateIdentifier } from './useGenerateIdentifier';
 import { useHealthIdLookup } from './useHealthIdLookup';
@@ -126,6 +128,9 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     disabilityStatusAttributeTypeUuid,
     healthIdLookupUrl,
     healthIdIdentifierTypeUuid,
+    bloodTypeAttributeTypeUuid,
+    phoneAttributeTypeUuid,
+    emailAttributeTypeUuid,
   } = useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
@@ -134,6 +139,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   const [submittedHealthId, setSubmittedHealthId] = useState<string | null>(null);
   const [resolvedHealthId, setResolvedHealthId] = useState<string | null>(null);
   const [isLockedByHealthId, setIsLockedByHealthId] = useState(false);
+  const [healthIdAddresses, setHealthIdAddresses] = useState<any[]>([]);
 
   const {
     patient: healthIdPatient,
@@ -204,7 +210,19 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     if (!healthIdPatient) {
       return;
     }
-    const { names, gender, birthdate } = healthIdPatient.fhir.person;
+    // Log the full Health ID response to verify data structure
+    // eslint-disable-next-line no-console
+    console.log('[Health ID Lookup] Full response:', healthIdPatient);
+    // eslint-disable-next-line no-console
+    console.log('[Health ID Lookup] Extra fields:', {
+      allergies: healthIdPatient.fhir.allergies,
+      chronicDiseases: healthIdPatient.fhir.chronicDiseases,
+      bloodType: healthIdPatient.fhir.bloodType,
+      phone: healthIdPatient.fhir.phone,
+      email: healthIdPatient.fhir.email,
+    });
+
+    const { names, gender, birthdate, addresses } = healthIdPatient.fhir.person;
     const name = names?.[0];
     if (name) {
       setValue('firstName', name.givenName ?? '', { shouldDirty: true });
@@ -218,6 +236,10 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     }
     if (birthdate) {
       setValue('dateOfBirth', new Date(birthdate), { shouldDirty: true });
+    }
+
+    if (addresses && addresses.length > 0) {
+      setHealthIdAddresses(addresses);
     }
     setResolvedHealthId(healthIdPatient.fhir.healthId ?? null);
     setIsLockedByHealthId(true);
@@ -235,6 +257,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     setSubmittedHealthId(null);
     setResolvedHealthId(null);
     setIsLockedByHealthId(false);
+    setHealthIdAddresses([]);
     setValue('firstName', '', { shouldDirty: false });
     setValue('middleName', '', { shouldDirty: false });
     setValue('lastName', '', { shouldDirty: false });
@@ -245,6 +268,15 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   const onSubmit = async (data: PatientRegistrationFormData) => {
     const uuid = generateOfflineUuid()?.replace('OFFLINE+', '');
     try {
+      // Extract Health ID extra fields to include in initial registration
+      const healthIdExtraFields = healthIdPatient?.fhir
+        ? {
+            bloodType: healthIdPatient.fhir.bloodType,
+            phone: healthIdPatient.fhir.phone,
+            email: healthIdPatient.fhir.email,
+          }
+        : {};
+
       const registrationPayload = buildPatientRegistrationPayload(
         data,
         uuid,
@@ -257,6 +289,13 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         disabilityStatusAttributeTypeUuid,
         resolvedHealthId ?? undefined,
         healthIdIdentifierTypeUuid || undefined,
+        healthIdAddresses.length > 0 ? healthIdAddresses : undefined,
+        healthIdExtraFields.bloodType,
+        bloodTypeAttributeTypeUuid,
+        healthIdExtraFields.phone,
+        phoneAttributeTypeUuid,
+        healthIdExtraFields.email,
+        emailAttributeTypeUuid,
       );
 
       const patient = await registerNewPatient(registrationPayload);
@@ -265,6 +304,58 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
       const patientUuid = patientData?.uuid || patientData?.id;
 
       if (patientUuid) {
+        // Persist FHIR resources from Health ID lookup (allergies and chronic diseases)
+        if (healthIdPatient?.fhir) {
+          const { allergies = [], chronicDiseases = [] } = healthIdPatient.fhir;
+          const persistencePromises: Promise<void>[] = [];
+
+          // Persist allergies via FHIR AllergyIntolerance
+          if (allergies.length > 0) {
+            // Filter out empty/invalid allergen names
+            const validAllergies = allergies.filter((a) => a && a.trim().length > 0);
+            if (validAllergies.length > 0) {
+              persistencePromises.push(
+                ...validAllergies.map((allergy) =>
+                  createAllergyIntolerance(patientUuid, allergy).catch((error) => {
+                    console.error(`[Health ID] Failed to save allergy: ${allergy}`, error);
+                    throw error; // Re-throw to be caught by Promise.allSettled
+                  }),
+                ),
+              );
+            }
+          }
+
+          // Persist chronic diseases via FHIR Condition
+          if (chronicDiseases.length > 0) {
+            persistencePromises.push(...chronicDiseases.map((disease) => createCondition(patientUuid, disease)));
+          }
+
+          // Run all persistence operations in parallel and track failures
+          if (persistencePromises.length > 0) {
+            const results = await Promise.allSettled(persistencePromises);
+            const failures = results.filter((r) => r.status === 'rejected');
+
+            if (failures.length > 0) {
+              console.error(`[Health ID] ${failures.length} of ${results.length} health data fields failed to save`);
+              failures.forEach((failure) => {
+                if (failure.status === 'rejected') {
+                  console.error('[Health ID] Failure details:', failure.reason);
+                }
+              });
+
+              showSnackbar({
+                title: t('partialHealthIdDataSaved', 'Some health ID information could not be saved'),
+                subtitle: t(
+                  'partialHealthIdDataSavedDetail',
+                  'Patient was registered successfully, but some allergies or conditions could not be saved. Please verify in the patient chart.',
+                ),
+                kind: 'warning',
+                isLowContrast: true,
+              });
+            }
+          }
+        }
+
         showSnackbar({
           title: t('patientRegistrationSuccess', 'Patient registered successfully'),
           kind: 'success',
@@ -277,6 +368,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
           try {
             onPatientRegistered(patientUuid);
           } catch (callbackError) {
+            // eslint-disable-next-line no-console
             console.error('Error in onPatientRegistered callback:', callbackError);
           }
         }
