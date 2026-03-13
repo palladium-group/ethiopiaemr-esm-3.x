@@ -93,7 +93,7 @@ const EmergencyTriagePage: React.FC = () => {
             buttonProps: { kind: 'secondary' },
           }}
         />
-        <UserHasAccess privilege={Permissions.RegisterNewPatient}>
+        <UserHasAccess privilege={Permissions.TriageRegisterNewPatient}>
           <Button onClick={handleRegisterNewPatient} kind="tertiary" renderIcon={Add}>
             {t('newPatient', 'New Patient')}
           </Button>

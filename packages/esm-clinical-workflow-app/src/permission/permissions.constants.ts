@@ -23,10 +23,12 @@ export enum Permissions {
   // Triage Permissions
   ViewTriage = 'ethiopiaemr: Triage: View Triage',
   AddTriageForm = 'ethiopiaemr: Triage: Add Triage Form',
+  TriageRegisterNewPatient = 'ethiopiaemr: Triage: Register Patient',
 
   // MRU Permissions
   ViewMRU = 'ethiopiaemr: MRU: View MRU',
   EditBillingInformation = 'ethiopiaemr: MRU: Edit Billing Information',
+  MRUEditPatient = 'ethiopiaemr: MRU: Edit Patient',
 
   // Patient Transfer Permissions
   TransferPatient = 'ethiopiaemr: Transfer Patient',
