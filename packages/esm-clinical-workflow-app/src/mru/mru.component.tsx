@@ -107,7 +107,7 @@ const PatientSearch: React.FC = () => {
         <div className={styles.patientHeaderContainer}>
           <div className={styles.patientHeaderActions}>
             {/* Edit Patient Information */}
-            <UserHasAccess privilege={Permissions.EditPatient}>
+            <UserHasAccess privilege={Permissions.MRUEditPatient}>
               <Button kind="ghost" size="md" renderIcon={Edit} onClick={handlePatientInformationEdit}>
                 {t('editPatientInformation', 'Edit Patient Information')}
               </Button>
