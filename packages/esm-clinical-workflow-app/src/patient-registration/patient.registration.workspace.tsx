@@ -373,9 +373,13 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      const err = error?.responseBody?.error;
       const errorMessage =
-        error instanceof Error ? error.message : t('patientRegistrationErrorSubtitle', 'Please try again.');
+        err?.globalErrors?.[0]?.message ??
+        err?.message ??
+        (error instanceof Error ? error.message : null) ??
+        t('patientRegistrationErrorSubtitle', 'Please try again.');
       showSnackbar({
         title: t('patientRegistrationError', 'Error registering patient'),
         kind: 'error',
