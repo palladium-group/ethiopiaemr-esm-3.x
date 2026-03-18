@@ -124,6 +124,16 @@ export const configSchema = {
       'Person attribute type UUID for storing email address. If not set, email from Health ID lookup will not be persisted.',
     _default: '',
   },
+  allergySeverityConceptUuids: {
+    _type: Type.Object,
+    _description:
+      'Concept UUIDs for allergy severity levels. Used to map severity strings from Health ID to OpenMRS concepts.',
+    _default: {
+      mild: '1498AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      moderate: '1499AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      severe: '1500AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+  },
   emergencyLocationTags: {
     _type: Type.Array,
     _elements: {
@@ -236,6 +246,11 @@ export type ClinicalWorkflowConfig = {
   bloodTypeAttributeTypeUuid: string;
   phoneAttributeTypeUuid: string;
   emailAttributeTypeUuid: string;
+  allergySeverityConceptUuids: {
+    mild: string;
+    moderate: string;
+    severe: string;
+  };
   emergencyLocationTags: string[];
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;

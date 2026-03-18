@@ -32,8 +32,8 @@ import {
   registerNewPatient,
   buildPatientRegistrationPayload,
   calculateDOBFromAgeFields,
-  createAllergyIntolerance,
-  createCondition,
+  saveAllergy,
+  saveCondition,
 } from './patient-registration.resource';
 import { useGenerateIdentifier } from './useGenerateIdentifier';
 import { useHealthIdLookup } from './useHealthIdLookup';
@@ -131,6 +131,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     bloodTypeAttributeTypeUuid,
     phoneAttributeTypeUuid,
     emailAttributeTypeUuid,
+    allergySeverityConceptUuids,
   } = useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
@@ -309,25 +310,29 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
           const { allergies = [], chronicDiseases = [] } = healthIdPatient.fhir;
           const persistencePromises: Promise<void>[] = [];
 
-          // Persist allergies via FHIR AllergyIntolerance
           if (allergies.length > 0) {
-            // Filter out empty/invalid allergen names
-            const validAllergies = allergies.filter((a) => a && a.trim().length > 0);
-            if (validAllergies.length > 0) {
-              persistencePromises.push(
-                ...validAllergies.map((allergy) =>
-                  createAllergyIntolerance(patientUuid, allergy).catch((error) => {
-                    console.error(`[Health ID] Failed to save allergy: ${allergy}`, error);
-                    throw error; // Re-throw to be caught by Promise.allSettled
+            persistencePromises.push(
+              ...allergies
+                .filter((a) => a.allergenUuid)
+                .map((allergy) =>
+                  saveAllergy(patientUuid, allergy, allergySeverityConceptUuids).catch((error) => {
+                    console.error(`[Health ID] Failed to save allergy: ${allergy.allergenDisplay}`, error);
+                    throw error;
                   }),
                 ),
-              );
-            }
+            );
           }
-
-          // Persist chronic diseases via FHIR Condition
           if (chronicDiseases.length > 0) {
-            persistencePromises.push(...chronicDiseases.map((disease) => createCondition(patientUuid, disease)));
+            persistencePromises.push(
+              ...chronicDiseases
+                .filter((c) => c.conditionUuid)
+                .map((condition) =>
+                  saveCondition(patientUuid, condition).catch((error) => {
+                    console.error(`[Health ID] Failed to save condition: ${condition.conditionDisplay}`, error);
+                    throw error;
+                  }),
+                ),
+            );
           }
 
           // Run all persistence operations in parallel and track failures

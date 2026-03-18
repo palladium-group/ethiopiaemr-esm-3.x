@@ -93,3 +93,4 @@ e2e/storageState.json
 **/package-lock.json
 .qodo
 .claude/**
+.cursor/**
