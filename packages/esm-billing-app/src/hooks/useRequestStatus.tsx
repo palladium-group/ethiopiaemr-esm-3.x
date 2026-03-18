@@ -106,7 +106,7 @@ export const useRequestStatus = (
   const { paymentModes } = usePaymentModes();
   const paymentReferenceUUID = paymentModes
     .find((mode) => mode.name === 'Mobile Money')
-    ?.attributeTypes.find((type) => type.description === 'Reference Number').uuid;
+    ?.attributeTypes.find((type) => type.description === 'Reference Number')?.uuid;
 
   const [requestData, setRequestData] = useState<RequestData>({
     requestId: null,
