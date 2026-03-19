@@ -22,7 +22,7 @@ import { usePatientAttributes } from '../../../hooks/usePatientAttributes';
 import { useRequestStatus } from '../../../hooks/useRequestStatus';
 import { initiateTelebirrPayment } from '../../../telebirr/telebirr-resource';
 import { LineItem, MappedBill } from '../../../types';
-import { formatKenyanPhoneNumber } from '../utils';
+import { formatEthiopianPhoneNumber } from '../utils';
 import styles from './initiate-payment.scss';
 
 const initiatePaymentSchema = z.object({
@@ -77,9 +77,9 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   }, [watchedPhoneNumber, setValue, phoneNumber, reset]);
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    const phoneNumber = formatKenyanPhoneNumber(data.phoneNumber);
+    const phoneNumber = formatEthiopianPhoneNumber(data.phoneNumber);
     const amountBilled = data.billAmount;
-    const conversationId = bill.uuid; // TODO: add proper reference number
+    const conversationId = bill.uuid;
 
     const payload = {
       conversationId,
@@ -88,14 +88,19 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
     };
 
     setIsLoading(true);
-    const originatorConversationId = await initiateTelebirrPayment(payload, setNotification, telebirrAPIBaseUrl);
-    // check if we have a valid originator conversation id
-    if (originatorConversationId) {
-      pollingTrigger({ originatorConversationId, requestStatus: 'INITIATED', amount: amountBilled });
-    } else {
+    try {
+      const originatorConversationId = await initiateTelebirrPayment(payload, setNotification, telebirrAPIBaseUrl);
+      // check if we have a valid originator conversation id
+      if (originatorConversationId) {
+        pollingTrigger({ originatorConversationId, requestStatus: 'INITIATED', amount: amountBilled });
+      } else {
+        setNotification({ type: 'error', message: 'Unable to initiate Telebirr payment, please try again later.' });
+      }
+    } catch (error) {
       setNotification({ type: 'error', message: 'Unable to initiate Telebirr payment, please try again later.' });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
