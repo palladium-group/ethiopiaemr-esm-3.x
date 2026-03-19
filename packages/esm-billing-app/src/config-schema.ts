@@ -39,6 +39,7 @@ export interface BillingConfig {
   nationalIdIdentifierTypeUUID: string;
   enableClaims: boolean;
   enablePreAuth: boolean;
+  paymentAPIBaseUrl: string;
 }
 
 export const configSchema: ConfigSchema = {
@@ -244,5 +245,10 @@ export const configSchema: ConfigSchema = {
     _type: Type.Boolean,
     _default: false,
     _description: 'Whether to enable pre-auth or not',
+  },
+  paymentAPIBaseUrl: {
+    _type: Type.String,
+    _description: 'The base url that will be used to make any backend calls related to telebirr.',
+    _default: 'https://api.telebirr.com/v1',
   },
 };

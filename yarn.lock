@@ -3721,6 +3721,7 @@ __metadata:
   dependencies:
     lodash-es: "npm:^4.17.15"
     react-to-print: "npm:2.14.13"
+    rxjs: "npm:^7.8.1"
   peerDependencies:
     "@carbon/react": ^1.83.0
     "@openmrs/esm-framework": 8.x
@@ -18284,7 +18285,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rxjs@npm:^7.4.0":
+"rxjs@npm:^7.4.0, rxjs@npm:^7.8.1":
   version: 7.8.2
   resolution: "rxjs@npm:7.8.2"
   dependencies:

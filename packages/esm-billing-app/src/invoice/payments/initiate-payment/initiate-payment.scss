@@ -15,6 +15,31 @@
   margin: spacing.$spacing-03;
 }
 
+.waitingSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: spacing.$spacing-03;
+  margin: spacing.$spacing-05 0;
+  padding: spacing.$spacing-04;
+}
+
+.waitingSpinner {
+  margin-right: 0;
+}
+
+.waitingText {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin: 0;
+}
+
+.waitingHint {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  margin: 0;
+}
+
 .sectionTitle {
   @include type.type-style('heading-compact-02');
   color: $text-02;

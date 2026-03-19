@@ -73,6 +73,14 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
     });
   };
 
+  const handleBillPayment = () => {
+    const dispose = showModal('initiate-payment-modal', {
+      closeModal: () => dispose(),
+      bill: bill,
+      selectedLineItems,
+    });
+  };
+
   const mutateClaimForm = async () => {
     const activeVisitUrlSuffix = `?patient=${patientUuid}&v=${defaultVisitCustomRepresentation}&includeInactive=false`;
     const retrospectiveVisitUuid = patientUuid && visitStorePatientUuid == patientUuid ? manuallySetVisitUuid : null;
@@ -246,6 +254,18 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
           {t('additionalPayment', 'Additional Payment')}
         </Button>
       </UserHasAccess>
+
+      {bill?.balance !== 0 && (
+        <Button
+          onClick={handleBillPayment}
+          disabled={bill?.balance === 0}
+          size="sm"
+          renderIcon={Wallet}
+          iconDescription="Add"
+          tooltipPosition="left">
+          {t('telebirrPayment', 'Telebirr Payment')}
+        </Button>
+      )}
 
       {isProcessClaimsFormEnabled && isInsurancePayment(bill?.payments) && (
         <Button

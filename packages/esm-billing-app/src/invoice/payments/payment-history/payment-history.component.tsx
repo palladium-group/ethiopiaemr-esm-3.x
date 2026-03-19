@@ -26,6 +26,10 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ bill }) => {
       key: 'paymentMethod',
       header: t('paymentMethod', 'Payment method'),
     },
+    {
+      key: 'referenceNumber',
+      header: t('referenceNumber', 'Reference number'),
+    },
   ];
   const rows = bill?.payments?.map((payment) => ({
     id: `${payment.uuid}`,
@@ -33,6 +37,9 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ bill }) => {
     amountTendered: formatCurrency(payment.amountTendered),
     amount: formatCurrency(payment.amount),
     paymentMethod: payment.instanceType.name,
+    // TODO: avoid using hardcoded property value
+    referenceNumber: payment.attributes.find((attribute) => attribute.attributeType?.description === 'Reference Number')
+      ?.value,
   }));
 
   if (Object.values(bill?.payments ?? {}).length === 0) {

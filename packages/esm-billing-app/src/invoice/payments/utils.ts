@@ -51,6 +51,29 @@ export const formatKenyanPhoneNumber = (rawPhoneNumber) => {
 };
 
 /**
+ * Formats an Ethiopian phone number to include country code (251)
+ * @param {string|number} rawPhoneNumber - The unformatted phone number
+ * @returns {string} - Properly formatted phone number with country code or error message
+ * @example
+ * formatEthiopianPhoneNumber('0912345678') // Returns '251912345678'
+ * formatEthiopianPhoneNumber('912345678') // Returns '251912345678'
+ */
+export const formatEthiopianPhoneNumber = (rawPhoneNumber) => {
+  const digitsOnly = rawPhoneNumber.toString().replace(/\D/g, '');
+
+  switch (true) {
+    case digitsOnly.length === 12 && digitsOnly.startsWith('251'):
+      return digitsOnly;
+    case digitsOnly.length === 9 && digitsOnly.startsWith('7'):
+      return `251${digitsOnly}`;
+    case digitsOnly.length === 10 && digitsOnly.startsWith('0'):
+      return `251${digitsOnly.substring(1)}`;
+    default:
+      return `Invalid Phone Number ${rawPhoneNumber}`;
+  }
+};
+
+/**
  * Determines the payment status for a billable item based on payment conditions
  * @param {number} totalBillableItems - Total number of items in the bill
  * @param {Object} billableItem - The item being evaluated

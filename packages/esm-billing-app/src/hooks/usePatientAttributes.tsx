@@ -13,7 +13,7 @@ interface PatientAttributes extends OpenmrsResource {
  * @returns An object containing the patient's phone number, loading state, and error state.
  */
 export const usePatientAttributes = (patientUuid: string) => {
-  const config = useConfig({ externalModuleName: '@kenyaemr/esm-patient-registration-app' });
+  const config = useConfig({ externalModuleName: '@palladium-ethiopia/esm-patient-registration-app' });
   const { data, isLoading, error } = useSWRImmutable<{ data: { person: { attributes: Array<PatientAttributes> } } }>(
     `${restBaseUrl}/patient/${patientUuid}?v=custom:(person:(attributes:(uuid,display,value,attributeType:(uuid,name)))`,
     openmrsFetch,
