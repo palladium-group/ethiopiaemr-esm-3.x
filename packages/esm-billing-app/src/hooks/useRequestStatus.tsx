@@ -110,7 +110,7 @@ export const useRequestStatus = (
   bill: MappedBill,
 ): [RequestData, React.Dispatch<React.SetStateAction<RequestData | null>>] => {
   const { t } = useTranslation();
-  const { telebirrAPIBaseUrl } = useConfig<BillingConfig>();
+  const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
   const { paymentModes } = usePaymentModes();
 
   // TODO: make this configurable
@@ -149,7 +149,7 @@ export const useRequestStatus = (
       startWith(0),
       take(MAX_ATTEMPTS),
       switchMap(() =>
-        from(getRequestStatus(requestData.originatorConversationId, telebirrAPIBaseUrl)).pipe(
+        from(getRequestStatus(requestData.originatorConversationId, paymentAPIBaseUrl)).pipe(
           catchError((error) => {
             setNotification({ type: 'error', message: getErrorMessage(error, t) });
             return of(null);
@@ -289,7 +289,7 @@ export const useRequestStatus = (
   }, [
     bill,
     closeModal,
-    telebirrAPIBaseUrl,
+    paymentAPIBaseUrl,
     paymentModes,
     paymentReferenceUUID,
     requestData.amount,

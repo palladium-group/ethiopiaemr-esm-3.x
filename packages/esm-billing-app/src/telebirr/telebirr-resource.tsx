@@ -33,10 +33,10 @@ export const initiateTelebirrPayment = async (
     amount: string;
   },
   setNotification: (notification: { type: 'error' | 'success'; message: string }) => void,
-  telebirrAPIBaseUrl: string,
+  paymentAPIBaseUrl: string,
 ): Promise<string> => {
   try {
-    const url = `${telebirrAPIBaseUrl}/payments`;
+    const url = `${paymentAPIBaseUrl}/payments`;
 
     const res = await fetch(url, {
       method: 'POST',
@@ -69,11 +69,11 @@ export const initiateTelebirrPayment = async (
 
 export const getRequestStatus = async (
   originatorConversationId: string,
-  telebirrAPIBaseUrl: string,
+  paymentAPIBaseUrl: string,
 ): Promise<{ status: RequestStatus; referenceCode?: string }> => {
   try {
     const response: Response = await fetch(
-      `${telebirrAPIBaseUrl}/callbacks?originator_conversation_id=${originatorConversationId}`,
+      `${paymentAPIBaseUrl}/callbacks?originator_conversation_id=${originatorConversationId}`,
       {
         method: 'GET',
         headers: {

@@ -47,7 +47,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const [notification, setNotification] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [{ requestStatus }, pollingTrigger] = useRequestStatus(setNotification, closeModal, bill);
-  const { telebirrAPIBaseUrl } = useConfig<BillingConfig>();
+  const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
 
   const pendingAmount = bill.totalAmount - bill.tenderedAmount;
   const isWaitingForTelebirr = requestStatus === 'INITIATED';
@@ -89,7 +89,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
 
     setIsLoading(true);
     try {
-      const originatorConversationId = await initiateTelebirrPayment(payload, setNotification, telebirrAPIBaseUrl);
+      const originatorConversationId = await initiateTelebirrPayment(payload, setNotification, paymentAPIBaseUrl);
       // check if we have a valid originator conversation id
       if (originatorConversationId) {
         pollingTrigger({ originatorConversationId, requestStatus: 'INITIATED', amount: amountBilled });
