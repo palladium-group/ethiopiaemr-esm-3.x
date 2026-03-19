@@ -95,6 +95,7 @@
   "confirm": "አረጋግጥ",
   "confirmPayment": "ክፍያ አረጋግጥ",
   "confirmPaymentMessage": "ይህን ክፍያ ማስኬድ እንደሚፈልጉ እርግጠኛ ነዎት? የተከፈለ ጠቅላላ መጠን፡ {{totalAmountTendered}}። የሚያስፈልግ መጠን፡ {{amountDue}}።",
+  "completeUssdOnPhone": "እባክዎ በስልክዎ ላይ የ USSD ጠያቂውን ያጠናቅቁ።",
   "create": "ይፍጠሩ",
   "createClaimError": "የጥያቄ ፈጠራ ስህተት",
   "created": "ተፈጥሯል",
@@ -334,6 +335,7 @@
   "successfullyCreatedPaymentPoint": "የክፍያ ነጥብ በተሳካ ሁኔታ ተፈጥሯል",
   "successfullyUpdatedPaymentPoint": "የክፍያ ነጥብ በተሳካ ሁኔታ ተፈጥሯል",
   "switchPaymentPoint": "የክፍያ ነጥብ ያረጋግጡ",
+  "telebirrPayment": "Telebirr Payment",
   "timesheet": "የሰዓት ሉህ",
   "todayExemptedBills": "የዛሬ ነጻ የወጡ ሂሳቦች",
   "todayPaidBills": "የዛሬ የተከፈሉ ሂሳቦች",
@@ -366,5 +368,7 @@
   "visitTime": "የጉብኝት ሰዓት",
   "visittype": "የጉብኝት ዓይነት",
   "waiveBill": "ሂሳብ ይቅር",
+  "waitingForConfirmation": "ማረጋገጫ በመጠባበቅ ላይ",
+  "waitingForTelebirrStatus": "የቴሌብር ክፍያ ማረጋገጫ በ USSD በመጠባበቅ ላይ...",
   "yes": "አዎ"
 }

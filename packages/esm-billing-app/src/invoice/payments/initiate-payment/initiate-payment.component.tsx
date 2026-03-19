@@ -1,7 +1,6 @@
 import {
   Button,
   ButtonSet,
-  ContentSwitcher,
   Form,
   InlineNotification,
   Layer,
@@ -10,7 +9,6 @@ import {
   ModalFooter,
   ModalHeader,
   NumberInputSkeleton,
-  Switch,
   TextInput,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,12 +18,10 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { BillingConfig } from '../../../config-schema';
-import { useSystemSetting } from '../../../hooks/getMflCode';
 import { usePatientAttributes } from '../../../hooks/usePatientAttributes';
 import { useRequestStatus } from '../../../hooks/useRequestStatus';
-import { initiateStkPush } from '../../../m-pesa/mpesa-resource';
+import { initiateTelebirrPayment } from '../../../telebirr/telebirr-resource';
 import { LineItem, MappedBill } from '../../../types';
-import PaymentStatusCheckerModal from '../payment-status-ckecker.modal';
 import { formatKenyanPhoneNumber } from '../utils';
 import styles from './initiate-payment.scss';
 
@@ -48,14 +44,13 @@ export interface InitiatePaymentDialogProps {
 const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModal, bill, selectedLineItems }) => {
   const { t } = useTranslation();
   const { phoneNumber, isLoading: isLoadingPhoneNumber } = usePatientAttributes(bill.patientUuid);
-  const { mpesaAPIBaseUrl, isPDSLFacility } = useConfig<BillingConfig>();
-  const { mflCodeValue } = useSystemSetting('facility.mflcode');
   const [notification, setNotification] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasMadePayment, setHasMadepayment] = useState(false);
   const [{ requestStatus }, pollingTrigger] = useRequestStatus(setNotification, closeModal, bill);
+  const { telebirrAPIBaseUrl } = useConfig<BillingConfig>();
 
   const pendingAmount = bill.totalAmount - bill.tenderedAmount;
+  const isWaitingForTelebirr = requestStatus === 'INITIATED';
 
   const {
     control,
@@ -84,31 +79,24 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     const phoneNumber = formatKenyanPhoneNumber(data.phoneNumber);
     const amountBilled = data.billAmount;
-    const accountReference = `${mflCodeValue}#${bill.uuid}`;
+    const conversationId = bill.uuid; // TODO: add proper reference number
 
     const payload = {
-      AccountReference: accountReference,
-      PhoneNumber: phoneNumber,
-      Amount: amountBilled,
+      conversationId,
+      mobileNumber: phoneNumber,
+      amount: amountBilled,
     };
 
     setIsLoading(true);
-    const requestId = await initiateStkPush(payload, setNotification, mpesaAPIBaseUrl, isPDSLFacility);
-    pollingTrigger({ requestId, requestStatus: 'INITIATED', amount: amountBilled });
+    const originatorConversationId = await initiateTelebirrPayment(payload, setNotification, telebirrAPIBaseUrl);
+    // check if we have a valid originator conversation id
+    if (originatorConversationId) {
+      pollingTrigger({ originatorConversationId, requestStatus: 'INITIATED', amount: amountBilled });
+    } else {
+      setNotification({ type: 'error', message: 'Unable to initiate Telebirr payment, please try again later.' });
+    }
     setIsLoading(false);
   };
-
-  if (isPDSLFacility && hasMadePayment) {
-    return (
-      <PaymentStatusCheckerModal
-        onClose={closeModal}
-        paymentMade={hasMadePayment}
-        onPaymentMadestatusChange={setHasMadepayment}
-        bill={bill}
-        selectedLineItems={selectedLineItems}
-      />
-    );
-  }
 
   return (
     <Form>
@@ -116,17 +104,6 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
         {t('paymentPayment', 'Bill Payment')}
       </ModalHeader>
       <ModalBody>
-        {isPDSLFacility && (
-          <ContentSwitcher
-            size="md"
-            selectedIndex={hasMadePayment ? 1 : 0}
-            onChange={({ name }) => {
-              setHasMadepayment(name === 'paymentMade');
-            }}>
-            <Switch name="paymentNotMade" text={t('paymentNotMade', 'Payment not made')} />
-            <Switch name="paymentMade" text={t('paymentMade', 'Payments already made')} />
-          </ContentSwitcher>
-        )}
         <div className={styles.form}>
           {notification && (
             <InlineNotification
@@ -134,6 +111,17 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
               title={notification.message}
               onCloseButtonClick={() => setNotification(null)}
             />
+          )}
+          {isWaitingForTelebirr && (
+            <section className={styles.waitingSection} aria-live="polite">
+              <Loading className={styles.waitingSpinner} withOverlay={false} small />
+              <p className={styles.waitingText}>
+                {t('waitingForTelebirrStatus', 'Waiting for Telebirr payment confirmation via USSD...')}
+              </p>
+              <p className={styles.waitingHint}>
+                {t('completeUssdOnPhone', 'Please complete the USSD prompt on your phone.')}
+              </p>
+            </section>
           )}
           {isLoadingPhoneNumber ? (
             <NumberInputSkeleton className={styles.section} />
@@ -152,6 +140,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
                       placeholder={t('Phone Number', 'Phone Number')}
                       invalid={!!errors.phoneNumber}
                       invalidText={errors.phoneNumber?.message}
+                      disabled={isWaitingForTelebirr}
                     />
                   </Layer>
                 )}
@@ -172,6 +161,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
                     placeholder={t('billAmount', 'Bill Amount')}
                     invalid={!!errors.billAmount}
                     invalidText={errors.billAmount?.message}
+                    disabled={isWaitingForTelebirr}
                   />
                 </Layer>
               )}
@@ -188,12 +178,14 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
             type="submit"
             className={styles.button}
             onClick={handleSubmit(onSubmit)}
-            disabled={!isValid || isLoading || requestStatus === 'INITIATED'}>
+            disabled={!isValid || isLoading || isWaitingForTelebirr}>
             {isLoading ? (
               <>
                 <Loading className={styles.button_spinner} withOverlay={false} small />{' '}
                 {t('processingPayment', 'Processing Payment')}
               </>
+            ) : isWaitingForTelebirr ? (
+              t('waiting', 'Waiting...')
             ) : (
               t('initiatePayment', 'Initiate Payment')
             )}
