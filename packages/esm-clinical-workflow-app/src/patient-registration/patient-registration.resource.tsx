@@ -1,7 +1,21 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import type { PatientRegistrationFormData } from './patient.registration.workspace';
-import { mapAllergenToCategory, getAllergenCodingSystem } from './allergen-category-mapper';
+
+export interface HealthIdAllergy {
+  allergenUuid: string;
+  allergenDisplay: string;
+  allergenType: 'DRUG' | 'FOOD' | 'ENVIRONMENT';
+  severity: string;
+  reactions: Array<{ uuid: string; display: string }>;
+}
+
+export interface HealthIdCondition {
+  conditionUuid: string;
+  conditionDisplay: string;
+  onsetDate?: string;
+  clinicalStatus?: string;
+}
 
 export interface HealthIdPatient {
   fhir: {
@@ -15,8 +29,8 @@ export interface HealthIdPatient {
       birthdate: string;
     };
     healthId: string;
-    allergies?: string[]; // e.g. ["EGGS", "PEANUTS"]
-    chronicDiseases?: string[]; // e.g. ["ARTHRITIS", "DIABETES"]
+    allergies?: HealthIdAllergy[];
+    chronicDiseases?: HealthIdCondition[];
     bloodType?: string; // e.g. "A-", "O+", "B+"
     attributes?: any[];
     identifiers?: any[];
@@ -285,96 +299,52 @@ export const generateIdentifier = (identifierSourceUuid: string) => {
   });
 };
 
-/**
- * Creates a FHIR AllergyIntolerance resource for a patient.
- * Used to persist allergies from Health ID lookup to the patient chart.
- *
- * @param patientUuid - The UUID of the patient
- * @param allergyDisplay - The display name of the allergy (e.g., "EGGS", "PEANUTS")
- */
-export async function createAllergyIntolerance(patientUuid: string, allergyDisplay: string): Promise<void> {
-  // Validate input
-  if (!allergyDisplay || allergyDisplay.trim().length === 0) {
-    console.warn('[AllergyIntolerance] Skipping empty allergen name');
-    return;
+type SeverityConfig = { mild: string; moderate: string; severe: string };
+
+function getSeverityUuid(severity: string | undefined, config: SeverityConfig): string {
+  if (!severity) {
+    return config.mild;
   }
-
-  const normalizedAllergen = allergyDisplay.trim();
-  const category = mapAllergenToCategory(normalizedAllergen);
-
-  const payload = {
-    resourceType: 'AllergyIntolerance',
-    patient: { reference: `Patient/${patientUuid}` },
-    // Category is required by OpenMRS - array of string codes
-    category: [category],
-    // Code requires proper coding structure
-    code: {
-      coding: [
-        {
-          system: getAllergenCodingSystem(),
-          code: normalizedAllergen.toUpperCase().replace(/\s+/g, '_'),
-          display: normalizedAllergen,
-        },
-      ],
-      text: normalizedAllergen,
-    },
-    clinicalStatus: {
-      coding: [
-        {
-          system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-          code: 'active',
-        },
-      ],
-    },
-  };
-
-  try {
-    await openmrsFetch('/ws/fhir2/R4/AllergyIntolerance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/fhir+json' },
-      body: JSON.stringify(payload),
-    });
-
-    // eslint-disable-next-line no-console
-    console.info(`[AllergyIntolerance] Successfully created allergy: ${normalizedAllergen} (category: ${category})`);
-  } catch (error) {
-    console.error(`[AllergyIntolerance] Failed to create allergy: ${normalizedAllergen}`, error);
-    // Include detailed error information for debugging
-    if (error?.response) {
-      try {
-        const errorData = await error.response.json();
-        console.error('[AllergyIntolerance] Response error:', errorData);
-      } catch {
-        const errorText = await error.response.text().catch(() => 'Unable to read response');
-        console.error('[AllergyIntolerance] Response error:', errorText);
-      }
-    }
-    throw error;
-  }
+  const key = severity.trim().toLowerCase();
+  return config[key] ?? config.mild;
 }
 
-/**
- * Creates a FHIR Condition resource for a patient.
- * Used to persist chronic diseases from Health ID lookup to the patient chart.
- *
- * @param patientUuid - The UUID of the patient
- * @param conditionDisplay - The display name of the condition (e.g., "ARTHRITIS", "DIABETES")
- */
-export async function createCondition(patientUuid: string, conditionDisplay: string): Promise<void> {
+export async function saveAllergy(
+  patientUuid: string,
+  allergy: HealthIdAllergy,
+  severityConfig: SeverityConfig,
+): Promise<void> {
+  const payload = {
+    allergen: {
+      allergenType: allergy.allergenType,
+      codedAllergen: { uuid: allergy.allergenUuid },
+    },
+    severity: { uuid: getSeverityUuid(allergy.severity, severityConfig) },
+    comment: '',
+    reactions: allergy.reactions.map((r) => ({ reaction: { uuid: r.uuid } })),
+  };
+  await openmrsFetch(`${restBaseUrl}/patient/${patientUuid}/allergy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function saveCondition(patientUuid: string, condition: HealthIdCondition): Promise<void> {
   const payload = {
     resourceType: 'Condition',
     subject: { reference: `Patient/${patientUuid}` },
-    code: { text: conditionDisplay },
+    code: { coding: [{ code: condition.conditionUuid, display: condition.conditionDisplay }] },
     clinicalStatus: {
       coding: [
         {
           system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-          code: 'active',
+          code: condition.clinicalStatus || 'active',
         },
       ],
     },
+    ...(condition.onsetDate ? { onsetDateTime: `${condition.onsetDate}T00:00:00` } : {}),
   };
-
   await openmrsFetch('/ws/fhir2/R4/Condition', {
     method: 'POST',
     headers: { 'Content-Type': 'application/fhir+json' },
