@@ -14,6 +14,7 @@ import startVisitActionButtonComponent from './patient-chart/start-visit-action-
 import CentralTriagePage from './triage/variants/central-triage.page';
 import EmergencyTriagePage from './triage/variants/emergency-triage.page';
 import PatientTypeSelectionWorkspace from './triage/patient-type-selection.workspace';
+import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { configSchema } from './config-schema';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
@@ -142,3 +143,5 @@ export const startVisitActionButton = getSyncLifecycle(startVisitActionButtonCom
   featureName: 'patient-action-start-visit',
   moduleName,
 });
+
+export const addPatientToWardSiderailButton = getSyncLifecycle(AddPatientToWardSiderailButton, options);

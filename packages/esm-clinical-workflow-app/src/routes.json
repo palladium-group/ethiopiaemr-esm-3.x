@@ -114,6 +114,11 @@
       "slot": "patient-actions-slot",
       "online": true,
       "offline": true
+    },
+    {
+      "name": "add-patient-to-ward-siderail-button",
+      "component": "addPatientToWardSiderailButton",
+      "slot": "ward-ui-extension-hidden-slot"
     }
   ],
   "workspaces": [
