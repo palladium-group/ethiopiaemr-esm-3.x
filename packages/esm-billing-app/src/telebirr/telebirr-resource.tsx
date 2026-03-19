@@ -36,7 +36,7 @@ export const initiateTelebirrPayment = async (
   telebirrAPIBaseUrl: string,
 ): Promise<string> => {
   try {
-    const url = `${telebirrAPIBaseUrl}/telebirr/initiate-payment`;
+    const url = `${telebirrAPIBaseUrl}/payments`;
 
     const res = await fetch(url, {
       method: 'POST',
@@ -93,7 +93,7 @@ export const getRequestStatus = async (
 
     const telebirrCallbackResponse: TelebirrCallbackResponse = await response.json();
 
-    if (telebirrCallbackResponse.result_code === '1') {
+    if (telebirrCallbackResponse.result_code === '0') {
       return { status: 'COMPLETE', referenceCode: telebirrCallbackResponse.transaction_id };
     }
 
