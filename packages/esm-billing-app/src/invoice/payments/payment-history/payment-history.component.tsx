@@ -37,6 +37,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ bill }) => {
     amountTendered: formatCurrency(payment.amountTendered),
     amount: formatCurrency(payment.amount),
     paymentMethod: payment.instanceType.name,
+    // TODO: avoid using hardcoded property value
     referenceNumber: payment.attributes.find((attribute) => attribute.attributeType?.description === 'Reference Number')
       ?.value,
   }));

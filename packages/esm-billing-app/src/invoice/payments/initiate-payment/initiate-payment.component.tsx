@@ -79,6 +79,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     const phoneNumber = formatEthiopianPhoneNumber(data.phoneNumber);
     const amountBilled = data.billAmount;
+    // TODO: set proper conversation id
     const conversationId = bill.uuid;
 
     const payload = {

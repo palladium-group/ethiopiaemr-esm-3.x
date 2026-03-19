@@ -39,6 +39,7 @@ export const usePaymentsReconciler = (billUUID: string) => {
   const url = `${mpesaAPIBaseUrl}/api/mpesa/check-payment-state-by-bill-id`;
 
   const mobileMoneyPaymentMethodInstanceTypeUUID = paymentModes.find((method) => method.name === 'Mobile Money')?.uuid;
+  // TODO: avoid using hardcoded property value
   const paymentReferenceUUID = paymentModes
     .find((mode) => mode.name === 'Mobile Money')
     ?.attributeTypes.find((type) => type.description === 'Reference Number')?.uuid;

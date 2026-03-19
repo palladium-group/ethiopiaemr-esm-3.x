@@ -118,6 +118,7 @@ export const useRequestStatus = (
   const MAX_ATTEMPTS = 5;
 
   // Get the payment reference UUID for the mobile money payment mode
+  // TODO: avoid using hardcoded property value
   const paymentReferenceUUID = paymentModes
     .find((mode) => mode.name === 'Mobile Money')
     ?.attributeTypes.find((type) => type.description === 'Reference Number')?.uuid;
