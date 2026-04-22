@@ -473,6 +473,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 size="md"
                 type="text"
                 disabled={isSubmitting}
+                readOnly={isLockedByHealthId}
               />
             </ResponsiveWrapper>
           )}
@@ -494,6 +495,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 size="md"
                 type="text"
                 disabled={isSubmitting}
+                readOnly={isLockedByHealthId}
               />
             </ResponsiveWrapper>
           )}
@@ -515,6 +517,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 size="md"
                 type="text"
                 disabled={isSubmitting}
+                readOnly={isLockedByHealthId}
               />
             </ResponsiveWrapper>
           )}
@@ -537,198 +540,219 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 selectedItem={genderOptions.find((item) => item.text === value) || null}
                 onChange={({ selectedItem }) => onChange(selectedItem?.text)}
                 disabled={isSubmitting}
+                readOnly={isLockedByHealthId}
               />
             </ResponsiveWrapper>
           )}
         />
 
-        <ResponsiveWrapper>
-          <div className={styles.ageSection}>
-            <FormGroup
-              legendText={t('age', 'Age')}
-              className={classNames(styles.ageFormGroup, {
-                [styles.ageFormGroupNotSubmitted]: !isSubmitted,
-              })}>
-              <div className={styles.ageRowSpread}>
-                <Controller
-                  name="ageYears"
-                  control={control}
-                  render={({ field: { onChange, value } }) => {
-                    const invalidValue = isSubmitted && !!errors.ageYears;
-                    const displayValue = value !== undefined && value !== null ? value : '';
-                    const invalidTextValue = isSubmitted && errors.ageYears ? errors.ageYears.message : undefined;
-                    const numberInputProps: any = {
-                      id: 'age-years',
-                      label: t('years', 'Years'),
-                      value: displayValue === '' ? undefined : displayValue,
-                      onChange: (e: any, { value: newValue }: any) => {
-                        const numValue =
-                          newValue === '' || newValue === null || newValue === undefined ? undefined : Number(newValue);
-                        onChange(numValue);
-                      },
-                      invalid: invalidValue || false,
-                      invalidText: invalidTextValue,
-                      warn: false,
-                      placeholder: t('enterYears', 'Enter years'),
-                      size: 'md',
-                      disabled: isSubmitting,
-                      allowEmpty: true,
-                    };
-                    if (isSubmitted) {
-                      numberInputProps.min = 0;
-                      numberInputProps.max = 150;
-                    }
-                    return <NumberInput {...numberInputProps} />;
-                  }}
-                />
-                <Controller
-                  name="ageMonths"
-                  control={control}
-                  render={({ field: { onChange, value } }) => {
-                    const invalidValue = isSubmitted && !!errors.ageMonths;
-                    const invalidTextValue = isSubmitted && errors.ageMonths ? errors.ageMonths.message : undefined;
-                    const displayValue = value !== undefined && value !== null ? value : '';
-                    const numberInputProps: any = {
-                      id: 'age-months',
-                      label: t('months', 'Months'),
-                      value: displayValue === '' ? undefined : displayValue,
-                      onChange: (e: any, { value: newValue }: any) => {
-                        const numValue =
-                          newValue === '' || newValue === null || newValue === undefined ? undefined : Number(newValue);
-                        onChange(numValue);
-                      },
-                      invalid: invalidValue || false,
-                      invalidText: invalidTextValue,
-                      warn: false,
-                      placeholder: t('enterMonths', 'Enter months'),
-                      size: 'md',
-                      disabled: isSubmitting,
-                      allowEmpty: true,
-                    };
-                    if (isSubmitted) {
-                      numberInputProps.min = 0;
-                      numberInputProps.max = 11;
-                    }
-                    return <NumberInput {...numberInputProps} />;
-                  }}
-                />
-              </div>
-              <div className={styles.ageRowSpread}>
-                <Controller
-                  name="ageDays"
-                  control={control}
-                  render={({ field: { onChange, value } }) => {
-                    const invalidValue = isSubmitted && !!errors.ageDays;
-                    const invalidTextValue = isSubmitted && errors.ageDays ? errors.ageDays.message : undefined;
-                    const displayValue = value !== undefined && value !== null ? value : '';
-                    const numberInputProps: any = {
-                      id: 'age-days',
-                      label: t('days', 'Days'),
-                      value: displayValue === '' ? undefined : displayValue,
-                      onChange: (e: any, { value: newValue }: any) => {
-                        const numValue =
-                          newValue === '' || newValue === null || newValue === undefined ? undefined : Number(newValue);
-                        onChange(numValue);
-                      },
-                      invalid: invalidValue || false,
-                      invalidText: invalidTextValue,
-                      warn: false,
-                      placeholder: t('enterDays', 'Enter days'),
-                      size: 'md',
-                      disabled: isSubmitting,
-                      allowEmpty: true,
-                    };
-                    if (isSubmitted) {
-                      numberInputProps.min = 0;
-                      numberInputProps.max = 31;
-                    }
-                    return <NumberInput {...numberInputProps} />;
-                  }}
-                />
-                <Controller
-                  name="ageHours"
-                  control={control}
-                  render={({ field: { onChange, value } }) => {
-                    const invalidValue = isSubmitted && !!errors.ageHours;
-                    const invalidTextValue = isSubmitted && errors.ageHours ? errors.ageHours.message : undefined;
-                    const displayValue = value !== undefined && value !== null ? value : '';
-                    const numberInputProps: any = {
-                      id: 'age-hours',
-                      label: t('hours', 'Hours'),
-                      value: displayValue === '' ? undefined : displayValue,
-                      onChange: (e: any, { value: newValue }: any) => {
-                        const numValue =
-                          newValue === '' || newValue === null || newValue === undefined ? undefined : Number(newValue);
-                        onChange(numValue);
-                      },
-                      invalid: invalidValue || false,
-                      invalidText: invalidTextValue,
-                      warn: false,
-                      placeholder: t('enterHours', 'Enter hours'),
-                      size: 'md',
-                      disabled: isSubmitting,
-                      allowEmpty: true,
-                    };
-                    if (isSubmitted) {
-                      numberInputProps.min = 0;
-                      numberInputProps.max = 23;
-                    }
-                    return <NumberInput {...numberInputProps} />;
-                  }}
-                />
-              </div>
-              <div className={styles.ageRow}>
-                <Controller
-                  name="ageMinutes"
-                  control={control}
-                  render={({ field: { onChange, value } }) => {
-                    const invalidValue = isSubmitted && !!errors.ageMinutes;
-                    const invalidTextValue = isSubmitted && errors.ageMinutes ? errors.ageMinutes.message : undefined;
-                    const displayValue = value !== undefined && value !== null ? value : '';
-                    const numberInputProps: any = {
-                      id: 'age-minutes',
-                      label: t('minutes', 'Minutes'),
-                      value: displayValue === '' ? undefined : displayValue,
-                      onChange: (e: any, { value: newValue }: any) => {
-                        const numValue =
-                          newValue === '' || newValue === null || newValue === undefined ? undefined : Number(newValue);
-                        onChange(numValue);
-                      },
-                      invalid: invalidValue || false,
-                      invalidText: invalidTextValue,
-                      warn: false,
-                      placeholder: t('enterMinutes', 'Enter minutes'),
-                      size: 'md',
-                      disabled: isSubmitting,
-                      allowEmpty: true,
-                    };
-                    if (isSubmitted) {
-                      numberInputProps.min = 0;
-                      numberInputProps.max = 59;
-                    }
-                    return <NumberInput {...numberInputProps} />;
-                  }}
-                />
-              </div>
-            </FormGroup>
-          </div>
-        </ResponsiveWrapper>
-
-        <Controller
-          name="isEstimatedDOB"
-          control={control}
-          render={({ field: { onChange, value } }) => (
+        {!isLockedByHealthId && (
+          <>
             <ResponsiveWrapper>
-              <Checkbox
-                id="estimated-dob"
-                labelText={t('estimated', 'Estimated')}
-                checked={value || false}
-                onChange={(event, { checked }) => onChange(checked)}
-                disabled={isSubmitting}
-              />
+              <div className={styles.ageSection}>
+                <FormGroup
+                  legendText={t('age', 'Age')}
+                  className={classNames(styles.ageFormGroup, {
+                    [styles.ageFormGroupNotSubmitted]: !isSubmitted,
+                  })}>
+                  <div className={styles.ageRowSpread}>
+                    <Controller
+                      name="ageYears"
+                      control={control}
+                      render={({ field: { onChange, value } }) => {
+                        const invalidValue = isSubmitted && !!errors.ageYears;
+                        const displayValue = value !== undefined && value !== null ? value : '';
+                        const invalidTextValue = isSubmitted && errors.ageYears ? errors.ageYears.message : undefined;
+                        const numberInputProps: any = {
+                          id: 'age-years',
+                          label: t('years', 'Years'),
+                          value: displayValue === '' ? undefined : displayValue,
+                          onChange: (e: any, { value: newValue }: any) => {
+                            const numValue =
+                              newValue === '' || newValue === null || newValue === undefined
+                                ? undefined
+                                : Number(newValue);
+                            onChange(numValue);
+                          },
+                          invalid: invalidValue || false,
+                          invalidText: invalidTextValue,
+                          warn: false,
+                          placeholder: t('enterYears', 'Enter years'),
+                          size: 'md',
+                          disabled: isSubmitting,
+                          readOnly: isLockedByHealthId,
+                          allowEmpty: true,
+                        };
+                        if (isSubmitted) {
+                          numberInputProps.min = 0;
+                          numberInputProps.max = 150;
+                        }
+                        return <NumberInput {...numberInputProps} />;
+                      }}
+                    />
+                    <Controller
+                      name="ageMonths"
+                      control={control}
+                      render={({ field: { onChange, value } }) => {
+                        const invalidValue = isSubmitted && !!errors.ageMonths;
+                        const invalidTextValue = isSubmitted && errors.ageMonths ? errors.ageMonths.message : undefined;
+                        const displayValue = value !== undefined && value !== null ? value : '';
+                        const numberInputProps: any = {
+                          id: 'age-months',
+                          label: t('months', 'Months'),
+                          value: displayValue === '' ? undefined : displayValue,
+                          onChange: (e: any, { value: newValue }: any) => {
+                            const numValue =
+                              newValue === '' || newValue === null || newValue === undefined
+                                ? undefined
+                                : Number(newValue);
+                            onChange(numValue);
+                          },
+                          invalid: invalidValue || false,
+                          invalidText: invalidTextValue,
+                          warn: false,
+                          placeholder: t('enterMonths', 'Enter months'),
+                          size: 'md',
+                          disabled: isSubmitting,
+                          readOnly: isLockedByHealthId,
+                          allowEmpty: true,
+                        };
+                        if (isSubmitted) {
+                          numberInputProps.min = 0;
+                          numberInputProps.max = 11;
+                        }
+                        return <NumberInput {...numberInputProps} />;
+                      }}
+                    />
+                  </div>
+                  <div className={styles.ageRowSpread}>
+                    <Controller
+                      name="ageDays"
+                      control={control}
+                      render={({ field: { onChange, value } }) => {
+                        const invalidValue = isSubmitted && !!errors.ageDays;
+                        const invalidTextValue = isSubmitted && errors.ageDays ? errors.ageDays.message : undefined;
+                        const displayValue = value !== undefined && value !== null ? value : '';
+                        const numberInputProps: any = {
+                          id: 'age-days',
+                          label: t('days', 'Days'),
+                          value: displayValue === '' ? undefined : displayValue,
+                          onChange: (e: any, { value: newValue }: any) => {
+                            const numValue =
+                              newValue === '' || newValue === null || newValue === undefined
+                                ? undefined
+                                : Number(newValue);
+                            onChange(numValue);
+                          },
+                          invalid: invalidValue || false,
+                          invalidText: invalidTextValue,
+                          warn: false,
+                          placeholder: t('enterDays', 'Enter days'),
+                          size: 'md',
+                          disabled: isSubmitting,
+                          readOnly: isLockedByHealthId,
+                          allowEmpty: true,
+                        };
+                        if (isSubmitted) {
+                          numberInputProps.min = 0;
+                          numberInputProps.max = 31;
+                        }
+                        return <NumberInput {...numberInputProps} />;
+                      }}
+                    />
+                    <Controller
+                      name="ageHours"
+                      control={control}
+                      render={({ field: { onChange, value } }) => {
+                        const invalidValue = isSubmitted && !!errors.ageHours;
+                        const invalidTextValue = isSubmitted && errors.ageHours ? errors.ageHours.message : undefined;
+                        const displayValue = value !== undefined && value !== null ? value : '';
+                        const numberInputProps: any = {
+                          id: 'age-hours',
+                          label: t('hours', 'Hours'),
+                          value: displayValue === '' ? undefined : displayValue,
+                          onChange: (e: any, { value: newValue }: any) => {
+                            const numValue =
+                              newValue === '' || newValue === null || newValue === undefined
+                                ? undefined
+                                : Number(newValue);
+                            onChange(numValue);
+                          },
+                          invalid: invalidValue || false,
+                          invalidText: invalidTextValue,
+                          warn: false,
+                          placeholder: t('enterHours', 'Enter hours'),
+                          size: 'md',
+                          disabled: isSubmitting,
+                          readOnly: isLockedByHealthId,
+                          allowEmpty: true,
+                        };
+                        if (isSubmitted) {
+                          numberInputProps.min = 0;
+                          numberInputProps.max = 23;
+                        }
+                        return <NumberInput {...numberInputProps} />;
+                      }}
+                    />
+                  </div>
+                  <div className={styles.ageRow}>
+                    <Controller
+                      name="ageMinutes"
+                      control={control}
+                      render={({ field: { onChange, value } }) => {
+                        const invalidValue = isSubmitted && !!errors.ageMinutes;
+                        const invalidTextValue =
+                          isSubmitted && errors.ageMinutes ? errors.ageMinutes.message : undefined;
+                        const displayValue = value !== undefined && value !== null ? value : '';
+                        const numberInputProps: any = {
+                          id: 'age-minutes',
+                          label: t('minutes', 'Minutes'),
+                          value: displayValue === '' ? undefined : displayValue,
+                          onChange: (e: any, { value: newValue }: any) => {
+                            const numValue =
+                              newValue === '' || newValue === null || newValue === undefined
+                                ? undefined
+                                : Number(newValue);
+                            onChange(numValue);
+                          },
+                          invalid: invalidValue || false,
+                          invalidText: invalidTextValue,
+                          warn: false,
+                          placeholder: t('enterMinutes', 'Enter minutes'),
+                          size: 'md',
+                          disabled: isSubmitting,
+                          readOnly: isLockedByHealthId,
+                          allowEmpty: true,
+                        };
+                        if (isSubmitted) {
+                          numberInputProps.min = 0;
+                          numberInputProps.max = 59;
+                        }
+                        return <NumberInput {...numberInputProps} />;
+                      }}
+                    />
+                  </div>
+                </FormGroup>
+              </div>
             </ResponsiveWrapper>
-          )}
-        />
+
+            <Controller
+              name="isEstimatedDOB"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <ResponsiveWrapper>
+                  <Checkbox
+                    id="estimated-dob"
+                    labelText={t('estimated', 'Estimated')}
+                    checked={value || false}
+                    onChange={(event, { checked }) => onChange(checked)}
+                    disabled={isSubmitting}
+                  />
+                </ResponsiveWrapper>
+              )}
+            />
+          </>
+        )}
 
         <Controller
           name="dateOfBirth"
@@ -746,6 +770,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   onChange(date);
                 }}
                 isDisabled={isSubmitting}
+                isReadOnly={isLockedByHealthId}
               />
             </ResponsiveWrapper>
           )}
