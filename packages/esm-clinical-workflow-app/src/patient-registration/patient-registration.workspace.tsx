@@ -37,7 +37,7 @@ import {
 } from './patient-registration.resource';
 import { useGenerateIdentifier } from './useGenerateIdentifier';
 import { useHealthIdLookup } from './useHealthIdLookup';
-import styles from './patient.registration.workspace.scss';
+import styles from './patient-registration.workspace.scss';
 import classNames from 'classnames';
 
 const genderOptions = [
@@ -47,6 +47,14 @@ const genderOptions = [
   {
     text: 'Female',
   },
+];
+
+const disabilityStatusOptions = [
+  { text: 'Visiblitiy Loss' },
+  { text: 'Hearing Loss' },
+  { text: 'Mobility Impairment' },
+  { text: 'No Disability' },
+  // { text: 'Other' },
 ];
 
 const patientRegistrationSchema = z
@@ -87,7 +95,11 @@ const patientRegistrationSchema = z
       })
       .optional()
       .nullable(),
-    hasDisability: z.boolean().optional().default(false),
+    disabilityStatus: z
+      .enum(['Visiblitiy Loss', 'Hearing Loss', 'Mobility Impairment', 'No Disability'], {
+        required_error: 'Disability Status is required',
+      })
+      .default('No Disability'),
   })
   .refine(
     (data) => {
@@ -169,7 +181,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
       ageMinutes: null,
       isEstimatedDOB: false,
       dateOfBirth: null,
-      hasDisability: false,
+      disabilityStatus: 'No Disability',
     },
   });
 
@@ -281,7 +293,6 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         identifier,
         defaultIdentifierTypeUuid,
         sessionLocation.uuid,
-        data.hasDisability,
         disabilityStatusAttributeTypeUuid,
         resolvedHealthId ?? undefined,
         healthIdIdentifierTypeUuid || undefined,
@@ -771,23 +782,30 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
           )}
         />
 
-        <div className={styles.checkboxRow}>
-          <Controller
-            name="hasDisability"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <ResponsiveWrapper>
-                <Checkbox
-                  id="disability-status"
-                  labelText={t('disabilityStatus', 'Disability Status')}
-                  checked={value || false}
-                  onChange={(event, { checked }) => onChange(checked)}
-                  disabled={isSubmitting}
-                />
-              </ResponsiveWrapper>
-            )}
-          />
-        </div>
+        <Controller
+          name="disabilityStatus"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <ResponsiveWrapper>
+              <Dropdown
+                id="disabilityStatus"
+                invalid={isSubmitted && !!errors.disabilityStatus}
+                invalidText={
+                  isSubmitted ? errors.disabilityStatus?.message || t('invalidSelection', 'Invalid selection') : ''
+                }
+                itemToString={(item) => (item ? item.text : '')}
+                items={disabilityStatusOptions}
+                label={t('disabilityStatus', 'Disability Status')}
+                titleText={t('selectDisabilityStatus', 'Select Disability Status')}
+                type="default"
+                selectedItem={disabilityStatusOptions.find((item) => item.text === value) || null}
+                onChange={({ selectedItem }) => onChange(selectedItem?.text)}
+                disabled={isSubmitting}
+                readOnly={isLockedByHealthId}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
       </div>
 
       <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>

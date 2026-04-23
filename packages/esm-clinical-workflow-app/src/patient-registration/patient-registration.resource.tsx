@@ -1,6 +1,6 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import type { PatientRegistrationFormData } from './patient.registration.workspace';
+import type { PatientRegistrationFormData } from './patient-registration.workspace';
 
 export interface HealthIdAllergy {
   allergenUuid: string;
@@ -183,7 +183,6 @@ export const buildPatientRegistrationPayload = (
   identifier: string,
   defaultIdentifierTypeUuid: string,
   locationUuid: string,
-  hasDisability?: boolean,
   disabilityStatusAttributeTypeUuid?: string,
   healthId?: string,
   healthIdIdentifierTypeUuid?: string,
@@ -200,12 +199,10 @@ export const buildPatientRegistrationPayload = (
   const genderCode = formData.gender === 'Male' ? 'M' : 'F';
 
   const attributes: Array<{ attributeType: string; value: string }> = [];
-  if (hasDisability === true && disabilityStatusAttributeTypeUuid) {
-    attributes.push({
-      attributeType: disabilityStatusAttributeTypeUuid,
-      value: 'true',
-    });
-  }
+  attributes.push({
+    attributeType: disabilityStatusAttributeTypeUuid,
+    value: formData.disabilityStatus,
+  });
 
   // Add Health ID extra fields as person attributes
   // Only add if both value and UUID are present and UUID is not empty

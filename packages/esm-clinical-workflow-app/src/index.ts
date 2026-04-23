@@ -68,7 +68,7 @@ export const emergencyTriageDashboardLink = getSyncLifecycle(
 );
 
 export const patientRegistrationWorkspace = getAsyncLifecycle(
-  () => import('./patient-registration/patient.registration.workspace'),
+  () => import('./patient-registration/patient-registration.workspace'),
   options,
 );
 
