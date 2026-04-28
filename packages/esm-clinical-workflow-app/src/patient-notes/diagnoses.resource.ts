@@ -19,6 +19,13 @@ interface EncounterWithDiagnoses {
   uuid: string;
   encounterDatetime: string;
   diagnoses: Array<EncounterDiagnosis>;
+  obs?: Array<{
+    uuid: string;
+    concept: {
+      uuid: string;
+    };
+    value?: string | number | boolean | object;
+  }>;
 }
 
 interface EncounterResponse {
@@ -33,11 +40,18 @@ export interface PatientDiagnosis {
   encounterUuid: string;
   encounterDatetime: string;
   codedUuid?: string;
+  encounterObs?: Array<{
+    uuid: string;
+    concept: {
+      uuid: string;
+    };
+    value?: string | number | boolean | object;
+  }>;
 }
 
 export function usePatientDiagnoses(patientUuid: string) {
   const customRepresentation =
-    'custom:(uuid,encounterDatetime,diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))))';
+    'custom:(uuid,encounterDatetime,diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))),obs:(uuid,concept:(uuid),value))';
   const encountersApiUrl = `${restBaseUrl}/encounter?patient=${patientUuid}&v=${customRepresentation}`;
 
   const { data, error, isLoading, isValidating } = useSWR<{ data: EncounterResponse }, Error>(
@@ -58,6 +72,7 @@ export function usePatientDiagnoses(patientUuid: string) {
             encounterUuid: encounter.uuid,
             encounterDatetime: encounter.encounterDatetime,
             codedUuid: diagnosis.diagnosis?.coded?.uuid,
+            encounterObs: encounter.obs ?? [],
           })),
       )
       .sort((a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime()) ?? null;

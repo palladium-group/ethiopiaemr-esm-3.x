@@ -76,6 +76,13 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
     encounterUuid: string,
     encounterDateTime: string,
     encounterDiagnoses: Array<PatientDiagnosis>,
+    encounterObs: Array<{
+      uuid: string;
+      concept: {
+        uuid: string;
+      };
+      value?: string | number | boolean | object;
+    }>,
   ) => {
     const normalizedEncounterDate = parseDate(encounterDateTime);
     launchWorkspace2('visit-notes-form-shadow-workspace', {
@@ -96,7 +103,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
             },
           },
         })),
-        obs: [],
+        obs: encounterObs ?? [],
       },
     });
   };
@@ -119,6 +126,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
             {Array.from(diagnosesByEncounter.entries()).flatMap(([encounterUuid, encounterDiagnoses]) => {
               const sortedDiagnoses = encounterDiagnoses.slice().sort((a, b) => a.rank - b.rank);
               const encounterDateTime = sortedDiagnoses[0]?.encounterDatetime;
+              const encounterObs = sortedDiagnoses[0]?.encounterObs ?? [];
               return [
                 <TableRow key={`encounter-${encounterUuid}`}>
                   <TableCell colSpan={3}>
@@ -141,7 +149,9 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
                         flipped>
                         <OverflowMenuItem
                           itemText={t('edit', 'Edit')}
-                          onClick={() => launchVisitNoteEditor(encounterUuid, encounterDateTime, sortedDiagnoses)}
+                          onClick={() =>
+                            launchVisitNoteEditor(encounterUuid, encounterDateTime, sortedDiagnoses, encounterObs)
+                          }
                         />
                       </OverflowMenu>
                     </div>
