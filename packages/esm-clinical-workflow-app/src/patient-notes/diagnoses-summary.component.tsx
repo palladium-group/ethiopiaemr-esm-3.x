@@ -14,12 +14,21 @@ import {
   TableRow,
 } from '@carbon/react';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import { formatDate, launchWorkspace2, parseDate, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate, launchWorkspace2, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type PatientDiagnosis, usePatientDiagnoses } from './diagnoses.resource';
+import { type VisitNoteConfig } from '../config-schema';
 import styles from '../patient-chart/visit/visits-widget/past-visits-components/visit-summary.scss';
 
 interface DiagnosesSummaryProps {
   patient: fhir.Patient;
+}
+
+interface EncounterObs {
+  uuid: string;
+  concept: {
+    uuid: string;
+  };
+  value?: string | number | boolean | object;
 }
 
 function getDiagnosisOrderLabel(rank: number, t: (key: string, fallback: string) => string) {
@@ -43,8 +52,15 @@ function getDiagnosisCertaintyLabel(certainty: string, t: (key: string, fallback
   return certainty ? t(certainty.toLowerCase(), certainty) : '--';
 }
 
+function getEncounterNoteText(encounterObs: Array<EncounterObs>, encounterNoteTextConceptUuid: string) {
+  const noteObs = encounterObs?.find((obs) => obs?.concept?.uuid === encounterNoteTextConceptUuid);
+  return typeof noteObs?.value === 'string' ? noteObs.value.trim() : '';
+}
+
 export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
   const { t } = useTranslation();
+  const config = useConfig<VisitNoteConfig>();
+  const { encounterNoteTextConceptUuid } = config.visitNoteConfig;
   const { diagnoses, error, isLoading, isValidating } = usePatientDiagnoses(patient.id);
   const isTablet = useLayoutType() === 'tablet';
   const headerTitle = t('diagnoses', 'Diagnoses');
@@ -76,13 +92,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
     encounterUuid: string,
     encounterDateTime: string,
     encounterDiagnoses: Array<PatientDiagnosis>,
-    encounterObs: Array<{
-      uuid: string;
-      concept: {
-        uuid: string;
-      };
-      value?: string | number | boolean | object;
-    }>,
+    encounterObs: Array<EncounterObs>,
   ) => {
     const normalizedEncounterDate = parseDate(encounterDateTime);
     launchWorkspace2('visit-notes-form-shadow-workspace', {
@@ -127,6 +137,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
               const sortedDiagnoses = encounterDiagnoses.slice().sort((a, b) => a.rank - b.rank);
               const encounterDateTime = sortedDiagnoses[0]?.encounterDatetime;
               const encounterObs = sortedDiagnoses[0]?.encounterObs ?? [];
+              const encounterNoteText = getEncounterNoteText(encounterObs, encounterNoteTextConceptUuid);
               return [
                 <TableRow key={`encounter-${encounterUuid}`}>
                   <TableCell colSpan={3}>
@@ -137,11 +148,18 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
                         alignItems: 'center',
                         width: '100%',
                       }}>
-                      <span>
-                        {encounterDateTime
-                          ? formatDate(new Date(encounterDateTime), { time: true })
-                          : t('encounterGroupHeaderNoDate', '--')}
-                      </span>
+                      <div>
+                        <span>
+                          {encounterDateTime
+                            ? formatDate(new Date(encounterDateTime), { time: true })
+                            : t('encounterGroupHeaderNoDate', '--')}
+                        </span>
+                        {encounterNoteText ? (
+                          <p style={{ margin: '0.25rem 0 0', opacity: 0.8 }}>
+                            {t('visitNote', 'Visit note')}: {encounterNoteText}
+                          </p>
+                        ) : null}
+                      </div>
                       <OverflowMenu
                         aria-label={t('actionsMenu', 'Actions menu')}
                         align="left"
