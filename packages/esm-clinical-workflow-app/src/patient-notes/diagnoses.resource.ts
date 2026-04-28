@@ -18,6 +18,9 @@ interface EncounterDiagnosis {
 interface EncounterWithDiagnoses {
   uuid: string;
   encounterDatetime: string;
+  visit?: {
+    uuid: string;
+  };
   diagnoses: Array<EncounterDiagnosis>;
   obs?: Array<{
     uuid: string;
@@ -39,6 +42,7 @@ export interface PatientDiagnosis {
   rank: number;
   encounterUuid: string;
   encounterDatetime: string;
+  visitUuid?: string;
   codedUuid?: string;
   encounterObs?: Array<{
     uuid: string;
@@ -51,7 +55,7 @@ export interface PatientDiagnosis {
 
 export function usePatientDiagnoses(patientUuid: string) {
   const customRepresentation =
-    'custom:(uuid,encounterDatetime,diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))),obs:(uuid,concept:(uuid),value))';
+    'custom:(uuid,encounterDatetime,visit:(uuid),diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))),obs:(uuid,concept:(uuid),value))';
   const encountersApiUrl = `${restBaseUrl}/encounter?patient=${patientUuid}&v=${customRepresentation}`;
 
   const { data, error, isLoading, isValidating } = useSWR<{ data: EncounterResponse }, Error>(
@@ -71,6 +75,7 @@ export function usePatientDiagnoses(patientUuid: string) {
             rank: diagnosis.rank,
             encounterUuid: encounter.uuid,
             encounterDatetime: encounter.encounterDatetime,
+            visitUuid: encounter.visit?.uuid,
             codedUuid: diagnosis.diagnosis?.coded?.uuid,
             encounterObs: encounter.obs ?? [],
           })),

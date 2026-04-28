@@ -18,6 +18,7 @@ import { formatDate, launchWorkspace2, parseDate, useConfig, useLayoutType } fro
 import { type PatientDiagnosis, usePatientDiagnoses } from './diagnoses.resource';
 import { type VisitNoteConfig } from '../config-schema';
 import styles from '../patient-chart/visit/visits-widget/past-visits-components/visit-summary.scss';
+import { useActiveVisit } from '../patient-chart/visit/visits-widget/visit.resource';
 
 interface DiagnosesSummaryProps {
   patient: fhir.Patient;
@@ -62,9 +63,21 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
   const config = useConfig<VisitNoteConfig>();
   const { encounterNoteTextConceptUuid } = config.visitNoteConfig;
   const { diagnoses, error, isLoading, isValidating } = usePatientDiagnoses(patient.id);
+  const { activeVisit } = useActiveVisit(patient.id);
   const isTablet = useLayoutType() === 'tablet';
   const headerTitle = t('diagnoses', 'Diagnoses');
   const displayText = t('diagnosesLowercase', 'diagnoses');
+  const activeEncounterUuid = React.useMemo(() => {
+    if (!activeVisit?.uuid) {
+      return null;
+    }
+
+    const activeVisitDiagnoses = (diagnoses ?? [])
+      .filter((diagnosis) => diagnosis.visitUuid === activeVisit.uuid)
+      .sort((a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime());
+
+    return activeVisitDiagnoses[0]?.encounterUuid ?? null;
+  }, [activeVisit?.uuid, diagnoses]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
@@ -138,6 +151,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
               const encounterDateTime = sortedDiagnoses[0]?.encounterDatetime;
               const encounterObs = sortedDiagnoses[0]?.encounterObs ?? [];
               const encounterNoteText = getEncounterNoteText(encounterObs, encounterNoteTextConceptUuid);
+              const canEditEncounter = encounterUuid === activeEncounterUuid;
               return [
                 <TableRow key={`encounter-${encounterUuid}`}>
                   <TableCell colSpan={3}>
@@ -160,18 +174,20 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
                           </p>
                         ) : null}
                       </div>
-                      <OverflowMenu
-                        aria-label={t('actionsMenu', 'Actions menu')}
-                        align="left"
-                        size={isTablet ? 'lg' : 'sm'}
-                        flipped>
-                        <OverflowMenuItem
-                          itemText={t('edit', 'Edit')}
-                          onClick={() =>
-                            launchVisitNoteEditor(encounterUuid, encounterDateTime, sortedDiagnoses, encounterObs)
-                          }
-                        />
-                      </OverflowMenu>
+                      {canEditEncounter ? (
+                        <OverflowMenu
+                          aria-label={t('actionsMenu', 'Actions menu')}
+                          align="left"
+                          size={isTablet ? 'lg' : 'sm'}
+                          flipped>
+                          <OverflowMenuItem
+                            itemText={t('edit', 'Edit')}
+                            onClick={() =>
+                              launchVisitNoteEditor(encounterUuid, encounterDateTime, sortedDiagnoses, encounterObs)
+                            }
+                          />
+                        </OverflowMenu>
+                      ) : null}
                     </div>
                   </TableCell>
                 </TableRow>,
