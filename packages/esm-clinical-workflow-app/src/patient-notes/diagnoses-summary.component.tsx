@@ -15,7 +15,7 @@ import {
 } from '@carbon/react';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import { formatDate, launchWorkspace2, parseDate, useLayoutType } from '@openmrs/esm-framework';
-import { usePatientDiagnoses } from './diagnoses.resource';
+import { type PatientDiagnosis, usePatientDiagnoses } from './diagnoses.resource';
 import styles from '../patient-chart/visit/visits-widget/past-visits-components/visit-summary.scss';
 
 interface DiagnosesSummaryProps {
@@ -72,7 +72,11 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
     return acc;
   }, new Map<string, typeof diagnoses>());
 
-  const launchVisitNoteEditor = (encounterUuid: string, encounterDateTime: string) => {
+  const launchVisitNoteEditor = (
+    encounterUuid: string,
+    encounterDateTime: string,
+    encounterDiagnoses: Array<PatientDiagnosis>,
+  ) => {
     const normalizedEncounterDate = parseDate(encounterDateTime);
     launchWorkspace2('visit-notes-form-shadow-workspace', {
       formContext: 'editing',
@@ -81,7 +85,17 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
         uuid: encounterUuid,
         rawDatetime: normalizedEncounterDate.toISOString(),
         encounterDatetime: normalizedEncounterDate.toISOString(),
-        diagnoses: [],
+        diagnoses: encounterDiagnoses.map((diagnosis) => ({
+          uuid: diagnosis.id,
+          display: diagnosis.display,
+          certainty: diagnosis.certainty,
+          rank: diagnosis.rank,
+          diagnosis: {
+            coded: {
+              uuid: diagnosis.codedUuid ?? '',
+            },
+          },
+        })),
         obs: [],
       },
     });
@@ -127,7 +141,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
                         flipped>
                         <OverflowMenuItem
                           itemText={t('edit', 'Edit')}
-                          onClick={() => launchVisitNoteEditor(encounterUuid, encounterDateTime)}
+                          onClick={() => launchVisitNoteEditor(encounterUuid, encounterDateTime, sortedDiagnoses)}
                         />
                       </OverflowMenu>
                     </div>

@@ -7,6 +7,12 @@ interface EncounterDiagnosis {
   certainty: string;
   rank: number;
   voided: boolean;
+  diagnosis?: {
+    coded?: {
+      uuid: string;
+      display?: string;
+    };
+  };
 }
 
 interface EncounterWithDiagnoses {
@@ -26,10 +32,12 @@ export interface PatientDiagnosis {
   rank: number;
   encounterUuid: string;
   encounterDatetime: string;
+  codedUuid?: string;
 }
 
 export function usePatientDiagnoses(patientUuid: string) {
-  const customRepresentation = 'custom:(uuid,encounterDatetime,diagnoses:(uuid,display,certainty,rank,voided))';
+  const customRepresentation =
+    'custom:(uuid,encounterDatetime,diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))))';
   const encountersApiUrl = `${restBaseUrl}/encounter?patient=${patientUuid}&v=${customRepresentation}`;
 
   const { data, error, isLoading, isValidating } = useSWR<{ data: EncounterResponse }, Error>(
@@ -49,6 +57,7 @@ export function usePatientDiagnoses(patientUuid: string) {
             rank: diagnosis.rank,
             encounterUuid: encounter.uuid,
             encounterDatetime: encounter.encounterDatetime,
+            codedUuid: diagnosis.diagnosis?.coded?.uuid,
           })),
       )
       .sort((a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime()) ?? null;
