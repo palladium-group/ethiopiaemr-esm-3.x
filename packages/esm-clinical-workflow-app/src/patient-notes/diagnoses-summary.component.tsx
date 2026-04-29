@@ -150,26 +150,31 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
               const sortedDiagnoses = encounterDiagnoses.slice().sort((a, b) => a.rank - b.rank);
               const encounterDateTime = sortedDiagnoses[0]?.encounterDatetime;
               const encounterObs = sortedDiagnoses[0]?.encounterObs ?? [];
+              const encounterProvider = sortedDiagnoses[0]?.encounterProvider ?? '--';
+              const encounterLocation = sortedDiagnoses[0]?.encounterLocation ?? '--';
               const encounterNoteText = getEncounterNoteText(encounterObs, encounterNoteTextConceptUuid);
               const canEditEncounter = encounterUuid === activeEncounterUuid;
               return [
                 <TableRow key={`encounter-${encounterUuid}`}>
                   <TableCell colSpan={3}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        width: '100%',
-                      }}>
-                      <div>
+                    <div className={styles.encounterHeader}>
+                      <div className={styles.encounterHeaderDetails}>
                         <span>
                           {encounterDateTime
                             ? formatDate(new Date(encounterDateTime), { time: true })
                             : t('encounterGroupHeaderNoDate', '--')}
                         </span>
+                        <p className={styles.encounterMetaText}>
+                          <span>
+                            {t('provider', 'Provider')}: {encounterProvider}
+                          </span>
+                          <span>&nbsp;&nbsp;&nbsp;</span>
+                          <span>
+                            {t('location', 'Location')}: {encounterLocation}
+                          </span>
+                        </p>
                         {encounterNoteText ? (
-                          <p style={{ margin: '0.25rem 0 0', opacity: 0.8 }}>
+                          <p className={styles.encounterMetaText}>
                             {t('visitNote', 'Visit note')}: {encounterNoteText}
                           </p>
                         ) : null}

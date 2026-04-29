@@ -21,6 +21,16 @@ interface EncounterWithDiagnoses {
   visit?: {
     uuid: string;
   };
+  location?: {
+    display?: string;
+  };
+  encounterProviders?: Array<{
+    provider?: {
+      person?: {
+        display?: string;
+      };
+    };
+  }>;
   diagnoses: Array<EncounterDiagnosis>;
   obs?: Array<{
     uuid: string;
@@ -51,11 +61,13 @@ export interface PatientDiagnosis {
     };
     value?: string | number | boolean | object;
   }>;
+  encounterProvider?: string;
+  encounterLocation?: string;
 }
 
 export function usePatientDiagnoses(patientUuid: string) {
   const customRepresentation =
-    'custom:(uuid,encounterDatetime,visit:(uuid),diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))),obs:(uuid,concept:(uuid),value))';
+    'custom:(uuid,encounterDatetime,visit:(uuid),location:(display),encounterProviders:(provider:(person:(display))),diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))),obs:(uuid,concept:(uuid),value))';
   const encountersApiUrl = `${restBaseUrl}/encounter?patient=${patientUuid}&v=${customRepresentation}`;
 
   const { data, error, isLoading, isValidating } = useSWR<{ data: EncounterResponse }, Error>(
@@ -78,6 +90,8 @@ export function usePatientDiagnoses(patientUuid: string) {
             visitUuid: encounter.visit?.uuid,
             codedUuid: diagnosis.diagnosis?.coded?.uuid,
             encounterObs: encounter.obs ?? [],
+            encounterProvider: encounter.encounterProviders?.[0]?.provider?.person?.display,
+            encounterLocation: encounter.location?.display,
           })),
       )
       .sort((a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime()) ?? null;
