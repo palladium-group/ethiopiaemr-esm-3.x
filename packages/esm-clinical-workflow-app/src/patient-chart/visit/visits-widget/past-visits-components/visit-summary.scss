@@ -70,3 +70,20 @@
 .bodyLong01 {
   @include type.type-style('body-01');
 }
+
+.encounterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.encounterHeaderDetails {
+  min-width: 0;
+}
+
+.encounterMetaText {
+  @include type.type-style('body-compact-01');
+  margin: layout.$spacing-02 0 0;
+  color: colors.$gray-70;
+}

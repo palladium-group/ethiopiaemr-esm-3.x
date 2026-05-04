@@ -1,5 +1,6 @@
 import React from 'react';
 import { defineConfigSchema, getAsyncLifecycle, getGlobalStore, getSyncLifecycle } from '@openmrs/esm-framework';
+import { createDashboardLink as createPatientChartDashboardLink } from '@openmrs/esm-patient-common-lib';
 import { createDashboardLink } from './createDashboardLink';
 import MRUDashboard from './mru/dashboard.component';
 import { spaBasePath } from './constants';
@@ -8,6 +9,7 @@ import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component
 import orderBasketActionButtonExtension from './patient-orders/order-basket-action-button/order-basket-action-button.component';
 import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
+import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.component';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
@@ -118,6 +120,19 @@ export const visitNotesFormWorkspace = getAsyncLifecycle(
   () => import('./patient-notes/visit-notes-form-shadow.workspace'),
   options,
 );
+
+export const diagnosesDashboardLink =
+  // t('Diagnoses', 'Diagnoses')
+  getSyncLifecycle(
+    createPatientChartDashboardLink({
+      path: 'diagnoses',
+      title: 'Diagnoses',
+      icon: 'omrs-icon-list-checked',
+    }),
+    options,
+  );
+
+export const diagnosesDashboard = getSyncLifecycle(diagnosesSummaryComponent, options);
 
 export const pastVisitsDetailOverviewShadow = getSyncLifecycle(pastVisitsOverviewComponent, {
   featureName: 'visits-detail-overview',
