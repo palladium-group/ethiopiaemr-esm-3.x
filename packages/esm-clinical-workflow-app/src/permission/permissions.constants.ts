@@ -18,7 +18,7 @@ export enum Permissions {
   AddDrugOrder = 'o3: View Medication Order Form',
   AddLabOrder = 'o3: View Test Order Form',
   AddImagingOrder = 'o3: View Imaging Order Form',
-  AddProcedureOrder = 'o3: View Patient Chart Order Dashboard',
+  AddProcedureOrder = 'o3: View Procedure Order',
 
   // Triage Permissions
   ViewTriage = 'ethiopiaemr: Triage: View Triage',
