@@ -54,9 +54,14 @@ export const configSchema = {
       paymentMethod: 'e6cb0c3b-04b0-4117-9bc6-ce24adbda802',
       creditType: '5cd1eb62-e006-4146-bd22-80bc4d5bd2f7',
       creditTypeDetails: 'd824aa96-d2c7-4a52-aa8d-03f60a516083',
-      freeType: '7523ecfe-b8f1-4e7f-80a7-1a495b15ace4',
       paymentAttributesSummary: '3cc0102e-6c1f-41db-af72-4be6aa9eb27a',
     },
+  },
+  showMockData: {
+    _type: Type.Boolean,
+    _default: false,
+    _description:
+      'When true, shows mock CBHI search UI that auto-populates CBHI ID and expiry date as read-only. When false, hides the mock search and allows editing those fields.',
   },
 
   visitTypeUuid: {
@@ -233,9 +238,9 @@ export type ClinicalWorkflowConfig = {
     paymentMethod: string;
     creditType: string;
     creditTypeDetails: string;
-    freeType: string;
     paymentAttributesSummary: string;
   };
+  showMockData: boolean;
   visitTypeUuid: string;
   identifierSourceUuid: string;
   defaultIdentifierTypeUuid: string;

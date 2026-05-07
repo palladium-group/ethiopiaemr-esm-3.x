@@ -395,6 +395,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     }
   };
 
+  const isEmpiDemographicsLocked = isLockedByHealthId;
+
   return (
     <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className={styles.formContainer}>
@@ -472,7 +474,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 placeholder={t('enterFirstName', 'Enter Given Name')}
                 size="md"
                 type="text"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isEmpiDemographicsLocked}
               />
             </ResponsiveWrapper>
           )}
@@ -493,7 +495,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 placeholder={t('enterMiddleName', "Enter Father's Name")}
                 size="md"
                 type="text"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isEmpiDemographicsLocked}
               />
             </ResponsiveWrapper>
           )}
@@ -514,7 +516,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 placeholder={t('enterLastName', "Enter Grandfather's Name")}
                 size="md"
                 type="text"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isEmpiDemographicsLocked}
               />
             </ResponsiveWrapper>
           )}
@@ -536,7 +538,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 type="default"
                 selectedItem={genderOptions.find((item) => item.text === value) || null}
                 onChange={({ selectedItem }) => onChange(selectedItem?.text)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isEmpiDemographicsLocked}
               />
             </ResponsiveWrapper>
           )}
@@ -571,7 +573,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                       warn: false,
                       placeholder: t('enterYears', 'Enter years'),
                       size: 'md',
-                      disabled: isSubmitting,
+                      disabled: isSubmitting || isEmpiDemographicsLocked,
                       allowEmpty: true,
                     };
                     if (isSubmitted) {
@@ -602,7 +604,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                       warn: false,
                       placeholder: t('enterMonths', 'Enter months'),
                       size: 'md',
-                      disabled: isSubmitting,
+                      disabled: isSubmitting || isEmpiDemographicsLocked,
                       allowEmpty: true,
                     };
                     if (isSubmitted) {
@@ -635,7 +637,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                       warn: false,
                       placeholder: t('enterDays', 'Enter days'),
                       size: 'md',
-                      disabled: isSubmitting,
+                      disabled: isSubmitting || isEmpiDemographicsLocked,
                       allowEmpty: true,
                     };
                     if (isSubmitted) {
@@ -666,7 +668,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                       warn: false,
                       placeholder: t('enterHours', 'Enter hours'),
                       size: 'md',
-                      disabled: isSubmitting,
+                      disabled: isSubmitting || isEmpiDemographicsLocked,
                       allowEmpty: true,
                     };
                     if (isSubmitted) {
@@ -699,7 +701,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                       warn: false,
                       placeholder: t('enterMinutes', 'Enter minutes'),
                       size: 'md',
-                      disabled: isSubmitting,
+                      disabled: isSubmitting || isEmpiDemographicsLocked,
                       allowEmpty: true,
                     };
                     if (isSubmitted) {
@@ -724,7 +726,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 labelText={t('estimated', 'Estimated')}
                 checked={value || false}
                 onChange={(event, { checked }) => onChange(checked)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isEmpiDemographicsLocked}
               />
             </ResponsiveWrapper>
           )}
@@ -745,7 +747,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   dobManuallySetRef.current = true;
                   onChange(date);
                 }}
-                isDisabled={isSubmitting}
+                isDisabled={isSubmitting || isEmpiDemographicsLocked}
               />
             </ResponsiveWrapper>
           )}

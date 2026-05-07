@@ -69,14 +69,6 @@ export const usePopulateBillingFormFromVisit = ({
       }
     }
 
-    // Determine sub-type based on attributes
-    if (billingVisitAttributeTypes.freeType && parsedAttributes[billingVisitAttributeTypes.freeType]) {
-      const freeSubTypeValue = parsedAttributes[billingVisitAttributeTypes.freeType];
-      setValue('freeSubType', freeSubTypeValue, { shouldDirty: false });
-      // Set the freeType attribute
-      setValue(`attributes.${billingVisitAttributeTypes.freeType}`, freeSubTypeValue, { shouldDirty: false });
-    }
-
     if (billingVisitAttributeTypes.creditType && parsedAttributes[billingVisitAttributeTypes.creditType]) {
       const creditSubTypeValue = parsedAttributes[billingVisitAttributeTypes.creditType];
       setValue('creditSubType', creditSubTypeValue, { shouldDirty: false });
@@ -86,11 +78,8 @@ export const usePopulateBillingFormFromVisit = ({
 
     // Populate all other attributes from the parsed summary
     Object.entries(parsedAttributes).forEach(([attrTypeUuid, value]) => {
-      // Skip freeType and creditType as they're already handled above
-      if (
-        attrTypeUuid !== billingVisitAttributeTypes.freeType &&
-        attrTypeUuid !== billingVisitAttributeTypes.creditType
-      ) {
+      // Skip creditType as it's already handled above
+      if (attrTypeUuid !== billingVisitAttributeTypes.creditType) {
         setValue(`attributes.${attrTypeUuid}`, value, { shouldDirty: false });
       }
     });

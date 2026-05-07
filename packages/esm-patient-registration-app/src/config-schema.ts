@@ -39,6 +39,11 @@ export interface RegistrationConfig {
   sections: Array<string>;
   sectionDefinitions: Array<SectionDefinition>;
   fieldDefinitions: Array<FieldDefinition>;
+  /**
+   * Identifier type UUID for the Health ID (MPI/eMPI) identifier, used to detect
+   * when demographics should be locked in edit mode.
+   */
+  healthIdIdentifierTypeUuid?: string;
   fieldConfigurations: {
     causeOfDeath: {
       conceptUuid: string;
@@ -392,6 +397,12 @@ export const esmPatientRegistrationSchema = {
     _elements: {
       _type: Type.PatientIdentifierTypeUuid,
     },
+  },
+  healthIdIdentifierTypeUuid: {
+    _type: Type.UUID,
+    _default: '',
+    _description:
+      'Patient identifier type UUID used to store the Health ID (MPI/eMPI). When set, patient demographics will be locked in Edit mode for patients who have this identifier.',
   },
   registrationObs: {
     encounterTypeUuid: {

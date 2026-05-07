@@ -16,7 +16,12 @@ import { useResourcesContext } from '../resources-context';
 import { SectionWrapper } from './section/section-wrapper.component';
 import { type CapturePhotoProps, type FormValues } from './patient-registration.types';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
-import { useInitialAddressFieldValues, useInitialFormValues, usePatientUuidMap } from './patient-registration-hooks';
+import {
+  useInitialAddressFieldValues,
+  useInitialFormValues,
+  useInitialPatientIdentifiers,
+  usePatientUuidMap,
+} from './patient-registration-hooks';
 import BeforeSavePrompt from './before-save-prompt.component';
 import styles from './patient-registration.scss';
 
@@ -34,6 +39,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const { search } = useLocation();
   const { isLoading: isLoadingPatientToEdit, patient: patientToEdit } = usePatientWithBirthtime(uuidOfPatientToEdit);
   const config = useConfig<RegistrationConfig>();
+  const { healthIdIdentifierTypeUuid } = config;
 
   const [initialFormValues, setInitialFormValues] = useInitialFormValues(
     isLoadingPatientToEdit,
@@ -61,6 +67,17 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const { data: photo } = usePatientPhoto(patientToEdit?.id);
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
   const validationSchema = getValidationSchema(config, t);
+
+  const { data: patientIdentifiers } = useInitialPatientIdentifiers(uuidOfPatientToEdit);
+  const isEmpiDemographicsLocked = useMemo(() => {
+    if (!inEditMode || !healthIdIdentifierTypeUuid || !healthIdIdentifierTypeUuid.trim()) {
+      return false;
+    }
+
+    return Object.values(patientIdentifiers ?? {}).some(
+      (identifier) => identifier?.identifierTypeUuid === healthIdIdentifierTypeUuid,
+    );
+  }, [inEditMode, healthIdIdentifierTypeUuid, patientIdentifiers]);
 
   useEffect(() => {
     exportedInitialFormValuesForTesting = initialFormValues;
@@ -168,6 +185,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       validationSchema,
       values: formikProps.values,
       inEditMode,
+      isEmpiDemographicsLocked,
       setFieldValue: formikProps.setFieldValue,
       setFieldTouched: formikProps.setFieldTouched,
       setCapturePhotoProps,
@@ -180,6 +198,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       identifierTypes,
       validationSchema,
       inEditMode,
+      isEmpiDemographicsLocked,
       setCapturePhotoProps,
       photo?.imageSrc,
       isOffline,

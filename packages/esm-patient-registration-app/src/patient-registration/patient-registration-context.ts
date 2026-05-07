@@ -9,6 +9,7 @@ export interface PatientRegistrationContextProps {
   currentPhoto: string;
   identifierTypes: Array<PatientIdentifierType>;
   inEditMode: boolean;
+  isEmpiDemographicsLocked: boolean;
   initialFormValues: FormValues;
   isOffline: boolean;
   setCapturePhotoProps(value: SetStateAction<CapturePhotoProps>): void;

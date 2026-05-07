@@ -7,9 +7,10 @@ import styles from './address-search.scss';
 
 interface AddressSearchComponentProps {
   addressLayout: Array<any>;
+  disabled?: boolean;
 }
 
-const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ addressLayout }) => {
+const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ addressLayout, disabled }) => {
   const { t } = useTranslation();
   const separator = ' > ';
   const searchBox = useRef(null);
@@ -69,13 +70,18 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
         placeholder={t('searchAddress', 'Search address')}
         ref={searchBox}
         value={searchString}
+        disabled={disabled}
       />
       {addressOptions.length > 0 && (
         /* Since the input has a marginBottom of 1rem */
         <ul className={styles.suggestions}>
           {addressOptions.map((address, index) => (
             <li key={index}>
-              <button type="button" onClick={(e) => handleChange(address)} className={styles.suggestionButton}>
+              <button
+                type="button"
+                onClick={(e) => handleChange(address)}
+                className={styles.suggestionButton}
+                disabled={disabled}>
                 {address}
               </button>
             </li>
