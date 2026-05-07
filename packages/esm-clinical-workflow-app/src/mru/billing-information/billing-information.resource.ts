@@ -53,7 +53,6 @@ export const createBillingFormSchema = (
     .object({
       billingTypeUuid: z.string().optional(),
       creditSubType: z.string().optional(),
-      freeSubType: z.string().optional(),
       attributes: z.record(z.string(), z.any()).optional(),
       billableItem: z
         .object({

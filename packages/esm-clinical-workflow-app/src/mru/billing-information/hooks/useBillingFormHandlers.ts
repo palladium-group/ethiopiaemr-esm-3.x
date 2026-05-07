@@ -17,7 +17,6 @@ export const useBillingFormHandlers = ({ billingTypeUuid, billingTypes, setValue
       // Clear attributes and sub-types when changing billing type
       setValue('billingTypeUuid', uuid, { shouldDirty: true });
       setValue('creditSubType', undefined, { shouldDirty: false });
-      setValue('freeSubType', undefined, { shouldDirty: false });
       setValue('attributes', {}, { shouldDirty: false });
     },
     [setValue],

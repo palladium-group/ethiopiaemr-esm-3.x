@@ -28,7 +28,12 @@ export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
     return billableServices
       .filter((service) => {
         // Only show enabled services
-        return service.serviceStatus === 'ENABLED';
+        if (service.serviceStatus !== 'ENABLED') {
+          return false;
+        }
+
+        // Only show clinical consultation services
+        return service.serviceType?.display?.toLowerCase() === 'clinical consultation';
       })
       .map((service) => {
         // Find the price for the selected payment mode if available, otherwise use first price

@@ -31,7 +31,7 @@ export const DobField: React.FC = () => {
   const [birthdate, birthdateMeta] = useField('birthdate');
   const [yearsEstimated, yearsEstimateMeta] = useField('yearsEstimated');
   const [monthsEstimated, monthsEstimateMeta] = useField('monthsEstimated');
-  const { setFieldValue, setFieldTouched } = usePatientRegistrationContext();
+  const { setFieldValue, setFieldTouched, isEmpiDemographicsLocked } = usePatientRegistrationContext();
   const today = new Date();
 
   // Use birthtime hook
@@ -54,6 +54,9 @@ export const DobField: React.FC = () => {
 
   const onToggle = useCallback(
     (e: { name?: string | number }) => {
+      if (isEmpiDemographicsLocked) {
+        return;
+      }
       setFieldValue('birthdateEstimated', e.name === 'unknown');
       setFieldValue('birthdate', '');
       setFieldValue('birthtime', undefined);
@@ -63,19 +66,25 @@ export const DobField: React.FC = () => {
       setFieldTouched('birthdateEstimated', true, false);
       setFieldTouched('birthtime', false, false); // Don't show validation error when clearing
     },
-    [setFieldTouched, setFieldValue],
+    [isEmpiDemographicsLocked, setFieldTouched, setFieldValue],
   );
 
   const onDateChange = useCallback(
     (birthdate: Date) => {
+      if (isEmpiDemographicsLocked) {
+        return;
+      }
       setFieldValue('birthdate', birthdate);
       setFieldTouched('birthdate', true, false);
     },
-    [setFieldValue, setFieldTouched],
+    [isEmpiDemographicsLocked, setFieldValue, setFieldTouched],
   );
 
   const onEstimatedYearsChange = useCallback(
     (ev: ChangeEvent<HTMLInputElement>) => {
+      if (isEmpiDemographicsLocked) {
+        return;
+      }
       const years = +ev.target.value;
 
       if (!isNaN(years) && years < 140 && years >= 0) {
@@ -83,11 +92,14 @@ export const DobField: React.FC = () => {
         setFieldValue('birthdate', calcBirthdate(years, monthsEstimateMeta.value, dateOfBirth));
       }
     },
-    [setFieldValue, dateOfBirth, monthsEstimateMeta.value],
+    [isEmpiDemographicsLocked, setFieldValue, dateOfBirth, monthsEstimateMeta.value],
   );
 
   const onEstimatedMonthsChange = useCallback(
     (ev: ChangeEvent<HTMLInputElement>) => {
+      if (isEmpiDemographicsLocked) {
+        return;
+      }
       const months = +ev.target.value;
 
       if (!isNaN(months)) {
@@ -95,10 +107,13 @@ export const DobField: React.FC = () => {
         setFieldValue('birthdate', calcBirthdate(yearsEstimateMeta.value, months, dateOfBirth));
       }
     },
-    [setFieldValue, dateOfBirth, yearsEstimateMeta.value],
+    [isEmpiDemographicsLocked, setFieldValue, dateOfBirth, yearsEstimateMeta.value],
   );
 
   const updateBirthdate = useCallback(() => {
+    if (isEmpiDemographicsLocked) {
+      return;
+    }
     const months = +monthsEstimateMeta.value % 12;
     const years = +yearsEstimateMeta.value + Math.floor(monthsEstimateMeta.value / 12);
     setFieldValue('yearsEstimated', years);
@@ -107,7 +122,7 @@ export const DobField: React.FC = () => {
     setFieldTouched('yearsEstimated', true, false);
     setFieldTouched('monthsEstimated', true, false);
     setFieldTouched('birthdate', true, false);
-  }, [setFieldValue, setFieldTouched, monthsEstimateMeta, yearsEstimateMeta, dateOfBirth]);
+  }, [isEmpiDemographicsLocked, setFieldValue, setFieldTouched, monthsEstimateMeta, yearsEstimateMeta, dateOfBirth]);
 
   return (
     <div className={styles.halfWidthInDesktopView}>
@@ -118,8 +133,12 @@ export const DobField: React.FC = () => {
             <span className={styles.label01}>{t('dobToggleLabelText', 'Date of birth known?')}</span>
           </div>
           <ContentSwitcher size="md" onChange={onToggle} selectedIndex={dobUnknown ? 1 : 0}>
-            <Switch name="known">{t('yes', 'Yes')}</Switch>
-            <Switch name="unknown">{t('no', 'No')}</Switch>
+            <Switch name="known" disabled={isEmpiDemographicsLocked}>
+              {t('yes', 'Yes')}
+            </Switch>
+            <Switch name="unknown" disabled={isEmpiDemographicsLocked}>
+              {t('no', 'No')}
+            </Switch>
           </ContentSwitcher>
         </div>
       )}
@@ -139,6 +158,7 @@ export const DobField: React.FC = () => {
                   isInvalid={!!(birthdateMeta.touched && birthdateMeta.error)}
                   invalidText={t(birthdateMeta.error)}
                   value={birthdate.value}
+                  isDisabled={isEmpiDemographicsLocked}
                 />
               </div>
               <Layer>
@@ -150,7 +170,7 @@ export const DobField: React.FC = () => {
                   value={getTimeStringFromBirthTime()}
                   onChange={onBirthTimeChange}
                   onBlur={onBirthTimeBlur}
-                  disabled={!birthdate.value}
+                  disabled={isEmpiDemographicsLocked || !birthdate.value}
                   invalid={!!(birthTimeMeta.touched && birthTimeMeta.error)}
                   invalidText={birthTimeMeta.touched && birthTimeMeta.error ? t(birthTimeMeta.error) : ''}>
                   <TimePickerSelect
@@ -158,7 +178,7 @@ export const DobField: React.FC = () => {
                     aria-label={t('timeFormat', 'Time Format')}
                     value={getFormatFromBirthTime()}
                     onChange={onBirthTimeFormatChange}
-                    disabled={!birthdate.value}>
+                    disabled={isEmpiDemographicsLocked || !birthdate.value}>
                     <SelectItem value="AM" text="AM" />
                     <SelectItem value="PM" text="PM" />
                   </TimePickerSelect>
@@ -181,6 +201,7 @@ export const DobField: React.FC = () => {
                 min={0}
                 required
                 {...yearsEstimated}
+                disabled={isEmpiDemographicsLocked}
                 onBlur={(e) => {
                   yearsEstimated.onBlur(e);
                   setFieldTouched('yearsEstimated', true, false);
@@ -201,6 +222,7 @@ export const DobField: React.FC = () => {
                 min={0}
                 {...monthsEstimated}
                 required={!yearsEstimateMeta.value}
+                disabled={isEmpiDemographicsLocked}
                 onBlur={(e) => {
                   monthsEstimated.onBlur(e);
                   setFieldTouched('monthsEstimated', true, false);

@@ -21,7 +21,8 @@ function checkNumber(value: string) {
 
 export const NameField = () => {
   const { t } = useTranslation();
-  const { setCapturePhotoProps, currentPhoto, setFieldValue, setFieldTouched } = usePatientRegistrationContext();
+  const { setCapturePhotoProps, currentPhoto, setFieldValue, setFieldTouched, isEmpiDemographicsLocked } =
+    usePatientRegistrationContext();
 
   const {
     fieldConfigurations: {
@@ -77,6 +78,7 @@ export const NameField = () => {
       labelText={t('givenNameLabel', 'Given Name')}
       checkWarning={checkNumber}
       required
+      disabled={isEmpiDemographicsLocked}
     />
   );
 
@@ -87,6 +89,7 @@ export const NameField = () => {
       labelText={t('middleNameLabel', 'Father’s Name')}
       checkWarning={checkNumber}
       required
+      disabled={isEmpiDemographicsLocked}
     />
   );
 
@@ -97,6 +100,7 @@ export const NameField = () => {
       labelText={t('familyNameLabel', 'Grandfather’s Name')}
       checkWarning={checkNumber}
       required
+      disabled={isEmpiDemographicsLocked}
     />
   );
 

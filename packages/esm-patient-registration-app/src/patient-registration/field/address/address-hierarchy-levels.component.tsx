@@ -12,13 +12,15 @@ interface AddressComboBoxProps {
     label: string;
     required?: boolean;
   };
+  disabled?: boolean;
 }
 
 interface AddressHierarchyLevelsProps {
   orderedAddressFields: Array<any>;
+  disabled?: boolean;
 }
 
-const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute }) => {
+const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute, disabled }) => {
   const { t } = useTranslation();
   const [field, meta, { setValue }] = useField(`address.${attribute.name}`);
   const { fetchEntriesForField, searchString, updateChildElements } = useAddressEntryFetchConfig(attribute.name);
@@ -58,6 +60,7 @@ const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute }) => {
         id: attribute.name,
         labelText: label,
         required: attribute?.required,
+        disabled,
       }}
       handleInputChange={handleInputChange}
       onDropdownClose={handleDropdownClose}
@@ -65,11 +68,11 @@ const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute }) => {
   );
 };
 
-const AddressHierarchyLevels: React.FC<AddressHierarchyLevelsProps> = ({ orderedAddressFields }) => {
+const AddressHierarchyLevels: React.FC<AddressHierarchyLevelsProps> = ({ orderedAddressFields, disabled }) => {
   return (
     <>
       {orderedAddressFields.map((attribute) => (
-        <AddressComboBox key={attribute.id} attribute={attribute} />
+        <AddressComboBox key={attribute.id} attribute={attribute} disabled={disabled} />
       ))}
     </>
   );

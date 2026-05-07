@@ -10,11 +10,14 @@ import styles from '../field.scss';
 export const GenderField: React.FC = () => {
   const { t } = useTranslation();
   const { fieldConfigurations } = useConfig<RegistrationConfig>();
-  const { setFieldValue, setFieldTouched } = usePatientRegistrationContext();
+  const { setFieldValue, setFieldTouched, isEmpiDemographicsLocked } = usePatientRegistrationContext();
   const [field, meta] = useField('gender');
   const fieldConfigs = fieldConfigurations?.gender;
 
   const setGender = (gender: string) => {
+    if (isEmpiDemographicsLocked) {
+      return;
+    }
     setFieldValue('gender', gender);
     setFieldTouched('gender', true, false);
   };
@@ -42,6 +45,7 @@ export const GenderField: React.FC = () => {
               key={option.label ?? option.value}
               labelText={t(option.label ?? option.value, option.label ?? option.value)}
               value={option.value}
+              disabled={isEmpiDemographicsLocked}
             />
           ))}
         </RadioButtonGroup>

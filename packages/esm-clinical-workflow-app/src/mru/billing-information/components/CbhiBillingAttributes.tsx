@@ -5,6 +5,8 @@ import type { TFunction } from 'i18next';
 import type { BillingFormData } from '../billing-information.resource';
 import styles from '../billing-information.scss';
 import { CbhiMemberSearch } from './CbhiMemberSearch';
+import { useConfig } from '@openmrs/esm-framework';
+import type { ClinicalWorkflowConfig } from '../../../config-schema';
 
 type CbhiBillingAttributesProps = {
   control: Control<BillingFormData>;
@@ -29,6 +31,7 @@ export const CbhiBillingAttributes: React.FC<CbhiBillingAttributesProps> = ({
   attributes,
   setValue,
 }) => {
+  const { showMockData } = useConfig<ClinicalWorkflowConfig>();
   const lowerNameIncludes = (attr: { name: string }, term: string) =>
     attr.name?.toLowerCase().includes(term.toLowerCase());
 
@@ -59,23 +62,26 @@ export const CbhiBillingAttributes: React.FC<CbhiBillingAttributesProps> = ({
 
   return (
     <FormGroup className={styles.billingTypeAttributesContainer} legendText={t('billingDetails', 'Billing Details')}>
-      <CbhiMemberSearch
-        t={t}
-        onMemberSelected={(cbhiId, expiryDate) => {
-          setValue(cbhiIdFieldName, cbhiId, { shouldDirty: true });
-          setValue(cbhiExpiryFieldName, expiryDate, { shouldDirty: true });
-        }}
-      />
+      {showMockData && (
+        <CbhiMemberSearch
+          t={t}
+          onMemberSelected={(cbhiId, expiryDate) => {
+            setValue(cbhiIdFieldName, cbhiId, { shouldDirty: true });
+            setValue(cbhiExpiryFieldName, expiryDate, { shouldDirty: true });
+          }}
+        />
+      )}
 
       <Controller
         name={cbhiIdFieldName}
         control={control}
-        render={({ field: { value } }) => (
+        render={({ field: { value, onChange } }) => (
           <TextInput
             id={`attribute-${cbhiIdAttr.uuid}`}
             labelText={cbhiIdAttr.name}
             value={value || ''}
-            readOnly
+            onChange={(e) => onChange(e.target.value)}
+            readOnly={showMockData}
             invalid={!!cbhiIdError}
             invalidText={getErrorMessage(cbhiIdError)}
           />
@@ -85,12 +91,13 @@ export const CbhiBillingAttributes: React.FC<CbhiBillingAttributesProps> = ({
       <Controller
         name={cbhiExpiryFieldName}
         control={control}
-        render={({ field: { value } }) => (
+        render={({ field: { value, onChange } }) => (
           <TextInput
             id={`attribute-${cbhiExpiryAttr.uuid}`}
             labelText={cbhiExpiryAttr.name}
             value={value || ''}
-            readOnly
+            onChange={(e) => onChange(e.target.value)}
+            readOnly={showMockData}
             invalid={!!cbhiExpiryError}
             invalidText={getErrorMessage(cbhiExpiryError)}
           />

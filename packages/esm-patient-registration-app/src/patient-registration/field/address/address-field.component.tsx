@@ -18,7 +18,7 @@ import styles from '../field.scss';
 export const AddressComponent: React.FC = () => {
   const config = useConfig();
   const { t } = useTranslation();
-  const { setFieldValue } = usePatientRegistrationContext();
+  const { setFieldValue, isEmpiDemographicsLocked } = usePatientRegistrationContext();
   const { orderedFields, isLoadingFieldOrder, errorFetchingFieldOrder } = useOrderedAddressHierarchyLevels();
 
   const isOnline = useConnectivity();
@@ -93,6 +93,7 @@ export const AddressComponent: React.FC = () => {
             id={attributes.name}
             value={selected}
             required={attributes.required}
+            disabled={isEmpiDemographicsLocked}
           />
         ))}
       </AddressComponentContainer>
@@ -124,9 +125,11 @@ export const AddressComponent: React.FC = () => {
 
   return (
     <AddressComponentContainer>
-      {useQuickSearch && <AddressSearchComponent addressLayout={orderedAddressFields} />}
+      {useQuickSearch && (
+        <AddressSearchComponent addressLayout={orderedAddressFields} disabled={isEmpiDemographicsLocked} />
+      )}
       {searchAddressByLevel ? (
-        <AddressHierarchyLevels orderedAddressFields={orderedAddressFields} />
+        <AddressHierarchyLevels orderedAddressFields={orderedAddressFields} disabled={isEmpiDemographicsLocked} />
       ) : (
         orderedAddressFields.map((attributes, index) => (
           <Input
@@ -136,6 +139,7 @@ export const AddressComponent: React.FC = () => {
             id={attributes.name}
             value={selected}
             required={attributes.required}
+            disabled={isEmpiDemographicsLocked}
           />
         ))
       )}
@@ -151,6 +155,15 @@ const AddressComponentContainer = ({ children }) => {
         fieldConfigurations: {},
         setFieldValue: async () => {},
         values: {},
+        inEditMode: false,
+        isEmpiDemographicsLocked: false,
+        isOffline: false,
+        identifierTypes: [],
+        currentPhoto: '',
+        initialFormValues: {} as any,
+        setCapturePhotoProps: () => {},
+        setFieldTouched: () => {},
+        validationSchema: null,
       } as unknown as PatientRegistrationContextProps),
     [],
   );

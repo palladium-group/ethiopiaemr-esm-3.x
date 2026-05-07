@@ -25,9 +25,7 @@ import {
   BillingTypeAttributes,
   CbhiBillingAttributes,
   CreditSubTypeSelection,
-  FreeSubTypeSelection,
   CreditSubTypeFields,
-  FreeSubTypeFields,
   BillableItemsSelection,
 } from './components';
 import styles from './billing-information.scss';
@@ -69,11 +67,10 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   // Watch form values
   const billingTypeUuid = watch('billingTypeUuid');
   const creditSubType = watch('creditSubType');
-  const freeSubType = watch('freeSubType');
   const attributes = watch('attributes') || {};
 
   // Billing type logic hook
-  const { selectedBillingType, isCreditType, isFreeType } = useBillingType(billingTypes, billingTypeUuid);
+  const { selectedBillingType, isCreditType } = useBillingType(billingTypes, billingTypeUuid);
 
   // Fetch credit companies conditionally
   const { creditCompanies } = useCreditCompanies(isCreditType && creditSubType === 'creditCompany');
@@ -190,17 +187,6 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             />
           )}
 
-          {/* Free sub-type selection */}
-          {isFreeType && (
-            <FreeSubTypeSelection
-              control={control}
-              errors={errors}
-              t={t}
-              freeSubType={freeSubType}
-              setValue={setValue}
-            />
-          )}
-
           {/* Conditional fields based on Credit sub-type */}
           {isCreditType && creditSubType && (
             <CreditSubTypeFields
@@ -214,13 +200,9 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             />
           )}
 
-          {/* Conditional fields based on Free sub-type */}
-          {isFreeType && freeSubType && <FreeSubTypeFields />}
-
           {/* Default attribute types for other billing types */}
           {selectedBillingType &&
             !isCreditType &&
-            !isFreeType &&
             selectedBillingType.attributeTypes &&
             selectedBillingType.attributeTypes.length > 0 &&
             (selectedBillingType.name?.toLowerCase() === 'cbhi' ? (
