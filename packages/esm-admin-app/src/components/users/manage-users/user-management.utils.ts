@@ -39,7 +39,7 @@ export interface NameParts {
 }
 
 export function extractNameParts(display = ''): NameParts {
-  const nameParts = display.split(' ');
+  const nameParts = display.trim().split(/\s+/);
   const [givenName = '', middleName = '', familyName = ''] =
     nameParts.length === 3 ? nameParts : [nameParts[0], '', nameParts[1] || ''];
   return { givenName, middleName, familyName };
@@ -82,7 +82,7 @@ export function extractProviderFormValues(
     passportNumber: getVal(attributeTypeMapping.passportNumber),
     registrationNumber: getVal(attributeTypeMapping.licenseBody),
     phoneNumber: getVal(attributeTypeMapping.phoneNumber),
-    email: getVal(attributeTypeMapping.providerAddress),
+    email: '',
     providerUniqueIdentifier: getVal(attributeTypeMapping.providerUniqueIdentifier),
   };
 }
