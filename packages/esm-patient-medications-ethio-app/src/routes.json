@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "medications-details-widget-ethio",
+      "component": "medicationsSummary",
+      "slot": "patient-chart-medications-dashboard-slot",
+      "meta": {
+        "fullWidth": false
+      }
+    }
+  ]
+}
