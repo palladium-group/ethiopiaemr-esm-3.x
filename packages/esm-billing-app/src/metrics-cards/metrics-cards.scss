@@ -5,7 +5,31 @@
 
 .container {
   display: flex;
+  flex-direction: column;
   margin: layout.$spacing-05;
+  gap: layout.$spacing-03;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-02;
+  height: layout.$layout-03;
+}
+
+.sectionTitle {
+  margin: 0;
+}
+
+.sectionDate {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.cardsRow {
+  display: flex;
   gap: layout.$spacing-05;
 }
 

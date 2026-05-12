@@ -1,25 +1,43 @@
-import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { billsSummary } from '../../../../__mocks__/bills.mock';
-import { useBills } from '../billing.resource';
+import { render, screen } from '@testing-library/react';
 import MetricsCards from './metrics-cards.component';
+import { useBillSummary } from './metrics.resource';
 
-const mockUseBills = useBills as jest.Mock;
+const mockUseBillSummary = useBillSummary as jest.Mock;
 
-jest.mock('../billing.resource', () => ({
-  useBills: jest.fn(),
+jest.mock('./metrics.resource', () => ({
+  useBillSummary: jest.fn(),
 }));
 
+jest.mock('../helpers', () => ({
+  convertToCurrency: jest.fn((amount: number) => (amount != null ? `KES ${Number(amount).toFixed(2)}` : 'KES 0.00')),
+}));
+
+const mockBillSummary = {
+  totalBills: 1000,
+  paidBills: 600,
+  pendingBills: 300,
+  exemptedBills: 100,
+};
+
 describe('MetricsCards', () => {
-  test('renders loading state', () => {
-    mockUseBills.mockReturnValue({ isLoading: true, bills: [], error: null });
-    renderMetricsCards();
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders loading state when data is loading', () => {
+    mockUseBillSummary.mockReturnValue({ data: undefined, isLoading: true, error: null });
+    render(<MetricsCards />);
     expect(screen.getByText(/Loading bill metrics.../i)).toBeInTheDocument();
   });
 
-  test('renders error state', () => {
-    mockUseBills.mockReturnValue({ isLoading: false, bills: [], error: new Error('Internal server error') });
-    renderMetricsCards();
+  it('renders error state when request fails', () => {
+    mockUseBillSummary.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Internal server error'),
+    });
+    render(<MetricsCards />);
     expect(
       screen.getByText(
         /Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above./i,
@@ -27,16 +45,20 @@ describe('MetricsCards', () => {
     ).toBeInTheDocument();
   });
 
-  test('renders metrics cards', () => {
-    mockUseBills.mockReturnValue({ isLoading: false, bills: billsSummary, error: null });
-    renderMetricsCards();
-    expect(screen.getByText(`Today's Total Bills`)).toBeInTheDocument();
-    expect(screen.getByText(`Today's Paid Bills`)).toBeInTheDocument();
-    expect(screen.getByText(`Today's Pending Bills`)).toBeInTheDocument();
-    expect(screen.getByText(`Today's Exempted Bills`)).toBeInTheDocument();
+  it('renders metrics cards with bill summary data', () => {
+    mockUseBillSummary.mockReturnValue({
+      data: mockBillSummary,
+      isLoading: false,
+      error: null,
+    });
+    render(<MetricsCards />);
+    expect(screen.getByText('Total Bills')).toBeInTheDocument();
+    expect(screen.getByText('Paid Bills')).toBeInTheDocument();
+    expect(screen.getByText('Pending Bills')).toBeInTheDocument();
+    expect(screen.getByText('Exempted Bills')).toBeInTheDocument();
+    expect(screen.getByText('KES 1000.00')).toBeInTheDocument();
+    expect(screen.getByText('KES 600.00')).toBeInTheDocument();
+    expect(screen.getByText('KES 300.00')).toBeInTheDocument();
+    expect(screen.getByText('KES 100.00')).toBeInTheDocument();
   });
 });
-
-function renderMetricsCards() {
-  render(<MetricsCards />);
-}

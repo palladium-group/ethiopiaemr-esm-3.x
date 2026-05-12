@@ -1,54 +1,38 @@
-import { useCurrencyFormatting } from '../helpers/currency';
-import { MappedBill, PaymentStatus } from '../types';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
+import useSWRImmutable from 'swr/immutable';
 
-/**
- * A custom hook for calculating bill metrics.
- *
- * This hook takes in an array of bills and calculates the total amount for different
- * bill statuses (cumulative, pending, paid) using provided helper functions.
- *
- * @param {Array<Object>} bills - An array of bill objects. Each bill object should have a `status` and `lineItems` properties.
- *
- */
+export type BillSummary = {
+  totalBills: number;
+  pendingBills: number;
+  paidBills: number;
+  exemptedBills: number;
+};
+export const useBillSummary = () => {
+  const startDate = dayjs().startOf('day').toDate();
+  const endDate = dayjs().endOf('day').toDate();
+  const url = `${restBaseUrl}/cashier/bill-summary?createdOnOrAfter=${startDate.toISOString()}&createdOnOrBefore=${endDate.toISOString()}`;
+  const { data, isLoading, isValidating, error, mutate } = useSWRImmutable<{ data: { results: Array<BillSummary> } }>(
+    url,
+    openmrsFetch,
+    {
+      errorRetryCount: 2,
+    },
+  );
 
-export const useBillMetrics = (
-  bills: Array<MappedBill>,
-): {
-  totalBills: string;
-  pendingBills: string;
-  paidBills: string;
-  exemptedBills: string;
-} => {
-  const { paidTotal, pendingTotal, cumulativeTotal, exemptedTotal } = calculateBillTotals(bills);
-  const { format: formatCurrency } = useCurrencyFormatting();
+  const defaultSummary: BillSummary = {
+    totalBills: 0,
+    pendingBills: 0,
+    paidBills: 0,
+    exemptedBills: 0,
+  };
+  const billSummary = data?.data?.results?.[0] ?? defaultSummary;
 
   return {
-    totalBills: formatCurrency(cumulativeTotal),
-    pendingBills: formatCurrency(pendingTotal),
-    paidBills: formatCurrency(paidTotal),
-    exemptedBills: formatCurrency(exemptedTotal),
+    data: billSummary,
+    isLoading,
+    isValidating,
+    error,
+    mutate,
   };
 };
-
-const calculateBillTotals = (bills: Array<MappedBill>) => {
-  let paidTotal = 0;
-  let pendingTotal = 0;
-  let cumulativeTotal = 0;
-  let exemptedTotal = 0;
-
-  bills.forEach((bill) => {
-    const amount = bill.totalAmount || 0; // Ensure totalAmount is a valid number
-    if (bill.status === PaymentStatus.PAID) {
-      paidTotal += amount;
-    } else if (bill.status === PaymentStatus.PENDING) {
-      pendingTotal += amount;
-    } else if (bill.status === PaymentStatus.EXEMPTED) {
-      exemptedTotal += amount;
-    }
-    cumulativeTotal += amount; // Add to cumulative total regardless of status
-  });
-
-  return { paidTotal, pendingTotal, cumulativeTotal, exemptedTotal };
-};
-
-export default calculateBillTotals;

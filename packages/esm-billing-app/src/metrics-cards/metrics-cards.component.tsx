@@ -1,30 +1,37 @@
-import { InlineLoading, Layer, Tile } from '@carbon/react';
+import React, { useMemo } from 'react';
+import { Button, InlineLoading, Layer, Tile } from '@carbon/react';
+import { useTranslation } from 'react-i18next';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useBills } from '../billing.resource';
+import dayjs from 'dayjs';
+
 import styles from './metrics-cards.scss';
-import { useBillMetrics } from './metrics.resource';
+import { useBillSummary } from './metrics.resource';
+import { Renew } from '@carbon/react/icons';
+import { useCurrencyFormatting } from '../helpers/currency';
+import { formatDate } from '@openmrs/esm-framework';
 
 export default function MetricsCards() {
   const { t } = useTranslation();
-  const { bills, isLoading, error } = useBills('');
-  const { totalBills, pendingBills, paidBills, exemptedBills } = useBillMetrics(bills);
-
+  const { format: formatCurrency } = useCurrencyFormatting();
+  const { data: billSummary, isLoading, error, mutate } = useBillSummary();
+  const sectionDate = formatDate(dayjs().toDate());
   const cards = useMemo(
     () => [
-      { title: t('todayTotalBills', "Today's Total Bills"), count: totalBills },
-      { title: t('todayPaidBills', "Today's Paid Bills"), count: paidBills },
-      { title: t('todayPendingBills', "Today's Pending Bills"), count: pendingBills },
-      { title: t('todayExemptedBills', "Today's Exempted Bills"), count: exemptedBills },
+      { title: t('totalBillsLabel', 'Total Bills'), count: formatCurrency(billSummary?.totalBills) },
+      { title: t('paidBills', 'Paid Bills'), count: formatCurrency(billSummary?.paidBills) },
+      { title: t('pendingBills', 'Pending Bills'), count: formatCurrency(billSummary?.pendingBills) },
+      { title: t('exemptedBills', 'Exempted Bills'), count: formatCurrency(billSummary?.exemptedBills) },
     ],
-    [t, totalBills, paidBills, pendingBills, exemptedBills],
+    [t, billSummary],
   );
 
   if (isLoading) {
     return (
-      <section className={styles.container}>
+      <section className={styles.container} aria-labelledby="bill-metrics-heading">
+        <header className={styles.sectionHeader}>
+          <span className={styles.sectionDate}>{sectionDate}</span>
+        </header>
         <InlineLoading
           status="active"
           iconDescription="Loading"
@@ -38,21 +45,34 @@ export default function MetricsCards() {
     return <ErrorState headerTitle={t('billMetrics', 'Bill metrics')} error={error} />;
   }
   return (
-    <section className={styles.container}>
-      {cards.map((card) => (
-        <Layer key={card.title} className={classNames(styles.cardContainer)}>
-          <Tile className={styles.tileContainer}>
-            <div className={styles.tileHeader}>
-              <div className={styles.headerLabelContainer}>
-                <label className={styles.headerLabel}>{card.title}</label>
+    <section className={styles.container} aria-labelledby="bill-metrics-heading">
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionDate}>{sectionDate}</span>
+        <Button
+          kind="ghost"
+          onClick={() => mutate()}
+          size="sm"
+          renderIcon={Renew}
+          iconDescription={t('refreshMetrics', 'Refresh Metric')}>
+          {t('refreshMetrics', 'Refresh Metric')}
+        </Button>
+      </header>
+      <div className={styles.cardsRow}>
+        {cards.map((card) => (
+          <Layer key={card.title} className={classNames(styles.cardContainer)}>
+            <Tile className={styles.tileContainer}>
+              <div className={styles.tileHeader}>
+                <div className={styles.headerLabelContainer}>
+                  <label className={styles.headerLabel}>{card.title}</label>
+                </div>
               </div>
-            </div>
-            <div>
-              <p className={styles.totalsValue}>{card.count}</p>
-            </div>
-          </Tile>
-        </Layer>
-      ))}
+              <div>
+                <p className={styles.totalsValue}>{card.count}</p>
+              </div>
+            </Tile>
+          </Layer>
+        ))}
+      </div>
     </section>
   );
 }
