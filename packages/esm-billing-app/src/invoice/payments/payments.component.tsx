@@ -156,7 +156,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
   // selected line items amount due
   const selectedLineItemsAmountDue =
     selectedLineItems
-      .filter((item) => item.paymentStatus !== PaymentStatus.PAID)
+      .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
       .reduce((curr: number, prev) => curr + Number(prev.price * prev.quantity), 0) - totalWaivedAmount;
 
   const handleNavigateToBillingDashboard = () =>
@@ -285,7 +285,12 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
             <UserHasAccess privilege={Permissions.ProcessPayment}>
               <Button
                 onClick={() => setShowConfirmModal(true)}
-                disabled={!formValues?.length || !methods.formState.isValid || hasAmountPaidExceeded}>
+                disabled={
+                  !formValues?.length ||
+                  !methods.formState.isValid ||
+                  hasAmountPaidExceeded ||
+                  selectedLineItemsAmountDue <= 0
+                }>
                 {t('processPayment', 'Process Payment')}
               </Button>
             </UserHasAccess>
