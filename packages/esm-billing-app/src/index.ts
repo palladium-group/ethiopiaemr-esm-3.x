@@ -41,6 +41,7 @@ import CreateBillWorkspace from './bill-administration/patient-billing/workspace
 
 // Billable Services Components
 import AddServiceForm from './bill-administration/service-catalog/services/service-form.workspace';
+import AddServiceAvailableForm from './bill-administration/service-catalog/services/service-available-form.workspace';
 import CommodityForm from './bill-administration/service-catalog/commodity/commodity-form.workspace';
 import BulkImportBillableServices from './bill-administration/service-catalog/bulk-import-billable-service.modal';
 
@@ -131,6 +132,7 @@ export const deletePaymentPointModal = getSyncLifecycle(DeletePaymentPointModal,
 export const addServiceForm = getSyncLifecycle(AddServiceForm, options);
 export const commodityForm = getSyncLifecycle(CommodityForm, options);
 export const bulkImportBillableServicesModal = getSyncLifecycle(BulkImportBillableServices, options);
+export const addServiceAvailableForm = getSyncLifecycle(AddServiceAvailableForm, options);
 
 // Claims Management Components
 export const claimsOverview = getSyncLifecycle(ClaimsManagementOverview, options);

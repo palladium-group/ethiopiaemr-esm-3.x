@@ -17,6 +17,10 @@
     {
       "component": "billingAdmin",
       "route": "billing-admin"
+    },
+    {
+      "component": "servicesAvailableAdmin",
+      "route": "service-available-admin"
     }
   ],
   "extensions": [
@@ -91,7 +95,7 @@
       "slot": "extra-visit-attribute-slot",
       "component": "billingCheckInForm"
     },
-    
+
     {
       "name": "patient-banner-billing-tags",
       "component": "visitAttributeTags",
@@ -269,6 +273,22 @@
       "component": "clinicalCharges",
       "slot": "clinical-charges-dashboard-slot"
     },
+
+    {
+      "name": "clinical-services-available-dashboard-link",
+      "component": "clinicalServicesAvailableLink",
+      "slot": "services-available-admin-dashboard-slot",
+      "meta": {
+        "name": "clinical-services-available",
+        "title": "Service Availability",
+        "slot": "clinical-services-available-dashboard-slot"
+      }
+    },
+    {
+      "name": "clinical-services-available-dashboard",
+      "component": "clinicalServicesAvailable",
+      "slot": "clinical-services-available-dashboard-slot"
+    },
     {
       "name": "payment-history-dashboard-link",
       "component": "paymentHistoryLink",
@@ -323,6 +343,12 @@
       "name": "billable-service-form",
       "component": "addServiceForm",
       "title": "Create Charge Item Form",
+      "type": "other-form"
+    },
+     {
+      "name": "available-service-form",
+      "component": "addServiceAvailableForm",
+      "title": "Create Service Available Form",
       "type": "other-form"
     },
     {
