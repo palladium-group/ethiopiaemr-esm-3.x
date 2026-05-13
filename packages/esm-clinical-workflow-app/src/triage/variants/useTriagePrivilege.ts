@@ -1,7 +1,7 @@
 import { useSession } from '@openmrs/esm-framework';
-import type { TriageVariantConfig } from '../../config-schema';
+import type { TriageDefinitionConfig } from '../../config-schema';
 
-export const useTriagePrivilege = (variantConfig: TriageVariantConfig | undefined): boolean => {
+export const useTriagePrivilege = (variantConfig: TriageDefinitionConfig | undefined): boolean => {
   const session = useSession();
 
   if (!variantConfig || !variantConfig.privilege) {

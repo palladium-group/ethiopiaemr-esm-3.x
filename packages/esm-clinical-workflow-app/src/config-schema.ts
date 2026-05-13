@@ -8,42 +8,88 @@ export const configSchema = {
       'Enable role-based access control for triage variants. When false (default), all authenticated users can access all triage variants. When true, users must have specific privileges assigned.',
     _default: false,
   },
-  triageVariants: {
-    _type: Type.Object,
-    _description: 'Mapping of triage variants with form configs and required privileges.',
-    _default: {
-      central: {
-        formUuid: 'd9375924-49da-45f8-b74e-7d0454ac1c29',
-        name: 'Central Triage Form',
-        displayName: 'Central Triage',
+  triageDefinitions: {
+    _type: Type.Array,
+    _description:
+      'Triage entry points shown as home sidebar links when enabled. Each item needs a stable `id`. Dashboard and homepage link extensions are registered at runtime from this list. After registering a new patient, the configured triage form opens directly. Default `routePath` is `${id}-triage` when `routePath` is left empty.',
+    _default: [
+      {
+        id: 'adult',
+        formUuid: 'ff723d59-0650-4b84-858d-c1045b690683',
+        name: 'Adult Triage Form',
+        displayName: 'Adult Triage',
         enabled: true,
         order: 0,
-        privilege: 'Central Triage Access',
-        patientTypes: {
-          adult: {
-            displayName: 'Adult',
-            formUuid: 'd9375924-49da-45f8-b74e-7d0454ac1c29',
-            formName: 'Central Triage - Adult',
-          },
-          pediatric: {
-            displayName: 'Pediatric',
-            formUuid: 'd9375924-49da-45f8-b74e-7d0454ac1c29',
-            formName: 'Central Triage - Pediatric',
-          },
-          gynecology: {
-            displayName: 'Gynecology',
-            formUuid: 'd9375924-49da-45f8-b74e-7d0454ac1c29',
-            formName: 'Central Triage - Gynecology',
-          },
-        },
+        privilege: 'Adult Triage Access',
       },
-      emergency: {
-        formUuid: '61c4de68-1721-45a6-b42e-f5ca6439493f',
+      {
+        id: 'pediatric',
+        formUuid: '070e7d10-c6b8-4540-9718-5908738039c3',
+        name: 'Pediatrics Emergency Triage Form',
+        displayName: 'Pediatric Triage',
+        enabled: true,
+        order: 1,
+        privilege: 'Pediatric Triage Access',
+      },
+      {
+        id: 'emergency',
+        formUuid: '4ff622f8-212e-4f0f-b6a6-1aa19d776ffb',
         name: 'Emergency Triage Form',
         displayName: 'Emergency Triage',
         enabled: true,
-        order: 1,
+        order: 2,
         privilege: 'Emergency Triage Access',
+        routePath: 'emergency-triage',
+      },
+      {
+        id: 'gynecological',
+        formUuid: '1df88856-d54e-43e9-8ed2-dafde77c6081',
+        name: 'GYN Triage Form',
+        displayName: 'Gynecological Triage',
+        enabled: true,
+        order: 3,
+        privilege: 'Gynecological Triage Access',
+      },
+    ],
+    _elements: {
+      id: {
+        _type: Type.String,
+        _description: 'Stable key for this triage (used in extension names and config lookups).',
+      },
+      formUuid: {
+        _type: Type.UUID,
+        _description: 'Form resource UUID opened for this triage after registration or from the triage banner.',
+      },
+      name: {
+        _type: Type.String,
+        _description: 'Form name label for the default triage form.',
+      },
+      displayName: {
+        _type: Type.String,
+        _description: 'Title shown in the sidebar and triage landing page header.',
+      },
+      enabled: {
+        _type: Type.Boolean,
+        _default: true,
+      },
+      order: {
+        _type: Type.Number,
+        _default: 0,
+        _description: 'Relative order for listing triage definitions.',
+      },
+      privilege: {
+        _type: Type.String,
+        _description: 'Privilege checked when enforceTriagePrivileges is true.',
+      },
+      routePath: {
+        _type: Type.String,
+        _default: '',
+        _description: 'Home sub-path for this triage. Leave empty to use `${id}-triage`.',
+      },
+      patientTypes: {
+        _type: Type.Object,
+        _default: {},
+        _description: 'Deprecated; not used. Triage uses `formUuid` and `name` only.',
       },
     },
   },
@@ -219,19 +265,23 @@ export interface PatientTypeConfig {
   formName: string;
 }
 
-export interface TriageVariantConfig {
+export interface TriageDefinitionConfig {
+  id: string;
   formUuid: string;
   name: string;
   displayName: string;
   enabled: boolean;
   order: number;
   privilege: string;
+  /** When unset or empty, routes use `${id}-triage`. */
+  routePath?: string;
+  /** @deprecated Not used; kept for config compatibility. */
   patientTypes?: Record<string, PatientTypeConfig>;
 }
 
 export type ClinicalWorkflowConfig = {
   enforceTriagePrivileges: boolean;
-  triageVariants: Record<string, TriageVariantConfig>;
+  triageDefinitions: Array<TriageDefinitionConfig>;
   defaultQueueStatusUuid: string;
   visitQueueNumberAttributeTypeUuid: string;
   billingVisitAttributeTypes: {

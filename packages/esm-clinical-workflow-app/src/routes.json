@@ -7,48 +7,10 @@
   "pages": [],
   "extensions": [
     {
-      "name": "central-triage-dashboard-link",
-      "component": "centralTriageDashboardLink",
-      "slot": "homepage-dashboard-slot",
-      "order": 0,
-      "meta": {
-        "name": "central-triage",
-        "title": "Central Triage",
-        "path": "central-triage",
-        "slot": "central-triage-dashboard-slot"
-      }
-    },
-    {
-      "name": "central-triage-dashboard",
-      "component": "centralTriageDashboard",
-      "slot": "central-triage-dashboard-slot",
-      "online": true,
-      "offline": false
-    },
-    {
-      "name": "emergency-triage-dashboard-link",
-      "component": "emergencyTriageDashboardLink",
-      "slot": "homepage-dashboard-slot",
-      "order": 1,
-      "meta": {
-        "name": "emergency-triage",
-        "title": "Emergency Triage",
-        "path": "emergency-triage",
-        "slot": "emergency-triage-dashboard-slot"
-      }
-    },
-    {
-      "name": "emergency-triage-dashboard",
-      "component": "emergencyTriageDashboard",
-      "slot": "emergency-triage-dashboard-slot",
-      "online": true,
-      "offline": false
-    },
-    {
       "name": "ewf-mru-dashboard-link",
       "component": "mruLeftPanelLink",
       "slot": "homepage-dashboard-slot",
-      "order": 1,
+      "order": 4,
       "meta": {
         "name": "mru",
         "title": "MRU",
@@ -67,7 +29,7 @@
       "name": "patient-scoreboard-link",
       "component": "patientScoreboardLink",
       "slot": "homepage-dashboard-slot",
-      "order": 1,
+      "order": 5,
       "meta": {
         "name": "patient-scoreboard",
         "title": "Patient Scoreboard",
@@ -152,18 +114,6 @@
       "name": "billing-information-workspace",
       "component": "billingInformationWorkspace",
       "title": "Billing Information Workspace",
-      "type": "clinical-form"
-    },
-    {
-      "name": "patient-type-selection-workspace",
-      "component": "patientTypeSelectionWorkspace",
-      "title": "Select Patient Type",
-      "type": "clinical-form"
-    },
-    {
-      "name": "emergency-queue-selection-workspace",
-      "component": "emergencyQueueSelectionWorkspace",
-      "title": "Select Queue",
       "type": "clinical-form"
     }
   ],

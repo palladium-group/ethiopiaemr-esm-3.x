@@ -81,46 +81,6 @@ export const launchTriageFormWorkspace = (
   }, 0);
 };
 
-/**
- * Launches triage form workspace for emergency triage workflow
- * Shows success message after form submission (no queue modal)
- * Use this when patient is already queued before form entry
- */
-export const launchEmergencyTriageFormWorkspace = (
-  patient: Awaited<ReturnType<typeof fetchCurrentPatient>>,
-  patientUuid: string,
-  visit: Visit,
-  formUuid: string,
-  formName: string,
-  t: TFunction<'translation', undefined>,
-) => {
-  // Success message handler - for emergency triage workflow
-  const handleShowSuccessMessage = (encounter: Encounter) => {
-    showSnackbar({
-      title: t('triageFormSubmitted', 'Triage form submitted'),
-      kind: 'success',
-      subtitle: t('triageFormSubmittedSuccessfully', 'The triage form has been submitted successfully'),
-      isLowContrast: true,
-    });
-  };
-
-  const workspaceData = buildFormWorkspaceData(patient, visit, formUuid, formName, handleShowSuccessMessage);
-
-  launchWorkspace2('clinical-workflow-patient-form-entry-workspace', workspaceData, {
-    patient: patient,
-    patientUuid: patientUuid,
-    visitContext: visit,
-  });
-
-  // Set z-index for workspace container
-  setTimeout(() => {
-    const workspaceContainer = document.getElementById('omrs-workspaces-container');
-    if (workspaceContainer) {
-      workspaceContainer.style.zIndex = '100';
-    }
-  }, 0);
-};
-
 interface UseStartVisitAndLaunchTriageFormReturn {
   handleStartVisitAndLaunchTriageForm: (patientUuid: string, formUuid: string, formName: string) => Promise<void>;
   isLoading: boolean;
