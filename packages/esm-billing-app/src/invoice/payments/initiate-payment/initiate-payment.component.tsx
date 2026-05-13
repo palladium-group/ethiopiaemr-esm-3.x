@@ -21,7 +21,7 @@ import { BillingConfig } from '../../../config-schema';
 import { usePatientAttributes } from '../../../hooks/usePatientAttributes';
 import { useRequestStatus } from '../../../hooks/useRequestStatus';
 import { initiateTelebirrPayment } from '../../../telebirr/telebirr-resource';
-import { LineItem, MappedBill } from '../../../types';
+import { LineItem, MappedBill, PaymentStatus } from '../../../types';
 import { formatEthiopianPhoneNumber } from '../utils';
 import styles from './initiate-payment.scss';
 
@@ -49,8 +49,10 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const [{ requestStatus }, pollingTrigger] = useRequestStatus(setNotification, closeModal, bill);
   const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
 
-  const pendingAmount = bill.totalAmount - bill.tenderedAmount - (bill.totalExempted ?? 0);
   const isWaitingForTelebirr = requestStatus === 'INITIATED';
+  const selectedLineItemsPendingAmount = selectedLineItems
+    .filter((item) => item.paymentStatus === PaymentStatus.PENDING)
+    .reduce((curr: number, prev) => curr + Number(prev.price * prev.quantity), 0);
 
   const {
     control,
@@ -62,7 +64,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   } = useForm<FormData>({
     mode: 'all',
     defaultValues: {
-      billAmount: pendingAmount.toString(),
+      billAmount: selectedLineItemsPendingAmount.toString(),
       phoneNumber: phoneNumber,
     },
     resolver: zodResolver(initiatePaymentSchema),

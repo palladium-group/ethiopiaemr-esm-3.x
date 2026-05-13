@@ -262,7 +262,10 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
       {bill?.balance !== 0 && billableLineItems.length > 0 && (
         <Button
           onClick={handleBillPayment}
-          disabled={bill?.balance === 0}
+          disabled={
+            bill?.balance === 0 ||
+            selectedLineItems?.filter((item) => item.paymentStatus === PaymentStatus.PENDING).length === 0
+          }
           size="sm"
           renderIcon={Wallet}
           iconDescription="Add"
