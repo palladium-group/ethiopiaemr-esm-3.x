@@ -49,7 +49,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const [{ requestStatus }, pollingTrigger] = useRequestStatus(setNotification, closeModal, bill);
   const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
 
-  const pendingAmount = bill.totalAmount - bill.tenderedAmount;
+  const pendingAmount = bill.totalAmount - bill.tenderedAmount - (bill.totalExempted ?? 0);
   const isWaitingForTelebirr = requestStatus === 'INITIATED';
 
   const {
