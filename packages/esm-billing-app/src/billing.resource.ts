@@ -141,7 +141,9 @@ export const useBill = (billUuid: string) => {
       tenderedAmount: bill?.payments?.map((item) => item.amountTendered).reduce((prev, curr) => prev + curr, 0),
       totalPayments: bill?.totalPayments,
       totalDeposits: bill?.totalDeposits,
-      totalExempted: bill?.totalExempted,
+      totalExempted: bill?.lineItems
+        ?.filter((item) => item?.paymentStatus === PaymentStatus.EXEMPTED)
+        ?.reduce((prev, curr) => prev + curr?.price * curr?.quantity, 0),
       balance: bill?.balance,
       closed: bill?.closed,
     };

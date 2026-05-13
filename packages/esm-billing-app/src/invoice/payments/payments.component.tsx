@@ -84,7 +84,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
     // Loop through line items and select one servicePrice per line item
     lineItems
-      .filter((item) => item.paymentStatus !== PaymentStatus.PAID)
+      .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
       .forEach((item) => {
         // Skip if already processed
         if (processedLineItems.has(item.uuid)) {
