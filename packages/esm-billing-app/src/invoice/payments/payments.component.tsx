@@ -151,7 +151,10 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
   const totalWaivedAmount = computeWaivedAmount(bill);
   const totalAmountTendered = formValues?.reduce((curr: number, prev) => Number(prev.amount) + curr, 0) ?? 0;
-  const amountDue = bill.balance - totalAmountTendered;
+  const billableLineItemsTotalAmount = lineItems
+    .filter((item) => item.paymentStatus === PaymentStatus.PENDING)
+    ?.reduce((curr: number, prev) => curr + Number(prev.price * prev.quantity), 0);
+  const amountDue = billableLineItemsTotalAmount;
 
   // selected line items amount due
   const selectedLineItemsAmountDue =
