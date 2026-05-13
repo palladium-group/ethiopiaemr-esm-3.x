@@ -84,6 +84,12 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
     // TODO: set proper conversation id
     const conversationId = bill.uuid;
 
+    // check if amountBilled is equal to selectedLineItemsPendingAmount
+    if (Number(amountBilled) !== selectedLineItemsPendingAmount) {
+      setNotification({ type: 'error', message: 'Amount billed does not match selected line items pending amount.' });
+      return;
+    }
+
     const payload = {
       conversationId,
       mobileNumber: phoneNumber,
@@ -169,7 +175,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
                     placeholder={t('billAmount', 'Bill Amount')}
                     invalid={!!errors.billAmount}
                     invalidText={errors.billAmount?.message}
-                    disabled={isWaitingForTelebirr}
+                    readOnly={true}
                   />
                 </Layer>
               )}
