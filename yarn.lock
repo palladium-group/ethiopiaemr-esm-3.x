@@ -1327,42 +1327,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/charts-react@npm:^1.27.0":
-  version: 1.27.2
-  resolution: "@carbon/charts-react@npm:1.27.2"
-  dependencies:
-    "@carbon/charts": "npm:1.27.2"
-    "@carbon/icons-react": "npm:^11.64.0"
-    "@ibm/telemetry-js": "npm:^1.9.1"
-  peerDependencies:
-    react: ^16.8.6 || ^17.0.1 || ^18.2.0 || ^19.0.0
-    react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0 || ^19.0.0
-  checksum: 10/3ef8025402e5e2636851814d31290111ce819ca8ab9376a1a2c90a7ef69e975576d5ee9597a2e2b8bdbbb8a2c8d5afec23c0fa090432ad6dd1527a4f7c252595
-  languageName: node
-  linkType: hard
-
-"@carbon/charts@npm:1.27.2":
-  version: 1.27.2
-  resolution: "@carbon/charts@npm:1.27.2"
-  dependencies:
-    "@carbon/colors": "npm:^11.37.0"
-    "@carbon/utils-position": "npm:^1.3.0"
-    "@ibm/telemetry-js": "npm:^1.9.1"
-    "@types/d3": "npm:^7.4.3"
-    "@types/topojson": "npm:^3.2.6"
-    d3: "npm:^7.9.0"
-    d3-cloud: "npm:^1.2.7"
-    d3-sankey: "npm:^0.12.3"
-    date-fns: "npm:^4.1.0"
-    dompurify: "npm:^3.2.6"
-    html-to-image: "npm:1.11.11"
-    lodash-es: "npm:^4.17.21"
-    topojson-client: "npm:^3.1.0"
-    tslib: "npm:^2.8.1"
-  checksum: 10/b6aa3bda3250c9b76c48de2554a30f0ac59cd241d468e42da21bcfd1d7a78dc2528a2d45ea12463310fc107042b33a1a92e504331b2efe680d685c61e86204cf
-  languageName: node
-  linkType: hard
-
 "@carbon/charts@npm:^1.27.0":
   version: 1.27.0
   resolution: "@carbon/charts@npm:1.27.0"
@@ -1449,7 +1413,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons-react@npm:^11.60.0, @carbon/icons-react@npm:^11.64.0":
+"@carbon/icons-react@npm:^11.60.0":
   version: 11.76.0
   resolution: "@carbon/icons-react@npm:11.76.0"
   dependencies:
@@ -3379,62 +3343,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openmrs/esm-patient-common-lib@npm:next":
-  version: 11.3.1-pre.9592
-  resolution: "@openmrs/esm-patient-common-lib@npm:11.3.1-pre.9592"
-  dependencies:
-    "@carbon/react": "npm:^1.83.0"
-    lodash-es: "npm:^4.17.21"
-    uuid: "npm:^8.3.2"
-  peerDependencies:
-    "@openmrs/esm-framework": 8.x
-    react: 18.x
-    single-spa: 6.x
-  checksum: 10/c6f762d606b611d03ba287c0540ff3b273461052f08199d66f89ba015257cb256725dc1a57cd39445c68679e2f078c11cfa27bc9d131a7f1220c8e3c8fd4e6f8
-  languageName: node
-  linkType: hard
-
-"@openmrs/esm-patient-medications-app@npm:next":
-  version: 12.0.2-pre.10146
-  resolution: "@openmrs/esm-patient-medications-app@npm:12.0.2-pre.10146"
-  dependencies:
-    "@carbon/react": "npm:^1.83.0"
-    "@openmrs/esm-patient-common-lib": "npm:next"
-    lodash-es: "npm:^4.17.23"
-  peerDependencies:
-    "@openmrs/esm-framework": 9.x
-    "@openmrs/esm-patient-common-lib": 12.x
-    dayjs: 1.x
-    react: 18.x
-    react-i18next: 16.x
-    react-router-dom: 6.x
-    rxjs: 6.x
-    swr: 2.x
-  checksum: 10/5243f60fb04d123019617ad6550102749e24c93f6a875cb493198931fe9a31f5de14b67a36e31d5bd6ff4001febaf04dd7bf78451136af4e3d7d45c5c4a76e3f
-  languageName: node
-  linkType: hard
-
-"@openmrs/esm-patient-tests-app@npm:next":
-  version: 12.0.2-pre.10146
-  resolution: "@openmrs/esm-patient-tests-app@npm:12.0.2-pre.10146"
-  dependencies:
-    "@carbon/charts-react": "npm:^1.27.0"
-    "@carbon/react": "npm:^1.83.0"
-    "@openmrs/esm-patient-common-lib": "npm:next"
-    fuzzy: "npm:^0.1.3"
-    lodash-es: "npm:^4.17.23"
-  peerDependencies:
-    "@openmrs/esm-framework": 9.x
-    "@openmrs/esm-patient-common-lib": 12.x
-    react: 18.x
-    react-i18next: 16.x
-    react-router-dom: 6.x
-    rxjs: 6.x
-    swr: 2.x
-  checksum: 10/839c4a617cfc203b3546135fbc15311468590e00f9e57873a079e196e1b21fc24c5eec0e95c1b4ce865c8074766500d6257ed59165d18db3d4763fac4f8d25d7
-  languageName: node
-  linkType: hard
-
 "@openmrs/esm-react-utils@npm:8.0.1-pre.3623":
   version: 8.0.1-pre.3623
   resolution: "@openmrs/esm-react-utils@npm:8.0.1-pre.3623"
@@ -3762,28 +3670,6 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "npm:^12.0.2-pre.10146"
     lodash-es: "npm:^4.17.23"
     react-to-print: "npm:^2.14.13"
-    webpack: "npm:^5.99.9"
-  peerDependencies:
-    "@openmrs/esm-framework": 9.x
-    "@openmrs/esm-patient-common-lib": 12.x
-    dayjs: 1.x
-    react: 18.x
-    react-i18next: 16.x
-    react-router-dom: 6.x
-    rxjs: 6.x
-    swr: 2.x
-  languageName: unknown
-  linkType: soft
-
-"@palladium-ethiopia/esm-patient-orders-app@workspace:packages/esm-patient-orders-app":
-  version: 0.0.0-use.local
-  resolution: "@palladium-ethiopia/esm-patient-orders-app@workspace:packages/esm-patient-orders-app"
-  dependencies:
-    "@carbon/react": "npm:^1.83.0"
-    "@openmrs/esm-patient-common-lib": "npm:^12.0.2-pre.10146"
-    "@openmrs/esm-patient-medications-app": "npm:next"
-    "@openmrs/esm-patient-tests-app": "npm:next"
-    lodash-es: "npm:^4.17.23"
     webpack: "npm:^5.99.9"
   peerDependencies:
     "@openmrs/esm-framework": 9.x
