@@ -92,7 +92,7 @@ const AddServiceAvailableForm: React.FC<AddServiceAvailableFormProps> = ({
   };
 
   useEffect(() => {
-    promptBeforeClosing(() => isDirty);
+    promptBeforeClosing?.(() => isDirty);
   }, [isDirty, promptBeforeClosing]);
 
   const onSubmit = async (data: BillableFormSchema) => {
@@ -113,15 +113,15 @@ const AddServiceAvailableForm: React.FC<AddServiceAvailableFormProps> = ({
         });
         handleMutate(`${restBaseUrl}/cashier/billableService?v`);
 
-        closeWorkspaceWithSavedChanges();
+        closeWorkspaceWithSavedChanges?.();
       }
     } catch (e) {
-      const formSchemaError = JSON.stringify(e, null, 2);
-      const errorMessage = e?.servicePrices?.root?.message || 'Unknown error occurred';
+      const errorMessage =
+        e?.responseBody?.error?.message || e?.message || t('unknownError', 'An unknown error occurred');
       showSnackbar({
         title: t('serviceCreationFailed', 'Service creation failed'),
         subtitle: t('serviceCreationFailedSubtitle', 'The service creation failed: {{errorMessage}}', {
-          errorMessage,
+          errorMessage: String(errorMessage).trim(),
         }),
         kind: 'error',
         isLowContrast: true,
@@ -131,7 +131,6 @@ const AddServiceAvailableForm: React.FC<AddServiceAvailableFormProps> = ({
   };
 
   const handleError = (err) => {
-    console.error(JSON.stringify(err, null, 2));
     const errorMessage = Object.entries(err as Record<string, { message: string }>)
       .map(([field, error]) => `${field}: ${error.message}`)
       .join('; ');

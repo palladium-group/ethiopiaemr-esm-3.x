@@ -73,7 +73,7 @@ const AddCommodityForm: React.FC<CommodityFormProps> = ({
           timeoutInMs: 5000,
         });
         handleMutate(`${restBaseUrl}/cashier/billableService?v`);
-        closeWorkspaceWithSavedChanges();
+        closeWorkspaceWithSavedChanges?.();
       }
     } catch (e) {
       const errorMessage =
@@ -91,7 +91,7 @@ const AddCommodityForm: React.FC<CommodityFormProps> = ({
   };
 
   useEffect(() => {
-    promptBeforeClosing(() => isDirty);
+    promptBeforeClosing?.(() => isDirty);
   }, [isDirty, promptBeforeClosing]);
 
   function flattenErrors(errors: Record<string, any>): string[] {
@@ -113,7 +113,6 @@ const AddCommodityForm: React.FC<CommodityFormProps> = ({
   }
 
   const handleError = (err) => {
-    console.error(JSON.stringify(err, null, 2));
     const errorMessage = flattenErrors(err).join('; ');
     showSnackbar({
       title: t('serviceCreationFailed', 'Service creation failed'),
