@@ -17,17 +17,29 @@ export const servicePriceSchema = z.object({
   paymentMode: z.object({ uuid: z.string(), name: z.string() }),
 });
 
+/**
+ *servicePrices is optional — a service can be saved without prices.
+ */
 export const billableFormSchema = z.object({
   name: z.string().min(1, 'Service name is required'),
   shortName: z
     .string()
     .refine((value) => value.length !== 1, { message: 'Short name must be at least 1 character long' }),
   serviceType: z.object({ uuid: z.string(), display: z.string() }),
-  servicePrices: z.array(servicePriceSchema).min(1, 'At least one price is required'),
+  servicePrices: z.array(servicePriceSchema).default([]),
   serviceStatus: z.enum(['ENABLED', 'DISABLED']),
   concept: ServiceConceptSchema,
   stockItem: z.string().nullable().optional(),
 });
 
+/**
+ * Used by the chargeable / commodity form.
+ * Extends the base schema and enforces at least one price.
+ */
+export const chargeableServiceFormSchema = billableFormSchema.extend({
+  servicePrices: z.array(servicePriceSchema).min(1, 'At least one price is required'),
+});
+
 export type BillableFormSchema = z.infer<typeof billableFormSchema>;
+export type ChargeableServiceFormSchema = z.infer<typeof chargeableServiceFormSchema>;
 export type ServicePriceSchema = z.infer<typeof servicePriceSchema>;

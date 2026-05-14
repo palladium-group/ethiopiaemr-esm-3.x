@@ -26,6 +26,13 @@ export const clinicalChargesDashboardMeta = {
   icon: 'omrs-icon-programs',
 } as const;
 
+export const serviceAvailabilityDashboardMeta = {
+  path: 'service-availability',
+  title: 'Service Availability',
+  titleKey: 'serviceAvailability',
+  icon: 'omrs-icon-programs',
+} as const;
+
 export const paymentHistoryDashboardMeta = {
   path: 'payment-history',
   title: 'Payment History',

@@ -8,6 +8,7 @@ import {
   paymentHistoryDashboardMeta,
   paymentModeDashboardMeta,
   paymentPointsDashboardMeta,
+  serviceAvailabilityDashboardMeta,
 } from './dashboard.meta';
 
 const options = {
@@ -52,6 +53,10 @@ export const paymentModeDashboard = getAsyncLifecycle(
 );
 
 export const clinicalCharges = getAsyncLifecycle(() => import('./service-catalog/clinical-charges.component'), options);
+export const clinicalServicesAvailable = getAsyncLifecycle(
+  () => import('./service-catalog/clinical-service-available.component'),
+  options,
+);
 export const paymentHistoryDashboard = getAsyncLifecycle(
   () => import('./payment-history/payment-dashboard.component'),
   options,
@@ -61,6 +66,7 @@ export const paymentPoints = getAsyncLifecycle(() => import('./payment-points/pa
 
 export const patientBilling = getAsyncLifecycle(() => import('./patient-billing/patient-billing.component'), options);
 export const billingAdmin = getAsyncLifecycle(() => import('./home.component'), options);
+export const servicesAvailableAdmin = getAsyncLifecycle(() => import('./services-available-home.component'), options);
 
 export const billDepositDashboardLink = getSyncLifecycle(createDashboardLink(billDepositDashboardMeta), options);
 export const billableExemptionsLink = getSyncLifecycle(createDashboardLink(billableExemptionsDashboardMeta), options);
@@ -69,3 +75,7 @@ export const clinicalChargesLink = getSyncLifecycle(createDashboardLink(clinical
 export const paymentHistoryLink = getSyncLifecycle(createDashboardLink(paymentHistoryDashboardMeta), options);
 export const patientBillingLink = getSyncLifecycle(createDashboardLink(patientBillingDashboardMeta), options);
 export const paymentPointDashboardLink = getSyncLifecycle(createDashboardLink(paymentPointsDashboardMeta), options);
+export const clinicalServicesAvailableLink = getSyncLifecycle(
+  createDashboardLink(serviceAvailabilityDashboardMeta),
+  options,
+);

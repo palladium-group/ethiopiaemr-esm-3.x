@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ButtonSet,
@@ -10,14 +10,13 @@ import {
   InlineNotification,
   InlineLoading,
 } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { Controller, useFieldArray, useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLayoutType, useDebounce, ResponsiveWrapper, showSnackbar, restBaseUrl } from '@openmrs/esm-framework';
-import { createBillableService, useConceptsSearch, useServiceTypes } from '../billable-service.resource';
-import PriceField from './price.component';
 
-import { chargeableServiceFormSchema, ChargeableServiceFormSchema } from '../form-schemas';
+import { useLayoutType, useDebounce, ResponsiveWrapper, showSnackbar, restBaseUrl } from '@openmrs/esm-framework';
+
+import { createBillableService, useConceptsSearch, useServiceTypes } from '../billable-service.resource';
+import { billableFormSchema, BillableFormSchema } from '../form-schemas';
 
 import classNames from 'classnames';
 import styles from './service-form.scss';
@@ -25,15 +24,15 @@ import { formatBillableServicePayloadForSubmission, mapInputToPayloadSchema } fr
 import ConceptSearch from './concept-search.component';
 import { handleMutate } from '../../../billable-services/utils';
 
-interface AddServiceFormProps {
-  initialValues?: ChargeableServiceFormSchema;
+interface AddServiceAvailableFormProps {
+  initialValues?: BillableFormSchema;
   closeWorkspace: () => void;
   closeWorkspaceWithSavedChanges?: () => void;
   promptBeforeClosing?: (testFcn: () => boolean) => void;
   onWorkspaceClose?: () => void;
 }
 
-const AddServiceForm: React.FC<AddServiceFormProps> = ({
+const AddServiceAvailableForm: React.FC<AddServiceAvailableFormProps> = ({
   closeWorkspace,
   promptBeforeClosing,
   closeWorkspaceWithSavedChanges,
@@ -48,9 +47,8 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
 
   const { isLoading: isLoadingServiceTypes, serviceTypes } = useServiceTypes();
   const { isSearching, searchResults: concepts } = useConceptsSearch(debouncedConceptToLookup);
-
-  const formMethods = useForm<ChargeableServiceFormSchema>({
-    resolver: zodResolver(chargeableServiceFormSchema),
+  const formMethods = useForm<BillableFormSchema>({
+    resolver: zodResolver(billableFormSchema),
     defaultValues: initialValues
       ? mapInputToPayloadSchema(initialValues)
       : {
@@ -94,10 +92,10 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
   };
 
   useEffect(() => {
-    promptBeforeClosing(() => isDirty);
+    promptBeforeClosing?.(() => isDirty);
   }, [isDirty, promptBeforeClosing]);
 
-  const onSubmit = async (data: ChargeableServiceFormSchema) => {
+  const onSubmit = async (data: BillableFormSchema) => {
     const formPayload = formatBillableServicePayloadForSubmission(data, initialValues?.['uuid']);
     try {
       const response = await createBillableService(formPayload, initialValues?.['uuid']);
@@ -114,14 +112,16 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
           timeoutInMs: 5000,
         });
         handleMutate(`${restBaseUrl}/cashier/billableService?v`);
-        closeWorkspaceWithSavedChanges();
+
+        closeWorkspaceWithSavedChanges?.();
       }
     } catch (e) {
-      const errorMessage = e?.servicePrices?.root?.message || 'Unknown error occurred';
+      const errorMessage =
+        e?.responseBody?.error?.message || e?.message || t('unknownError', 'An unknown error occurred');
       showSnackbar({
         title: t('serviceCreationFailed', 'Service creation failed'),
         subtitle: t('serviceCreationFailedSubtitle', 'The service creation failed: {{errorMessage}}', {
-          errorMessage,
+          errorMessage: String(errorMessage).trim(),
         }),
         kind: 'error',
         isLowContrast: true,
@@ -130,23 +130,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
     }
   };
 
-  const renderServicePriceFields = useMemo(
-    () =>
-      servicePriceFields.map((field, index) => (
-        <PriceField
-          key={field.id}
-          field={field}
-          index={index}
-          control={control}
-          removeServicePrice={removeServicePrice}
-          errors={errors}
-        />
-      )),
-    [servicePriceFields, control, removeServicePrice, errors],
-  );
-
   const handleError = (err) => {
-    console.error(JSON.stringify(err, null, 2));
     const errorMessage = Object.entries(err as Record<string, { message: string }>)
       .map(([field, error]) => `${field}: ${error.message}`)
       .join('; ');
@@ -222,25 +206,27 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
               <Controller
                 name="serviceType"
                 control={control}
-                render={({ field }) => (
-                  <ComboBox
-                    id="serviceType"
-                    onChange={({ selectedItem }) => field.onChange(selectedItem)}
-                    titleText={t('serviceType', 'Service type')}
-                    items={serviceTypes ?? []}
-                    itemToString={(item) => (item ? item.display : '')}
-                    placeholder={t('selectServiceType', 'Select service type')}
-                    disabled={isLoadingServiceTypes}
-                    initialSelectedItem={field.value}
-                    invalid={!!errors.serviceType}
-                    invalidText={errors?.serviceType?.message}
-                    itemToElement={(item) => (
-                      <div role="option" aria-selected={field.value?.uuid === item?.uuid}>
-                        {item?.display}
-                      </div>
-                    )}
-                  />
-                )}
+                render={({ field }) => {
+                  return (
+                    <ComboBox
+                      id="serviceType"
+                      onChange={({ selectedItem }) => field.onChange(selectedItem)}
+                      titleText={t('serviceType', 'Service type')}
+                      items={serviceTypes ?? []}
+                      itemToString={(item) => (item ? item.display : '')}
+                      placeholder={t('selectServiceType', 'Select service type')}
+                      disabled={isLoadingServiceTypes}
+                      initialSelectedItem={field.value}
+                      invalid={!!errors.serviceType}
+                      invalidText={errors?.serviceType?.message}
+                      itemToElement={(item) => (
+                        <div role="option" aria-selected={field.value?.uuid === item?.uuid}>
+                          {item?.display}
+                        </div>
+                      )}
+                    />
+                  );
+                }}
               />
             </ResponsiveWrapper>
             <ResponsiveWrapper>
@@ -249,9 +235,9 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
                 name="serviceStatus"
                 render={({ field }) => (
                   <Toggle
-                    labelText={t('status', 'Status')}
-                    labelA="Off"
-                    labelB="On"
+                    labelText={t('isServiceAvailable', 'Is service available?')}
+                    labelA={t('no', 'No')}
+                    labelB={t('yes', 'Yes')}
                     defaultToggled={field.value === 'ENABLED'}
                     id="serviceStatus"
                     onToggle={(value) => (value ? field.onChange('ENABLED') : field.onChange('DISABLED'))}
@@ -259,23 +245,6 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
                 )}
               />
             </ResponsiveWrapper>
-
-            {renderServicePriceFields}
-
-            <Button size="sm" kind="tertiary" renderIcon={Add} onClick={() => appendServicePrice({})}>
-              {t('addPaymentMethod', 'Add payment method')}
-            </Button>
-
-            {!!errors.servicePrices && (
-              <InlineNotification
-                aria-label="closes notification"
-                kind="error"
-                lowContrast={true}
-                statusIconDescription="notification"
-                title={t('paymentMethodRequired', 'Payment method required')}
-                subtitle={t('atLeastOnePriceRequired', 'At least one price is required')}
-              />
-            )}
           </Stack>
         </div>
         <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
@@ -297,4 +266,4 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
   );
 };
 
-export default AddServiceForm;
+export default AddServiceAvailableForm;
