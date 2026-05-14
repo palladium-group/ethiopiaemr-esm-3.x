@@ -21,7 +21,6 @@ import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/vis
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
-import { scheduleDetachLegacyGenericTriageHomepageLinks } from './triage/detach-legacy-triage-homepage-links';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
@@ -34,12 +33,9 @@ const options = {
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 
-  scheduleDetachLegacyGenericTriageHomepageLinks();
-
   getConfig(moduleName)
     .then((cfg) => {
       registerTriageDashboardExtensionsFromConfig(options, cfg as ClinicalWorkflowConfig);
-      scheduleDetachLegacyGenericTriageHomepageLinks();
     })
     .catch((err) => {
       console.error('[clinical-workflow] getConfig failed; triage extensions were not registered.', err);
