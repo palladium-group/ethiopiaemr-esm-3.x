@@ -87,6 +87,13 @@
   }
 }
 
+.disabilityTypeSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  width: 100%;
+}
+
 .checkboxRow {
   display: flex;
   flex-wrap: wrap;
