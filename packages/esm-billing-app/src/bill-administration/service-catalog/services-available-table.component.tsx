@@ -37,6 +37,8 @@ import { type ChargeAble, useChargeSummaries } from './charge-summary.resource';
 import { downloadExcelTemplateFile, searchTableData } from './form-helper';
 import { useCurrencyFormatting } from '../../helpers/currency';
 import { Permissions } from '../../permission/permissions.constants';
+import ServiceTableFilter from './services/service-table-filter.component';
+import { useServiceTableFilters } from './billable-service.resource';
 
 const defaultPageSize = 10;
 
@@ -53,43 +55,27 @@ const ServicesAvailableTable: React.FC = () => {
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [searchString, setSearchString] = useState('');
 
-  const searchResults = useMemo(
-    () => searchTableData(chargeSummaryItems, searchString),
-    [chargeSummaryItems, searchString],
-  );
-
+  const { filters, setFilters, filteredRows, availableTypes } = useServiceTableFilters(chargeSummaryItems);
+  const searchResults = useMemo(() => searchTableData(filteredRows, searchString), [filteredRows, searchString]);
   const { results, goTo, currentPage } = usePagination(searchResults, pageSize);
-  const { pageSizes } = usePaginationInfo(defaultPageSize, chargeSummaryItems.length, currentPage, results.length);
+  const { pageSizes } = usePaginationInfo(defaultPageSize, searchResults.length, currentPage, results.length);
 
   const headers = [
-    {
-      key: 'name',
-      header: t('name', 'Name'),
-    },
-    {
-      key: 'shortName',
-      header: t('shortName', 'Short Name'),
-    },
-    {
-      key: 'serviceType',
-      header: t('type', 'Type'),
-    },
-    {
-      key: 'available',
-      header: t('available', 'Available'),
-    },
+    { key: 'name', header: t('name', 'Name') },
+    { key: 'shortName', header: t('shortName', 'Short Name') },
+    { key: 'serviceType', header: t('type', 'Type') },
+    { key: 'available', header: t('available', 'Available') },
   ];
 
-  const rows = results.map((service) => {
-    return {
-      id: service.uuid,
-      name: service.name,
-      shortName: service.shortName,
-      serviceStatus: service.serviceStatus,
-      serviceType: service?.serviceType?.display ?? t('stockItem', 'Stock Item'),
-      servicePrices: service.servicePrices.map((price) => `${price.name} : ${formatCurrency(price.price)}`).join(', '),
-    };
-  });
+  const rows = results.map((service) => ({
+    id: service.uuid,
+    name: service.name,
+    shortName: service.shortName,
+    serviceStatus: service.serviceStatus,
+    serviceType: service?.serviceType?.display ?? t('stockItem', 'Stock Item'),
+    servicePrices: service.servicePrices.map((price) => `${price.name} : ${formatCurrency(price.price)}`).join(', '),
+    available: service.serviceStatus === 'ENABLED' ? t('yes', 'Yes') : t('no', 'No'),
+  }));
 
   const handleDelete = (chargeableItem: ChargeAble) => {
     const dispose = showModal('delete-billableservice-modal', {
@@ -104,7 +90,7 @@ const ServicesAvailableTable: React.FC = () => {
           initialValues: service,
           workspaceTitle: t('editService', 'Edit Service'),
         })
-      : launchWorkspace('commodity-form', {
+      : launchWorkspace('add-commodity-form', {
           initialValues: service,
           workspaceTitle: t('editChargeItem', 'Edit Charge Item'),
         });
@@ -147,6 +133,7 @@ const ServicesAvailableTable: React.FC = () => {
                   persistent
                   size={size}
                 />
+                <ServiceTableFilter filters={filters} onChange={setFilters} availableTypes={availableTypes} />
                 {isValidating && (
                   <InlineLoading status="active" iconDescription="Loading" description="Loading data..." />
                 )}
@@ -167,8 +154,8 @@ const ServicesAvailableTable: React.FC = () => {
                       <MenuItem
                         renderIcon={WatsonHealthScalpelSelect}
                         onClick={() =>
-                          launchWorkspace('commodity-form', {
-                            workspaceTitle: t('chargeCommodityForm', 'Charge Commodity Form'),
+                          launchWorkspace('add-commodity-form', {
+                            workspaceTitle: t('addCommodityForm', 'Add Commodity Form'),
                           })
                         }
                         label={t('addCommodityChargeItem', 'Add charge item')}
@@ -194,11 +181,7 @@ const ServicesAvailableTable: React.FC = () => {
               <TableHead>
                 <TableRow>
                   {headers.map((header) => (
-                    <TableHeader
-                      key={header.key}
-                      {...getHeaderProps({
-                        header,
-                      })}>
+                    <TableHeader key={header.key} {...getHeaderProps({ header })}>
                       {header.header}
                     </TableHeader>
                   ))}
@@ -207,11 +190,7 @@ const ServicesAvailableTable: React.FC = () => {
               </TableHead>
               <TableBody>
                 {rows.map((row, index) => (
-                  <TableRow
-                    key={row.id}
-                    {...getRowProps({
-                      row,
-                    })}>
+                  <TableRow key={row.id} {...getRowProps({ row })}>
                     {row.cells.map((cell) => (
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
@@ -247,10 +226,10 @@ const ServicesAvailableTable: React.FC = () => {
           goTo(page);
         }}
         page={currentPage}
-        pageSize={defaultPageSize}
+        pageSize={pageSize}
         pageSizes={pageSizes}
         size="sm"
-        totalItems={chargeSummaryItems.length}
+        totalItems={searchResults.length}
       />
     </>
   );

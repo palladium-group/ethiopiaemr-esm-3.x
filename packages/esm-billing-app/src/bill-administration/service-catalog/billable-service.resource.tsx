@@ -2,6 +2,7 @@ import { Concept, openmrsFetch } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { ServiceConcept, ServiceTypesResponse } from '../../types';
 import { type ChargeAble } from './charge-summary.resource';
+import { useMemo, useState } from 'react';
 
 type ExtendedResponseObject = ChargeAble & {
   concept: Concept;
@@ -9,6 +10,15 @@ type ExtendedResponseObject = ChargeAble & {
 
 type ResponseObject = {
   results: Array<ExtendedResponseObject>;
+};
+export interface ServiceTableFilters {
+  types: string[];
+  available: 'all' | 'ENABLED' | 'DISABLED';
+}
+
+const DEFAULT_FILTERS: ServiceTableFilters = {
+  types: [],
+  available: 'all',
 };
 
 export const useBillableServices = () => {
@@ -75,4 +85,26 @@ export function useConceptsSearch(conceptToLookup: string) {
     error: error,
     isSearching: isLoading,
   };
+}
+export function useServiceTableFilters(rows: ChargeAble[]) {
+  const [filters, setFilters] = useState<ServiceTableFilters>(DEFAULT_FILTERS);
+
+  const availableTypes = useMemo(
+    () => [...new Set(rows.map((r) => r.serviceType?.display).filter(Boolean) as string[])].sort(),
+    [rows],
+  );
+
+  const filteredRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        const typeMatch = filters.types.length === 0 || filters.types.includes(row.serviceType?.display ?? '');
+        const availMatch = filters.available === 'all' || row.serviceStatus === filters.available;
+        return typeMatch && availMatch;
+      }),
+    [rows, filters],
+  );
+
+  const resetFilters = () => setFilters(DEFAULT_FILTERS);
+
+  return { filters, setFilters, filteredRows, availableTypes, resetFilters };
 }

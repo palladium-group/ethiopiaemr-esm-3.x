@@ -371,6 +371,12 @@
       "type": "other-form"
     },
     {
+      "name": "add-commodity-form",
+      "component": "addCommodityForm",
+      "title": "Add Commodity Form",
+      "type": "other-form"
+    },
+    {
       "name": "cancel-bill-workspace",
       "component": "cancelBillWorkspace",
       "title": "Cancel Bill Workspace",

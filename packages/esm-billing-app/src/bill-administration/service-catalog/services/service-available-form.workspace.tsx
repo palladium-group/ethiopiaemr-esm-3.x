@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ButtonSet,
@@ -10,14 +10,12 @@ import {
   InlineNotification,
   InlineLoading,
 } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { Controller, useFieldArray, useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useLayoutType, useDebounce, ResponsiveWrapper, showSnackbar, restBaseUrl } from '@openmrs/esm-framework';
 
 import { createBillableService, useConceptsSearch, useServiceTypes } from '../billable-service.resource';
-import PriceField from './price.component';
 import { billableFormSchema, BillableFormSchema } from '../form-schemas';
 
 import classNames from 'classnames';
@@ -132,21 +130,6 @@ const AddServiceAvailableForm: React.FC<AddServiceAvailableFormProps> = ({
     }
   };
 
-  const renderServicePriceFields = useMemo(
-    () =>
-      servicePriceFields.map((field, index) => (
-        <PriceField
-          key={field.id}
-          field={field}
-          index={index}
-          control={control}
-          removeServicePrice={removeServicePrice}
-          errors={errors}
-        />
-      )),
-    [servicePriceFields, control, removeServicePrice, errors],
-  );
-
   const handleError = (err) => {
     console.error(JSON.stringify(err, null, 2));
     const errorMessage = Object.entries(err as Record<string, { message: string }>)
@@ -253,9 +236,9 @@ const AddServiceAvailableForm: React.FC<AddServiceAvailableFormProps> = ({
                 name="serviceStatus"
                 render={({ field }) => (
                   <Toggle
-                    labelText={t('status', 'Status')}
-                    labelA="Off"
-                    labelB="On"
+                    labelText={t('isServiceAvailable', 'Is service available?')}
+                    labelA={t('no', 'No')}
+                    labelB={t('yes', 'Yes')}
                     defaultToggled={field.value === 'ENABLED'}
                     id="serviceStatus"
                     onToggle={(value) => (value ? field.onChange('ENABLED') : field.onChange('DISABLED'))}

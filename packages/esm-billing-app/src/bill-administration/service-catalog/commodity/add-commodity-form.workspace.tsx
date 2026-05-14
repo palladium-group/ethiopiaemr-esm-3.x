@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ButtonSet, Button, Stack, Toggle, InlineNotification, InlineLoading } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { useForm, FormProvider, useFieldArray, Controller } from 'react-hook-form';
 
 import { useLayoutType, ResponsiveWrapper, showSnackbar, restBaseUrl } from '@openmrs/esm-framework';
@@ -9,20 +8,19 @@ import styles from './commodity-form.scss';
 import StockItemSearch from './stock-search.component';
 import classNames from 'classnames';
 import { zodResolver } from '@hookform/resolvers/zod';
-import PriceField from '../services/price.component';
-import { chargeableServiceFormSchema, ChargeableServiceFormSchema } from '../form-schemas';
+import { billableFormSchema, BillableFormSchema } from '../form-schemas';
 import { formatBillableServicePayloadForSubmission, mapInputToPayloadSchema } from '../form-helper';
 import { createBillableService } from '../billable-service.resource';
 import { handleMutate } from '../../../billable-services/utils';
 
 type CommodityFormProps = {
-  initialValues?: ChargeableServiceFormSchema;
+  initialValues?: BillableFormSchema;
   closeWorkspace: () => void;
   closeWorkspaceWithSavedChanges?: () => void;
   promptBeforeClosing?: (testFcn: () => boolean) => void;
 };
 
-const CommodityForm: React.FC<CommodityFormProps> = ({
+const AddCommodityForm: React.FC<CommodityFormProps> = ({
   closeWorkspace,
   closeWorkspaceWithSavedChanges,
   promptBeforeClosing,
@@ -30,8 +28,8 @@ const CommodityForm: React.FC<CommodityFormProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const formMethods = useForm<ChargeableServiceFormSchema>({
-    resolver: zodResolver(chargeableServiceFormSchema),
+  const formMethods = useForm<BillableFormSchema>({
+    resolver: zodResolver(billableFormSchema),
     defaultValues: initialValues
       ? {
           ...mapInputToPayloadSchema(initialValues),
@@ -62,14 +60,14 @@ const CommodityForm: React.FC<CommodityFormProps> = ({
     }
   }, [initialValues, trigger]);
 
-  const onSubmit = async (formValues: ChargeableServiceFormSchema) => {
+  const onSubmit = async (formValues: BillableFormSchema) => {
     const payload = formatBillableServicePayloadForSubmission(formValues, initialValues?.['uuid']);
     try {
       const response = await createBillableService(payload, initialValues?.['uuid']);
       if (response.ok) {
         showSnackbar({
-          title: t('commodityBillableCreated', 'Commodity price created successfully'),
-          subtitle: t('commodityBillableCreatedSubtitle', 'The commodity price has been created successfully'),
+          title: t('commodityBillableCreated', 'Commodity created successfully'),
+          subtitle: t('commodityBillableCreatedSubtitle', 'The commodity has been created successfully'),
           kind: 'success',
           isLowContrast: true,
           timeoutInMs: 5000,
@@ -81,14 +79,10 @@ const CommodityForm: React.FC<CommodityFormProps> = ({
       const errorMessage =
         e?.responseBody?.error?.message || e?.message || t('unknownError', 'An unknown error occurred');
       showSnackbar({
-        title: t('commodityBillableCreationFailed', 'Commodity price creation failed'),
-        subtitle: t(
-          'commodityBillableCreationFailedSubtitle',
-          'The commodity price creation failed: {{errorMessage}}',
-          {
-            errorMessage: String(errorMessage).trim(),
-          },
-        ),
+        title: t('commodityBillableCreationFailed', 'Commodity creation failed'),
+        subtitle: t('commodityBillableCreationFailedSubtitle', 'The commodity creation failed: {{errorMessage}}', {
+          errorMessage: String(errorMessage).trim(),
+        }),
         kind: 'error',
         isLowContrast: true,
         timeoutInMs: 5000,
@@ -99,21 +93,6 @@ const CommodityForm: React.FC<CommodityFormProps> = ({
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
   }, [isDirty, promptBeforeClosing]);
-
-  const renderServicePriceFields = useMemo(
-    () =>
-      fields.map((field, index) => (
-        <PriceField
-          key={field.id}
-          field={field}
-          index={index}
-          control={control}
-          removeServicePrice={remove}
-          errors={errors}
-        />
-      )),
-    [fields, control, remove, errors],
-  );
 
   function flattenErrors(errors: Record<string, any>): string[] {
     const messages: string[] = [];
@@ -167,9 +146,9 @@ const CommodityForm: React.FC<CommodityFormProps> = ({
                 name="serviceStatus"
                 render={({ field }) => (
                   <Toggle
-                    labelText={t('status', 'Status')}
-                    labelA="Off"
-                    labelB="On"
+                    labelText={t('isItemAvailable', 'Is item available?')}
+                    labelA={t('no', 'NO')}
+                    labelB={t('yes', 'YES')}
                     defaultToggled={field.value === 'ENABLED'}
                     id="serviceStatus"
                     onToggle={(value) => (value ? field.onChange('ENABLED') : field.onChange('DISABLED'))}
@@ -177,20 +156,6 @@ const CommodityForm: React.FC<CommodityFormProps> = ({
                 )}
               />
             </ResponsiveWrapper>
-            {renderServicePriceFields}
-            <Button size="sm" kind="tertiary" renderIcon={Add} onClick={() => append({})}>
-              {t('addPaymentMethod', 'Add payment method')}
-            </Button>
-            {!!errors.servicePrices && (
-              <InlineNotification
-                aria-label="closes notification"
-                kind="error"
-                lowContrast={true}
-                statusIconDescription="notification"
-                title={t('paymentMethodRequired', 'Payment method required')}
-                subtitle={t('atLeastOnePriceRequired', 'At least one price is required')}
-              />
-            )}
           </Stack>
         </div>
         <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
@@ -212,4 +177,4 @@ const CommodityForm: React.FC<CommodityFormProps> = ({
   );
 };
 
-export default CommodityForm;
+export default AddCommodityForm;

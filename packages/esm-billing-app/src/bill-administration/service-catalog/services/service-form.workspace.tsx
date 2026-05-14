@@ -13,12 +13,11 @@ import {
 import { Add } from '@carbon/react/icons';
 import { Controller, useFieldArray, useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
 import { useLayoutType, useDebounce, ResponsiveWrapper, showSnackbar, restBaseUrl } from '@openmrs/esm-framework';
-
 import { createBillableService, useConceptsSearch, useServiceTypes } from '../billable-service.resource';
 import PriceField from './price.component';
-import { billableFormSchema, BillableFormSchema } from '../form-schemas';
+
+import { chargeableServiceFormSchema, ChargeableServiceFormSchema } from '../form-schemas';
 
 import classNames from 'classnames';
 import styles from './service-form.scss';
@@ -27,7 +26,7 @@ import ConceptSearch from './concept-search.component';
 import { handleMutate } from '../../../billable-services/utils';
 
 interface AddServiceFormProps {
-  initialValues?: BillableFormSchema;
+  initialValues?: ChargeableServiceFormSchema;
   closeWorkspace: () => void;
   closeWorkspaceWithSavedChanges?: () => void;
   promptBeforeClosing?: (testFcn: () => boolean) => void;
@@ -49,8 +48,9 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
 
   const { isLoading: isLoadingServiceTypes, serviceTypes } = useServiceTypes();
   const { isSearching, searchResults: concepts } = useConceptsSearch(debouncedConceptToLookup);
-  const formMethods = useForm<BillableFormSchema>({
-    resolver: zodResolver(billableFormSchema),
+
+  const formMethods = useForm<ChargeableServiceFormSchema>({
+    resolver: zodResolver(chargeableServiceFormSchema),
     defaultValues: initialValues
       ? mapInputToPayloadSchema(initialValues)
       : {
@@ -97,7 +97,7 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
     promptBeforeClosing(() => isDirty);
   }, [isDirty, promptBeforeClosing]);
 
-  const onSubmit = async (data: BillableFormSchema) => {
+  const onSubmit = async (data: ChargeableServiceFormSchema) => {
     const formPayload = formatBillableServicePayloadForSubmission(data, initialValues?.['uuid']);
     try {
       const response = await createBillableService(formPayload, initialValues?.['uuid']);
@@ -114,11 +114,9 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
           timeoutInMs: 5000,
         });
         handleMutate(`${restBaseUrl}/cashier/billableService?v`);
-
         closeWorkspaceWithSavedChanges();
       }
     } catch (e) {
-      const formSchemaError = JSON.stringify(e, null, 2);
       const errorMessage = e?.servicePrices?.root?.message || 'Unknown error occurred';
       showSnackbar({
         title: t('serviceCreationFailed', 'Service creation failed'),
@@ -224,27 +222,25 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
               <Controller
                 name="serviceType"
                 control={control}
-                render={({ field }) => {
-                  return (
-                    <ComboBox
-                      id="serviceType"
-                      onChange={({ selectedItem }) => field.onChange(selectedItem)}
-                      titleText={t('serviceType', 'Service type')}
-                      items={serviceTypes ?? []}
-                      itemToString={(item) => (item ? item.display : '')}
-                      placeholder={t('selectServiceType', 'Select service type')}
-                      disabled={isLoadingServiceTypes}
-                      initialSelectedItem={field.value}
-                      invalid={!!errors.serviceType}
-                      invalidText={errors?.serviceType?.message}
-                      itemToElement={(item) => (
-                        <div role="option" aria-selected={field.value?.uuid === item?.uuid}>
-                          {item?.display}
-                        </div>
-                      )}
-                    />
-                  );
-                }}
+                render={({ field }) => (
+                  <ComboBox
+                    id="serviceType"
+                    onChange={({ selectedItem }) => field.onChange(selectedItem)}
+                    titleText={t('serviceType', 'Service type')}
+                    items={serviceTypes ?? []}
+                    itemToString={(item) => (item ? item.display : '')}
+                    placeholder={t('selectServiceType', 'Select service type')}
+                    disabled={isLoadingServiceTypes}
+                    initialSelectedItem={field.value}
+                    invalid={!!errors.serviceType}
+                    invalidText={errors?.serviceType?.message}
+                    itemToElement={(item) => (
+                      <div role="option" aria-selected={field.value?.uuid === item?.uuid}>
+                        {item?.display}
+                      </div>
+                    )}
+                  />
+                )}
               />
             </ResponsiveWrapper>
             <ResponsiveWrapper>
@@ -263,10 +259,13 @@ const AddServiceForm: React.FC<AddServiceFormProps> = ({
                 )}
               />
             </ResponsiveWrapper>
+
             {renderServicePriceFields}
+
             <Button size="sm" kind="tertiary" renderIcon={Add} onClick={() => appendServicePrice({})}>
               {t('addPaymentMethod', 'Add payment method')}
             </Button>
+
             {!!errors.servicePrices && (
               <InlineNotification
                 aria-label="closes notification"

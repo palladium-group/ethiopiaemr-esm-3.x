@@ -72,6 +72,7 @@ import { DeletePaymentPointModal } from './bill-administration/payment-points/de
 import PrintPreviewModal from './print-preview/print-preview.modal';
 import PaymentWorkspace from './invoice/payments/payment-form/payment.workspace';
 import { ClaimSummaryModal } from './claims/claims-management/table/claim-summary-modal/claim-summary.modal';
+import AddCommodityForm from './bill-administration/service-catalog/commodity/add-commodity-form.workspace';
 
 // Translation
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
@@ -133,6 +134,7 @@ export const addServiceForm = getSyncLifecycle(AddServiceForm, options);
 export const commodityForm = getSyncLifecycle(CommodityForm, options);
 export const bulkImportBillableServicesModal = getSyncLifecycle(BulkImportBillableServices, options);
 export const addServiceAvailableForm = getSyncLifecycle(AddServiceAvailableForm, options);
+export const addCommodityForm = getSyncLifecycle(AddCommodityForm, options);
 
 // Claims Management Components
 export const claimsOverview = getSyncLifecycle(ClaimsManagementOverview, options);

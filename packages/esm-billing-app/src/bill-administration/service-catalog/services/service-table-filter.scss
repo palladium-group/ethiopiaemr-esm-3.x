@@ -1,0 +1,17 @@
+@use '@carbon/layout';
+
+.filterWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.filtersAlign {
+  margin-bottom: layout.$spacing-03;
+  min-width: auto;
+  width: auto;
+
+  :global(.cds--list-box__menu) {
+    min-width: 15rem;
+    z-index: 9100;
+  }
+}
