@@ -177,13 +177,46 @@ const calculateBirthdate = (
   return { formattedBirthDate, birthdateEstimated };
 };
 
+export function buildDisabilityTypeAttributeValue(data: {
+  disabilityNone?: boolean;
+  disabilityVisionLoss?: boolean;
+  disabilityHearingLoss?: boolean;
+  disabilityMobilityImpairment?: boolean;
+  disabilityOther?: boolean;
+  disabilityOtherSpecify?: string;
+}): string | null {
+  if (data.disabilityNone) {
+    return 'none';
+  }
+  const segments: string[] = [];
+  if (data.disabilityVisionLoss) {
+    segments.push('vision_loss');
+  }
+  if (data.disabilityHearingLoss) {
+    segments.push('hearing_loss');
+  }
+  if (data.disabilityMobilityImpairment) {
+    segments.push('mobility_impairment');
+  }
+  if (data.disabilityOther) {
+    const spec = (data.disabilityOtherSpecify ?? '').trim();
+    if (spec.length > 0) {
+      segments.push(`other:${spec}`);
+    }
+  }
+  if (segments.length === 0) {
+    return null;
+  }
+  return segments.join(';');
+}
+
 export const buildPatientRegistrationPayload = (
   formData: PatientRegistrationFormData,
   uuid: string,
   identifier: string,
   defaultIdentifierTypeUuid: string,
   locationUuid: string,
-  hasDisability?: boolean,
+  disabilityTypeAttributeValue: string | null,
   disabilityStatusAttributeTypeUuid?: string,
   healthId?: string,
   healthIdIdentifierTypeUuid?: string,
@@ -200,10 +233,14 @@ export const buildPatientRegistrationPayload = (
   const genderCode = formData.gender === 'Male' ? 'M' : 'F';
 
   const attributes: Array<{ attributeType: string; value: string }> = [];
-  if (hasDisability === true && disabilityStatusAttributeTypeUuid) {
+  if (
+    disabilityTypeAttributeValue &&
+    disabilityStatusAttributeTypeUuid &&
+    disabilityStatusAttributeTypeUuid.trim() !== ''
+  ) {
     attributes.push({
       attributeType: disabilityStatusAttributeTypeUuid,
-      value: 'true',
+      value: disabilityTypeAttributeValue,
     });
   }
 

@@ -31,6 +31,7 @@ import type { ClinicalWorkflowConfig } from '../config-schema';
 import {
   registerNewPatient,
   buildPatientRegistrationPayload,
+  buildDisabilityTypeAttributeValue,
   calculateDOBFromAgeFields,
   saveAllergy,
   saveCondition,
@@ -87,7 +88,12 @@ const patientRegistrationSchema = z
       })
       .optional()
       .nullable(),
-    hasDisability: z.boolean().optional().default(false),
+    disabilityNone: z.boolean().optional().default(true),
+    disabilityVisionLoss: z.boolean().optional().default(false),
+    disabilityHearingLoss: z.boolean().optional().default(false),
+    disabilityMobilityImpairment: z.boolean().optional().default(false),
+    disabilityOther: z.boolean().optional().default(false),
+    disabilityOtherSpecify: z.string().optional().default(''),
   })
   .refine(
     (data) => {
@@ -104,7 +110,29 @@ const patientRegistrationSchema = z
       message: 'Please provide either date of birth or age information',
       path: ['dateOfBirth'],
     },
-  );
+  )
+  .superRefine((data, ctx) => {
+    if (data.disabilityOther && !(data.disabilityOtherSpecify ?? '').trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please specify when Other is selected',
+        path: ['disabilityOtherSpecify'],
+      });
+    }
+    if (
+      data.disabilityNone &&
+      (data.disabilityVisionLoss ||
+        data.disabilityHearingLoss ||
+        data.disabilityMobilityImpairment ||
+        data.disabilityOther)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Uncheck specific disability types when No disability is selected',
+        path: ['disabilityNone'],
+      });
+    }
+  });
 
 export type PatientRegistrationFormData = z.infer<typeof patientRegistrationSchema>;
 
@@ -169,7 +197,12 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
       ageMinutes: null,
       isEstimatedDOB: false,
       dateOfBirth: null,
-      hasDisability: false,
+      disabilityNone: true,
+      disabilityVisionLoss: false,
+      disabilityHearingLoss: false,
+      disabilityMobilityImpairment: false,
+      disabilityOther: false,
+      disabilityOtherSpecify: '',
     },
   });
 
@@ -178,6 +211,15 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   const ageDays = useWatch({ control, name: 'ageDays' });
   const ageHours = useWatch({ control, name: 'ageHours' });
   const ageMinutes = useWatch({ control, name: 'ageMinutes' });
+  const disabilityOther = useWatch({ control, name: 'disabilityOther' });
+
+  const clearSpecificDisabilityFields = () => {
+    setValue('disabilityVisionLoss', false, { shouldDirty: true });
+    setValue('disabilityHearingLoss', false, { shouldDirty: true });
+    setValue('disabilityMobilityImpairment', false, { shouldDirty: true });
+    setValue('disabilityOther', false, { shouldDirty: true });
+    setValue('disabilityOtherSpecify', '', { shouldDirty: true });
+  };
 
   const dobManuallySetRef = useRef(false);
   const lastCalculatedDOBRef = useRef<Date | null>(null);
@@ -261,6 +303,12 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     setValue('lastName', '', { shouldDirty: false });
     setValue('gender', null, { shouldDirty: false });
     setValue('dateOfBirth', null, { shouldDirty: false });
+    setValue('disabilityNone', true, { shouldDirty: false });
+    setValue('disabilityVisionLoss', false, { shouldDirty: false });
+    setValue('disabilityHearingLoss', false, { shouldDirty: false });
+    setValue('disabilityMobilityImpairment', false, { shouldDirty: false });
+    setValue('disabilityOther', false, { shouldDirty: false });
+    setValue('disabilityOtherSpecify', '', { shouldDirty: false });
   };
 
   const onSubmit = async (data: PatientRegistrationFormData) => {
@@ -275,13 +323,15 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
           }
         : {};
 
+      const disabilityTypeAttributeValue = buildDisabilityTypeAttributeValue(data);
+
       const registrationPayload = buildPatientRegistrationPayload(
         data,
         uuid,
         identifier,
         defaultIdentifierTypeUuid,
         sessionLocation.uuid,
-        data.hasDisability,
+        disabilityTypeAttributeValue,
         disabilityStatusAttributeTypeUuid,
         resolvedHealthId ?? undefined,
         healthIdIdentifierTypeUuid || undefined,
@@ -748,23 +798,121 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
           )}
         />
 
-        <div className={styles.checkboxRow}>
-          <Controller
-            name="hasDisability"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <ResponsiveWrapper>
+        <FormGroup legendText={t('disabilityType', 'Disability type')}>
+          <div className={styles.disabilityTypeSection}>
+            <Controller
+              name="disabilityNone"
+              control={control}
+              render={({ field: { value, onChange } }) => (
                 <Checkbox
-                  id="disability-status"
-                  labelText={t('disabilityStatus', 'Disability Status')}
-                  checked={value || false}
-                  onChange={(event, { checked }) => onChange(checked)}
+                  id="disability-none"
+                  labelText={t('disabilityTypeNone', 'No disability')}
+                  checked={!!value}
+                  onChange={(_, { checked }) => {
+                    onChange(checked);
+                    if (checked) {
+                      clearSpecificDisabilityFields();
+                    }
+                  }}
                   disabled={isSubmitting}
                 />
-              </ResponsiveWrapper>
-            )}
-          />
-        </div>
+              )}
+            />
+            <Controller
+              name="disabilityVisionLoss"
+              control={control}
+              render={({ field: { value, onChange } }) => (
+                <Checkbox
+                  id="disability-vision-loss"
+                  labelText={t('disabilityTypeVisionLoss', 'Vision loss')}
+                  checked={!!value}
+                  onChange={(_, { checked }) => {
+                    onChange(checked);
+                    if (checked) {
+                      setValue('disabilityNone', false, { shouldDirty: true });
+                    }
+                  }}
+                  disabled={isSubmitting}
+                />
+              )}
+            />
+            <Controller
+              name="disabilityHearingLoss"
+              control={control}
+              render={({ field: { value, onChange } }) => (
+                <Checkbox
+                  id="disability-hearing-loss"
+                  labelText={t('disabilityTypeHearingLoss', 'Hearing loss')}
+                  checked={!!value}
+                  onChange={(_, { checked }) => {
+                    onChange(checked);
+                    if (checked) {
+                      setValue('disabilityNone', false, { shouldDirty: true });
+                    }
+                  }}
+                  disabled={isSubmitting}
+                />
+              )}
+            />
+            <Controller
+              name="disabilityMobilityImpairment"
+              control={control}
+              render={({ field: { value, onChange } }) => (
+                <Checkbox
+                  id="disability-mobility"
+                  labelText={t('disabilityTypeMobilityImpairment', 'Mobility impairment')}
+                  checked={!!value}
+                  onChange={(_, { checked }) => {
+                    onChange(checked);
+                    if (checked) {
+                      setValue('disabilityNone', false, { shouldDirty: true });
+                    }
+                  }}
+                  disabled={isSubmitting}
+                />
+              )}
+            />
+            <Controller
+              name="disabilityOther"
+              control={control}
+              render={({ field: { value, onChange } }) => (
+                <Checkbox
+                  id="disability-other"
+                  labelText={t('disabilityTypeOther', 'Other')}
+                  checked={!!value}
+                  onChange={(_, { checked }) => {
+                    onChange(checked);
+                    if (checked) {
+                      setValue('disabilityNone', false, { shouldDirty: true });
+                    } else {
+                      setValue('disabilityOtherSpecify', '', { shouldDirty: true });
+                    }
+                  }}
+                  disabled={isSubmitting}
+                />
+              )}
+            />
+            {disabilityOther ? (
+              <Controller
+                name="disabilityOtherSpecify"
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    id="disability-other-specify"
+                    labelText={t('disabilityTypeOtherSpecify', 'If other, specify')}
+                    value={value ?? ''}
+                    onChange={(e) => onChange(e.target.value)}
+                    disabled={isSubmitting}
+                    invalid={isSubmitted && !!errors.disabilityOtherSpecify}
+                    invalidText={
+                      isSubmitted && errors.disabilityOtherSpecify ? errors.disabilityOtherSpecify.message : ''
+                    }
+                  />
+                )}
+              />
+            ) : null}
+          </div>
+        </FormGroup>
       </div>
 
       <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>

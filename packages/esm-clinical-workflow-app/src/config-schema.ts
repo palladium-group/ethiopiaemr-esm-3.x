@@ -142,7 +142,8 @@ export const configSchema = {
   },
   disabilityStatusAttributeTypeUuid: {
     _type: Type.String,
-    _description: 'Patient attribute type UUID for Disability Status',
+    _description:
+      'Person attribute type UUID for disability type. Stored as a semicolon-separated list: `none`, or tokens `vision_loss`, `hearing_loss`, `mobility_impairment`, and optionally `other:<free text>`.',
     _default: '',
   },
   healthIdLookupUrl: {
