@@ -84,7 +84,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
     // Loop through line items and select one servicePrice per line item
     lineItems
-      .filter((item) => item.paymentStatus !== PaymentStatus.PAID)
+      .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
       .forEach((item) => {
         // Skip if already processed
         if (processedLineItems.has(item.uuid)) {
@@ -151,12 +151,15 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
   const totalWaivedAmount = computeWaivedAmount(bill);
   const totalAmountTendered = formValues?.reduce((curr: number, prev) => Number(prev.amount) + curr, 0) ?? 0;
-  const amountDue = bill.balance - totalAmountTendered;
+  const billableLineItemsTotalAmount = lineItems
+    .filter((item) => item.paymentStatus === PaymentStatus.PENDING)
+    ?.reduce((curr: number, prev) => curr + Number(prev.price * prev.quantity), 0);
+  const amountDue = billableLineItemsTotalAmount;
 
   // selected line items amount due
   const selectedLineItemsAmountDue =
     selectedLineItems
-      .filter((item) => item.paymentStatus !== PaymentStatus.PAID)
+      .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
       .reduce((curr: number, prev) => curr + Number(prev.price * prev.quantity), 0) - totalWaivedAmount;
 
   const handleNavigateToBillingDashboard = () =>
@@ -285,7 +288,12 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
             <UserHasAccess privilege={Permissions.ProcessPayment}>
               <Button
                 onClick={() => setShowConfirmModal(true)}
-                disabled={!formValues?.length || !methods.formState.isValid || hasAmountPaidExceeded}>
+                disabled={
+                  !formValues?.length ||
+                  !methods.formState.isValid ||
+                  hasAmountPaidExceeded ||
+                  selectedLineItemsAmountDue <= 0
+                }>
                 {t('processPayment', 'Process Payment')}
               </Button>
             </UserHasAccess>

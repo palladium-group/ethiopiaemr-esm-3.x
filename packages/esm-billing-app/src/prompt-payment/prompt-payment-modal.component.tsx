@@ -47,7 +47,7 @@ const PromptPaymentModal: React.FC<PromptPaymentModalProps> = () => {
       (lineItem) => lineItem?.paymentStatus !== 'EXEMPTED' && lineItem?.paymentStatus !== 'PAID' && !lineItem?.voided,
     );
 
-  if (!shouldShowBillingPrompt) {
+  if (!shouldShowBillingPrompt || lineItems.length === 0) {
     return null;
   }
 

@@ -20,7 +20,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { mutate } from 'swr';
-import { MappedBill, LineItem } from '../types';
+import { MappedBill, LineItem, PaymentStatus } from '../types';
 import { spaBasePath } from '../constants';
 import { useCheckShareGnum } from './invoice.resource';
 import styles from './invoice.scss';
@@ -47,6 +47,10 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
   const session = useSession();
   const printPrivileges = [Permissions.PrintInvoice, Permissions.PrintReceipt, Permissions.PrintBillStatement];
   const hasAnyPrintPrivilege = printPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
+  // filter out exempted and paid line items
+  const billableLineItems = bill.lineItems.filter(
+    (item) => item.paymentStatus !== PaymentStatus.EXEMPTED && item.paymentStatus !== PaymentStatus.PAID,
+  );
 
   const isInsurancePayment = (payments) => {
     return payments?.some((payment) => payment.instanceType.name === 'Insurance');
@@ -255,10 +259,13 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
         </Button>
       </UserHasAccess>
 
-      {bill?.balance !== 0 && (
+      {bill?.balance !== 0 && billableLineItems.length > 0 && (
         <Button
           onClick={handleBillPayment}
-          disabled={bill?.balance === 0}
+          disabled={
+            bill?.balance === 0 ||
+            selectedLineItems?.filter((item) => item.paymentStatus === PaymentStatus.PENDING).length === 0
+          }
           size="sm"
           renderIcon={Wallet}
           iconDescription="Add"

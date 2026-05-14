@@ -53,7 +53,7 @@ export const initiateTelebirrPayment = async (
     if (res.ok) {
       const response: TelebirrPaymentResponse = await res.json();
       setNotification({ message: 'Telebirr payment initiated successfully', type: 'success' });
-      return response.conversationId;
+      return response.originatorConversationId;
     }
 
     if (!res.ok) {

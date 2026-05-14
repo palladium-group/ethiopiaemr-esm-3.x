@@ -21,7 +21,7 @@ import { BillingConfig } from '../../../config-schema';
 import { usePatientAttributes } from '../../../hooks/usePatientAttributes';
 import { useRequestStatus } from '../../../hooks/useRequestStatus';
 import { initiateTelebirrPayment } from '../../../telebirr/telebirr-resource';
-import { LineItem, MappedBill } from '../../../types';
+import { LineItem, MappedBill, PaymentStatus } from '../../../types';
 import { formatEthiopianPhoneNumber } from '../utils';
 import styles from './initiate-payment.scss';
 
@@ -49,8 +49,10 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const [{ requestStatus }, pollingTrigger] = useRequestStatus(setNotification, closeModal, bill);
   const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
 
-  const pendingAmount = bill.totalAmount - bill.tenderedAmount;
   const isWaitingForTelebirr = requestStatus === 'INITIATED';
+  const selectedLineItemsPendingAmount = selectedLineItems
+    .filter((item) => item.paymentStatus === PaymentStatus.PENDING)
+    .reduce((curr: number, prev) => curr + Number(prev.price * prev.quantity), 0);
 
   const {
     control,
@@ -62,7 +64,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   } = useForm<FormData>({
     mode: 'all',
     defaultValues: {
-      billAmount: pendingAmount.toString(),
+      billAmount: selectedLineItemsPendingAmount.toString(),
       phoneNumber: phoneNumber,
     },
     resolver: zodResolver(initiatePaymentSchema),
@@ -81,6 +83,12 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
     const amountBilled = data.billAmount;
     // TODO: set proper conversation id
     const conversationId = bill.uuid;
+
+    // check if amountBilled is equal to selectedLineItemsPendingAmount
+    if (Number(amountBilled) !== selectedLineItemsPendingAmount) {
+      setNotification({ type: 'error', message: 'Amount billed does not match selected line items pending amount.' });
+      return;
+    }
 
     const payload = {
       conversationId,
@@ -167,7 +175,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
                     placeholder={t('billAmount', 'Bill Amount')}
                     invalid={!!errors.billAmount}
                     invalidText={errors.billAmount?.message}
-                    disabled={isWaitingForTelebirr}
+                    readOnly={true}
                   />
                 </Layer>
               )}
