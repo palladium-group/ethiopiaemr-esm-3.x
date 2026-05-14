@@ -87,7 +87,6 @@ const patientRegistrationSchema = z
       })
       .optional()
       .nullable(),
-    isMedicoLegalCase: z.boolean().optional().default(false),
     hasDisability: z.boolean().optional().default(false),
   })
   .refine(
@@ -124,7 +123,6 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   const {
     identifierSourceUuid,
     defaultIdentifierTypeUuid,
-    medicoLegalCasesAttributeTypeUuid,
     disabilityStatusAttributeTypeUuid,
     healthIdLookupUrl,
     healthIdIdentifierTypeUuid,
@@ -171,7 +169,6 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
       ageMinutes: null,
       isEstimatedDOB: false,
       dateOfBirth: null,
-      isMedicoLegalCase: false,
       hasDisability: false,
     },
   });
@@ -284,8 +281,6 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         identifier,
         defaultIdentifierTypeUuid,
         sessionLocation.uuid,
-        data.isMedicoLegalCase,
-        medicoLegalCasesAttributeTypeUuid,
         data.hasDisability,
         disabilityStatusAttributeTypeUuid,
         resolvedHealthId ?? undefined,
@@ -754,21 +749,6 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         />
 
         <div className={styles.checkboxRow}>
-          <Controller
-            name="isMedicoLegalCase"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <ResponsiveWrapper>
-                <Checkbox
-                  id="medico-legal-case"
-                  labelText={t('medicoLegalCases', 'Medico Legal Cases')}
-                  checked={value || false}
-                  onChange={(event, { checked }) => onChange(checked)}
-                  disabled={isSubmitting}
-                />
-              </ResponsiveWrapper>
-            )}
-          />
           <Controller
             name="hasDisability"
             control={control}

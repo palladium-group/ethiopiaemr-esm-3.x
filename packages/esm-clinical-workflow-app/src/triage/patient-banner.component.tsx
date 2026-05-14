@@ -1,74 +1,33 @@
-import React, { useMemo } from 'react';
-import { ExtensionSlot, launchWorkspace, usePatient, UserHasAccess, useVisit } from '@openmrs/esm-framework';
-import { Button, Dropdown, InlineLoading } from '@carbon/react';
+import React from 'react';
+import { ExtensionSlot, usePatient, UserHasAccess, useVisit } from '@openmrs/esm-framework';
+import { Button, InlineLoading } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { Close, Stethoscope } from '@carbon/react/icons';
-import {
-  useStartVisitAndLaunchTriageForm,
-  launchTriageFormWorkspace,
-  launchEmergencyTriageFormWorkspace,
-} from './useStartVisitAndLaunchTriageForm';
-import { useLatestQueueEntry } from './queue.resource';
-
-import type { TriageVariantConfig } from '../config-schema';
+import { useStartVisitAndLaunchTriageForm, launchTriageFormWorkspace } from './useStartVisitAndLaunchTriageForm';
+import type { TriageDefinitionConfig } from '../config-schema';
 import styles from './patient-banner.scss';
 import { Permissions } from '../permission/permissions.constants';
 
 type PatientBannerProps = {
   patientUuid: string;
-  variantConfig: TriageVariantConfig;
+  variantConfig: TriageDefinitionConfig;
   setPatientUuid: (patientUuid: string | undefined) => void;
-  variantType?: 'emergency' | 'central';
 };
 
-const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, variantConfig, setPatientUuid, variantType }) => {
+const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, variantConfig, setPatientUuid }) => {
   const { t } = useTranslation();
   const { isLoading: isVisitLoading, activeVisit } = useVisit(patientUuid);
   const { handleStartVisitAndLaunchTriageForm } = useStartVisitAndLaunchTriageForm();
-  const { isLoading, error, patient } = usePatient(patientUuid);
-  const { data: queueEntry, isLoading: isLoadingQueueEntry } = useLatestQueueEntry(patientUuid);
-
-  const handleLaunchTriageForm = (formUuid: string, formName: string) => {
-    if (variantType === 'emergency') {
-      if (queueEntry) {
-        if (activeVisit) {
-          // Use emergency-specific function (patient already queued)
-          launchEmergencyTriageFormWorkspace(patient, patientUuid, activeVisit, formUuid, formName, t);
-        } else {
-          handleStartVisitAndLaunchTriageForm(patientUuid, formUuid, formName);
-        }
-      } else {
-        launchWorkspace('emergency-queue-selection-workspace', {
-          patientUuid,
-          variantConfig,
-          formUuid,
-          formName,
-        });
-      }
+  const { isLoading, patient } = usePatient(patientUuid);
+  const handleLaunchTriageForm = () => {
+    if (activeVisit && patient) {
+      launchTriageFormWorkspace(patient, patientUuid, activeVisit, variantConfig.formUuid, variantConfig.name, t);
     } else {
-      // central triage - unchanged, uses original function
-      if (activeVisit) {
-        launchTriageFormWorkspace(patient, patientUuid, activeVisit, formUuid, formName, t);
-      } else {
-        handleStartVisitAndLaunchTriageForm(patientUuid, formUuid, formName);
-      }
+      handleStartVisitAndLaunchTriageForm(patientUuid, variantConfig.formUuid, variantConfig.name);
     }
   };
 
-  const patientTypeItems = useMemo(
-    () =>
-      variantConfig.patientTypes
-        ? Object.entries(variantConfig.patientTypes).map(([key, config]) => ({
-            id: key,
-            label: t(`patientType_${key}`, config.displayName),
-            formUuid: config.formUuid,
-            formName: config.formName,
-          }))
-        : [],
-    [variantConfig.patientTypes, t],
-  );
-
-  if (isLoading || isVisitLoading || (variantType === 'emergency' && isLoadingQueueEntry)) {
+  if (isLoading || isVisitLoading) {
     return <InlineLoading description={t('loading', 'Loading...')} />;
   }
 
@@ -76,28 +35,9 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, variantConfi
     <div className={styles.patientBannerContainer}>
       <div className={styles.patientBannerHeader}>
         <UserHasAccess privilege={Permissions.AddTriageForm}>
-          {patientTypeItems.length > 0 ? (
-            <Dropdown
-              id="patient-type-dropdown"
-              className={styles.patientTypeDropdown}
-              items={patientTypeItems}
-              itemToString={(item) => item?.label || ''}
-              titleText={t('selectTriageType', 'Select Triage Type')}
-              label={t('selectTriageType', 'Select Triage Type')}
-              onChange={({ selectedItem }) => {
-                if (selectedItem) {
-                  handleLaunchTriageForm(selectedItem.formUuid, selectedItem.formName);
-                }
-              }}
-            />
-          ) : (
-            <Button
-              kind="ghost"
-              renderIcon={Stethoscope}
-              onClick={() => handleLaunchTriageForm(variantConfig.formUuid, variantConfig.name)}>
-              {t('triageForm', 'Triage form')}
-            </Button>
-          )}
+          <Button kind="ghost" renderIcon={Stethoscope} onClick={handleLaunchTriageForm}>
+            {t('triageForm', 'Triage form')}
+          </Button>
         </UserHasAccess>
         <Button kind="danger--ghost" renderIcon={Close} onClick={() => setPatientUuid(undefined)}>
           {t('close', 'Close')}

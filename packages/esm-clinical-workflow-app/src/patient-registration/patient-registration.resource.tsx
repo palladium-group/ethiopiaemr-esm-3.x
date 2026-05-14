@@ -183,8 +183,6 @@ export const buildPatientRegistrationPayload = (
   identifier: string,
   defaultIdentifierTypeUuid: string,
   locationUuid: string,
-  isMedicoLegalCase?: boolean,
-  medicoLegalCasesAttributeTypeUuid?: string,
   hasDisability?: boolean,
   disabilityStatusAttributeTypeUuid?: string,
   healthId?: string,
@@ -202,12 +200,6 @@ export const buildPatientRegistrationPayload = (
   const genderCode = formData.gender === 'Male' ? 'M' : 'F';
 
   const attributes: Array<{ attributeType: string; value: string }> = [];
-  if (isMedicoLegalCase === true && medicoLegalCasesAttributeTypeUuid) {
-    attributes.push({
-      attributeType: medicoLegalCasesAttributeTypeUuid,
-      value: 'true',
-    });
-  }
   if (hasDisability === true && disabilityStatusAttributeTypeUuid) {
     attributes.push({
       attributeType: disabilityStatusAttributeTypeUuid,

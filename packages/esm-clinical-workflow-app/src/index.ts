@@ -1,5 +1,11 @@
 import React from 'react';
-import { defineConfigSchema, getAsyncLifecycle, getGlobalStore, getSyncLifecycle } from '@openmrs/esm-framework';
+import {
+  defineConfigSchema,
+  getAsyncLifecycle,
+  getConfig,
+  getGlobalStore,
+  getSyncLifecycle,
+} from '@openmrs/esm-framework';
 import { createDashboardLink as createPatientChartDashboardLink } from '@openmrs/esm-patient-common-lib';
 import { createDashboardLink } from './createDashboardLink';
 import MRUDashboard from './mru/dashboard.component';
@@ -13,11 +19,9 @@ import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.compone
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
-import CentralTriagePage from './triage/variants/central-triage.page';
-import EmergencyTriagePage from './triage/variants/emergency-triage.page';
-import PatientTypeSelectionWorkspace from './triage/patient-type-selection.workspace';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
-import { configSchema } from './config-schema';
+import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
+import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
@@ -28,6 +32,14 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+
+  getConfig(moduleName)
+    .then((cfg) => {
+      registerTriageDashboardExtensionsFromConfig(options, cfg as ClinicalWorkflowConfig);
+    })
+    .catch((err) => {
+      console.error('[clinical-workflow] getConfig failed; triage extensions were not registered.', err);
+    });
 
   // Remove the core visit-note workspace window since we're providing a custom one
   const workspace2Store = getGlobalStore<any>('workspace2');
@@ -48,27 +60,6 @@ export function startupApp() {
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
-export const centralTriageDashboard = getSyncLifecycle(CentralTriagePage, options);
-export const emergencyTriageDashboard = getSyncLifecycle(EmergencyTriagePage, options);
-
-export const centralTriageDashboardLink = getSyncLifecycle(
-  createDashboardLink({
-    path: 'central-triage',
-    title: 'Central Triage',
-    basePath: spaBasePath,
-  }),
-  options,
-);
-
-export const emergencyTriageDashboardLink = getSyncLifecycle(
-  createDashboardLink({
-    path: 'emergency-triage',
-    title: 'Emergency Triage',
-    basePath: spaBasePath,
-  }),
-  options,
-);
-
 export const patientRegistrationWorkspace = getAsyncLifecycle(
   () => import('./patient-registration/patient.registration.workspace'),
   options,
@@ -85,12 +76,6 @@ export const mruLeftPanelLink = getSyncLifecycle(
 );
 
 export const billingInformationWorkspace = getSyncLifecycle(BillingInformationWorkspace, options);
-export const patientTypeSelectionWorkspace = getSyncLifecycle(PatientTypeSelectionWorkspace, options);
-
-export const emergencyQueueSelectionWorkspace = getAsyncLifecycle(
-  () => import('./triage/emergency-queue-selection.workspace'),
-  options,
-);
 
 export const patientScoreboardLink = getSyncLifecycle(
   createDashboardLink({
