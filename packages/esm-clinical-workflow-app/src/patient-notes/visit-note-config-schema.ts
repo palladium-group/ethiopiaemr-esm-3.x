@@ -22,6 +22,12 @@ export default {
     _description:
       'Encounter where a full or abbreviated examination is done, usually leading to a presumptive or confirmed diagnosis, recorded by the examining clinician.',
   },
+  mainDiagnosisAttributeTypeUuid: {
+    _type: Type.UUID,
+    _default: '68e05c8f-8264-4d0b-8058-6389b86834be',
+    _description:
+      'UUID of the boolean DiagnosisAttributeType used to flag a diagnosis as the Main Diagnosis for a visit (used for reporting).',
+  },
 };
 
 export interface VisitNoteConfigObject {
@@ -29,4 +35,5 @@ export interface VisitNoteConfigObject {
   encounterNoteTextConceptUuid: string;
   encounterTypeUuid: string;
   visitDiagnosesConceptUuid: string;
+  mainDiagnosisAttributeTypeUuid: string;
 }

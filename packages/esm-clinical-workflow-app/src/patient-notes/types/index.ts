@@ -151,6 +151,12 @@ export interface ObsData {
   obsDatetime: string;
 }
 
+export interface DiagnosisAttribute {
+  uuid?: string;
+  attributeType: string;
+  value: boolean | string;
+}
+
 export interface Diagnosis {
   patient: string;
   diagnosis: {
@@ -159,6 +165,7 @@ export interface Diagnosis {
   certainty: string;
   rank: number;
   display: string;
+  attributes?: Array<DiagnosisAttribute>;
 }
 
 export interface DiagnosisPayload {
@@ -170,6 +177,7 @@ export interface DiagnosisPayload {
   };
   certainty: string;
   rank: number;
+  attributes?: Array<DiagnosisAttribute>;
 }
 
 export interface VisitNotePayload {

@@ -73,6 +73,8 @@ interface DiagnosesDisplayProps {
   searchResults: Array<Concept>;
   t: TFunction;
   value: string;
+  skipCertaintyChooser?: boolean;
+  disableAdd?: boolean;
 }
 
 interface DiagnosisSearchProps {
@@ -80,9 +82,10 @@ interface DiagnosisSearchProps {
   error?: Object;
   handleSearch: (fieldName) => void;
   labelText: string;
-  name: 'noteDate' | 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch' | 'clinicalNote';
+  name: 'noteDate' | 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch' | 'mainDiagnosisSearch' | 'clinicalNote';
   placeholder: string;
   setIsSearching: (isSearching: boolean) => void;
+  disabled?: boolean;
 }
 
 const createSchema = (t: TFunction) => {
@@ -90,6 +93,7 @@ const createSchema = (t: TFunction) => {
     noteDate: z.date(),
     primaryDiagnosisSearch: z.string(),
     secondaryDiagnosisSearch: z.string().optional(),
+    mainDiagnosisSearch: z.string().optional(),
     clinicalNote: z.string().optional(),
     images: z.array(z.any()).optional(),
   });
@@ -113,15 +117,19 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const config = useConfig<VisitNoteConfig>();
   const { isPrimaryDiagnosisRequired, visitNoteConfig } = config;
   const memoizedState = useMemo(() => ({ patientUuid }), [patientUuid]);
-  const { clinicianEncounterRole, encounterNoteTextConceptUuid, encounterTypeUuid } = visitNoteConfig;
+  const { clinicianEncounterRole, encounterNoteTextConceptUuid, encounterTypeUuid, mainDiagnosisAttributeTypeUuid } =
+    visitNoteConfig;
 
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
+  const [isLoadingMainDiagnoses, setIsLoadingMainDiagnoses] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedPrimaryDiagnoses, setSelectedPrimaryDiagnoses] = useState<Array<Diagnosis>>([]);
   const [selectedSecondaryDiagnoses, setSelectedSecondaryDiagnoses] = useState<Array<Diagnosis>>([]);
+  const [selectedMainDiagnosis, setSelectedMainDiagnosis] = useState<Diagnosis | null>(null);
   const [searchPrimaryResults, setSearchPrimaryResults] = useState<Array<Concept>>(null);
   const [searchSecondaryResults, setSearchSecondaryResults] = useState<Array<Concept>>(null);
+  const [searchMainResults, setSearchMainResults] = useState<Array<Concept>>(null);
   const [combinedDiagnoses, setCombinedDiagnoses] = useState<Array<Diagnosis>>([]);
   const [rows, setRows] = useState<number>();
   const [error, setError] = useState<Error>(null);
@@ -164,6 +172,8 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     resolver: customResolver,
     defaultValues: {
       primaryDiagnosisSearch: '',
+      secondaryDiagnosisSearch: '',
+      mainDiagnosisSearch: '',
       noteDate: isEditing ? new Date(encounter.encounterDatetime) : new Date(),
       clinicalNote: isEditing
         ? String(encounter?.obs?.find((obs) => obs.concept.uuid === encounterNoteTextConceptUuid)?.value || '')
@@ -220,6 +230,8 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             setIsLoadingPrimaryDiagnoses(true);
           } else if (fieldName === 'secondaryDiagnosisSearch') {
             setIsLoadingSecondaryDiagnoses(true);
+          } else if (fieldName === 'mainDiagnosisSearch') {
+            setIsLoadingMainDiagnoses(true);
           }
 
           fetchDiagnosisConceptsByName(fieldQuery, config.diagnosisConceptClass)
@@ -230,6 +242,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
               } else if (fieldName === 'secondaryDiagnosisSearch') {
                 setSearchSecondaryResults(matchingConceptDiagnoses);
                 setIsLoadingSecondaryDiagnoses(false);
+              } else if (fieldName === 'mainDiagnosisSearch') {
+                setSearchMainResults(matchingConceptDiagnoses);
+                setIsLoadingMainDiagnoses(false);
               }
             })
             .catch((e) => {
@@ -253,7 +268,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 
   const createDiagnosis = useCallback(
-    (concept: Concept, certainty: string = 'PROVISIONAL') => ({
+    (concept: Concept, certainty: string = 'PROVISIONAL'): Diagnosis => ({
       certainty,
       display: concept.display,
       diagnosis: {
@@ -278,10 +293,19 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
         setValue('secondaryDiagnosisSearch', '');
         setSearchSecondaryResults([]);
         setSelectedSecondaryDiagnoses((selectedDiagnoses) => [...selectedDiagnoses, newDiagnosis]);
+      } else if (searchInputField === 'mainDiagnosisSearch') {
+        // Main diagnosis is logically a primary (rank=1), always CONFIRMED, and flagged via the
+        // isMainDiagnosis boolean diagnosis-attribute-type for reporting purposes.
+        newDiagnosis.rank = 1;
+        newDiagnosis.certainty = 'CONFIRMED';
+        newDiagnosis.attributes = [{ attributeType: mainDiagnosisAttributeTypeUuid, value: true }];
+        setValue('mainDiagnosisSearch', '');
+        setSearchMainResults([]);
+        setSelectedMainDiagnosis(newDiagnosis);
       }
       setCombinedDiagnoses((combinedDiagnoses) => [...combinedDiagnoses, newDiagnosis]);
     },
-    [createDiagnosis, setValue, clearErrors],
+    [createDiagnosis, setValue, clearErrors, mainDiagnosisAttributeTypeUuid],
   );
 
   const handleRemoveDiagnosis = useCallback(
@@ -298,6 +322,8 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             (diagnosis) => diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded,
           ),
         );
+      } else if (searchInputField === 'mainInputSearch') {
+        setSelectedMainDiagnosis(null);
       }
       setCombinedDiagnoses(
         combinedDiagnoses.filter((diagnosis) => diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded),
@@ -313,8 +339,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     const isSecondaryDiagnosisSelected = selectedSecondaryDiagnoses.some(
       (selectedDiagnosis) => diagnosis.uuid === selectedDiagnosis.diagnosis.coded,
     );
+    const isMainDiagnosisSelected = selectedMainDiagnosis?.diagnosis.coded === diagnosis.uuid;
 
-    return !isPrimaryDiagnosisSelected && !isSecondaryDiagnosisSelected;
+    return !isPrimaryDiagnosisSelected && !isSecondaryDiagnosisSelected && !isMainDiagnosisSelected;
   };
 
   const showImageCaptureModal = useCallback(() => {
@@ -429,6 +456,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
               },
               certainty: diagnosis.certainty,
               rank: diagnosis.rank,
+              // Forward diagnosis attributes (used to flag the main diagnosis via isMainDiagnosis=true)
+              // only when present, so unrelated primary/secondary diagnoses keep their existing payload shape.
+              ...(diagnosis.attributes?.length ? { attributes: diagnosis.attributes } : {}),
             };
             return savePatientDiagnosis(abortController, diagnosesPayload);
           }),
@@ -596,10 +626,29 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                   })}
                 </>
               ) : null}
+              {selectedMainDiagnosis ? (
+                <div
+                  className={styles.tagWrapper}
+                  title={`${t('mainDiagnosis', 'Main diagnosis')}: ${selectedMainDiagnosis.display}`}>
+                  <Tag
+                    className={styles.tag}
+                    filter
+                    onClose={() => handleRemoveDiagnosis(selectedMainDiagnosis, 'mainInputSearch')}
+                    type="green">
+                    <span className={styles.tagContent}>
+                      {selectedMainDiagnosis.display.length > 30
+                        ? `${selectedMainDiagnosis.display.substring(0, 30)}...`
+                        : selectedMainDiagnosis.display}
+                      <CheckmarkFilled size={14} className={classnames(styles.tagIcon, styles.confirmedIcon)} />
+                    </span>
+                  </Tag>
+                </div>
+              ) : null}
               {selectedPrimaryDiagnoses &&
                 !selectedPrimaryDiagnoses.length &&
                 selectedSecondaryDiagnoses &&
-                !selectedSecondaryDiagnoses.length && (
+                !selectedSecondaryDiagnoses.length &&
+                !selectedMainDiagnosis && (
                   <span>{t('emptyDiagnosisText', 'No diagnosis selected — Enter a diagnosis below')}</span>
                 )}
             </div>
@@ -672,6 +721,52 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                     searchResults={searchSecondaryResults}
                     t={t}
                     value={watch('secondaryDiagnosisSearch')}
+                  />
+                </FormGroup>
+              </Column>
+            </Row>
+            <Row className={styles.row}>
+              <Column sm={1}>
+                <span className={styles.columnLabel}>{t('mainDiagnosis', 'Main diagnosis')}</span>
+              </Column>
+              <Column sm={3}>
+                <FormGroup legendText={t('searchForMainDiagnosis', 'Search for the main diagnosis (used for reports)')}>
+                  <DiagnosisSearch
+                    name="mainDiagnosisSearch"
+                    control={control}
+                    labelText={t('enterMainDiagnosis', 'Enter Main diagnosis')}
+                    placeholder={
+                      selectedMainDiagnosis
+                        ? t(
+                            'mainDiagnosisAlreadySelected',
+                            'Main diagnosis already selected — remove it to choose another',
+                          )
+                        : t('mainDiagnosisInputPlaceholder', 'Choose a main diagnosis')
+                    }
+                    handleSearch={handleSearch}
+                    setIsSearching={setIsSearching}
+                    disabled={Boolean(selectedMainDiagnosis)}
+                  />
+                  {error ? (
+                    <InlineNotification
+                      className={styles.errorNotification}
+                      lowContrast
+                      title={t('error', 'Error')}
+                      subtitle={t('errorFetchingConcepts', 'There was a problem fetching concepts') + '.'}
+                      onClose={() => setError(null)}
+                    />
+                  ) : null}
+                  <DiagnosesDisplay
+                    fieldName={'mainDiagnosisSearch'}
+                    isDiagnosisNotSelected={isDiagnosisNotSelected}
+                    isLoading={isLoadingMainDiagnoses}
+                    isSearching={isSearching}
+                    onAddDiagnosis={handleAddDiagnosis}
+                    searchResults={searchMainResults}
+                    t={t}
+                    value={watch('mainDiagnosisSearch')}
+                    skipCertaintyChooser
+                    disableAdd={Boolean(selectedMainDiagnosis)}
                   />
                 </FormGroup>
               </Column>
@@ -767,6 +862,7 @@ function DiagnosisSearch({
   handleSearch,
   error,
   setIsSearching,
+  disabled,
 }: DiagnosisSearchProps) {
   const isTablet = useLayoutType() === 'tablet';
   const inputRef = useRef(null);
@@ -803,6 +899,7 @@ function DiagnosisSearch({
               }}
               value={value instanceof Date ? value.toISOString() : value}
               onBlur={onBlur}
+              disabled={disabled}
             />
           </ResponsiveWrapper>
           {fieldState?.error?.message && <p className={styles.errorMessage}>{fieldState?.error?.message}</p>}
@@ -821,6 +918,8 @@ function DiagnosesDisplay({
   searchResults,
   t,
   value,
+  skipCertaintyChooser = false,
+  disableAdd = false,
 }: DiagnosesDisplayProps) {
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<Concept | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -847,6 +946,21 @@ function DiagnosesDisplay({
     return <Loader />;
   }
 
+  if (disableAdd) {
+    return (
+      <ResponsiveWrapper>
+        <Tile className={styles.emptyResults}>
+          <span>
+            {t(
+              'removeCurrentMainDiagnosisFirst',
+              'Remove the currently selected main diagnosis before choosing another.',
+            )}
+          </span>
+        </Tile>
+      </ResponsiveWrapper>
+    );
+  }
+
   if (!isSearching && searchResults?.length > 0) {
     return (
       <ul className={styles.diagnosisList}>
@@ -863,12 +977,18 @@ function DiagnosesDisplay({
                     kind="ghost"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (skipCertaintyChooser) {
+                        onAddDiagnosis(diagnosis, 'CONFIRMED', fieldName);
+                        return;
+                      }
                       setSelectedDiagnosis(diagnosis);
                       setShowDropdown(!showDropdown || selectedDiagnosis?.uuid !== diagnosis.uuid);
                     }}
                     className={styles.addButton}
                     renderIcon={Add}
-                    iconDescription={t('addWithCertainty', 'Add with certainty')}>
+                    iconDescription={
+                      skipCertaintyChooser ? t('add', 'Add') : t('addWithCertainty', 'Add with certainty')
+                    }>
                     {t('add', 'Add')}
                   </Button>
                 </div>
