@@ -114,8 +114,8 @@ export const useRequestStatus = (
   const { paymentModes } = usePaymentModes();
 
   // TODO: make this configurable
-  const POLL_INTERVAL_MS = 3000;
-  const MAX_ATTEMPTS = 5;
+  const POLL_INTERVAL_MS = 6000; // 6 seconds
+  const MAX_ATTEMPTS = 10; // 10 attempts, that is 60 seconds
 
   // Get the payment reference UUID for the mobile money payment mode
   // TODO: avoid using hardcoded property value
