@@ -93,6 +93,7 @@
   "loadingLocations": "Loading locations...",
   "loadingQueues": "Loading queues...",
   "location": "Location",
+  "main": "Main",
   "mainDiagnosis": "Main diagnosis",
   "mainDiagnosisAlreadySelected": "Main diagnosis already selected — remove it to choose another",
   "mainDiagnosisInputPlaceholder": "Choose a main diagnosis",

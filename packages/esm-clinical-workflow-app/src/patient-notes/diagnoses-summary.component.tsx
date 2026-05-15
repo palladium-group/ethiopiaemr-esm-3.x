@@ -12,12 +12,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
 } from '@carbon/react';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import { formatDate, launchWorkspace2, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type PatientDiagnosis, usePatientDiagnoses } from './diagnoses.resource';
+import { comparePatientDiagnosesForDisplay, patientDiagnosisIsMain } from './diagnosis-main.utils';
 import { type VisitNoteConfig } from '../config-schema';
-import styles from '../patient-chart/visit/visits-widget/past-visits-components/visit-summary.scss';
+import summaryStyles from '../patient-chart/visit/visits-widget/past-visits-components/visit-summary.scss';
+import styles from './diagnoses-summary.scss';
 import { useActiveVisit } from '../patient-chart/visit/visits-widget/visit.resource';
 
 interface DiagnosesSummaryProps {
@@ -32,11 +35,18 @@ interface EncounterObs {
   value?: string | number | boolean | object;
 }
 
-function getDiagnosisOrderLabel(rank: number, t: (key: string, fallback: string) => string) {
-  if (rank === 1) {
+function getDiagnosisOrderLabel(
+  diagnosis: PatientDiagnosis,
+  mainDiagnosisAttributeTypeUuid: string,
+  t: (key: string, fallback: string) => string,
+) {
+  if (patientDiagnosisIsMain(diagnosis, mainDiagnosisAttributeTypeUuid)) {
+    return t('main', 'Main');
+  }
+  if (diagnosis.rank === 1) {
     return t('primary', 'Primary');
   }
-  if (rank === 2) {
+  if (diagnosis.rank === 2) {
     return t('secondary', 'Secondary');
   }
   return t('unknown', 'Unknown');
@@ -61,7 +71,7 @@ function getEncounterNoteText(encounterObs: Array<EncounterObs>, encounterNoteTe
 export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
   const { t } = useTranslation();
   const config = useConfig<VisitNoteConfig>();
-  const { encounterNoteTextConceptUuid } = config.visitNoteConfig;
+  const { encounterNoteTextConceptUuid, mainDiagnosisAttributeTypeUuid } = config.visitNoteConfig;
   const { diagnoses, error, isLoading, isValidating } = usePatientDiagnoses(patient.id);
   const { activeVisit } = useActiveVisit(patient.id);
   const isTablet = useLayoutType() === 'tablet';
@@ -133,12 +143,12 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
   };
 
   return (
-    <div className={styles.widgetCard}>
+    <div>
       <CardHeader title={headerTitle}>
         <span>{isValidating ? <InlineLoading /> : null}</span>
       </CardHeader>
       <TableContainer>
-        <Table aria-label="diagnoses summary" className={styles.table}>
+        <Table aria-label="diagnoses summary">
           <TableHead>
             <TableRow>
               <TableHeader>{t('diagnosis', 'Diagnosis')}</TableHeader>
@@ -148,7 +158,9 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
           </TableHead>
           <TableBody>
             {Array.from(diagnosesByEncounter.entries()).flatMap(([encounterUuid, encounterDiagnoses]) => {
-              const sortedDiagnoses = encounterDiagnoses.slice().sort((a, b) => a.rank - b.rank);
+              const sortedDiagnoses = encounterDiagnoses
+                .slice()
+                .sort((a, b) => comparePatientDiagnosesForDisplay(a, b, mainDiagnosisAttributeTypeUuid));
               const encounterDateTime = sortedDiagnoses[0]?.encounterDatetime;
               const encounterObs = sortedDiagnoses[0]?.encounterObs ?? [];
               const encounterProvider = sortedDiagnoses[0]?.encounterProvider ?? '--';
@@ -158,14 +170,14 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
               return [
                 <TableRow key={`encounter-${encounterUuid}`}>
                   <TableCell colSpan={3}>
-                    <div className={styles.encounterHeader}>
-                      <div className={styles.encounterHeaderDetails}>
+                    <div className={summaryStyles.encounterHeader}>
+                      <div className={summaryStyles.encounterHeaderDetails}>
                         <span>
                           {encounterDateTime
                             ? formatDate(new Date(encounterDateTime), { time: true })
                             : t('encounterGroupHeaderNoDate', '--')}
                         </span>
-                        <p className={styles.encounterMetaText}>
+                        <p className={summaryStyles.encounterMetaText}>
                           <span>
                             {t('provider', 'Provider')}: {encounterProvider}
                           </span>
@@ -175,7 +187,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
                           </span>
                         </p>
                         {encounterNoteText ? (
-                          <p className={styles.encounterMetaText}>
+                          <p className={summaryStyles.encounterMetaText}>
                             {t('visitNote', 'Visit note')}: {encounterNoteText}
                           </p>
                         ) : null}
@@ -197,13 +209,25 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
                     </div>
                   </TableCell>
                 </TableRow>,
-                ...sortedDiagnoses.map((diagnosis) => (
-                  <TableRow key={diagnosis.id}>
-                    <TableCell>{diagnosis.display ?? '--'}</TableCell>
-                    <TableCell>{getDiagnosisOrderLabel(diagnosis.rank, t)}</TableCell>
-                    <TableCell>{getDiagnosisCertaintyLabel(diagnosis.certainty, t)}</TableCell>
-                  </TableRow>
-                )),
+                ...sortedDiagnoses.map((diagnosis) => {
+                  const isMain = patientDiagnosisIsMain(diagnosis, mainDiagnosisAttributeTypeUuid);
+                  return (
+                    <TableRow key={diagnosis.id}>
+                      <TableCell>
+                        <div className={styles.diagnosisNameCell}>
+                          {isMain ? (
+                            <Tag size="sm" type="green" title={t('mainDiagnosis', 'Main diagnosis')}>
+                              {t('main', 'Main')}
+                            </Tag>
+                          ) : null}
+                          <span>{diagnosis.display ?? '--'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getDiagnosisOrderLabel(diagnosis, mainDiagnosisAttributeTypeUuid, t)}</TableCell>
+                      <TableCell>{getDiagnosisCertaintyLabel(diagnosis.certainty, t)}</TableCell>
+                    </TableRow>
+                  );
+                }),
               ];
             })}
           </TableBody>

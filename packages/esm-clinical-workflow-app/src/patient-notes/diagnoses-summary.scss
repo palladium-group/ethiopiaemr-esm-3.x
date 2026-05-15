@@ -1,0 +1,8 @@
+@use '@carbon/layout';
+
+.diagnosisNameCell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
