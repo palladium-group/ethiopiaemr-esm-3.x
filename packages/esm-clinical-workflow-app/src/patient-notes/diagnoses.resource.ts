@@ -13,6 +13,11 @@ interface EncounterDiagnosis {
       display?: string;
     };
   };
+  attributes?: Array<{
+    uuid?: string;
+    attributeType?: { uuid?: string; display?: string } | string;
+    value?: unknown;
+  }>;
 }
 
 interface EncounterWithDiagnoses {
@@ -54,6 +59,7 @@ export interface PatientDiagnosis {
   encounterDatetime: string;
   visitUuid?: string;
   codedUuid?: string;
+  attributes?: EncounterDiagnosis['attributes'];
   encounterObs?: Array<{
     uuid: string;
     concept: {
@@ -67,7 +73,7 @@ export interface PatientDiagnosis {
 
 export function usePatientDiagnoses(patientUuid: string) {
   const customRepresentation =
-    'custom:(uuid,encounterDatetime,visit:(uuid),location:(display),encounterProviders:(provider:(person:(display))),diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))),obs:(uuid,concept:(uuid),value))';
+    'custom:(uuid,encounterDatetime,visit:(uuid),location:(display),encounterProviders:(provider:(person:(display))),diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display)),attributes:(uuid,attributeType:(uuid,display),value)),obs:(uuid,concept:(uuid),value))';
   const encountersApiUrl = `${restBaseUrl}/encounter?patient=${patientUuid}&v=${customRepresentation}`;
 
   const { data, error, isLoading, isValidating } = useSWR<{ data: EncounterResponse }, Error>(
@@ -89,6 +95,7 @@ export function usePatientDiagnoses(patientUuid: string) {
             encounterDatetime: encounter.encounterDatetime,
             visitUuid: encounter.visit?.uuid,
             codedUuid: diagnosis.diagnosis?.coded?.uuid,
+            attributes: diagnosis.attributes,
             encounterObs: encounter.obs ?? [],
             encounterProvider: encounter.encounterProviders?.[0]?.provider?.person?.display,
             encounterLocation: encounter.location?.display,

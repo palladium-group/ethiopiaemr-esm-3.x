@@ -157,6 +157,12 @@ export interface DiagnosisAttribute {
   value: boolean | string;
 }
 
+/** Attribute fields for POST /patientdiagnoses (server assigns uuid). */
+export interface DiagnosisAttributeForPost {
+  attributeType: string;
+  value: boolean | string;
+}
+
 export interface Diagnosis {
   patient: string;
   diagnosis: {
@@ -177,7 +183,7 @@ export interface DiagnosisPayload {
   };
   certainty: string;
   rank: number;
-  attributes?: Array<DiagnosisAttribute>;
+  attributes?: Array<DiagnosisAttributeForPost>;
 }
 
 export interface VisitNotePayload {

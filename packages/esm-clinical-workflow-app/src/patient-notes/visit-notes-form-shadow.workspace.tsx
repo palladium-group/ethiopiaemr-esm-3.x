@@ -99,6 +99,78 @@ const createSchema = (t: TFunction) => {
   });
 };
 
+/** Encounter diagnosis row as returned by REST (chart / diagnoses dashboard) */
+interface EncounterDiagnosisLoadRow {
+  voided?: boolean;
+  display: string;
+  certainty?: string;
+  rank?: number;
+  diagnosis?: { coded?: { uuid?: string } };
+  attributes?: ReadonlyArray<{
+    uuid?: string;
+    attributeType?: { uuid?: string; display?: string } | string;
+    value?: unknown;
+  }>;
+}
+
+function diagnosisAttributeValueIsTrue(value: unknown): boolean {
+  return value === true || value === 'true';
+}
+
+function resolveDiagnosisAttributeTypeUuid(attributeType: unknown): string | undefined {
+  if (typeof attributeType === 'string') {
+    return attributeType;
+  }
+  if (attributeType && typeof attributeType === 'object' && 'uuid' in attributeType) {
+    return (attributeType as { uuid?: string }).uuid;
+  }
+  return undefined;
+}
+
+function encounterDiagnosisHasMainAttribute(
+  row: EncounterDiagnosisLoadRow,
+  mainDiagnosisAttributeTypeUuid: string,
+): boolean {
+  if (!mainDiagnosisAttributeTypeUuid) {
+    return false;
+  }
+  return (
+    row.attributes?.some(
+      (attr) =>
+        resolveDiagnosisAttributeTypeUuid(attr.attributeType) === mainDiagnosisAttributeTypeUuid &&
+        diagnosisAttributeValueIsTrue(attr.value),
+    ) ?? false
+  );
+}
+
+function mapEncounterAttributesToDiagnosisAttributes(
+  attributes: EncounterDiagnosisLoadRow['attributes'],
+): Diagnosis['attributes'] | undefined {
+  if (!attributes?.length) {
+    return undefined;
+  }
+  const out: NonNullable<Diagnosis['attributes']> = [];
+  for (const a of attributes) {
+    const typeUuid = resolveDiagnosisAttributeTypeUuid(a.attributeType);
+    if (!typeUuid) {
+      continue;
+    }
+    out.push({
+      uuid: a.uuid,
+      attributeType: typeUuid,
+      value: a.value as boolean | string,
+    });
+  }
+  return out.length ? out : undefined;
+}
+
+/** POST after DELETE creates new attribute rows; do not reuse server attribute uuids. */
+function attributesForPatientDiagnosisPost(
+  attributes: NonNullable<Diagnosis['attributes']>,
+): DiagnosisPayload['attributes'] {
+  return attributes.map(({ attributeType, value }) => ({ attributeType, value }));
+}
+
 export interface VisitNotesFormProps {
   encounter?: Encounter;
   formContext: 'creating' | 'editing';
@@ -182,30 +254,63 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   });
 
   useEffect(() => {
-    if (encounter?.diagnoses?.length) {
-      try {
-        const transformedDiagnoses = encounter.diagnoses.map((d) => ({
+    if (!isEditing || !encounter?.id) {
+      return;
+    }
+
+    const rows = (encounter.diagnoses ?? []).filter((d) => !(d as EncounterDiagnosisLoadRow).voided);
+
+    if (!rows.length) {
+      setSelectedPrimaryDiagnoses([]);
+      setSelectedSecondaryDiagnoses([]);
+      setSelectedMainDiagnosis(null);
+      setCombinedDiagnoses([]);
+      return;
+    }
+
+    try {
+      const mainEncounterRow = (rows as EncounterDiagnosisLoadRow[]).find((d) =>
+        encounterDiagnosisHasMainAttribute(d, mainDiagnosisAttributeTypeUuid),
+      );
+      const mainCodedUuid = mainEncounterRow?.diagnosis?.coded?.uuid;
+
+      const transformedDiagnoses: Diagnosis[] = (rows as EncounterDiagnosisLoadRow[]).map((d) => {
+        const codedUuid = d.diagnosis?.coded?.uuid;
+        const mappedAttributes = mapEncounterAttributesToDiagnosisAttributes(d.attributes);
+
+        return {
           patient: patientUuid,
           diagnosis: {
-            coded: d.diagnosis.coded?.uuid,
+            coded: codedUuid,
           },
           certainty: d.certainty,
           rank: d.rank,
           display: d.display,
-        }));
+          ...(mappedAttributes?.length ? { attributes: mappedAttributes } : {}),
+        };
+      });
 
-        const primaryDiagnoses = transformedDiagnoses.filter((d) => d.rank === 1);
-        const secondaryDiagnoses = transformedDiagnoses.filter((d) => d.rank === 2);
+      const mainDiagnosis =
+        mainCodedUuid !== undefined
+          ? transformedDiagnoses.find((t) => t.diagnosis.coded === mainCodedUuid) ?? null
+          : null;
 
-        setSelectedPrimaryDiagnoses(primaryDiagnoses);
-        setSelectedSecondaryDiagnoses(secondaryDiagnoses);
-        setCombinedDiagnoses([...primaryDiagnoses, ...secondaryDiagnoses]);
-      } catch (err) {
-        setError(new Error(t('errorTransformingDiagnoses', 'Error transforming diagnoses')));
-        createErrorHandler();
-      }
+      const primaryDiagnoses = transformedDiagnoses.filter(
+        (d) => d.rank === 1 && (!mainDiagnosis || d.diagnosis.coded !== mainDiagnosis.diagnosis.coded),
+      );
+      const secondaryDiagnoses = transformedDiagnoses.filter(
+        (d) => d.rank === 2 && (!mainDiagnosis || d.diagnosis.coded !== mainDiagnosis.diagnosis.coded),
+      );
+
+      setSelectedPrimaryDiagnoses(primaryDiagnoses);
+      setSelectedSecondaryDiagnoses(secondaryDiagnoses);
+      setSelectedMainDiagnosis(mainDiagnosis);
+      setCombinedDiagnoses([...primaryDiagnoses, ...secondaryDiagnoses, ...(mainDiagnosis ? [mainDiagnosis] : [])]);
+    } catch (err) {
+      setError(new Error(t('errorTransformingDiagnoses', 'Error transforming diagnoses')));
+      createErrorHandler();
     }
-  }, [encounter, patientUuid, t]);
+  }, [encounter, isEditing, patientUuid, t, mainDiagnosisAttributeTypeUuid]);
 
   const currentImages = watch('images');
 
@@ -457,8 +562,10 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
               certainty: diagnosis.certainty,
               rank: diagnosis.rank,
               // Forward diagnosis attributes (used to flag the main diagnosis via isMainDiagnosis=true)
-              // only when present, so unrelated primary/secondary diagnoses keep their existing payload shape.
-              ...(diagnosis.attributes?.length ? { attributes: diagnosis.attributes } : {}),
+              // only when present. Omit attribute uuids on POST (edit flow deletes then recreates rows).
+              ...(diagnosis.attributes?.length
+                ? { attributes: attributesForPatientDiagnosisPost(diagnosis.attributes) }
+                : {}),
             };
             return savePatientDiagnosis(abortController, diagnosesPayload);
           }),

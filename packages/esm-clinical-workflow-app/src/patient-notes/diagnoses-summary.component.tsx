@@ -125,6 +125,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
               uuid: diagnosis.codedUuid ?? '',
             },
           },
+          attributes: diagnosis.attributes,
         })),
         obs: encounterObs ?? [],
       },
