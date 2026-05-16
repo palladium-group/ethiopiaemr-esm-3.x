@@ -17,7 +17,7 @@ import {
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import { formatDate, launchWorkspace2, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type PatientDiagnosis, usePatientDiagnoses } from './diagnoses.resource';
-import { comparePatientDiagnosesForDisplay, patientDiagnosisIsMain } from './diagnosis-main.utils';
+import { patientDiagnosisIsMain } from './diagnosis-main.utils';
 import { type VisitNoteConfig } from '../config-schema';
 import summaryStyles from '../patient-chart/visit/visits-widget/past-visits-components/visit-summary.scss';
 import styles from './diagnoses-summary.scss';
@@ -35,18 +35,11 @@ interface EncounterObs {
   value?: string | number | boolean | object;
 }
 
-function getDiagnosisOrderLabel(
-  diagnosis: PatientDiagnosis,
-  mainDiagnosisAttributeTypeUuid: string,
-  t: (key: string, fallback: string) => string,
-) {
-  if (patientDiagnosisIsMain(diagnosis, mainDiagnosisAttributeTypeUuid)) {
-    return t('main', 'Main');
-  }
-  if (diagnosis.rank === 1) {
+function getDiagnosisOrderLabel(rank: number, t: (key: string, fallback: string) => string) {
+  if (rank === 1) {
     return t('primary', 'Primary');
   }
-  if (diagnosis.rank === 2) {
+  if (rank === 2) {
     return t('secondary', 'Secondary');
   }
   return t('unknown', 'Unknown');
@@ -160,7 +153,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
             {Array.from(diagnosesByEncounter.entries()).flatMap(([encounterUuid, encounterDiagnoses]) => {
               const sortedDiagnoses = encounterDiagnoses
                 .slice()
-                .sort((a, b) => comparePatientDiagnosesForDisplay(a, b, mainDiagnosisAttributeTypeUuid));
+                .sort((a, b) => a.rank - b.rank || (a.display ?? '').localeCompare(b.display ?? ''));
               const encounterDateTime = sortedDiagnoses[0]?.encounterDatetime;
               const encounterObs = sortedDiagnoses[0]?.encounterObs ?? [];
               const encounterProvider = sortedDiagnoses[0]?.encounterProvider ?? '--';
@@ -223,7 +216,7 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
                           <span>{diagnosis.display ?? '--'}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{getDiagnosisOrderLabel(diagnosis, mainDiagnosisAttributeTypeUuid, t)}</TableCell>
+                      <TableCell>{getDiagnosisOrderLabel(diagnosis.rank, t)}</TableCell>
                       <TableCell>{getDiagnosisCertaintyLabel(diagnosis.certainty, t)}</TableCell>
                     </TableRow>
                   );

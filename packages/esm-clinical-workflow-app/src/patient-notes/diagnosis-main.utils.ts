@@ -46,20 +46,3 @@ export function patientDiagnosisIsMain(
 ): boolean {
   return diagnosisHasMainAttribute(diagnosis.attributes, mainDiagnosisAttributeTypeUuid);
 }
-
-/** Main diagnosis first, then by rank, then display name. */
-export function comparePatientDiagnosesForDisplay(
-  a: DiagnosisWithAttributes,
-  b: DiagnosisWithAttributes,
-  mainDiagnosisAttributeTypeUuid: string,
-): number {
-  const aMain = patientDiagnosisIsMain(a, mainDiagnosisAttributeTypeUuid);
-  const bMain = patientDiagnosisIsMain(b, mainDiagnosisAttributeTypeUuid);
-  if (aMain !== bMain) {
-    return aMain ? -1 : 1;
-  }
-  if (a.rank !== b.rank) {
-    return a.rank - b.rank;
-  }
-  return (a.display ?? '').localeCompare(b.display ?? '');
-}
