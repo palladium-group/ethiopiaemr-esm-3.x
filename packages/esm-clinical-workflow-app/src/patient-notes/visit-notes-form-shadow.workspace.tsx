@@ -214,14 +214,14 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     async (data, context, options) => {
       const zodResult = await zodResolver(visitNoteFormSchema)(data, context, options);
 
-      if (isPrimaryDiagnosisRequired && selectedPrimaryDiagnoses.length === 0) {
+      if (isPrimaryDiagnosisRequired && selectedPrimaryDiagnoses.length === 0 && !selectedMainDiagnosis) {
         return {
           ...zodResult,
           errors: {
             ...zodResult.errors,
             primaryDiagnosisSearch: {
               type: 'custom',
-              message: t('primaryDiagnosisRequired', 'Choose at least one primary diagnosis'),
+              message: t('primaryDiagnosisRequired', 'Choose at least one primary diagnosis or a main diagnosis'),
             },
           },
         };
@@ -229,7 +229,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
       return zodResult;
     },
-    [visitNoteFormSchema, isPrimaryDiagnosisRequired, selectedPrimaryDiagnoses, t],
+    [visitNoteFormSchema, isPrimaryDiagnosisRequired, selectedPrimaryDiagnoses, selectedMainDiagnosis, t],
   );
 
   const {
@@ -407,6 +407,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
         setValue('mainDiagnosisSearch', '');
         setSearchMainResults([]);
         setSelectedMainDiagnosis(newDiagnosis);
+        clearErrors('primaryDiagnosisSearch');
       }
       setCombinedDiagnoses((combinedDiagnoses) => [...combinedDiagnoses, newDiagnosis]);
     },
@@ -494,7 +495,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       try {
         const { noteDate, clinicalNote, images } = data;
 
-        if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) {
+        if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length && !selectedMainDiagnosis) {
           return;
         }
 
@@ -618,6 +619,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       isPrimaryDiagnosisRequired,
       activeVisit,
       selectedPrimaryDiagnoses.length,
+      selectedMainDiagnosis,
       combinedDiagnoses,
       clinicianEncounterRole,
       providerUuid,

@@ -140,7 +140,7 @@
   "primary": "Primary",
   "primaryDiagnosis": "Primary diagnosis",
   "primaryDiagnosisInputPlaceholder": "Choose a primary diagnosis",
-  "primaryDiagnosisRequired": "Choose at least one primary diagnosis",
+  "primaryDiagnosisRequired": "Choose at least one primary diagnosis or a main diagnosis",
   "priority": "Priority",
   "provider": "Provider",
   "quantity": "Quantity",
