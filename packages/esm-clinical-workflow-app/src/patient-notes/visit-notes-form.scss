@@ -12,6 +12,12 @@
   color: colors.$gray-70;
 }
 
+.mainDiagnosisHelperText {
+  @include type.type-style('body-compact-01');
+  margin-top: layout.$spacing-03;
+  color: colors.$gray-70;
+}
+
 .diagnosis {
   padding: layout.$spacing-04;
   border-top: 1px solid colors.$gray-20;

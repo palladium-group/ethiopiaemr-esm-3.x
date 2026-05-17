@@ -28,6 +28,18 @@ export default {
     _description:
       'UUID of the boolean DiagnosisAttributeType used to flag a diagnosis as the Main Diagnosis for a visit (used for reporting).',
   },
+  icd11WhoConceptSourceUuid: {
+    _type: Type.UUID,
+    _default: '39ADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+    _description:
+      'Concept source UUID for ICD-11-WHO. Primary and secondary diagnosis search only returns concepts mapped to this source.',
+  },
+  esvIcd11ConceptSourceUuid: {
+    _type: Type.UUID,
+    _default: 'e55d4d48-a11b-5e7f-b0c6-dfad3bfe5975',
+    _description:
+      'Concept source UUID for ESV-ICD 11 (Ethiopian simplified ICD-11). Used to resolve main diagnosis candidates from primary diagnoses.',
+  },
 };
 
 export interface VisitNoteConfigObject {
@@ -36,4 +48,6 @@ export interface VisitNoteConfigObject {
   encounterTypeUuid: string;
   visitDiagnosesConceptUuid: string;
   mainDiagnosisAttributeTypeUuid: string;
+  icd11WhoConceptSourceUuid: string;
+  esvIcd11ConceptSourceUuid: string;
 }
