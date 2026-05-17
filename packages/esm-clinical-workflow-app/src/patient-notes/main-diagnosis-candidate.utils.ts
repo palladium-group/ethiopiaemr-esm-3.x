@@ -64,8 +64,8 @@ function toCandidate(concept: ConceptForMainDiagnosisResolution): MainDiagnosisC
 /**
  * Resolves one main-diagnosis candidate from a primary concept:
  * - If primary is mapped to ESV → that primary.
- * - Else walk up the parent set chain from the primary's parent; on the first Diagnosis-class
- *   ancestor, return it only if it is mapped to ESV; otherwise no candidate.
+ * - Else walk up the parent set chain; return the first ancestor that is both Diagnosis-class
+ *   and mapped to ESV, or null when the chain is exhausted.
  */
 export async function resolveMainDiagnosisCandidateForPrimary(
   primaryConceptUuid: string,
@@ -85,8 +85,11 @@ export async function resolveMainDiagnosisCandidateForPrimary(
   while (parentUuid && hops < maxParentHops) {
     const ancestor = await fetchConceptForMainDiagnosisResolution(parentUuid);
 
-    if (isDiagnosisClassConcept(ancestor, diagnosisConceptClassUuid)) {
-      return conceptHasMappingToSource(ancestor, esvIcd11ConceptSourceUuid) ? toCandidate(ancestor) : null;
+    if (
+      isDiagnosisClassConcept(ancestor, diagnosisConceptClassUuid) &&
+      conceptHasMappingToSource(ancestor, esvIcd11ConceptSourceUuid)
+    ) {
+      return toCandidate(ancestor);
     }
 
     parentUuid = getImmediateParentConceptUuid(ancestor);
