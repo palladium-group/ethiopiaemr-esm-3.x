@@ -129,6 +129,23 @@ export const queueTableTransferColumn = getAsyncLifecycle(
   options,
 );
 
+export const queueTableRoomColumn = getAsyncLifecycle(
+  () => import('./queue-room/queue-table-room-column.component'),
+  options,
+);
+
+export const queueTableActionsColumn = getAsyncLifecycle(
+  () => import('./queue-room/queue-table-actions-column.component'),
+  options,
+);
+
+export const assignQueueRoomModal = getAsyncLifecycle(() => import('./queue-room/assign-queue-room.modal'), options);
+
+export const filteredQueueTableDashboard = getAsyncLifecycle(
+  () => import('./queue-room/filtered-queue-table-dashboard.component'),
+  options,
+);
+
 export const patientTransferDetailsModal = getAsyncLifecycle(
   () => import('./patient-transfer/transfer-details.modal'),
   options,
