@@ -53,6 +53,7 @@
     "swr": "2.x"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }

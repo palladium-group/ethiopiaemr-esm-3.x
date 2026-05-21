@@ -27,7 +27,8 @@
     "ethiopia"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "@carbon/react": "^1.83.0",
