@@ -1,6 +1,10 @@
 {
+  "backToConsultations": "Back to consultations",
   "completed": "Completed",
   "consultation": "Consultation",
+  "consultationDetailComingSoon": "Full consultation view coming soon.",
+  "consultationDetails": "Consultation details",
+  "consultationNotFound": "Consultation not found.",
   "consultations": "consultations",
   "consultationType": "Type",
   "consultedDepartment": "Consulted department",
