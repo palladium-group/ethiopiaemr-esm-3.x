@@ -1,4 +1,5 @@
 import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
+import ConsultationDashboard from './dashboard/consultation-dashboard.component';
 import ConsultationDashboardLink from './dashboard/consultation-dashboard-link.extension';
 import { configSchema } from './config-schema';
 import { moduleName } from './constants';
@@ -15,3 +16,4 @@ export function startupApp() {
 }
 
 export const consultationDashboardLink = getSyncLifecycle(ConsultationDashboardLink, options);
+export const consultationDashboard = getSyncLifecycle(ConsultationDashboard, options);
