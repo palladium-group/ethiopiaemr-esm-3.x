@@ -1,4 +1,5 @@
 import { CONSULTATION_CONCEPT_UUIDS, CONSULTATION_ENCOUNTER_TYPE_UUID, CONSULTATION_FORM_UUID } from './constants';
+import { ConsultationPermissions } from './permissions/permissions.constants';
 import { configSchema, type ConsultationConfig } from './config-schema';
 
 describe('consultation config schema', () => {
@@ -21,5 +22,11 @@ describe('consultation config schema', () => {
     expect(defaults.briefHistory).toBe('b986ec9e-da79-423e-80be-5875b87228ff');
     expect(defaults.briefFinding).toBe('28441853-da6d-450f-b88a-9205d4654783');
     expect(defaults.recommendation).toBe('36566305-0931-47d0-9de7-488c0ef4bef5');
+  });
+
+  it('should define default consultation privileges', () => {
+    expect(configSchema.viewConsultationPrivilege._default).toBe(ConsultationPermissions.ViewConsultations);
+    expect(configSchema.requestConsultationPrivilege._default).toBe(ConsultationPermissions.RequestConsultation);
+    expect(configSchema.respondConsultationPrivilege._default).toBe(ConsultationPermissions.RespondConsultation);
   });
 });

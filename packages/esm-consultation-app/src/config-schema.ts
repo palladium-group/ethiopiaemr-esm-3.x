@@ -5,6 +5,7 @@ import {
   CONSULTATION_FORM_UUID,
   type ConsultationConceptKey,
 } from './constants';
+import { ConsultationPermissions } from './permissions/permissions.constants';
 
 export const configSchema = {
   consultationFormUuid: {
@@ -23,6 +24,21 @@ export const configSchema = {
       'Concept UUIDs for consultation form fields. Used when mapping encounter observations to consultation threads.',
     _default: { ...CONSULTATION_CONCEPT_UUIDS },
   },
+  viewConsultationPrivilege: {
+    _type: Type.String,
+    _description: 'Privilege required to view consultation lists and conversation threads.',
+    _default: ConsultationPermissions.ViewConsultations,
+  },
+  requestConsultationPrivilege: {
+    _type: Type.String,
+    _description: 'Privilege required to create a new consultation request.',
+    _default: ConsultationPermissions.RequestConsultation,
+  },
+  respondConsultationPrivilege: {
+    _type: Type.String,
+    _description: 'Privilege required to respond to a pending consultation.',
+    _default: ConsultationPermissions.RespondConsultation,
+  },
 };
 
 export type ConsultationConceptUuids = Record<ConsultationConceptKey, string>;
@@ -31,4 +47,7 @@ export interface ConsultationConfig {
   consultationFormUuid: string;
   consultationEncounterTypeUuid: string;
   conceptUuids: ConsultationConceptUuids;
+  viewConsultationPrivilege: string;
+  requestConsultationPrivilege: string;
+  respondConsultationPrivilege: string;
 }

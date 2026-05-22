@@ -18,12 +18,14 @@ import styles from './consultation-inbox-list.scss';
 interface ConsultationInboxListProps {
   consultations: Array<ConsultationThread>;
   respondingEncounterUuid?: string | null;
+  canRespond?: boolean;
   onRespond?: (consultation: ConsultationThread) => void;
 }
 
 const ConsultationInboxList: React.FC<ConsultationInboxListProps> = ({
   consultations,
   respondingEncounterUuid,
+  canRespond = true,
   onRespond,
 }) => {
   const { t } = useTranslation();
@@ -70,13 +72,17 @@ const ConsultationInboxList: React.FC<ConsultationInboxListProps> = ({
                   </Tag>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    kind="ghost"
-                    size="sm"
-                    disabled={Boolean(respondingEncounterUuid)}
-                    onClick={() => onRespond?.(consultation)}>
-                    {isResponding ? t('loading', 'Loading...') : t('respond', 'Respond')}
-                  </Button>
+                  {canRespond ? (
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      disabled={Boolean(respondingEncounterUuid)}
+                      onClick={() => onRespond?.(consultation)}>
+                      {isResponding ? t('loading', 'Loading...') : t('respond', 'Respond')}
+                    </Button>
+                  ) : (
+                    '--'
+                  )}
                 </TableCell>
               </TableRow>
             );

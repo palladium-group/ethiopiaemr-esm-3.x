@@ -4,6 +4,7 @@ import { useSWRConfig } from 'swr';
 import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { usePatientChartStore, useStartVisitIfNeeded } from '@openmrs/esm-patient-common-lib';
 import type { ConsultationConfig } from '../config-schema';
+import { useConsultationPrivileges } from './useConsultationPrivileges';
 import { launchConsultationFormEntry } from '../resources/consultation-form-launch.resource';
 import { consultationFormEntryWorkspaceName } from '../workspaces/consultation-form.workspace';
 
@@ -16,6 +17,7 @@ export function useLaunchConsultationForm(patientUuid: string, options: UseLaunc
   const { t } = useTranslation();
   const config = useConfig<ConsultationConfig>();
   const session = useSession();
+  const { canRequestConsultation, canRespondToConsultation } = useConsultationPrivileges();
   const { mutate: globalMutate } = useSWRConfig();
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
   const { visitContext, mutateVisitContext } = usePatientChartStore(patientUuid);
@@ -32,10 +34,12 @@ export function useLaunchConsultationForm(patientUuid: string, options: UseLaunc
           formUuid: config.consultationFormUuid,
           workspaceName: consultationFormEntryWorkspaceName,
           globalMutate,
+          conceptUuids: config.conceptUuids,
           onConsultationSaved,
           t,
           sessionLocationUuid: session?.sessionLocation?.uuid,
           currentProviderUuid: session?.currentProvider?.uuid,
+          hasRequiredPrivilege: encounterUuid ? canRespondToConsultation : canRequestConsultation,
           visitContext,
           mutateVisitContext,
           startVisitIfNeeded,
@@ -59,10 +63,13 @@ export function useLaunchConsultationForm(patientUuid: string, options: UseLaunc
     },
     [
       config.consultationFormUuid,
+      config.conceptUuids,
       globalMutate,
       mutateVisitContext,
       onConsultationSaved,
       patientUuid,
+      canRequestConsultation,
+      canRespondToConsultation,
       session?.currentProvider?.uuid,
       session?.sessionLocation?.uuid,
       startVisitIfNeeded,

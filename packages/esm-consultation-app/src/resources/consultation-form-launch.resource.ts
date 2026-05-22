@@ -8,8 +8,10 @@ import {
   type Visit,
 } from '@openmrs/esm-framework';
 import { invalidateVisitAndEncounterData } from '@openmrs/esm-patient-common-lib';
+import type { ConsultationConceptUuids } from '../config-schema';
 import { CONSULTATION_FORM_NAME } from '../constants';
 import { revalidateConsultationsInbox, revalidatePatientConsultations } from './consultation-cache.resource';
+import { validateSavedConsultationEncounter } from './consultation-form-validation.resource';
 import { getActiveVisitForPatient } from './consultation-visit.resource';
 import { buildConsultationFormWorkspaceData } from '../workspaces/consultation-form.workspace';
 
@@ -19,10 +21,12 @@ type LaunchConsultationFormEntryOptions = {
   formUuid: string;
   workspaceName: string;
   globalMutate: KeyedMutator<unknown>;
+  conceptUuids: ConsultationConceptUuids;
   onConsultationSaved?: () => void;
   t: TFunction;
   sessionLocationUuid?: string;
   currentProviderUuid?: string;
+  hasRequiredPrivilege?: boolean;
   visitContext?: Visit | null;
   mutateVisitContext?: (() => Promise<unknown> | void) | null;
   startVisitIfNeeded?: () => Promise<boolean>;
@@ -34,15 +38,27 @@ export async function launchConsultationFormEntry({
   formUuid,
   workspaceName,
   globalMutate,
+  conceptUuids,
   onConsultationSaved,
   t,
   sessionLocationUuid,
   currentProviderUuid,
+  hasRequiredPrivilege = true,
   visitContext,
   mutateVisitContext,
   startVisitIfNeeded,
 }: LaunchConsultationFormEntryOptions): Promise<boolean> {
   if (!patientUuid?.trim()) {
+    return false;
+  }
+
+  if (!hasRequiredPrivilege) {
+    showSnackbar({
+      title: t('error', 'Error'),
+      kind: 'error',
+      subtitle: t('consultationPrivilegeRequired', 'You do not have permission to perform this consultation action.'),
+      isLowContrast: true,
+    });
     return false;
   }
 
@@ -94,7 +110,7 @@ export async function launchConsultationFormEntry({
     throw new Error(t('consultationVisitRequired', 'An active visit is required to open the consultation form.'));
   }
 
-  const handlePostResponse = (_encounter: Encounter) => {
+  const handlePostResponse = (savedEncounter: Encounter) => {
     invalidateVisitAndEncounterData(globalMutate, patientUuid);
     Promise.all([revalidateConsultationsInbox(globalMutate), revalidatePatientConsultations(globalMutate, patientUuid)])
       .then(() => {
@@ -104,6 +120,31 @@ export async function launchConsultationFormEntry({
         console.error('Error revalidating consultation data:', revalidationError);
         onConsultationSaved?.();
       });
+
+    const validation = validateSavedConsultationEncounter(
+      savedEncounter,
+      conceptUuids,
+      encounterUuid ? 'respond' : 'create',
+    );
+
+    if (!validation.isValid) {
+      showSnackbar({
+        title: t('consultationValidationError', 'Consultation form incomplete'),
+        kind: 'warning',
+        subtitle: encounterUuid
+          ? t(
+              'consultationIncompleteResponse',
+              'Both brief finding and recommendation are required to complete the consultation.',
+            )
+          : t(
+              'consultationIncompleteRequest',
+              'Consulted department, consultation type, and reason for consultation are required.',
+            ),
+        isLowContrast: true,
+      });
+      return;
+    }
+
     showSnackbar({
       title: t('consultationSaved', 'Consultation saved'),
       kind: 'success',

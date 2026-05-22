@@ -5,6 +5,7 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import { shallowEqual } from '@openmrs/esm-utils';
 import { useConsultationsInbox } from '../hooks/useConsultationsInbox';
+import { useConsultationPrivileges } from '../hooks/useConsultationPrivileges';
 import { CONSULTATION_INBOX_PATH, spaBasePath } from '../constants';
 import styles from '../consultation-badge.scss';
 
@@ -12,6 +13,7 @@ function ConsultationInboxDashboardLinkInner() {
   const { t } = useTranslation();
   const location = useLocation();
   const { consultations, sessionLocationUuid } = useConsultationsInbox();
+  const { canViewConsultations } = useConsultationPrivileges();
   const pendingCount = sessionLocationUuid ? consultations?.length ?? 0 : 0;
 
   const isActive = useMemo(() => {
@@ -24,6 +26,10 @@ function ConsultationInboxDashboardLinkInner() {
 
     return shallowEqual(paths, localPath);
   }, [location.pathname]);
+
+  if (!canViewConsultations) {
+    return null;
+  }
 
   return (
     <div>

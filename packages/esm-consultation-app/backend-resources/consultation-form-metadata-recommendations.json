@@ -1,0 +1,49 @@
+{
+  "formUuid": "6d1da2cc-c846-4c89-b154-32811057751d",
+  "summary": "Recommended OpenMRS form metadata updates for the inter-department consultation workflow.",
+  "recommendations": [
+    {
+      "action": "fixSectionLabelTypo",
+      "previousLabel": "Consluting",
+      "recommendedLabel": "Consulting"
+    },
+    {
+      "action": "setRequired",
+      "conceptUuid": "d7245ba1-35f3-4b10-b04f-38a812fad033",
+      "field": "consultedDepartment",
+      "required": true,
+      "notes": "Encounter location must be set so inbox filtering works."
+    },
+    {
+      "action": "setRequired",
+      "conceptUuid": "25eb4da9-0904-441f-b9b8-69ec7307a417",
+      "field": "typeOfConsultation",
+      "required": true
+    },
+    {
+      "action": "setRequired",
+      "conceptUuid": "a2bf2521-1635-4b72-9bca-ca581ef8752c",
+      "field": "reasonForConsultation",
+      "required": true
+    },
+    {
+      "action": "setRequired",
+      "conceptUuid": "28441853-da6d-450f-b88a-9205d4654783",
+      "field": "briefFinding",
+      "required": true,
+      "notes": "Required when consulted doctor responds."
+    },
+    {
+      "action": "setRequired",
+      "conceptUuid": "36566305-0931-47d0-9de7-488c0ef4bef5",
+      "field": "recommendation",
+      "required": true,
+      "notes": "Required when consulted doctor responds."
+    },
+    {
+      "action": "hideOnCreate",
+      "section": "Consultation response",
+      "notes": "Hide response section when creating a new request if the form engine supports conditional visibility."
+    }
+  ]
+}

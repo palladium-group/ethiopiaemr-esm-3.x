@@ -5,6 +5,7 @@ import { Button, DataTableSkeleton, InlineLoading } from '@carbon/react';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import ConsultationList from '../consultation-list/consultation-list.component';
 import { useConsultationsAwaitingReview } from '../hooks/useConsultationsAwaitingReview';
+import { useConsultationPrivileges } from '../hooks/useConsultationPrivileges';
 import { useConsultationsByPatient } from '../hooks/useConsultationsByPatient';
 import { useLaunchConsultationForm } from '../hooks/useLaunchConsultationForm';
 import styles from './consultation-list-page.scss';
@@ -20,6 +21,7 @@ const ConsultationListPage: React.FC<ConsultationListPageProps> = ({ patient }) 
   const displayText = t('consultations', 'consultations');
   const { consultations, error, isLoading, isValidating, mutateConsultations } = useConsultationsByPatient(patient.id);
   const { unreadEncounterUuids } = useConsultationsAwaitingReview(patient.id);
+  const { canRequestConsultation, canViewConsultations } = useConsultationPrivileges();
   const { isLaunching, launchConsultationForm } = useLaunchConsultationForm(patient.id, {
     onConsultationSaved: () => {
       mutateConsultations();
@@ -36,13 +38,26 @@ const ConsultationListPage: React.FC<ConsultationListPageProps> = ({ patient }) 
     });
   }, [launchConsultationForm]);
 
-  const toolbar = (
+  const toolbar = canRequestConsultation ? (
     <div className={styles.toolbar}>
       <Button kind="primary" disabled={isLaunching} onClick={handleCreateConsultation}>
         {isLaunching ? t('loading', 'Loading...') : t('createConsultation', 'Create Consultation')}
       </Button>
     </div>
-  );
+  ) : null;
+
+  if (!canViewConsultations) {
+    return (
+      <ErrorState
+        error={
+          new Error(
+            t('consultationPrivilegeRequired', 'You do not have permission to perform this consultation action.'),
+          )
+        }
+        headerTitle={headerTitle}
+      />
+    );
+  }
 
   if (isLoading) {
     return (

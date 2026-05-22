@@ -6,9 +6,10 @@ import { useSession } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import ConsultationConversationView from './consultation-conversation-view.component';
 import { useConsultationsAwaitingReview } from '../hooks/useConsultationsAwaitingReview';
+import { useConsultationPrivileges } from '../hooks/useConsultationPrivileges';
 import { useConsultationsByPatient } from '../hooks/useConsultationsByPatient';
 import { useLaunchConsultationForm } from '../hooks/useLaunchConsultationForm';
-import { canRespondToConsultation } from '../resources/consultation.resource';
+import { canRespondToConsultation as canRespondAtSessionLocation } from '../resources/consultation.resource';
 import type { ConsultationStatus } from '../types/consultation.types';
 import styles from './consultation-detail.scss';
 
@@ -28,13 +29,17 @@ const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
   const headerTitle = t('consultationDetails', 'Consultation details');
   const { consultations, error, isLoading, mutateConsultations } = useConsultationsByPatient(patient.id);
   const { markConsultationSeen } = useConsultationsAwaitingReview(patient.id);
+  const { canRequestConsultation, canRespondToConsultation, canViewConsultations } = useConsultationPrivileges();
   const consultation = consultations?.find((item) => item.encounterUuid === encounterUuid);
   const { isLaunching, launchConsultationForm } = useLaunchConsultationForm(patient.id, {
     onConsultationSaved: () => {
       mutateConsultations();
     },
   });
-  const canRespond = consultation ? canRespondToConsultation(consultation, session?.sessionLocation?.uuid) : false;
+  const canRespond =
+    consultation && canRespondToConsultation
+      ? canRespondAtSessionLocation(consultation, session?.sessionLocation?.uuid)
+      : false;
 
   useEffect(() => {
     if (consultation?.status === 'completed') {
@@ -75,6 +80,19 @@ const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
     return <ErrorState error={error} headerTitle={headerTitle} />;
   }
 
+  if (!canViewConsultations) {
+    return (
+      <ErrorState
+        error={
+          new Error(
+            t('consultationPrivilegeRequired', 'You do not have permission to perform this consultation action.'),
+          )
+        }
+        headerTitle={headerTitle}
+      />
+    );
+  }
+
   if (!consultation) {
     return (
       <div className={styles.container}>
@@ -106,7 +124,7 @@ const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
               {isLaunching ? t('loading', 'Loading...') : t('respond', 'Respond')}
             </Button>
           ) : null}
-          {consultation.status === 'completed' ? (
+          {consultation.status === 'completed' && canRequestConsultation ? (
             <Button kind="secondary" disabled={isLaunching} onClick={handleCreateAnotherConsultation}>
               {isLaunching ? t('loading', 'Loading...') : t('createAnotherConsultation', 'Create Another Consultation')}
             </Button>

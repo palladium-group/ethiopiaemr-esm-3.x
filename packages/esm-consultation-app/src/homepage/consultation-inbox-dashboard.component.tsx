@@ -5,6 +5,7 @@ import { useSession } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import ConsultationInboxList from '../consultation-inbox/consultation-inbox-list.component';
 import { useConsultationsInbox } from '../hooks/useConsultationsInbox';
+import { useConsultationPrivileges } from '../hooks/useConsultationPrivileges';
 import { useLaunchConsultationResponseFromInbox } from '../hooks/useLaunchConsultationResponseFromInbox';
 import styles from './consultation-inbox-dashboard.scss';
 
@@ -15,6 +16,7 @@ export default function ConsultationInboxDashboard() {
   const sessionLocationDisplay = session?.sessionLocation?.display;
   const { consultations, error, isLoading, isValidating, mutateConsultationsInbox, sessionLocationUuid } =
     useConsultationsInbox();
+  const { canRespondToConsultation, canViewConsultations } = useConsultationPrivileges();
   const { isResponding, respondingEncounterUuid, launchConsultationResponse } = useLaunchConsultationResponseFromInbox({
     onConsultationSaved: () => {
       mutateConsultationsInbox();
@@ -39,6 +41,22 @@ export default function ConsultationInboxDashboard() {
       location: sessionLocationDisplay ?? t('yourLocation', 'your location'),
     });
   }, [sessionLocationDisplay, sessionLocationUuid, t]);
+
+  if (!canViewConsultations) {
+    return (
+      <div className={styles.container}>
+        <h4 className={styles.title}>{headerTitle}</h4>
+        <ErrorState
+          error={
+            new Error(
+              t('consultationPrivilegeRequired', 'You do not have permission to perform this consultation action.'),
+            )
+          }
+          headerTitle={headerTitle}
+        />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -90,6 +108,7 @@ export default function ConsultationInboxDashboard() {
       <ConsultationInboxList
         consultations={consultations}
         respondingEncounterUuid={respondingEncounterUuid}
+        canRespond={canRespondToConsultation}
         onRespond={handleRespond}
       />
       <p className={styles.summary}>

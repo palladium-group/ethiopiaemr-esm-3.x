@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import { useConsultationsAwaitingReview } from '../hooks/useConsultationsAwaitingReview';
+import { useConsultationPrivileges } from '../hooks/useConsultationPrivileges';
 import badgeStyles from '../consultation-badge.scss';
 import styles from './consultation-dashboard-link.scss';
 
@@ -19,6 +20,7 @@ function ConsultationDashboardLinkInner() {
   const location = useLocation();
   const patientUuid = getPatientUuidFromPathname(location.pathname);
   const { unreadCount } = useConsultationsAwaitingReview(patientUuid);
+  const { canViewConsultations } = useConsultationPrivileges();
   const consultationPath = patientUuid
     ? `${window.getOpenmrsSpaBase()}patient/${patientUuid}/chart/${CONSULTATION_DASHBOARD_PATH}`
     : null;
@@ -31,7 +33,7 @@ function ConsultationDashboardLinkInner() {
     return location.pathname.includes(`/patient/${patientUuid}/chart/${CONSULTATION_DASHBOARD_PATH}`);
   }, [location.pathname, patientUuid]);
 
-  if (!consultationPath) {
+  if (!consultationPath || !canViewConsultations) {
     return null;
   }
 
