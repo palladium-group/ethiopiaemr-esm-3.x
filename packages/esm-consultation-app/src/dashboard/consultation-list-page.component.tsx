@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button, DataTableSkeleton, InlineLoading } from '@carbon/react';
@@ -17,23 +17,27 @@ const ConsultationListPage: React.FC<ConsultationListPageProps> = ({ patient }) 
   const navigate = useNavigate();
   const headerTitle = t('consultation', 'Consultation');
   const displayText = t('consultations', 'consultations');
-  const { consultations, error, isLoading, isValidating } = useConsultationsByPatient(patient.id);
-  const { isLaunching, launchConsultationForm } = useLaunchConsultationForm(patient.id);
+  const { consultations, error, isLoading, isValidating, mutateConsultations } = useConsultationsByPatient(patient.id);
+  const { isLaunching, launchConsultationForm } = useLaunchConsultationForm(patient.id, {
+    onConsultationSaved: () => {
+      mutateConsultations();
+    },
+  });
 
   const handleConsultationClick = (encounterUuid: string) => {
     navigate(encounterUuid);
   };
 
-  const handleOpenConsultationForm = () => {
+  const handleCreateConsultation = useCallback(() => {
     launchConsultationForm().catch((launchError) => {
       console.error('Error launching consultation form workspace:', launchError);
     });
-  };
+  }, [launchConsultationForm]);
 
   const toolbar = (
     <div className={styles.toolbar}>
-      <Button kind="tertiary" disabled={isLaunching} onClick={handleOpenConsultationForm}>
-        {isLaunching ? t('loading', 'Loading...') : t('openConsultationForm', 'Open consultation form')}
+      <Button kind="primary" disabled={isLaunching} onClick={handleCreateConsultation}>
+        {isLaunching ? t('loading', 'Loading...') : t('createConsultation', 'Create Consultation')}
       </Button>
     </div>
   );

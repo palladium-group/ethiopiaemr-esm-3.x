@@ -1,7 +1,19 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { fetchCurrentPatient, launchWorkspace2, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { useStartVisitIfNeeded, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
+import { useSWRConfig } from 'swr';
+import {
+  fetchCurrentPatient,
+  launchWorkspace2,
+  showSnackbar,
+  useConfig,
+  useSession,
+  type Encounter,
+} from '@openmrs/esm-framework';
+import {
+  invalidateVisitAndEncounterData,
+  usePatientChartStore,
+  useStartVisitIfNeeded,
+} from '@openmrs/esm-patient-common-lib';
 import type { ConsultationConfig } from '../config-schema';
 import { CONSULTATION_FORM_NAME } from '../constants';
 import { getActiveVisitForPatient } from '../resources/consultation-visit.resource';
@@ -10,16 +22,46 @@ import {
   consultationFormEntryWorkspaceName,
 } from '../workspaces/consultation-form.workspace';
 
-export function useLaunchConsultationForm(patientUuid: string) {
+type UseLaunchConsultationFormOptions = {
+  onConsultationSaved?: () => void;
+};
+
+export function useLaunchConsultationForm(patientUuid: string, options: UseLaunchConsultationFormOptions = {}) {
+  const { onConsultationSaved } = options;
   const { t } = useTranslation();
   const config = useConfig<ConsultationConfig>();
+  const session = useSession();
+  const { mutate: globalMutate } = useSWRConfig();
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
-  const { mutateVisitContext } = usePatientChartStore(patientUuid);
+  const { visitContext, mutateVisitContext } = usePatientChartStore(patientUuid);
   const [isLaunching, setIsLaunching] = useState(false);
 
   const launchConsultationForm = useCallback(
     async (encounterUuid = '') => {
       if (!patientUuid?.trim()) {
+        return false;
+      }
+
+      if (!session?.sessionLocation?.uuid) {
+        showSnackbar({
+          title: t('error', 'Error'),
+          kind: 'error',
+          subtitle: t('sessionLocationRequired', 'A session location is required to save a consultation.'),
+          isLowContrast: true,
+        });
+        return false;
+      }
+
+      if (!session?.currentProvider?.uuid) {
+        showSnackbar({
+          title: t('error', 'Error'),
+          kind: 'error',
+          subtitle: t(
+            'providerRequired',
+            'Your user account must be linked to a provider before you can save a consultation.',
+          ),
+          isLowContrast: true,
+        });
         return false;
       }
 
@@ -31,10 +73,15 @@ export function useLaunchConsultationForm(patientUuid: string) {
           return false;
         }
 
-        const [patient, visit] = await Promise.all([
+        if (mutateVisitContext) {
+          await mutateVisitContext();
+        }
+
+        const [patient, fetchedVisit] = await Promise.all([
           fetchCurrentPatient(patientUuid),
           getActiveVisitForPatient(patientUuid),
         ]);
+        const visit = fetchedVisit ?? (visitContext?.stopDatetime == null ? visitContext : null);
 
         if (!patient) {
           throw new Error('Failed to fetch patient data');
@@ -44,12 +91,26 @@ export function useLaunchConsultationForm(patientUuid: string) {
           throw new Error(t('consultationVisitRequired', 'An active visit is required to open the consultation form.'));
         }
 
+        const handlePostResponse = (_encounter: Encounter) => {
+          invalidateVisitAndEncounterData(globalMutate, patientUuid);
+          onConsultationSaved?.();
+          showSnackbar({
+            title: t('consultationSaved', 'Consultation saved'),
+            kind: 'success',
+            subtitle: encounterUuid
+              ? t('consultationResponseSaved', 'Consultation response saved successfully.')
+              : t('consultationRequestSaved', 'Consultation request sent successfully.'),
+            isLowContrast: true,
+          });
+        };
+
         const workspaceData = buildConsultationFormWorkspaceData(
           patient,
           visit,
           config.consultationFormUuid,
           CONSULTATION_FORM_NAME,
           encounterUuid,
+          handlePostResponse,
         );
 
         launchWorkspace2(consultationFormEntryWorkspaceName, workspaceData, {
@@ -78,7 +139,18 @@ export function useLaunchConsultationForm(patientUuid: string) {
         setIsLaunching(false);
       }
     },
-    [config.consultationFormUuid, mutateVisitContext, patientUuid, startVisitIfNeeded, t],
+    [
+      config.consultationFormUuid,
+      globalMutate,
+      mutateVisitContext,
+      onConsultationSaved,
+      patientUuid,
+      session?.currentProvider?.uuid,
+      session?.sessionLocation?.uuid,
+      startVisitIfNeeded,
+      t,
+      visitContext,
+    ],
   );
 
   return {

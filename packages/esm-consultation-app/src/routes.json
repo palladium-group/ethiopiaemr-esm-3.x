@@ -36,17 +36,11 @@
   "workspaceWindows2": [
     {
       "name": "consultation-form",
-      "group": "consultation-group",
+      "group": "patient-chart",
       "width": "wider",
       "canMaximize": true
     }
   ],
-  "workspaceGroups2": [
-    {
-      "name": "consultation-group",
-      "overlay": true,
-      "persistence": "closable"
-    }
-  ],
+  "workspaceGroups2": [],
   "modals": []
 }
