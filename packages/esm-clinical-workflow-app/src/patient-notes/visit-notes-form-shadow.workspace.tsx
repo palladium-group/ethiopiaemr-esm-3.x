@@ -49,7 +49,7 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import type { VisitNoteConfig } from '../config-schema';
 import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from './types';
-import { diagnosisHasMainAttribute } from './diagnosis-main.utils';
+import { diagnosisHasMainAttribute, resolveDiagnosisAttributeTypeUuid } from './diagnosis-main.utils';
 import {
   resolveMainDiagnosisCandidatesForPrimaries,
   type MainDiagnosisCandidate,
@@ -74,12 +74,18 @@ type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images
   images?: UploadedFile[];
 };
 
+/** Which diagnosis list add/remove handlers should update (not react-hook-form field names). */
+type DiagnosisListTarget = 'primary' | 'secondary' | 'main';
+
+const visitMainDiagnosisAlreadyExistsDefault =
+  'A main diagnosis is already recorded on this visit. Only one main diagnosis is allowed per visit.';
+
 interface DiagnosesDisplayProps {
-  fieldName: string;
+  diagnosisListTarget: DiagnosisListTarget;
   isDiagnosisNotSelected: (diagnosis: Concept) => boolean;
   isLoading: boolean;
   isSearching: boolean;
-  onAddDiagnosis: (diagnosis: Concept, certainty: string, searchInputField: string) => void;
+  onAddDiagnosis: (diagnosis: Concept, certainty: string, listTarget: DiagnosisListTarget) => void;
   searchResults: Array<Concept>;
   t: TFunction;
   value: string;
@@ -121,20 +127,6 @@ interface EncounterDiagnosisLoadRow {
     attributeType?: { uuid?: string; display?: string } | string;
     value?: unknown;
   }>;
-}
-
-function diagnosisAttributeValueIsTrue(value: unknown): boolean {
-  return value === true || value === 'true';
-}
-
-function resolveDiagnosisAttributeTypeUuid(attributeType: unknown): string | undefined {
-  if (typeof attributeType === 'string') {
-    return attributeType;
-  }
-  if (attributeType && typeof attributeType === 'object' && 'uuid' in attributeType) {
-    return (attributeType as { uuid?: string }).uuid;
-  }
-  return undefined;
 }
 
 function encounterDiagnosisHasMainAttribute(
@@ -469,19 +461,19 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 
   const handleAddDiagnosis = useCallback(
-    (conceptDiagnosisToAdd: Concept, certainty: string = 'PROVISIONAL', searchInputField: string) => {
+    (conceptDiagnosisToAdd: Concept, certainty: string = 'PROVISIONAL', listTarget: DiagnosisListTarget) => {
       const newDiagnosis = createDiagnosis(conceptDiagnosisToAdd, certainty);
-      if (searchInputField === 'primaryDiagnosisSearch') {
+      if (listTarget === 'primary') {
         newDiagnosis.rank = 1;
         setValue('primaryDiagnosisSearch', '');
         setSearchPrimaryResults([]);
         setSelectedPrimaryDiagnoses((selectedDiagnoses) => [...selectedDiagnoses, newDiagnosis]);
         clearErrors('primaryDiagnosisSearch');
-      } else if (searchInputField === 'secondaryDiagnosisSearch') {
+      } else if (listTarget === 'secondary') {
         setValue('secondaryDiagnosisSearch', '');
         setSearchSecondaryResults([]);
         setSelectedSecondaryDiagnoses((selectedDiagnoses) => [...selectedDiagnoses, newDiagnosis]);
-      } else if (searchInputField === 'mainDiagnosisSearch') {
+      } else if (listTarget === 'main') {
         if (visitHasMainOnOtherEncounter) {
           return;
         }
@@ -503,26 +495,26 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       if (!selectedItem || selectedMainDiagnosis || visitHasMainOnOtherEncounter) {
         return;
       }
-      handleAddDiagnosis({ uuid: selectedItem.id, display: selectedItem.label }, 'CONFIRMED', 'mainDiagnosisSearch');
+      handleAddDiagnosis({ uuid: selectedItem.id, display: selectedItem.label }, 'CONFIRMED', 'main');
     },
     [handleAddDiagnosis, selectedMainDiagnosis, visitHasMainOnOtherEncounter],
   );
 
   const handleRemoveDiagnosis = useCallback(
-    (diagnosisToRemove: Diagnosis, searchInputField) => {
-      if (searchInputField === 'primaryInputSearch') {
+    (diagnosisToRemove: Diagnosis, listTarget: DiagnosisListTarget) => {
+      if (listTarget === 'primary') {
         setSelectedPrimaryDiagnoses(
           selectedPrimaryDiagnoses.filter(
             (diagnosis) => diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded,
           ),
         );
-      } else if (searchInputField === 'secondaryInputSearch') {
+      } else if (listTarget === 'secondary') {
         setSelectedSecondaryDiagnoses(
           selectedSecondaryDiagnoses.filter(
             (diagnosis) => diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded,
           ),
         );
-      } else if (searchInputField === 'mainInputSearch') {
+      } else if (listTarget === 'main') {
         setSelectedMainDiagnosis(null);
       }
       setCombinedDiagnoses(
@@ -595,7 +587,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
         if (selectedMainDiagnosis && visitHasMainOnOtherEncounter) {
           showSnackbar({
-            title: t('visitMainDiagnosisAlreadyExists', 'Main diagnosis already recorded for this visit'),
+            title: t('visitMainDiagnosisAlreadyExists', visitMainDiagnosisAlreadyExistsDefault),
             kind: 'error',
             isLowContrast: false,
           });
@@ -814,7 +806,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                         <Tag
                           className={styles.tag}
                           filter
-                          onClose={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
+                          onClose={() => handleRemoveDiagnosis(diagnosis, 'primary')}
                           type="red">
                           <span className={styles.tagContent}>
                             {displayText}
@@ -843,7 +835,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                         <Tag
                           className={styles.tag}
                           filter
-                          onClose={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
+                          onClose={() => handleRemoveDiagnosis(diagnosis, 'secondary')}
                           type="blue">
                           <span className={styles.tagContent}>
                             {displayText}
@@ -866,7 +858,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                   <Tag
                     className={styles.tag}
                     filter
-                    onClose={() => handleRemoveDiagnosis(selectedMainDiagnosis, 'mainInputSearch')}
+                    onClose={() => handleRemoveDiagnosis(selectedMainDiagnosis, 'main')}
                     type="green">
                     <span className={styles.tagContent}>
                       {selectedMainDiagnosis.display.length > 30
@@ -910,7 +902,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                     />
                   ) : null}
                   <DiagnosesDisplay
-                    fieldName={'primaryDiagnosisSearch'}
+                    diagnosisListTarget="primary"
                     isDiagnosisNotSelected={isDiagnosisNotSelected}
                     isLoading={isLoadingPrimaryDiagnoses}
                     isSearching={isSearching}
@@ -946,7 +938,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                     />
                   ) : null}
                   <DiagnosesDisplay
-                    fieldName={'secondaryDiagnosisSearch'}
+                    diagnosisListTarget="secondary"
                     isDiagnosisNotSelected={isDiagnosisNotSelected}
                     isLoading={isLoadingSecondaryDiagnoses}
                     isSearching={isSearching}
@@ -995,10 +987,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                   ) : null}
                   {visitHasMainOnOtherEncounter && !selectedMainDiagnosis ? (
                     <p className={styles.mainDiagnosisHelperText}>
-                      {t(
-                        'visitMainDiagnosisAlreadyExists',
-                        'A main diagnosis is already recorded on this visit. Only one main diagnosis is allowed per visit.',
-                      )}
+                      {t('visitMainDiagnosisAlreadyExists', visitMainDiagnosisAlreadyExistsDefault)}
                     </p>
                   ) : null}
                   {!visitHasMainOnOtherEncounter &&
@@ -1166,7 +1155,7 @@ function DiagnosisSearch({
 }
 
 function DiagnosesDisplay({
-  fieldName,
+  diagnosisListTarget,
   isDiagnosisNotSelected,
   isLoading,
   isSearching,
@@ -1234,7 +1223,7 @@ function DiagnosesDisplay({
                     onClick={(e) => {
                       e.stopPropagation();
                       if (skipCertaintyChooser) {
-                        onAddDiagnosis(diagnosis, 'CONFIRMED', fieldName);
+                        onAddDiagnosis(diagnosis, 'CONFIRMED', diagnosisListTarget);
                         return;
                       }
                       setSelectedDiagnosis(diagnosis);
@@ -1266,7 +1255,7 @@ function DiagnosesDisplay({
                       <button
                         className={classnames(styles.certaintyOption, styles.confirmedOption)}
                         onClick={() => {
-                          onAddDiagnosis(diagnosis, 'CONFIRMED', fieldName);
+                          onAddDiagnosis(diagnosis, 'CONFIRMED', diagnosisListTarget);
                           setShowDropdown(false);
                           setSelectedDiagnosis(null);
                         }}>
@@ -1281,7 +1270,7 @@ function DiagnosesDisplay({
                       <button
                         className={classnames(styles.certaintyOption, styles.presumedOption)}
                         onClick={() => {
-                          onAddDiagnosis(diagnosis, 'PROVISIONAL', fieldName);
+                          onAddDiagnosis(diagnosis, 'PROVISIONAL', diagnosisListTarget);
                           setShowDropdown(false);
                           setSelectedDiagnosis(null);
                         }}>
