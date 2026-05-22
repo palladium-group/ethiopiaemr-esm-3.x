@@ -12,8 +12,6 @@ import type {
   VisitNotePayload,
 } from './types';
 
-export { conceptHasMappingToSource };
-
 interface UseVisitNotes {
   visitNotes: Array<PatientNote> | null;
   error: Error;

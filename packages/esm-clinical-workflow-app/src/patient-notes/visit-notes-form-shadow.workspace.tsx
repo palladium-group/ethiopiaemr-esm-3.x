@@ -49,7 +49,10 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import type { VisitNoteConfig } from '../config-schema';
 import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from './types';
-import { diagnosisHasMainAttribute, resolveDiagnosisAttributeTypeUuid } from './diagnosis-main.utils';
+import {
+  partitionEncounterDiagnosesForVisitNoteForm,
+  type EncounterDiagnosisLoadRow,
+} from './visit-note-diagnosis-load.utils';
 import { useMainDiagnosisCandidates } from './main-diagnosis-candidate.resource';
 import {
   collectVisitPrimaryConceptUuids,
@@ -86,8 +89,6 @@ interface DiagnosesDisplayProps {
   searchResults: Array<Concept>;
   t: TFunction;
   value: string;
-  skipCertaintyChooser?: boolean;
-  disableAdd?: boolean;
 }
 
 interface DiagnosisSearchProps {
@@ -111,48 +112,6 @@ const createSchema = (t: TFunction) => {
     images: z.array(z.any()).optional(),
   });
 };
-
-/** Encounter diagnosis row as returned by REST (chart / diagnoses dashboard) */
-interface EncounterDiagnosisLoadRow {
-  voided?: boolean;
-  display: string;
-  certainty?: string;
-  rank?: number;
-  diagnosis?: { coded?: { uuid?: string } };
-  attributes?: ReadonlyArray<{
-    uuid?: string;
-    attributeType?: { uuid?: string; display?: string } | string;
-    value?: unknown;
-  }>;
-}
-
-function encounterDiagnosisHasMainAttribute(
-  row: EncounterDiagnosisLoadRow,
-  mainDiagnosisAttributeTypeUuid: string,
-): boolean {
-  return diagnosisHasMainAttribute(row.attributes, mainDiagnosisAttributeTypeUuid);
-}
-
-function mapEncounterAttributesToDiagnosisAttributes(
-  attributes: EncounterDiagnosisLoadRow['attributes'],
-): Diagnosis['attributes'] | undefined {
-  if (!attributes?.length) {
-    return undefined;
-  }
-  const out: NonNullable<Diagnosis['attributes']> = [];
-  for (const a of attributes) {
-    const typeUuid = resolveDiagnosisAttributeTypeUuid(a.attributeType);
-    if (!typeUuid) {
-      continue;
-    }
-    out.push({
-      uuid: a.uuid,
-      attributeType: typeUuid,
-      value: a.value as boolean | string,
-    });
-  }
-  return out.length ? out : undefined;
-}
 
 /** POST after DELETE creates new attribute rows; do not reuse server attribute uuids. */
 function attributesForPatientDiagnosisPost(
@@ -252,54 +211,18 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       return;
     }
 
-    const rows = (encounter.diagnoses ?? []).filter((d) => !(d as EncounterDiagnosisLoadRow).voided);
-
-    if (!rows.length) {
-      setSelectedPrimaryDiagnoses([]);
-      setSelectedSecondaryDiagnoses([]);
-      setSelectedMainDiagnosis(null);
-      setCombinedDiagnoses([]);
-      return;
-    }
-
     try {
-      const mainEncounterRow = (rows as EncounterDiagnosisLoadRow[]).find((d) =>
-        encounterDiagnosisHasMainAttribute(d, mainDiagnosisAttributeTypeUuid),
-      );
-      const mainCodedUuid = mainEncounterRow?.diagnosis?.coded?.uuid;
-
-      const transformedDiagnoses: Diagnosis[] = (rows as EncounterDiagnosisLoadRow[]).map((d) => {
-        const codedUuid = d.diagnosis?.coded?.uuid;
-        const mappedAttributes = mapEncounterAttributesToDiagnosisAttributes(d.attributes);
-
-        return {
-          patient: patientUuid,
-          diagnosis: {
-            coded: codedUuid,
-          },
-          certainty: d.certainty,
-          rank: d.rank,
-          display: d.display,
-          ...(mappedAttributes?.length ? { attributes: mappedAttributes } : {}),
-        };
-      });
-
-      const mainDiagnosis =
-        mainCodedUuid !== undefined
-          ? transformedDiagnoses.find((t) => t.diagnosis.coded === mainCodedUuid) ?? null
-          : null;
-
-      const primaryDiagnoses = transformedDiagnoses.filter(
-        (d) => d.rank === 1 && (!mainDiagnosis || d.diagnosis.coded !== mainDiagnosis.diagnosis.coded),
-      );
-      const secondaryDiagnoses = transformedDiagnoses.filter(
-        (d) => d.rank === 2 && (!mainDiagnosis || d.diagnosis.coded !== mainDiagnosis.diagnosis.coded),
-      );
+      const { primaryDiagnoses, secondaryDiagnoses, mainDiagnosis, combinedDiagnoses } =
+        partitionEncounterDiagnosesForVisitNoteForm(
+          (encounter.diagnoses ?? []) as EncounterDiagnosisLoadRow[],
+          patientUuid,
+          mainDiagnosisAttributeTypeUuid,
+        );
 
       setSelectedPrimaryDiagnoses(primaryDiagnoses);
       setSelectedSecondaryDiagnoses(secondaryDiagnoses);
       setSelectedMainDiagnosis(mainDiagnosis);
-      setCombinedDiagnoses([...primaryDiagnoses, ...secondaryDiagnoses, ...(mainDiagnosis ? [mainDiagnosis] : [])]);
+      setCombinedDiagnoses(combinedDiagnoses);
     } catch (err) {
       setError(new Error(t('errorTransformingDiagnoses', 'Error transforming diagnoses')));
       createErrorHandler();
@@ -348,7 +271,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const mainDiagnosisResolveOptions = useMemo(
     () => ({
       esvIcd11ConceptSourceUuid,
-      diagnosisConceptClassUuid: config.diagnosisConceptClass,
+      diagnosisConceptClass: config.diagnosisConceptClass,
     }),
     [esvIcd11ConceptSourceUuid, config.diagnosisConceptClass],
   );
@@ -1140,8 +1063,6 @@ function DiagnosesDisplay({
   searchResults,
   t,
   value,
-  skipCertaintyChooser = false,
-  disableAdd = false,
 }: DiagnosesDisplayProps) {
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<Concept | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -1168,21 +1089,6 @@ function DiagnosesDisplay({
     return <Loader />;
   }
 
-  if (disableAdd) {
-    return (
-      <ResponsiveWrapper>
-        <Tile className={styles.emptyResults}>
-          <span>
-            {t(
-              'removeCurrentMainDiagnosisFirst',
-              'Remove the currently selected main diagnosis before choosing another.',
-            )}
-          </span>
-        </Tile>
-      </ResponsiveWrapper>
-    );
-  }
-
   if (!isSearching && searchResults?.length > 0) {
     return (
       <ul className={styles.diagnosisList}>
@@ -1199,18 +1105,12 @@ function DiagnosesDisplay({
                     kind="ghost"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (skipCertaintyChooser) {
-                        onAddDiagnosis(diagnosis, 'CONFIRMED', diagnosisListTarget);
-                        return;
-                      }
                       setSelectedDiagnosis(diagnosis);
                       setShowDropdown(!showDropdown || selectedDiagnosis?.uuid !== diagnosis.uuid);
                     }}
                     className={styles.addButton}
                     renderIcon={Add}
-                    iconDescription={
-                      skipCertaintyChooser ? t('add', 'Add') : t('addWithCertainty', 'Add with certainty')
-                    }>
+                    iconDescription={t('addWithCertainty', 'Add with certainty')}>
                     {t('add', 'Add')}
                   </Button>
                 </div>

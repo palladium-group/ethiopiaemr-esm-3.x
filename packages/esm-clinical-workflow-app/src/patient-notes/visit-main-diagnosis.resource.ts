@@ -62,8 +62,9 @@ export function visitHasMainDiagnosisOnOtherEncounter(
 }
 
 export function useActiveVisitWithEncounters(patientUuid: string, activeVisitUuid: string | undefined) {
-  const { data, error, isLoading } = useSWR(activeVisitUuid ? ['activeVisitWithEncounters', patientUuid] : null, () =>
-    fetchActiveVisitWithEncounters(patientUuid),
+  const { data, error, isLoading } = useSWR(
+    activeVisitUuid ? ['activeVisitWithEncounters', patientUuid, activeVisitUuid] : null,
+    () => fetchActiveVisitWithEncounters(patientUuid),
   );
 
   return {

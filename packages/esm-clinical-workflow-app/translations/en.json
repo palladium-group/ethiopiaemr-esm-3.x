@@ -158,7 +158,7 @@
   "scheduledForToday": "Scheduled for Today",
   "search": "Search",
   "searchByHealthId": "Search by Health ID",
-  "searchForMainDiagnosis": "Search for the main diagnosis (used for reports)",
+  "searchForMainDiagnosis": "Choose the main diagnosis (used for reports)",
   "searchForPatientToStartTriage": "Search for a patient using the search bar above to start the triage process, or register a new patient.",
   "searchForPrimaryDiagnosis": "Search for a primary diagnosis",
   "searchForSecondaryDiagnosis": "Search for a secondary diagnosis",

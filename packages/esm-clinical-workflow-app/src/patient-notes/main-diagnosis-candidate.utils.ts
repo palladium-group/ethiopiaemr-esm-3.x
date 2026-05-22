@@ -13,7 +13,8 @@ export interface MainDiagnosisCandidate {
 
 export interface ResolveMainDiagnosisCandidateOptions {
   esvIcd11ConceptSourceUuid: string;
-  diagnosisConceptClassUuid: string;
+  /** Concept class UUID (same as `diagnosisConceptClass` in app config). */
+  diagnosisConceptClass: string;
   maxParentHops?: number;
 }
 
@@ -44,13 +45,13 @@ export function getImmediateParentConceptUuid(concept: ConceptForMainDiagnosisRe
 
 export function isDiagnosisClassConcept(
   concept: ConceptForMainDiagnosisResolution,
-  diagnosisConceptClassUuid: string,
+  diagnosisConceptClass: string,
 ): boolean {
   const conceptClass = concept.conceptClass;
   if (!conceptClass) {
     return false;
   }
-  if (diagnosisConceptClassUuid && conceptClass.uuid === diagnosisConceptClassUuid) {
+  if (diagnosisConceptClass && conceptClass.uuid === diagnosisConceptClass) {
     return true;
   }
   const name = conceptClass.name?.toLowerCase() ?? conceptClass.display?.toLowerCase();
@@ -71,7 +72,7 @@ export async function resolveMainDiagnosisCandidateForPrimary(
   primaryConceptUuid: string,
   options: ResolveMainDiagnosisCandidateOptions,
 ): Promise<MainDiagnosisCandidate | null> {
-  const { esvIcd11ConceptSourceUuid, diagnosisConceptClassUuid, maxParentHops = DEFAULT_MAX_PARENT_HOPS } = options;
+  const { esvIcd11ConceptSourceUuid, diagnosisConceptClass, maxParentHops = DEFAULT_MAX_PARENT_HOPS } = options;
 
   const primary = await fetchConceptForMainDiagnosisResolution(primaryConceptUuid);
 
@@ -86,7 +87,7 @@ export async function resolveMainDiagnosisCandidateForPrimary(
     const ancestor = await fetchConceptForMainDiagnosisResolution(parentUuid);
 
     if (
-      isDiagnosisClassConcept(ancestor, diagnosisConceptClassUuid) &&
+      isDiagnosisClassConcept(ancestor, diagnosisConceptClass) &&
       conceptHasMappingToSource(ancestor, esvIcd11ConceptSourceUuid)
     ) {
       return toCandidate(ancestor);

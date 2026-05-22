@@ -14,7 +14,7 @@ function mainDiagnosisCandidatesSwrKey(
     return null;
   }
   const sortedUuids = [...primaryConceptUuids].sort().join(',');
-  return ['mainDiagnosisCandidates', sortedUuids, options.esvIcd11ConceptSourceUuid, options.diagnosisConceptClassUuid];
+  return ['mainDiagnosisCandidates', sortedUuids, options.esvIcd11ConceptSourceUuid, options.diagnosisConceptClass];
 }
 
 export function useMainDiagnosisCandidates(
