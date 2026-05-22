@@ -4,7 +4,7 @@ import { conceptHasMappingToSource, type ConceptWithMappings } from './diagnosis
 const CONCEPT_RESOLUTION_REP =
   'custom:(uuid,display,conceptClass:(uuid,display,name),mappings:(conceptReferenceTerm:(conceptSource:(uuid),code)),parentSets:(conceptSet:(uuid,display,conceptClass:(uuid,display,name))))';
 
-const DEFAULT_MAX_PARENT_HOPS = 50;
+const DEFAULT_MAX_PARENT_HOPS = 10;
 
 export interface MainDiagnosisCandidate {
   uuid: string;

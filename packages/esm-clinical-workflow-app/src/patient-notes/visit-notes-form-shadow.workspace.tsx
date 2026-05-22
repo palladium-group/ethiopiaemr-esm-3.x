@@ -50,10 +50,7 @@ import {
 import type { VisitNoteConfig } from '../config-schema';
 import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from './types';
 import { diagnosisHasMainAttribute, resolveDiagnosisAttributeTypeUuid } from './diagnosis-main.utils';
-import {
-  resolveMainDiagnosisCandidatesForPrimaries,
-  type MainDiagnosisCandidate,
-} from './main-diagnosis-candidate.utils';
+import { useMainDiagnosisCandidates } from './main-diagnosis-candidate.resource';
 import {
   collectVisitPrimaryConceptUuids,
   useActiveVisitWithEncounters,
@@ -193,14 +190,12 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
-  const [isLoadingMainDiagnosisCandidates, setIsLoadingMainDiagnosisCandidates] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedPrimaryDiagnoses, setSelectedPrimaryDiagnoses] = useState<Array<Diagnosis>>([]);
   const [selectedSecondaryDiagnoses, setSelectedSecondaryDiagnoses] = useState<Array<Diagnosis>>([]);
   const [selectedMainDiagnosis, setSelectedMainDiagnosis] = useState<Diagnosis | null>(null);
   const [searchPrimaryResults, setSearchPrimaryResults] = useState<Array<Concept>>(null);
   const [searchSecondaryResults, setSearchSecondaryResults] = useState<Array<Concept>>(null);
-  const [mainDiagnosisCandidates, setMainDiagnosisCandidates] = useState<Array<MainDiagnosisCandidate>>([]);
   const [combinedDiagnoses, setCombinedDiagnoses] = useState<Array<Diagnosis>>([]);
   const [rows, setRows] = useState<number>();
   const [error, setError] = useState<Error>(null);
@@ -350,56 +345,38 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     return Array.from(uuids);
   }, [activeVisit?.uuid, visitWithEncounters, selectedPrimaryDiagnoses]);
 
+  const mainDiagnosisResolveOptions = useMemo(
+    () => ({
+      esvIcd11ConceptSourceUuid,
+      diagnosisConceptClassUuid: config.diagnosisConceptClass,
+    }),
+    [esvIcd11ConceptSourceUuid, config.diagnosisConceptClass],
+  );
+
+  const mainCandidatesFetchEnabled =
+    primaryConceptUuidsForMainCandidates.length > 0 && (!activeVisit?.uuid || !isLoadingVisitForMain);
+
+  const {
+    mainDiagnosisCandidates,
+    isLoading: isLoadingMainDiagnosisCandidates,
+    error: mainDiagnosisCandidatesError,
+  } = useMainDiagnosisCandidates(
+    primaryConceptUuidsForMainCandidates,
+    mainDiagnosisResolveOptions,
+    mainCandidatesFetchEnabled,
+  );
+
+  useEffect(() => {
+    if (mainDiagnosisCandidatesError) {
+      setError(mainDiagnosisCandidatesError);
+      createErrorHandler();
+    }
+  }, [mainDiagnosisCandidatesError]);
+
   const mainDiagnosisDropdownItems = useMemo(
     () => mainDiagnosisCandidates.map((candidate) => ({ id: candidate.uuid, label: candidate.display })),
     [mainDiagnosisCandidates],
   );
-
-  useEffect(() => {
-    if (activeVisit?.uuid && isLoadingVisitForMain) {
-      return;
-    }
-
-    if (!primaryConceptUuidsForMainCandidates.length) {
-      setMainDiagnosisCandidates([]);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoadingMainDiagnosisCandidates(true);
-
-    resolveMainDiagnosisCandidatesForPrimaries(primaryConceptUuidsForMainCandidates, {
-      esvIcd11ConceptSourceUuid,
-      diagnosisConceptClassUuid: config.diagnosisConceptClass,
-    })
-      .then((candidates) => {
-        if (!cancelled) {
-          setMainDiagnosisCandidates(candidates);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err);
-          createErrorHandler();
-          setMainDiagnosisCandidates([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingMainDiagnosisCandidates(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    activeVisit?.uuid,
-    isLoadingVisitForMain,
-    primaryConceptUuidsForMainCandidates,
-    esvIcd11ConceptSourceUuid,
-    config.diagnosisConceptClass,
-  ]);
 
   const debouncedSearch = useMemo(
     () =>
