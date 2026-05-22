@@ -24,6 +24,7 @@ export interface ConsultationResponseContent {
 export interface ConsultationThread {
   encounterUuid: string;
   patientUuid: string;
+  patientDisplay: string;
   status: ConsultationStatus;
   consultationType: string;
   consultingDepartment: string;

@@ -12,6 +12,10 @@ export function getConsultationsByPatientUrl(patientUuid: string, consultationEn
   return `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${consultationEncounterTypeUuid}&order=desc&v=${CONSULTATION_ENCOUNTER_REPRESENTATION}`;
 }
 
+export function filterPendingConsultations(consultations: Array<ConsultationThread>): Array<ConsultationThread> {
+  return consultations.filter((consultation) => consultation.status === 'pending');
+}
+
 export function mapEncountersToConsultations(
   encounters: Array<Encounter> | undefined,
   conceptUuids: ConsultationConceptUuids,
@@ -159,6 +163,7 @@ export function mapEncounterToConsultation(
   return {
     encounterUuid: encounter.uuid,
     patientUuid: encounter.patient?.uuid ?? '',
+    patientDisplay: encounter.patient?.display ?? '',
     status,
     consultationType,
     consultingDepartment,

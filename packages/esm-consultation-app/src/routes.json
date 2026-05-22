@@ -5,6 +5,25 @@
   },
   "extensions": [
     {
+      "name": "consultation-inbox-dashboard-link",
+      "component": "consultationInboxDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "order": 6,
+      "meta": {
+        "name": "consultation-inbox",
+        "title": "Consultation",
+        "path": "consultation-inbox",
+        "slot": "consultation-inbox-dashboard-slot"
+      }
+    },
+    {
+      "name": "consultation-inbox-dashboard",
+      "component": "consultationInboxDashboard",
+      "slot": "consultation-inbox-dashboard-slot",
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "consultation-dashboard-link",
       "component": "consultationDashboardLink",
       "slot": "patient-chart-dashboard-slot",
@@ -31,6 +50,11 @@
       "name": "consultation-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "consultation-form"
+    },
+    {
+      "name": "consultation-inbox-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "consultation-inbox-form"
     }
   ],
   "workspaceWindows2": [
@@ -39,8 +63,20 @@
       "group": "patient-chart",
       "width": "wider",
       "canMaximize": true
+    },
+    {
+      "name": "consultation-inbox-form",
+      "group": "consultation-group",
+      "width": "wider",
+      "canMaximize": true
     }
   ],
-  "workspaceGroups2": [],
+  "workspaceGroups2": [
+    {
+      "name": "consultation-group",
+      "overlay": true,
+      "persistence": "closable"
+    }
+  ],
   "modals": []
 }

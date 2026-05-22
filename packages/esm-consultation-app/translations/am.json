@@ -1,10 +1,13 @@
 {
+  "actions": "Actions",
   "backToConsultations": "Back to consultations",
   "completed": "Completed",
   "consultation": "Consultation",
   "consultationDetailComingSoon": "Full consultation view coming soon.",
   "consultationDetails": "Consultation details",
   "consultationFormLaunchError": "Unable to open the consultation form.",
+  "consultationInbox": "Consultation inbox",
+  "consultationInboxComingSoon": "Consultation inbox coming soon.",
   "consultationNotFound": "Consultation not found.",
   "consultationRequestSaved": "Consultation request sent successfully.",
   "consultationResponseSaved": "Consultation response saved successfully.",
@@ -17,10 +20,17 @@
   "createConsultation": "Create Consultation",
   "error": "Error",
   "loading": "Loading...",
+  "noPendingConsultations": "There are no pending consultations for {{location}}.",
+  "patient": "Patient",
   "pending": "Pending",
+  "pendingConsultationCount": "{{count}} pending consultation(s)",
+  "pendingConsultations": "pending consultations",
   "providerRequired": "Your user account must be linked to a provider before you can save a consultation.",
   "requestedDate": "Requested date",
   "requestingProvider": "Requesting provider",
+  "respond": "Respond",
   "sessionLocationRequired": "A session location is required to save a consultation.",
-  "status": "Status"
+  "sessionLocationRequiredForInbox": "Select a session location to view consultation requests.",
+  "status": "Status",
+  "yourLocation": "your location"
 }

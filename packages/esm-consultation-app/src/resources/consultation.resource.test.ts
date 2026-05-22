@@ -5,6 +5,7 @@ import {
   pendingConsultationEncounter,
 } from './consultation.fixture';
 import {
+  filterPendingConsultations,
   getConsultationStatus,
   getConsultationsByPatientUrl,
   getObsValue,
@@ -23,6 +24,24 @@ describe('consultation.resource', () => {
       expect(url).toContain(`encounterType=${CONSULTATION_ENCOUNTER_TYPE_UUID}`);
       expect(url).toContain('order=desc');
       expect(url).toContain('v=custom:');
+    });
+  });
+
+  describe('filterPendingConsultations', () => {
+    it('returns only pending consultations', () => {
+      const consultations = mapEncountersToConsultations(
+        [pendingConsultationEncounter, completedConsultationEncounter, partialConsultationEncounter],
+        conceptUuids,
+      );
+
+      const pendingConsultations = filterPendingConsultations(consultations);
+
+      expect(pendingConsultations).toHaveLength(2);
+      expect(pendingConsultations.every((consultation) => consultation.status === 'pending')).toBe(true);
+      expect(pendingConsultations.map((consultation) => consultation.encounterUuid)).toEqual([
+        'encounter-uuid-1',
+        'encounter-uuid-2',
+      ]);
     });
   });
 
@@ -99,6 +118,7 @@ describe('consultation.resource', () => {
       expect(consultation).toEqual({
         encounterUuid: 'encounter-uuid-1',
         patientUuid: 'patient-uuid-1',
+        patientDisplay: 'Test Patient',
         status: 'pending',
         consultationType: 'Urgent',
         consultingDepartment: 'Internal Medicine',

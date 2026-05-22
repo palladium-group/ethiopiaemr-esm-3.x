@@ -1,5 +1,5 @@
 import { fetchCurrentPatient, type Encounter, type Visit } from '@openmrs/esm-framework';
-import { CONSULTATION_FORM_ENTRY_WORKSPACE } from '../constants';
+import { CONSULTATION_FORM_ENTRY_WORKSPACE, CONSULTATION_INBOX_FORM_ENTRY_WORKSPACE } from '../constants';
 
 export type ConsultationFormLaunchOptions = {
   patientUuid: string;
@@ -49,3 +49,4 @@ export function buildConsultationFormWorkspaceData(
 }
 
 export const consultationFormEntryWorkspaceName = CONSULTATION_FORM_ENTRY_WORKSPACE;
+export const consultationInboxFormEntryWorkspaceName = CONSULTATION_INBOX_FORM_ENTRY_WORKSPACE;

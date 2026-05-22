@@ -1,8 +1,16 @@
 export const moduleName = '@palladium-ethiopia/esm-consultation-app';
 
+export const spaBasePath = `${window.spaBase}/home`;
+
+/** Homepage consultation inbox dashboard routing. */
+export const CONSULTATION_INBOX_PATH = 'consultation-inbox';
+export const CONSULTATION_INBOX_SLOT = 'consultation-inbox-dashboard-slot';
+
 /** Workspace registration names for consultation form entry. */
 export const CONSULTATION_FORM_ENTRY_WORKSPACE = 'consultation-form-entry-workspace';
+export const CONSULTATION_INBOX_FORM_ENTRY_WORKSPACE = 'consultation-inbox-form-entry-workspace';
 export const CONSULTATION_FORM_WINDOW = 'consultation-form';
+export const CONSULTATION_INBOX_FORM_WINDOW = 'consultation-inbox-form';
 export const CONSULTATION_WORKSPACE_GROUP = 'consultation-group';
 export const CONSULTATION_FORM_NAME = 'Consultation';
 

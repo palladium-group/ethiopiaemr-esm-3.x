@@ -2,43 +2,38 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
-import { usePatientChartStore, useStartVisitIfNeeded } from '@openmrs/esm-patient-common-lib';
 import type { ConsultationConfig } from '../config-schema';
+import { CONSULTATION_INBOX_FORM_ENTRY_WORKSPACE } from '../constants';
 import { launchConsultationFormEntry } from '../resources/consultation-form-launch.resource';
-import { consultationFormEntryWorkspaceName } from '../workspaces/consultation-form.workspace';
+import type { ConsultationThread } from '../types/consultation.types';
 
-type UseLaunchConsultationFormOptions = {
+type UseLaunchConsultationResponseFromInboxOptions = {
   onConsultationSaved?: () => void;
 };
 
-export function useLaunchConsultationForm(patientUuid: string, options: UseLaunchConsultationFormOptions = {}) {
+export function useLaunchConsultationResponseFromInbox(options: UseLaunchConsultationResponseFromInboxOptions = {}) {
   const { onConsultationSaved } = options;
   const { t } = useTranslation();
   const config = useConfig<ConsultationConfig>();
   const session = useSession();
   const { mutate: globalMutate } = useSWRConfig();
-  const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
-  const { visitContext, mutateVisitContext } = usePatientChartStore(patientUuid);
-  const [isLaunching, setIsLaunching] = useState(false);
+  const [respondingEncounterUuid, setRespondingEncounterUuid] = useState<string | null>(null);
 
-  const launchConsultationForm = useCallback(
-    async (encounterUuid = '') => {
-      setIsLaunching(true);
+  const launchConsultationResponse = useCallback(
+    async (consultation: ConsultationThread) => {
+      setRespondingEncounterUuid(consultation.encounterUuid);
 
       try {
         return await launchConsultationFormEntry({
-          patientUuid,
-          encounterUuid,
+          patientUuid: consultation.patientUuid,
+          encounterUuid: consultation.encounterUuid,
           formUuid: config.consultationFormUuid,
-          workspaceName: consultationFormEntryWorkspaceName,
+          workspaceName: CONSULTATION_INBOX_FORM_ENTRY_WORKSPACE,
           globalMutate,
           onConsultationSaved,
           t,
           sessionLocationUuid: session?.sessionLocation?.uuid,
           currentProviderUuid: session?.currentProvider?.uuid,
-          visitContext,
-          mutateVisitContext,
-          startVisitIfNeeded,
         });
       } catch (error) {
         const subtitle =
@@ -54,25 +49,22 @@ export function useLaunchConsultationForm(patientUuid: string, options: UseLaunc
         });
         return false;
       } finally {
-        setIsLaunching(false);
+        setRespondingEncounterUuid(null);
       }
     },
     [
       config.consultationFormUuid,
       globalMutate,
-      mutateVisitContext,
       onConsultationSaved,
-      patientUuid,
       session?.currentProvider?.uuid,
       session?.sessionLocation?.uuid,
-      startVisitIfNeeded,
       t,
-      visitContext,
     ],
   );
 
   return {
-    isLaunching,
-    launchConsultationForm,
+    isResponding: Boolean(respondingEncounterUuid),
+    respondingEncounterUuid,
+    launchConsultationResponse,
   };
 }
