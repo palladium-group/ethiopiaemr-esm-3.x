@@ -2,6 +2,7 @@ import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type VisitNoteConfig } from '../config-schema';
+import { conceptHasMappingToSource, type ConceptWithMappings } from './diagnosis-concept.utils';
 import type {
   Concept,
   DiagnosisPayload,
@@ -65,11 +66,25 @@ export function useVisitNotes(patientUuid: string): UseVisitNotes {
   };
 }
 
-export function fetchDiagnosisConceptsByName(searchTerm: string, diagnosisConceptClass: string) {
-  const customRepresentation = 'custom:(uuid,display)';
+type ConceptSearchResult = ConceptWithMappings;
+
+export function fetchDiagnosisConceptsByName(
+  searchTerm: string,
+  diagnosisConceptClass: string,
+  restrictToConceptSourceUuid?: string,
+) {
+  const customRepresentation = restrictToConceptSourceUuid
+    ? 'custom:(uuid,display,mappings:(conceptReferenceTerm:(conceptSource:(uuid),code)))'
+    : 'custom:(uuid,display)';
   const url = `${restBaseUrl}/concept?name=${searchTerm}&searchType=fuzzy&class=${diagnosisConceptClass}&v=${customRepresentation}`;
 
-  return openmrsFetch<Array<Concept>>(url).then(({ data }) => Promise.resolve(data['results']));
+  return openmrsFetch<{ results: Array<ConceptSearchResult> }>(url).then(({ data }) => {
+    const results = data.results ?? [];
+    if (!restrictToConceptSourceUuid) {
+      return results;
+    }
+    return results.filter((concept) => conceptHasMappingToSource(concept, restrictToConceptSourceUuid));
+  });
 }
 
 export function saveVisitNote(abortController: AbortController, payload: VisitNotePayload) {
