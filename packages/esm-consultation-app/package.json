@@ -36,6 +36,7 @@
     "extends browserslist-config-openmrs"
   ],
   "peerDependencies": {
+    "@carbon/react": "^1.83.0",
     "@openmrs/esm-framework": "8.x",
     "@openmrs/esm-patient-common-lib": "12.x",
     "dayjs": "1.x",

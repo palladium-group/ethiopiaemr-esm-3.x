@@ -1,4 +1,13 @@
 {
+  "completed": "Completed",
   "consultation": "Consultation",
-  "consultations": "consultations"
+  "consultations": "consultations",
+  "consultationType": "Type",
+  "consultedDepartment": "Consulted department",
+  "consultingDepartment": "Consulting department",
+  "loading": "Loading...",
+  "pending": "Pending",
+  "requestedDate": "Requested date",
+  "requestingProvider": "Requesting provider",
+  "status": "Status"
 }
