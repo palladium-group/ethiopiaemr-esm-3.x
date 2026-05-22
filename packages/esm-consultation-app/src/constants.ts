@@ -1,5 +1,11 @@
 export const moduleName = '@palladium-ethiopia/esm-consultation-app';
 
+/** Workspace registration names for consultation form entry. */
+export const CONSULTATION_FORM_ENTRY_WORKSPACE = 'consultation-form-entry-workspace';
+export const CONSULTATION_FORM_WINDOW = 'consultation-form';
+export const CONSULTATION_WORKSPACE_GROUP = 'consultation-group';
+export const CONSULTATION_FORM_NAME = 'Consultation';
+
 /** Form resource UUID for the inter-department consultation form. */
 export const CONSULTATION_FORM_UUID = '6d1da2cc-c846-4c89-b154-32811057751d';
 

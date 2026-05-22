@@ -1,10 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { DataTableSkeleton, InlineLoading } from '@carbon/react';
+import { Button, DataTableSkeleton, InlineLoading } from '@carbon/react';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import ConsultationList from '../consultation-list/consultation-list.component';
 import { useConsultationsByPatient } from '../hooks/useConsultationsByPatient';
+import { useLaunchConsultationForm } from '../hooks/useLaunchConsultationForm';
+import styles from './consultation-list-page.scss';
 
 interface ConsultationListPageProps {
   patient: fhir.Patient;
@@ -16,25 +18,56 @@ const ConsultationListPage: React.FC<ConsultationListPageProps> = ({ patient }) 
   const headerTitle = t('consultation', 'Consultation');
   const displayText = t('consultations', 'consultations');
   const { consultations, error, isLoading, isValidating } = useConsultationsByPatient(patient.id);
+  const { isLaunching, launchConsultationForm } = useLaunchConsultationForm(patient.id);
 
   const handleConsultationClick = (encounterUuid: string) => {
     navigate(encounterUuid);
   };
 
+  const handleOpenConsultationForm = () => {
+    launchConsultationForm().catch((launchError) => {
+      console.error('Error launching consultation form workspace:', launchError);
+    });
+  };
+
+  const toolbar = (
+    <div className={styles.toolbar}>
+      <Button kind="tertiary" disabled={isLaunching} onClick={handleOpenConsultationForm}>
+        {isLaunching ? t('loading', 'Loading...') : t('openConsultationForm', 'Open consultation form')}
+      </Button>
+    </div>
+  );
+
   if (isLoading) {
-    return <DataTableSkeleton role="progressbar" />;
+    return (
+      <>
+        {toolbar}
+        <DataTableSkeleton role="progressbar" />
+      </>
+    );
   }
 
   if (error) {
-    return <ErrorState error={error} headerTitle={headerTitle} />;
+    return (
+      <>
+        {toolbar}
+        <ErrorState error={error} headerTitle={headerTitle} />
+      </>
+    );
   }
 
   if (!consultations?.length) {
-    return <EmptyState displayText={displayText} headerTitle={headerTitle} />;
+    return (
+      <>
+        {toolbar}
+        <EmptyState displayText={displayText} headerTitle={headerTitle} />
+      </>
+    );
   }
 
   return (
     <>
+      {toolbar}
       {isValidating ? <InlineLoading description={t('loading', 'Loading...')} /> : null}
       <ConsultationList consultations={consultations} onConsultationClick={handleConsultationClick} />
     </>

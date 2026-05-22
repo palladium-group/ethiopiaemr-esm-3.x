@@ -26,8 +26,27 @@
   ],
   "pages": [],
   "workspaces": [],
-  "workspaces2": [],
-  "workspaceWindows2": [],
-  "workspaceGroups2": [],
+  "workspaces2": [
+    {
+      "name": "consultation-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "consultation-form"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "consultation-form",
+      "group": "consultation-group",
+      "width": "wider",
+      "canMaximize": true
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "consultation-group",
+      "overlay": true,
+      "persistence": "closable"
+    }
+  ],
   "modals": []
 }
