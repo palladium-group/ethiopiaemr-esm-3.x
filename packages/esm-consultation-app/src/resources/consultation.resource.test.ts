@@ -1,14 +1,54 @@
-import { CONSULTATION_CONCEPT_UUIDS } from '../constants';
+import { CONSULTATION_CONCEPT_UUIDS, CONSULTATION_ENCOUNTER_TYPE_UUID } from '../constants';
 import {
   completedConsultationEncounter,
   partialConsultationEncounter,
   pendingConsultationEncounter,
 } from './consultation.fixture';
-import { getConsultationStatus, getObsValue, mapEncounterToConsultation } from './consultation.resource';
+import {
+  getConsultationStatus,
+  getConsultationsByPatientUrl,
+  getObsValue,
+  mapEncounterToConsultation,
+  mapEncountersToConsultations,
+} from './consultation.resource';
 
 const conceptUuids = { ...CONSULTATION_CONCEPT_UUIDS };
 
 describe('consultation.resource', () => {
+  describe('getConsultationsByPatientUrl', () => {
+    it('builds the expected encounter search URL', () => {
+      const url = getConsultationsByPatientUrl('patient-uuid-1', CONSULTATION_ENCOUNTER_TYPE_UUID);
+
+      expect(url).toContain('encounter?patient=patient-uuid-1');
+      expect(url).toContain(`encounterType=${CONSULTATION_ENCOUNTER_TYPE_UUID}`);
+      expect(url).toContain('order=desc');
+      expect(url).toContain('v=custom:');
+    });
+  });
+
+  describe('mapEncountersToConsultations', () => {
+    it('maps and sorts consultations by requested date descending', () => {
+      const olderEncounter = {
+        ...pendingConsultationEncounter,
+        uuid: 'encounter-older',
+        encounterDatetime: '2026-05-01T09:00:00.000+0000',
+      };
+      const newerEncounter = {
+        ...pendingConsultationEncounter,
+        uuid: 'encounter-newer',
+        encounterDatetime: '2026-05-20T09:00:00.000+0000',
+      };
+
+      const consultations = mapEncountersToConsultations([olderEncounter, newerEncounter], conceptUuids);
+
+      expect(consultations.map((consultation) => consultation.encounterUuid)).toEqual([
+        'encounter-newer',
+        'encounter-older',
+      ]);
+      expect(consultations).toHaveLength(2);
+    });
+  });
+
   describe('getObsValue', () => {
     it('returns display for coded obs values', () => {
       expect(

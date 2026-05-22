@@ -1,4 +1,4 @@
-import type { Encounter, Obs } from '@openmrs/esm-framework';
+import { restBaseUrl, type Encounter, type Obs } from '@openmrs/esm-framework';
 import type { ConsultationConceptUuids } from '../config-schema';
 import type { ConsultationProvider, ConsultationStatus, ConsultationThread } from '../types/consultation.types';
 
@@ -7,6 +7,19 @@ export const CONSULTATION_ENCOUNTER_REPRESENTATION =
   'obs:(uuid,concept:(uuid,display),value,obsDatetime),' +
   'encounterProviders:(uuid,encounterRole:(uuid,display),provider:(uuid,person:(uuid,display))),' +
   'form:(uuid,display),encounterType:(uuid,display),visit:(uuid))';
+
+export function getConsultationsByPatientUrl(patientUuid: string, consultationEncounterTypeUuid: string): string {
+  return `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${consultationEncounterTypeUuid}&order=desc&v=${CONSULTATION_ENCOUNTER_REPRESENTATION}`;
+}
+
+export function mapEncountersToConsultations(
+  encounters: Array<Encounter> | undefined,
+  conceptUuids: ConsultationConceptUuids,
+): Array<ConsultationThread> {
+  return (encounters ?? [])
+    .map((encounter) => mapEncounterToConsultation(encounter, conceptUuids))
+    .sort((left, right) => new Date(right.requestedAt).getTime() - new Date(left.requestedAt).getTime());
+}
 
 export function getObsValue(observation: Obs | undefined): string {
   if (!observation?.value) {
