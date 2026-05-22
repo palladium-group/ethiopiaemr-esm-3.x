@@ -5,6 +5,7 @@ import {
   pendingConsultationEncounter,
 } from './consultation.fixture';
 import {
+  canRespondToConsultation,
   filterPendingConsultations,
   getConsultationStatus,
   getConsultationsByPatientUrl,
@@ -42,6 +43,26 @@ describe('consultation.resource', () => {
         'encounter-uuid-1',
         'encounter-uuid-2',
       ]);
+    });
+  });
+
+  describe('canRespondToConsultation', () => {
+    it('returns true for pending consultations at the current session location', () => {
+      const consultation = mapEncounterToConsultation(pendingConsultationEncounter, conceptUuids);
+
+      expect(canRespondToConsultation(consultation, 'cardiology-location-uuid')).toBe(true);
+    });
+
+    it('returns false when session location does not match consulted department', () => {
+      const consultation = mapEncounterToConsultation(pendingConsultationEncounter, conceptUuids);
+
+      expect(canRespondToConsultation(consultation, 'other-location-uuid')).toBe(false);
+    });
+
+    it('returns false for completed consultations', () => {
+      const consultation = mapEncounterToConsultation(completedConsultationEncounter, conceptUuids);
+
+      expect(canRespondToConsultation(consultation, 'cardiology-location-uuid')).toBe(false);
     });
   });
 

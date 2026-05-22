@@ -16,6 +16,17 @@ export function filterPendingConsultations(consultations: Array<ConsultationThre
   return consultations.filter((consultation) => consultation.status === 'pending');
 }
 
+export function canRespondToConsultation(
+  consultation: ConsultationThread,
+  sessionLocationUuid: string | undefined,
+): boolean {
+  return (
+    consultation.status === 'pending' &&
+    Boolean(sessionLocationUuid) &&
+    consultation.consultedDepartment.uuid === sessionLocationUuid
+  );
+}
+
 export function mapEncountersToConsultations(
   encounters: Array<Encounter> | undefined,
   conceptUuids: ConsultationConceptUuids,

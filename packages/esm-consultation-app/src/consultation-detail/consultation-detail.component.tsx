@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, SkeletonText, Tag, Tile } from '@carbon/react';
-import { formatDatetime } from '@openmrs/esm-framework';
+import { Button, SkeletonText, Tag } from '@carbon/react';
+import { useSession } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
+import ConsultationConversationView from './consultation-conversation-view.component';
 import { useConsultationsByPatient } from '../hooks/useConsultationsByPatient';
+import { useLaunchConsultationForm } from '../hooks/useLaunchConsultationForm';
+import { canRespondToConsultation } from '../resources/consultation.resource';
 import type { ConsultationStatus } from '../types/consultation.types';
 import styles from './consultation-detail.scss';
 
@@ -19,14 +22,37 @@ function getStatusTagType(status: ConsultationStatus): 'green' | 'gray' {
 const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const session = useSession();
   const { encounterUuid } = useParams<{ encounterUuid: string }>();
   const headerTitle = t('consultationDetails', 'Consultation details');
-  const { consultations, error, isLoading } = useConsultationsByPatient(patient.id);
+  const { consultations, error, isLoading, mutateConsultations } = useConsultationsByPatient(patient.id);
   const consultation = consultations?.find((item) => item.encounterUuid === encounterUuid);
+  const { isLaunching, launchConsultationForm } = useLaunchConsultationForm(patient.id, {
+    onConsultationSaved: () => {
+      mutateConsultations();
+    },
+  });
+  const canRespond = consultation ? canRespondToConsultation(consultation, session?.sessionLocation?.uuid) : false;
 
   const handleBack = () => {
     navigate('..');
   };
+
+  const handleRespond = useCallback(() => {
+    if (!consultation) {
+      return;
+    }
+
+    launchConsultationForm(consultation.encounterUuid).catch((launchError) => {
+      console.error('Error launching consultation response form:', launchError);
+    });
+  }, [consultation, launchConsultationForm]);
+
+  const handleCreateAnotherConsultation = useCallback(() => {
+    launchConsultationForm().catch((launchError) => {
+      console.error('Error launching consultation form workspace:', launchError);
+    });
+  }, [launchConsultationForm]);
 
   if (isLoading) {
     return (
@@ -47,9 +73,7 @@ const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
         <Button kind="ghost" onClick={handleBack}>
           {t('backToConsultations', 'Back to consultations')}
         </Button>
-        <Tile className={styles.placeholderTile}>
-          <p>{t('consultationNotFound', 'Consultation not found.')}</p>
-        </Tile>
+        <p>{t('consultationNotFound', 'Consultation not found.')}</p>
       </div>
     );
   }
@@ -61,37 +85,28 @@ const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
       </Button>
 
       <div className={styles.header}>
-        <h3>{headerTitle}</h3>
-        <Tag type={getStatusTagType(consultation.status)} size="md">
-          {consultation.status === 'completed' ? t('completed', 'Completed') : t('pending', 'Pending')}
-        </Tag>
+        <div className={styles.titleRow}>
+          <h3>{headerTitle}</h3>
+          <Tag type={getStatusTagType(consultation.status)} size="md">
+            {consultation.status === 'completed' ? t('completed', 'Completed') : t('pending', 'Pending')}
+          </Tag>
+        </div>
+
+        <div className={styles.actions}>
+          {canRespond ? (
+            <Button kind="primary" disabled={isLaunching} onClick={handleRespond}>
+              {isLaunching ? t('loading', 'Loading...') : t('respond', 'Respond')}
+            </Button>
+          ) : null}
+          {consultation.status === 'completed' ? (
+            <Button kind="secondary" disabled={isLaunching} onClick={handleCreateAnotherConsultation}>
+              {isLaunching ? t('loading', 'Loading...') : t('createAnotherConsultation', 'Create Another Consultation')}
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      <Tile className={styles.placeholderTile}>
-        <dl className={styles.summaryList}>
-          <div>
-            <dt>{t('requestedDate', 'Requested date')}</dt>
-            <dd>{consultation.requestedAt ? formatDatetime(new Date(consultation.requestedAt)) : '--'}</dd>
-          </div>
-          <div>
-            <dt>{t('consultedDepartment', 'Consulted department')}</dt>
-            <dd>{consultation.consultedDepartment.display || '--'}</dd>
-          </div>
-          <div>
-            <dt>{t('consultingDepartment', 'Consulting department')}</dt>
-            <dd>{consultation.consultingDepartment || '--'}</dd>
-          </div>
-          <div>
-            <dt>{t('requestingProvider', 'Requesting provider')}</dt>
-            <dd>{consultation.requestingProvider?.display || '--'}</dd>
-          </div>
-          <div>
-            <dt>{t('consultationType', 'Type')}</dt>
-            <dd>{consultation.consultationType || '--'}</dd>
-          </div>
-        </dl>
-        <p className={styles.comingSoon}>{t('consultationDetailComingSoon', 'Full consultation view coming soon.')}</p>
-      </Tile>
+      <ConsultationConversationView consultation={consultation} />
     </div>
   );
 };
