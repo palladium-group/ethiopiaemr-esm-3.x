@@ -3,7 +3,19 @@
   "backendDependencies": {
     "webservices.rest": ">=2.2.0"
   },
-  "extensions": [],
+  "extensions": [
+    {
+      "name": "consultation-dashboard-link",
+      "component": "consultationDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "meta": {
+        "slot": "patient-chart-consultation-dashboard-slot",
+        "path": "consultation",
+        "hideDashboardTitle": true
+      },
+      "order": 9
+    }
+  ],
   "pages": [],
   "workspaces": [],
   "workspaces2": [],
