@@ -1,4 +1,5 @@
 {
+    "@palladium-ethiopia/esm-consultation-app": {},
     "@palladium-ethiopia/esm-clinical-workflow-app": {
         "triageVariants": {
           "central": {
