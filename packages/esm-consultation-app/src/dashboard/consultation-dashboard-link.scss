@@ -1,0 +1,18 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+
+.menu {
+  display: flex;
+  align-items: center;
+}
+
+.icon {
+  margin-right: layout.$spacing-06;
+  fill: colors.$gray-70;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
