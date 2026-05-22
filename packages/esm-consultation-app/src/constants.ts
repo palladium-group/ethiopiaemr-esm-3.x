@@ -14,6 +14,15 @@ export const CONSULTATION_INBOX_FORM_WINDOW = 'consultation-inbox-form';
 export const CONSULTATION_WORKSPACE_GROUP = 'consultation-group';
 export const CONSULTATION_FORM_NAME = 'Consultation';
 
+/** SWR cache key prefix for location-filtered homepage inbox queries. */
+export const CONSULTATIONS_INBOX_SWR_KEY = 'consultations-inbox';
+
+/** Shared polling interval for consultation inbox and patient list refresh. */
+export const CONSULTATION_DATA_REFRESH_INTERVAL_MS = 60000;
+
+/** localStorage prefix for tracking completed consultation responses seen by provider. */
+export const CONSULTATION_SEEN_RESPONSES_STORAGE_KEY_PREFIX = 'consultation-seen-responses';
+
 /** Form resource UUID for the inter-department consultation form. */
 export const CONSULTATION_FORM_UUID = '6d1da2cc-c846-4c89-b154-32811057751d';
 

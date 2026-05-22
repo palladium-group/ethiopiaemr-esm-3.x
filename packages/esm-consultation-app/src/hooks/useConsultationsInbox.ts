@@ -1,6 +1,8 @@
 import useSWR from 'swr';
 import { useConfig, useSession } from '@openmrs/esm-framework';
 import type { ConsultationConfig } from '../config-schema';
+import { CONSULTATION_DATA_REFRESH_INTERVAL_MS } from '../constants';
+import { getConsultationsInboxSwrKey } from '../resources/consultation-cache.resource';
 import { fetchConsultationsInbox } from '../resources/consultation-inbox.resource';
 import type { ConsultationThread } from '../types/consultation.types';
 
@@ -12,13 +14,13 @@ export function useConsultationsInbox() {
 
   const swrKey =
     sessionLocationUuid != null
-      ? (['consultations-inbox', sessionLocationUuid, consultationEncounterTypeUuid] as const)
+      ? getConsultationsInboxSwrKey(sessionLocationUuid, consultationEncounterTypeUuid)
       : null;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<Array<ConsultationThread>, Error>(
     swrKey,
     () => fetchConsultationsInbox(sessionLocationUuid!, consultationEncounterTypeUuid, conceptUuids),
-    { refreshInterval: 60000 },
+    { refreshInterval: CONSULTATION_DATA_REFRESH_INTERVAL_MS },
   );
 
   return {

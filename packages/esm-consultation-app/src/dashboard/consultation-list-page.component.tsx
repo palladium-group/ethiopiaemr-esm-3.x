@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, DataTableSkeleton, InlineLoading } from '@carbon/react';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import ConsultationList from '../consultation-list/consultation-list.component';
+import { useConsultationsAwaitingReview } from '../hooks/useConsultationsAwaitingReview';
 import { useConsultationsByPatient } from '../hooks/useConsultationsByPatient';
 import { useLaunchConsultationForm } from '../hooks/useLaunchConsultationForm';
 import styles from './consultation-list-page.scss';
@@ -18,6 +19,7 @@ const ConsultationListPage: React.FC<ConsultationListPageProps> = ({ patient }) 
   const headerTitle = t('consultation', 'Consultation');
   const displayText = t('consultations', 'consultations');
   const { consultations, error, isLoading, isValidating, mutateConsultations } = useConsultationsByPatient(patient.id);
+  const { unreadEncounterUuids } = useConsultationsAwaitingReview(patient.id);
   const { isLaunching, launchConsultationForm } = useLaunchConsultationForm(patient.id, {
     onConsultationSaved: () => {
       mutateConsultations();
@@ -73,7 +75,11 @@ const ConsultationListPage: React.FC<ConsultationListPageProps> = ({ patient }) 
     <>
       {toolbar}
       {isValidating ? <InlineLoading description={t('loading', 'Loading...')} /> : null}
-      <ConsultationList consultations={consultations} onConsultationClick={handleConsultationClick} />
+      <ConsultationList
+        consultations={consultations}
+        unreadEncounterUuids={unreadEncounterUuids}
+        onConsultationClick={handleConsultationClick}
+      />
     </>
   );
 };

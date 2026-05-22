@@ -8,13 +8,18 @@ import styles from './consultation-list.scss';
 interface ConsultationListProps {
   consultations: Array<ConsultationThread>;
   onConsultationClick?: (encounterUuid: string) => void;
+  unreadEncounterUuids?: Array<string>;
 }
 
 function getStatusTagType(status: ConsultationStatus): 'green' | 'gray' {
   return status === 'completed' ? 'green' : 'gray';
 }
 
-const ConsultationList: React.FC<ConsultationListProps> = ({ consultations, onConsultationClick }) => {
+const ConsultationList: React.FC<ConsultationListProps> = ({
+  consultations,
+  onConsultationClick,
+  unreadEncounterUuids = [],
+}) => {
   const { t } = useTranslation();
 
   const headers = useMemo(
@@ -61,9 +66,16 @@ const ConsultationList: React.FC<ConsultationListProps> = ({ consultations, onCo
               <TableCell>{consultation.requestingProvider?.display || '--'}</TableCell>
               <TableCell>{consultation.consultationType || '--'}</TableCell>
               <TableCell>
-                <Tag type={getStatusTagType(consultation.status)} size="sm">
-                  {getStatusLabel(consultation.status)}
-                </Tag>
+                <span className={styles.statusCell}>
+                  <Tag type={getStatusTagType(consultation.status)} size="sm">
+                    {getStatusLabel(consultation.status)}
+                  </Tag>
+                  {unreadEncounterUuids.includes(consultation.encounterUuid) ? (
+                    <Tag type="blue" size="sm">
+                      {t('newResponse', 'New response')}
+                    </Tag>
+                  ) : null}
+                </span>
               </TableCell>
             </TableRow>
           ))}

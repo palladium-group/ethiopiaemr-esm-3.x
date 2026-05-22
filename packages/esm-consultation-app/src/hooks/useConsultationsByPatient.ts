@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, useConfig, type Encounter } from '@openmrs/esm-framework';
 import type { ConsultationConfig } from '../config-schema';
+import { CONSULTATION_DATA_REFRESH_INTERVAL_MS } from '../constants';
 import { getConsultationsByPatientUrl, mapEncountersToConsultations } from '../resources/consultation.resource';
 import type { ConsultationThread } from '../types/consultation.types';
 
@@ -17,6 +18,7 @@ export function useConsultationsByPatient(patientUuid: string | null | undefined
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Array<Encounter> } }, Error>(
     apiUrl,
     openmrsFetch,
+    { refreshInterval: CONSULTATION_DATA_REFRESH_INTERVAL_MS },
   );
 
   const consultations: Array<ConsultationThread> | null = useMemo(() => {

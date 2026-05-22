@@ -9,6 +9,7 @@ import {
 } from '@openmrs/esm-framework';
 import { invalidateVisitAndEncounterData } from '@openmrs/esm-patient-common-lib';
 import { CONSULTATION_FORM_NAME } from '../constants';
+import { revalidateConsultationsInbox, revalidatePatientConsultations } from './consultation-cache.resource';
 import { getActiveVisitForPatient } from './consultation-visit.resource';
 import { buildConsultationFormWorkspaceData } from '../workspaces/consultation-form.workspace';
 
@@ -95,7 +96,14 @@ export async function launchConsultationFormEntry({
 
   const handlePostResponse = (_encounter: Encounter) => {
     invalidateVisitAndEncounterData(globalMutate, patientUuid);
-    onConsultationSaved?.();
+    Promise.all([revalidateConsultationsInbox(globalMutate), revalidatePatientConsultations(globalMutate, patientUuid)])
+      .then(() => {
+        onConsultationSaved?.();
+      })
+      .catch((revalidationError) => {
+        console.error('Error revalidating consultation data:', revalidationError);
+        onConsultationSaved?.();
+      });
     showSnackbar({
       title: t('consultationSaved', 'Consultation saved'),
       kind: 'success',

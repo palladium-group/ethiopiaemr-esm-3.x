@@ -6,7 +6,7 @@ import { ConfigurableLink } from '@openmrs/esm-framework';
 import { shallowEqual } from '@openmrs/esm-utils';
 import { useConsultationsInbox } from '../hooks/useConsultationsInbox';
 import { CONSULTATION_INBOX_PATH, spaBasePath } from '../constants';
-import styles from './consultation-inbox-dashboard-link.scss';
+import styles from '../consultation-badge.scss';
 
 function ConsultationInboxDashboardLinkInner() {
   const { t } = useTranslation();

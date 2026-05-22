@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, SkeletonText, Tag } from '@carbon/react';
 import { useSession } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import ConsultationConversationView from './consultation-conversation-view.component';
+import { useConsultationsAwaitingReview } from '../hooks/useConsultationsAwaitingReview';
 import { useConsultationsByPatient } from '../hooks/useConsultationsByPatient';
 import { useLaunchConsultationForm } from '../hooks/useLaunchConsultationForm';
 import { canRespondToConsultation } from '../resources/consultation.resource';
@@ -26,6 +27,7 @@ const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
   const { encounterUuid } = useParams<{ encounterUuid: string }>();
   const headerTitle = t('consultationDetails', 'Consultation details');
   const { consultations, error, isLoading, mutateConsultations } = useConsultationsByPatient(patient.id);
+  const { markConsultationSeen } = useConsultationsAwaitingReview(patient.id);
   const consultation = consultations?.find((item) => item.encounterUuid === encounterUuid);
   const { isLaunching, launchConsultationForm } = useLaunchConsultationForm(patient.id, {
     onConsultationSaved: () => {
@@ -33,6 +35,12 @@ const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
     },
   });
   const canRespond = consultation ? canRespondToConsultation(consultation, session?.sessionLocation?.uuid) : false;
+
+  useEffect(() => {
+    if (consultation?.status === 'completed') {
+      markConsultationSeen(consultation);
+    }
+  }, [consultation, markConsultationSeen]);
 
   const handleBack = () => {
     navigate('..');

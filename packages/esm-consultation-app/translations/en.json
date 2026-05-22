@@ -18,6 +18,7 @@
   "createAnotherConsultation": "Create Another Consultation",
   "createConsultation": "Create Consultation",
   "loading": "Loading...",
+  "newResponse": "New response",
   "noPendingConsultations": "There are no pending consultations for {{location}}.",
   "patient": "Patient",
   "pending": "Pending",
