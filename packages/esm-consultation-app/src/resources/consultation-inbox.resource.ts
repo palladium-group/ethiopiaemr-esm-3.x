@@ -7,6 +7,8 @@ import {
   mapEncountersToConsultations,
 } from './consultation.resource';
 
+const INBOX_FETCH_LIMIT = 100;
+
 type FhirCoding = {
   system?: string;
   code?: string;
@@ -23,11 +25,10 @@ type FhirBundle = {
   entry?: Array<{ resource?: FhirEncounterResource }>;
 };
 
-const INBOX_FETCH_LIMIT = 100;
-
-export function getConsultationsInboxFhirUrl(locationUuid: string): string {
+export function getConsultationsInboxFhirUrl(locationUuid: string, consultationEncounterTypeUuid: string): string {
   const params = new URLSearchParams({
     location: locationUuid,
+    type: consultationEncounterTypeUuid,
     _count: String(INBOX_FETCH_LIMIT),
     _sort: '-date',
   });
@@ -58,7 +59,9 @@ export async function fetchConsultationsInbox(
   consultationEncounterTypeUuid: string,
   conceptUuids: ConsultationConceptUuids,
 ): Promise<Array<ConsultationThread>> {
-  const fhirResponse = await openmrsFetch<FhirBundle>(getConsultationsInboxFhirUrl(locationUuid));
+  const fhirResponse = await openmrsFetch<FhirBundle>(
+    getConsultationsInboxFhirUrl(locationUuid, consultationEncounterTypeUuid),
+  );
   const encounterUuids =
     fhirResponse?.data?.entry
       ?.map((entry) => entry.resource)

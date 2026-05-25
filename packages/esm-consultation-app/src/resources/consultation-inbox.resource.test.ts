@@ -29,10 +29,11 @@ describe('consultation-inbox.resource', () => {
 
   describe('getConsultationsInboxFhirUrl', () => {
     it('builds the expected FHIR encounter search URL', () => {
-      const url = getConsultationsInboxFhirUrl('cardiology-location-uuid');
+      const url = getConsultationsInboxFhirUrl('cardiology-location-uuid', CONSULTATION_ENCOUNTER_TYPE_UUID);
 
       expect(url).toContain('/ws/fhir2/R4/Encounter?');
       expect(url).toContain('location=cardiology-location-uuid');
+      expect(url).toContain(`type=${CONSULTATION_ENCOUNTER_TYPE_UUID}`);
       expect(url).toContain('_count=100');
       expect(url).toContain('_sort=-date');
       expect(url).not.toContain('rest/v1/encounter');
@@ -79,6 +80,7 @@ describe('consultation-inbox.resource', () => {
 
       const consultations = await fetchConsultationsInbox(locationUuid, CONSULTATION_ENCOUNTER_TYPE_UUID, conceptUuids);
 
+      expect(mockedOpenmrsFetch.mock.calls[0][0]).toContain(`type=${CONSULTATION_ENCOUNTER_TYPE_UUID}`);
       expect(consultations).toHaveLength(1);
       expect(consultations[0].encounterUuid).toBe(encounterUuid);
       expect(consultations[0].status).toBe('pending');
