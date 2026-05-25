@@ -56,7 +56,7 @@ const ConsultationDetail: React.FC<ConsultationDetailProps> = ({ patient }) => {
       return;
     }
 
-    launchConsultationForm(consultation.encounterUuid).catch((launchError) => {
+    launchConsultationForm(consultation.encounterUuid, consultation.requestingProvider?.uuid).catch((launchError) => {
       console.error('Error launching consultation response form:', launchError);
     });
   }, [consultation, launchConsultationForm]);

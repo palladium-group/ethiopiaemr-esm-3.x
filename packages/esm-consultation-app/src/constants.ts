@@ -27,7 +27,7 @@ export const CONSULTATION_SEEN_RESPONSES_STORAGE_KEY_PREFIX = 'consultation-seen
 export const CONSULTATION_FORM_UUID = '6d1da2cc-c846-4c89-b154-32811057751d';
 
 /** Encounter type UUID for consultation encounters. */
-export const CONSULTATION_ENCOUNTER_TYPE_UUID = '465a92f2-baf8-42e9-9612-53064be868e8';
+export const CONSULTATION_ENCOUNTER_TYPE_UUID = '4723cf17-ff74-43d7-ad36-829e555fbc60';
 
 /**
  * Concept UUIDs matching the consultation form JSON field definitions.
@@ -45,3 +45,9 @@ export const CONSULTATION_CONCEPT_UUIDS = {
 } as const;
 
 export type ConsultationConceptKey = keyof typeof CONSULTATION_CONCEPT_UUIDS;
+
+/** Encounter role UUIDs from `encounterroles-core.csv`; assigned after form save by the consultation app. */
+export const CONSULTATION_ENCOUNTER_ROLE_UUIDS = {
+  requestingEncounterRoleUuid: '8f4e2c91-b5d6-4a7e-9f0b-2c3d4e5f6a7b',
+  consultedEncounterRoleUuid: '7e3d1b80-a4c5-4b6d-8e9f-1a2c3d4e5f6a',
+} as const;

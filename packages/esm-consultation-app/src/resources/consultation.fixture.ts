@@ -1,5 +1,5 @@
 import type { Encounter } from '@openmrs/esm-framework';
-import { CONSULTATION_CONCEPT_UUIDS } from '../constants';
+import { CONSULTATION_CONCEPT_UUIDS, CONSULTATION_ENCOUNTER_ROLE_UUIDS } from '../constants';
 
 const { conceptUuids } = {
   conceptUuids: CONSULTATION_CONCEPT_UUIDS,
@@ -36,7 +36,7 @@ const baseEncounter: Encounter = {
         },
       },
       encounterRole: {
-        uuid: 'role-uuid',
+        uuid: CONSULTATION_ENCOUNTER_ROLE_UUIDS.requestingEncounterRoleUuid,
         display: 'Consulting Physician',
       },
     },
@@ -78,7 +78,7 @@ export const completedConsultationEncounter: Encounter = {
         },
       },
       encounterRole: {
-        uuid: 'role-uuid-2',
+        uuid: CONSULTATION_ENCOUNTER_ROLE_UUIDS.consultedEncounterRoleUuid,
         display: 'Consulted Physician',
       },
     },

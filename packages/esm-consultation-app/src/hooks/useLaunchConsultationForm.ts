@@ -24,13 +24,14 @@ export function useLaunchConsultationForm(patientUuid: string, options: UseLaunc
   const [isLaunching, setIsLaunching] = useState(false);
 
   const launchConsultationForm = useCallback(
-    async (encounterUuid = '') => {
+    async (encounterUuid = '', requestingProviderUuid?: string) => {
       setIsLaunching(true);
 
       try {
         return await launchConsultationFormEntry({
           patientUuid,
           encounterUuid,
+          requestingProviderUuid,
           formUuid: config.consultationFormUuid,
           workspaceName: consultationFormEntryWorkspaceName,
           globalMutate,

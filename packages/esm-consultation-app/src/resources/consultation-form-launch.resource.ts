@@ -12,6 +12,7 @@ import type { ConsultationConceptUuids } from '../config-schema';
 import { CONSULTATION_FORM_NAME } from '../constants';
 import { revalidateConsultationsInbox, revalidatePatientConsultations } from './consultation-cache.resource';
 import { validateSavedConsultationEncounter } from './consultation-form-validation.resource';
+import { syncConsultationEncounterProviders } from './consultation-encounter-providers.resource';
 import { getActiveVisitForPatient } from './consultation-visit.resource';
 import { buildConsultationFormWorkspaceData } from '../workspaces/consultation-form.workspace';
 
@@ -26,6 +27,7 @@ type LaunchConsultationFormEntryOptions = {
   t: TFunction;
   sessionLocationUuid?: string;
   currentProviderUuid?: string;
+  requestingProviderUuid?: string;
   hasRequiredPrivilege?: boolean;
   visitContext?: Visit | null;
   mutateVisitContext?: (() => Promise<unknown> | void) | null;
@@ -43,6 +45,7 @@ export async function launchConsultationFormEntry({
   t,
   sessionLocationUuid,
   currentProviderUuid,
+  requestingProviderUuid,
   hasRequiredPrivilege = true,
   visitContext,
   mutateVisitContext,
@@ -111,6 +114,17 @@ export async function launchConsultationFormEntry({
   }
 
   const handlePostResponse = (savedEncounter: Encounter) => {
+    if (savedEncounter.uuid && currentProviderUuid) {
+      syncConsultationEncounterProviders({
+        encounterUuid: savedEncounter.uuid,
+        currentProviderUuid,
+        mode: encounterUuid ? 'respond' : 'create',
+        requestingProviderUuid: encounterUuid ? requestingProviderUuid : undefined,
+      }).catch((syncError) => {
+        console.error('Failed to sync consultation encounter provider roles:', syncError);
+      });
+    }
+
     invalidateVisitAndEncounterData(globalMutate, patientUuid);
     Promise.all([revalidateConsultationsInbox(globalMutate), revalidatePatientConsultations(globalMutate, patientUuid)])
       .then(() => {

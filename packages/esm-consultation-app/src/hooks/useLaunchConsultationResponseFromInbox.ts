@@ -37,6 +37,7 @@ export function useLaunchConsultationResponseFromInbox(options: UseLaunchConsult
           t,
           sessionLocationUuid: session?.sessionLocation?.uuid,
           currentProviderUuid: session?.currentProvider?.uuid,
+          requestingProviderUuid: consultation.requestingProvider?.uuid,
           hasRequiredPrivilege: canRespondToConsultation,
         });
       } catch (error) {

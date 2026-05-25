@@ -7,7 +7,7 @@ describe('consultation config schema', () => {
     expect(configSchema.consultationFormUuid._default).toBe(CONSULTATION_FORM_UUID);
     expect(configSchema.consultationFormUuid._default).toBe('6d1da2cc-c846-4c89-b154-32811057751d');
     expect(configSchema.consultationEncounterTypeUuid._default).toBe(CONSULTATION_ENCOUNTER_TYPE_UUID);
-    expect(configSchema.consultationEncounterTypeUuid._default).toBe('465a92f2-baf8-42e9-9612-53064be868e8');
+    expect(configSchema.consultationEncounterTypeUuid._default).toBe('4723cf17-ff74-43d7-ad36-829e555fbc60');
   });
 
   it('should define default concept UUIDs matching the consultation form', () => {

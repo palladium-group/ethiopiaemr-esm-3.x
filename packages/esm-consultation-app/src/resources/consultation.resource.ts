@@ -1,5 +1,6 @@
 import { restBaseUrl, type Encounter, type Obs } from '@openmrs/esm-framework';
 import type { ConsultationConceptUuids } from '../config-schema';
+import { CONSULTATION_ENCOUNTER_ROLE_UUIDS } from '../constants';
 import type { ConsultationProvider, ConsultationStatus, ConsultationThread } from '../types/consultation.types';
 
 export const CONSULTATION_ENCOUNTER_REPRESENTATION =
@@ -84,9 +85,9 @@ export function getConsultationStatus(response: { briefFinding: string; recommen
   return 'pending';
 }
 
-function mapEncounterProvider(
-  encounterProvider: NonNullable<Encounter['encounterProviders']>[number],
-): ConsultationProvider | undefined {
+type EncounterProviderRow = NonNullable<Encounter['encounterProviders']>[number];
+
+function mapEncounterProvider(encounterProvider: EncounterProviderRow): ConsultationProvider | undefined {
   const uuid = encounterProvider.provider?.uuid;
   const display = encounterProvider.provider?.person?.display;
 
@@ -95,6 +96,67 @@ function mapEncounterProvider(
   }
 
   return { uuid, display };
+}
+
+function resolveConsultationProviders(
+  encounterProviders: Encounter['encounterProviders'] | undefined,
+  status: ConsultationStatus,
+): {
+  requestingProvider?: ConsultationProvider;
+  consultedProvider?: ConsultationProvider;
+} {
+  const rows = encounterProviders ?? [];
+  const { requestingEncounterRoleUuid, consultedEncounterRoleUuid } = CONSULTATION_ENCOUNTER_ROLE_UUIDS;
+  const hasConfiguredRoles = rows.some(
+    (row) =>
+      row.encounterRole?.uuid === requestingEncounterRoleUuid || row.encounterRole?.uuid === consultedEncounterRoleUuid,
+  );
+
+  if (hasConfiguredRoles) {
+    let requestingProvider: ConsultationProvider | undefined;
+    let consultedProvider: ConsultationProvider | undefined;
+
+    for (const row of rows) {
+      const provider = mapEncounterProvider(row);
+      if (!provider) {
+        continue;
+      }
+
+      if (row.encounterRole?.uuid === requestingEncounterRoleUuid) {
+        requestingProvider = provider;
+      } else if (row.encounterRole?.uuid === consultedEncounterRoleUuid) {
+        consultedProvider = provider;
+      }
+    }
+
+    if (status === 'completed' && requestingProvider && !consultedProvider) {
+      consultedProvider = requestingProvider;
+    }
+
+    return {
+      requestingProvider,
+      consultedProvider: status === 'completed' ? consultedProvider : undefined,
+    };
+  }
+
+  const providers = rows
+    .map(mapEncounterProvider)
+    .filter((provider): provider is ConsultationProvider => Boolean(provider));
+
+  if (!providers.length) {
+    return {};
+  }
+
+  const requestingProvider = providers[0];
+
+  if (status !== 'completed' || providers.length < 2) {
+    return { requestingProvider, consultedProvider: undefined };
+  }
+
+  return {
+    requestingProvider,
+    consultedProvider: providers.find((provider) => provider.uuid !== requestingProvider.uuid),
+  };
 }
 
 function getConsultedDepartment(
@@ -151,11 +213,7 @@ export function mapEncounterToConsultation(
   const briefFinding = getLatestObsValue(encounter.obs, conceptUuids.briefFinding);
   const recommendation = getLatestObsValue(encounter.obs, conceptUuids.recommendation);
   const status = getConsultationStatus({ briefFinding, recommendation });
-  const providers = (encounter.encounterProviders ?? [])
-    .map(mapEncounterProvider)
-    .filter((provider): provider is ConsultationProvider => Boolean(provider));
-  const requestingProvider = providers[0];
-  const consultedProvider = status === 'completed' && providers.length ? providers[providers.length - 1] : undefined;
+  const { requestingProvider, consultedProvider } = resolveConsultationProviders(encounter.encounterProviders, status);
 
   const request = {
     reason: getLatestObsValue(encounter.obs, conceptUuids.reasonForConsultation),

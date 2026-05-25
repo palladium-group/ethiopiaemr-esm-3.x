@@ -187,6 +187,36 @@ describe('consultation.resource', () => {
       expect(consultation.respondedAt).toBe('2026-05-20T11:30:00.000+0000');
     });
 
+    it('uses the consulting physician as consulted when the same clinician completed the consultation', () => {
+      const encounter = {
+        ...completedConsultationEncounter,
+        encounterProviders: completedConsultationEncounter.encounterProviders?.slice(0, 1),
+      };
+
+      const consultation = mapEncounterToConsultation(encounter, conceptUuids);
+
+      expect(consultation.requestingProvider?.uuid).toBe('requester-provider-uuid');
+      expect(consultation.consultedProvider?.uuid).toBe('requester-provider-uuid');
+    });
+
+    it('resolves providers by encounter role even when encounterProviders order is reversed', () => {
+      const encounter = {
+        ...completedConsultationEncounter,
+        encounterProviders: [...(completedConsultationEncounter.encounterProviders ?? [])].reverse(),
+      };
+
+      const consultation = mapEncounterToConsultation(encounter, conceptUuids);
+
+      expect(consultation.requestingProvider).toEqual({
+        uuid: 'requester-provider-uuid',
+        display: 'Dr Requester',
+      });
+      expect(consultation.consultedProvider).toEqual({
+        uuid: 'consulted-provider-uuid',
+        display: 'Dr Consultant',
+      });
+    });
+
     it('uses the latest obs value when duplicate concepts exist', () => {
       const encounter = {
         ...pendingConsultationEncounter,
