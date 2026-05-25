@@ -1,4 +1,4 @@
-import { CONSULTATION_CONCEPT_UUIDS, CONSULTATIONS_INBOX_SWR_KEY } from '../constants';
+import { CONSULTATION_CONCEPT_UUIDS } from '../constants';
 import { completedConsultationEncounter, pendingConsultationEncounter } from './consultation.fixture';
 import { mapEncounterToConsultation } from './consultation.resource';
 import {
