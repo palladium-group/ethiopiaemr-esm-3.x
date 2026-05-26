@@ -59,8 +59,8 @@
       }
     },
     {
-      "name": "drug-order-panel",
-      "component": "drugOrderPanel",
+      "name": "drug-order-panel-ethio",
+      "component": "drugOrderPanelEthio",
       "slot": "order-basket-slot",
       "order": 1
     },
@@ -75,7 +75,7 @@
   ],
   "workspaces2": [
     {
-      "name": "add-drug-order",
+      "name": "add-drug-order-ethio",
       "component": "addDrugOrderWorkspace",
       "window": "patient-chart-order-basket"
     }

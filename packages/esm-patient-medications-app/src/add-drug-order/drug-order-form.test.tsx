@@ -71,6 +71,68 @@ function createNewOrderBasketItem(overrides?: Partial<DrugOrderBasketItem>): Dru
   } as DrugOrderBasketItem;
 }
 
+describe('DrugOrderForm - dose unit defaults', () => {
+  it('keeps the dosage form as the dose unit when it is configured as a valid dosing unit', async () => {
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('Tablet');
+    });
+  });
+
+  it('clears the dose unit when the drug dosage form is not a configured dosing unit', async () => {
+    const invalidDosageForm = {
+      display: 'Solution (Ear Drop)',
+      uuid: 'solution-ear-drop-uuid',
+    };
+    const invalidDoseUnit = {
+      value: invalidDosageForm.display,
+      valueCoded: invalidDosageForm.uuid,
+    };
+    const base = createNewOrderBasketItem();
+
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        drug: {
+          ...base.drug,
+          dosageForm: invalidDosageForm,
+        },
+        unit: invalidDoseUnit,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('');
+    });
+  });
+
+  it('clears the quantity unit when the drug dosage form is not a configured dispensing unit', async () => {
+    const invalidDosageForm = {
+      display: 'Solution (Ear Drop)',
+      uuid: 'solution-ear-drop-uuid',
+    };
+    const invalidQuantityUnit = {
+      value: invalidDosageForm.display,
+      valueCoded: invalidDosageForm.uuid,
+    };
+    const base = createNewOrderBasketItem();
+
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        drug: {
+          ...base.drug,
+          dosageForm: invalidDosageForm,
+        },
+        quantityUnits: invalidQuantityUnit,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /quantity unit/i })).toHaveValue('');
+    });
+  });
+});
+
 describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
   it('auto-calculates quantity when dose, frequency, and duration are filled', async () => {
     const user = userEvent.setup();

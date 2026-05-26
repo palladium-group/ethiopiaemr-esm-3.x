@@ -294,15 +294,20 @@ export function DrugOrderForm({
   };
 
   const drugDosingUnits: Array<DosingUnit> = useMemo(
-    () =>
-      orderConfigObject?.drugDosingUnits ?? [
-        {
-          valueCoded: initialOrderBasketItem?.drug?.dosageForm?.uuid,
-          value: initialOrderBasketItem?.drug?.dosageForm?.display,
-        },
-      ],
-    [orderConfigObject, initialOrderBasketItem?.drug?.dosageForm],
+    () => orderConfigObject?.drugDosingUnits ?? [],
+    [orderConfigObject?.drugDosingUnits],
   );
+
+  useEffect(() => {
+    if (!orderConfigObject || !watchedUnit?.valueCoded) {
+      return;
+    }
+
+    const isValidDoseUnit = drugDosingUnits.some((dosingUnit) => dosingUnit.valueCoded === watchedUnit.valueCoded);
+    if (!isValidDoseUnit) {
+      setValue('unit', null, { shouldValidate: false });
+    }
+  }, [drugDosingUnits, orderConfigObject, setValue, watchedUnit?.valueCoded]);
 
   const drugRoutes: Array<MedicationRoute> = useMemo(() => orderConfigObject?.drugRoutes ?? [], [orderConfigObject]);
 
@@ -316,6 +321,19 @@ export function DrugOrderForm({
       ],
     [orderConfigObject, initialOrderBasketItem?.drug?.dosageForm],
   );
+
+  useEffect(() => {
+    if (!orderConfigObject || !watchedQuantityUnits?.valueCoded) {
+      return;
+    }
+
+    const isValidQuantityUnit = drugDispensingUnits.some(
+      (dispensingUnit) => dispensingUnit.valueCoded === watchedQuantityUnits.valueCoded,
+    );
+    if (!isValidQuantityUnit) {
+      setValue('quantityUnits', null, { shouldValidate: false });
+    }
+  }, [drugDispensingUnits, orderConfigObject, setValue, watchedQuantityUnits?.valueCoded]);
 
   const durationUnits: Array<DurationUnit> = useMemo(
     () =>
@@ -862,12 +880,14 @@ const ControlledFieldInput = ({
   const { t } = useTranslation();
   const {
     field: { onBlur, onChange, value, ref },
-    fieldState: { error },
+    fieldState: { error, isTouched },
+    formState: { isSubmitted },
   } = useController<MedicationOrderFormData>({ name, control });
   const isTablet = useLayoutType() === 'tablet';
+  const shouldShowError = Boolean(error?.message && (isTouched || isSubmitted));
 
   const fieldErrorStyles = classNames({
-    [styles.fieldError]: error?.message,
+    [styles.fieldError]: shouldShowError,
   });
 
   const handleChange = useCallback(
@@ -967,7 +987,6 @@ const ControlledFieldInput = ({
           ref={ref}
           size={isTablet ? 'md' : 'sm'}
           selectedItem={value}
-          initialSelectedItem={value}
           {...comboBoxProps}
         />
       );
@@ -979,7 +998,7 @@ const ControlledFieldInput = ({
   return (
     <>
       {component}
-      {error?.message && <FormLabel className={styles.errorLabel}>{error.message}</FormLabel>}
+      {shouldShowError && <FormLabel className={styles.errorLabel}>{error.message}</FormLabel>}
     </>
   );
 };

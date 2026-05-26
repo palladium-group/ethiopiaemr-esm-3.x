@@ -23,7 +23,7 @@ export const activeMedications = getSyncLifecycle(activeMedicationsComponent, op
 
 export const pastMedications = getSyncLifecycle(pastMedicationsComponent, options);
 
-export const drugOrderPanel = getAsyncLifecycle(
+export const drugOrderPanelEthio = getAsyncLifecycle(
   () => import('./drug-order-basket-panel/drug-order-basket-panel.extension'),
   options,
 );

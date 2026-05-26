@@ -52,6 +52,15 @@
       }
     }
   },
+  "@openmrs/esm-patient-orders-app": {
+    "extensionSlots": {
+      "order-basket-slot": {
+        "remove": [
+          "drug-order-panel"
+        ]
+      }
+    }
+  },
 "@openmrs/esm-patient-notes-app": {
   "disabled": true
 },
