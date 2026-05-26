@@ -299,7 +299,7 @@ export function DrugOrderForm({
   );
 
   useEffect(() => {
-    if (!orderConfigObject || !watchedUnit?.valueCoded) {
+    if (!orderConfigObject?.drugDosingUnits || !watchedUnit?.valueCoded) {
       return;
     }
 
@@ -323,7 +323,7 @@ export function DrugOrderForm({
   );
 
   useEffect(() => {
-    if (!orderConfigObject || !watchedQuantityUnits?.valueCoded) {
+    if (!orderConfigObject?.drugDispensingUnits || !watchedQuantityUnits?.valueCoded) {
       return;
     }
 
