@@ -19,6 +19,7 @@ import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.compone
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
+import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
@@ -158,6 +159,11 @@ export const transferNotesOverview = getAsyncLifecycle(
 
 export const startVisitActionButton = getSyncLifecycle(startVisitActionButtonComponent, {
   featureName: 'patient-action-start-visit',
+  moduleName,
+});
+
+export const finishServiceButton = getSyncLifecycle(FinishServiceButton, {
+  featureName: 'finish-service-button',
   moduleName,
 });
 

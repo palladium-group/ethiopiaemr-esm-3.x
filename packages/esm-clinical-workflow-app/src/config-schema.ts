@@ -120,6 +120,12 @@ export const configSchema = {
     _description: 'Default queue entry status UUID (e.g. Waiting status)',
     _default: '167407AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
+  finishedServiceQueueStatusUuid: {
+    _type: Type.String,
+    _description:
+      'Queue entry status UUID used when finishing service from the patient chart banner (e.g. Finished Service)',
+    _default: '167409AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
   visitQueueNumberAttributeTypeUuid: {
     _type: Type.String,
     _description: 'Visit attribute type UUID for queue number',
@@ -284,6 +290,7 @@ export type ClinicalWorkflowConfig = {
   enforceTriagePrivileges: boolean;
   triageDefinitions: Array<TriageDefinitionConfig>;
   defaultQueueStatusUuid: string;
+  finishedServiceQueueStatusUuid: string;
   visitQueueNumberAttributeTypeUuid: string;
   billingVisitAttributeTypes: {
     paymentMethod: string;
