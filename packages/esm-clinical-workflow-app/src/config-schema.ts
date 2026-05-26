@@ -1,4 +1,4 @@
-import { Type } from '@openmrs/esm-framework';
+import { Type, validator } from '@openmrs/esm-framework';
 import notesConfigSchema, { type VisitNoteConfigObject } from './patient-notes/visit-note-config-schema';
 
 export const configSchema = {
@@ -258,6 +258,12 @@ export const configSchema = {
     _description: 'UUID of the Transfer Note concept',
     _default: 'f4162fe3-f7e3-4062-9bb3-aa1a4b1044a5',
   },
+  recentDiagnosesCount: {
+    _type: Type.Number,
+    _default: 5,
+    _description: 'Maximum number of recent diagnoses to display in the Recent Diagnoses widget.',
+    _validators: [validator((v) => Number.isInteger(v) && v > 0, 'Must be a positive integer.')],
+  },
 };
 
 export interface PatientTypeConfig {
@@ -311,6 +317,7 @@ export type ClinicalWorkflowConfig = {
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;
+  recentDiagnosesCount: number;
 };
 
 export interface VisitNoteConfig {

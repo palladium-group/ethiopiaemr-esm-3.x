@@ -118,6 +118,11 @@
       "name": "add-patient-to-ward-siderail-button",
       "component": "addPatientToWardSiderailButton",
       "slot": "ward-ui-extension-hidden-slot"
+    },
+    {
+      "name": "recent-diagnoses-widget",
+      "component": "recentDiagnosesWidget",
+      "slot": "patient-chart-summary-dashboard-slot"
     }
   ],
   "workspaces": [
