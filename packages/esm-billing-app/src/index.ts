@@ -61,12 +61,14 @@ import VisitAttributeTags from './invoice/payments/visit-tags/visit-attribute.co
 import DeletePaymentModeModal from './bill-administration/payment-modes/delete-payment-mode.modal';
 import PaymentModeWorkspace from './bill-administration/payment-modes/payment-mode.workspace';
 import RequirePaymentModal from './prompt-payment/prompt-payment-modal.component';
+import EditClaimForm from './claims/auto-claims/claims-modal/edit-claim-form.workspace';
 
 // Payment Points Components
 import { PaymentPointForm } from './bill-administration/payment-points/payment-point-form.component';
 import { ClockIn } from './bill-administration/payment-points/payment-point/clock-in.modal';
 import { ClockOut } from './bill-administration/payment-points/payment-point/clock-out.modal';
 import { DeletePaymentPointModal } from './bill-administration/payment-points/delete-payment-point.modal';
+import { ClaimsPdfExportModal } from './claims/auto-claims/claims-modal/claims-pdf-export-modal.component';
 
 // Print Preview Components
 import PrintPreviewModal from './print-preview/print-preview.modal';
@@ -140,6 +142,8 @@ export const addCommodityForm = getSyncLifecycle(AddCommodityForm, options);
 export const claimsOverview = getSyncLifecycle(ClaimsManagementOverview, options);
 export const manageClaimRequestModal = getSyncLifecycle(ManageClaimRequest, options);
 export const claimSummaryModal = getSyncLifecycle(ClaimSummaryModal, options);
+export const claimsPdfExportModal = getSyncLifecycle(ClaimsPdfExportModal, options);
+export const editClaimForm = getSyncLifecycle(EditClaimForm, options);
 
 // Print Preview Components
 export const printPreviewModal = getSyncLifecycle(PrintPreviewModal, options);

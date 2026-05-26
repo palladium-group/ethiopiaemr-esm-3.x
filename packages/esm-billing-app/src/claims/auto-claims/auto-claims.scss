@@ -1,0 +1,15 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/styles/scss/spacing';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.claimsContainer {
+  margin: layout.$spacing-05;
+}
+.tabHeader {
+  min-width: calc(layout.$layout-05 * 5);
+}
+
+.tabPanel {
+  padding: layout.$spacing-05 0;
+}

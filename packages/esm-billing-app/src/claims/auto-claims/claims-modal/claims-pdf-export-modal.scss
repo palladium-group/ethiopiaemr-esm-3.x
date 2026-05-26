@@ -1,0 +1,21 @@
+@use '@carbon/styles/scss/spacing' as *;
+@use '@carbon/styles/scss/type' as *;
+@use '@carbon/styles/scss/breakpoint' as *;
+
+.modalFieldGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-05;
+
+  @include breakpoint-down('md') {
+    grid-template-columns: 1fr;
+  }
+}
+.modalHeader {
+  margin-bottom: 1rem;
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+}
+.batchReference {
+  margin-top: 1rem;
+}

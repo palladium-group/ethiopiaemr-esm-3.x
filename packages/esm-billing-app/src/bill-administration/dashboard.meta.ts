@@ -33,6 +33,13 @@ export const serviceAvailabilityDashboardMeta = {
   icon: 'omrs-icon-programs',
 } as const;
 
+export const autoClaimsDashboardMeta = {
+  path: 'auto-claims',
+  title: 'Claims',
+  titleKey: 'autoClaims',
+  icon: 'omrs-icon-programs',
+} as const;
+
 export const paymentHistoryDashboardMeta = {
   path: 'payment-history',
   title: 'Payment History',

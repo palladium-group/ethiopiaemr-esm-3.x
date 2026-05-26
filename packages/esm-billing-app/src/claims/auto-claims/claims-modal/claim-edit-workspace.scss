@@ -1,0 +1,107 @@
+@use '@carbon/styles/scss/spacing' as *;
+@use '@carbon/styles/scss/type' as *;
+@use '@carbon/styles/scss/breakpoint' as *;
+@use '@carbon/styles/scss/theme' as *;
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: $background;
+}
+
+.formBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-06;
+}
+
+.contextBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-03;
+  padding: $spacing-04 $spacing-05;
+  margin-bottom: $spacing-06;
+  background-color: $layer-01;
+  border-left: 3px solid $interactive;
+}
+
+.patientName {
+  @include type-style('body-compact-02');
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.metaPill {
+  @include type-style('label-01');
+  padding: $spacing-01 $spacing-03;
+  background-color: $layer-02;
+  color: $text-secondary;
+  border-radius: 0.75rem;
+}
+
+.claimRef {
+  @include type-style('helper-text-01');
+  color: $text-helper;
+  margin-left: auto; // push to right end of banner
+}
+
+.sectionHeading {
+  @include type-style('heading-compact-02');
+  color: $text-primary;
+  margin-bottom: $spacing-04;
+}
+
+.sectionHint {
+  @include type-style('helper-text-01');
+  color: $text-helper;
+  margin-bottom: $spacing-04;
+  margin-top: -$spacing-02;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid $border-subtle-01;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-05;
+
+  @include breakpoint-down('md') {
+    grid-template-columns: 1fr;
+  }
+}
+
+.totalRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: $spacing-04 $spacing-05;
+  background-color: $layer-02;
+  border-left: 3px solid $interactive;
+  grid-column: 1 / -1;
+}
+
+.totalLabel {
+  @include type-style('body-compact-02');
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.totalValue {
+  @include type-style('heading-04');
+  color: $interactive;
+  font-variant-numeric: tabular-nums;
+}
+
+.buttonSet {
+  display: flex;
+  border-top: 1px solid $border-subtle-01;
+
+  button {
+    flex: 1;
+    max-width: 50%;
+  }
+}
