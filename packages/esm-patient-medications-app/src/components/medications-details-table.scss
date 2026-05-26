@@ -41,6 +41,22 @@
   gap: layout.$spacing-03;
 }
 
+.encounterHeaderLabel {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.returnedPrescriptionTag {
+  margin: 0;
+}
+
+.dtpReason {
+  color: colors.$gray-70;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .renewAllButton {
   min-height: auto;
   padding-inline: 0;

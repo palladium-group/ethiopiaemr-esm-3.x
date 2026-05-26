@@ -21,6 +21,7 @@ import capitalize from 'lodash-es/capitalize';
 import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from 'react-to-print';
 import { useSWRConfig } from 'swr';
+import useSWRImmutable from 'swr/immutable';
 import {
   CardHeader,
   compare,
@@ -37,9 +38,11 @@ import {
 import {
   AddIcon,
   age,
+  fhirBaseUrl,
   formatDate,
   getPatientName,
   launchWorkspace2,
+  openmrsFetch,
   PrinterIcon,
   useConfig,
   useLayoutType,
@@ -63,6 +66,40 @@ export interface MedicationsDetailsTableProps {
   patient: fhir.Patient;
 }
 
+type DtpStatusReason = {
+  text?: string;
+  coding?: Array<{
+    code?: string;
+    display?: string;
+  }>;
+};
+
+type OrderWithDtpStatusReason = Order & {
+  statusReasonCodeableConcept?: DtpStatusReason;
+};
+
+type MedicationDispenseSearchResponse = {
+  entry?: Array<{
+    resource?: fhir.MedicationDispense & {
+      statusReasonCodeableConcept?: DtpStatusReason;
+    };
+  }>;
+};
+
+function isReturnedMedicationOrder(order: Order) {
+  const fulfillerStatus = (order as Order & { fulfillerStatus?: string | null }).fulfillerStatus;
+  return fulfillerStatus?.toUpperCase() === 'DECLINED';
+}
+
+function getDtpReasonText(statusReason?: DtpStatusReason) {
+  const firstCoding = statusReason?.coding?.find((coding) => coding.display || coding.code);
+  return statusReason?.text ?? firstCoding?.display ?? firstCoding?.code;
+}
+
+function getDtpReasonFromOrder(order: Order) {
+  return getDtpReasonText((order as OrderWithDtpStatusReason).statusReasonCodeableConcept);
+}
+
 const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
   isValidating,
   title,
@@ -84,6 +121,43 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
 
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(patient, 'medications');
   const { results, goTo, currentPage } = usePagination(medications, pageSize);
+  const returnedOrderUuidsMissingReason = useMemo(
+    () =>
+      medications
+        ?.filter((medication) => isReturnedMedicationOrder(medication) && !getDtpReasonFromOrder(medication))
+        .map((medication) => medication.uuid)
+        .filter(Boolean)
+        .sort() ?? [],
+    [medications],
+  );
+  const { data: returnedMedicationDispenseResponses } = useSWRImmutable(
+    returnedOrderUuidsMissingReason.length
+      ? ['returned-medication-dispenses', ...returnedOrderUuidsMissingReason]
+      : null,
+    ([, ...orderUuids]: Array<string>) =>
+      Promise.all(
+        orderUuids.map((orderUuid) =>
+          openmrsFetch<MedicationDispenseSearchResponse>(
+            `${fhirBaseUrl}/MedicationDispense?prescription=${encodeURIComponent(`MedicationRequest/${orderUuid}`)}`,
+          ),
+        ),
+      ),
+  );
+  const dtpReasonByOrderUuid = useMemo(
+    () =>
+      new Map(
+        returnedMedicationDispenseResponses
+          ?.map(({ data }, index) => {
+            const declinedDispense = data.entry
+              ?.map((entry) => entry.resource)
+              .find((dispense) => dispense?.status === 'declined');
+            const dtpReason = getDtpReasonText(declinedDispense?.statusReasonCodeableConcept);
+            return dtpReason ? [returnedOrderUuidsMissingReason[index], dtpReason] : null;
+          })
+          .filter(Boolean) as Array<[string, string]>,
+      ),
+    [returnedMedicationDispenseResponses, returnedOrderUuidsMissingReason],
+  );
 
   const tableHeaders = [
     {
@@ -387,6 +461,15 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                       const allOrdersAlreadyInBasket = encounterMedications.every((groupMedication) =>
                         orders.some((existingOrder) => existingOrder.uuid === groupMedication.uuid),
                       );
+                      const hasReturnedMedication = encounterMedications.some(isReturnedMedicationOrder);
+                      const dtpReason = encounterMedications
+                        .filter(isReturnedMedicationOrder)
+                        .map(
+                          (returnedMedication) =>
+                            getDtpReasonFromOrder(returnedMedication) ??
+                            dtpReasonByOrderUuid.get(returnedMedication.uuid),
+                        )
+                        .find(Boolean);
 
                       renderedRows.push(
                         <TableRow key={`encounter-${encounterGroupKey}`} className={styles.encounterRow}>
@@ -394,7 +477,19 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                             className={styles.encounterHeaderCell}
                             colSpan={headers.length + (isPrinting ? 0 : 1)}>
                             <div className={styles.encounterHeaderContent}>
-                              <span>{getEncounterGroupLabel(medication)}</span>
+                              <div className={styles.encounterHeaderLabel}>
+                                <span>{getEncounterGroupLabel(medication)}</span>
+                                {hasReturnedMedication && (
+                                  <Tag type="red" className={styles.returnedPrescriptionTag}>
+                                    {t('prescriptionReturned', 'Prescription returned')}
+                                  </Tag>
+                                )}
+                                {dtpReason && (
+                                  <span className={styles.dtpReason}>
+                                    {t('dtpReason', 'Reason')}: {dtpReason}
+                                  </span>
+                                )}
+                              </div>
                               {!isPrinting && showRenewButton && encounterUuid && (
                                 <Button
                                   kind="ghost"

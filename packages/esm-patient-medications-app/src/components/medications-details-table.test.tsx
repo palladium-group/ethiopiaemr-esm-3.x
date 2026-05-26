@@ -170,6 +170,50 @@ describe('MedicationsDetailsTable', () => {
     expect(await screen.findByText(/unknown date/i)).toBeInTheDocument();
   });
 
+  test('marks encounter groups with declined orders as returned prescriptions', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
+        fulfillerStatus: 'DECLINED',
+        statusReasonCodeableConcept: {
+          text: 'Inappropriate dose',
+        },
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+      {
+        ...mockPatientDrugOrdersApiData[1],
+        uuid: 'med-2',
+        fulfillerStatus: 'RECEIVED',
+        dateActivated: '2026-04-27T11:50:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[1].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    expect(await screen.findByText(/prescription returned/i)).toBeInTheDocument();
+    expect(screen.getByText(/reason: inappropriate dose/i)).toBeInTheDocument();
+  });
+
   test('renders renew all only for encounter groups with a valid encounter uuid', async () => {
     const medications = [
       {
