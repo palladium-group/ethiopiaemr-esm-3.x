@@ -124,7 +124,7 @@ export const configSchema = {
     _type: Type.String,
     _description:
       'Queue entry status UUID used when finishing service from the patient chart banner (e.g. Finished Service)',
-    _default: 'b559fb77-4e1e-4285-b9b7-1d03e0ba983f',
+    _default: '167409AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
   visitQueueNumberAttributeTypeUuid: {
     _type: Type.String,
