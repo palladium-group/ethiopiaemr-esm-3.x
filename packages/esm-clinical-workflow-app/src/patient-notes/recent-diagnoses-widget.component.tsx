@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Button,
   DataTable,
   DataTableSkeleton,
   InlineLoading,
@@ -13,7 +14,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import { formatDate, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { navigate, formatDate, parseDate, useConfig, useLayoutType, CaretRightIcon } from '@openmrs/esm-framework';
 import { type ClinicalWorkflowConfig } from '../config-schema';
 import { usePatientDiagnoses } from './diagnoses.resource';
 import styles from './recent-diagnoses-table.scss';
@@ -55,14 +56,12 @@ const RecentDiagnosesWidget: React.FC<RecentDiagnosesWidgetProps> = ({ patientUu
   const headerTitle = t('recentDiagnosesWidgetTitle', 'Recent diagnoses');
   const displayText = t('diagnosesLowercase', 'diagnoses');
 
+  const navigateToDiagnosesDashboard = () => {
+    navigate({ to: `${window.spaBase}/patient/${patientUuid}/chart/diagnoses` });
+  };
+
   if (isLoading) {
-    return (
-      <div className={styles.widgetCard}>
-        <CardHeader title={headerTitle}>
-          <DataTableSkeleton role="progressbar" compact={!isTablet} zebra />
-        </CardHeader>
-      </div>
-    );
+    return <DataTableSkeleton role="progressbar" />;
   }
 
   if (error) {
@@ -93,7 +92,14 @@ const RecentDiagnosesWidget: React.FC<RecentDiagnosesWidgetProps> = ({ patientUu
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        {isValidating ? <InlineLoading description={t('loading', 'Loading')} /> : null}
+        <span>{isValidating ? <InlineLoading /> : null}</span>
+        <Button
+          kind="ghost"
+          renderIcon={(props: ComponentProps<typeof CaretRightIcon>) => <CaretRightIcon size={16} {...props} />}
+          iconDescription="See More"
+          onClick={navigateToDiagnosesDashboard}>
+          {t('seeMore', 'See More')}
+        </Button>
       </CardHeader>
       <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'} useZebraStyles>
         {({ rows: dataRows, headers: dataHeaders, getHeaderProps, getTableProps }) => (
