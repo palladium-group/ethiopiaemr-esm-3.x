@@ -299,6 +299,57 @@ describe('MedicationsDetailsTable', () => {
     expect(mockLaunchOrderBasket).toHaveBeenCalledWith({}, { encounterUuid: 'enc-1' });
   });
 
+  test('clicking resend prescription adds returned encounter orders to basket as revise orders', async () => {
+    const user = userEvent.setup();
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
+        fulfillerStatus: 'DECLINED',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+      {
+        ...mockPatientDrugOrdersApiData[1],
+        uuid: 'med-2',
+        fulfillerStatus: 'RECEIVED',
+        dateActivated: '2026-04-27T11:50:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[1].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    const resendButton = await screen.findByRole('button', { name: /resend prescription/i });
+    await user.click(resendButton);
+
+    expect(mockSetOrders).toHaveBeenCalledTimes(1);
+    const nextBasketItems = mockSetOrders.mock.calls[0][0] as Array<Order>;
+    expect(nextBasketItems).toHaveLength(2);
+    expect(nextBasketItems.every((order) => order.action === 'REVISE')).toBe(true);
+    expect(
+      nextBasketItems.every((order) => (order as Order & { isReturnedPrescription?: boolean }).isReturnedPrescription),
+    ).toBe(true);
+    expect(mockLaunchOrderBasket).toHaveBeenCalledWith({}, { encounterUuid: 'enc-1' });
+  });
+
   test('clicking renew all does not duplicate orders that are already in basket', async () => {
     const user = userEvent.setup();
     const medications = [

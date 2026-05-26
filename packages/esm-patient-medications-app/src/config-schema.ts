@@ -62,6 +62,28 @@ export const configSchema = {
       _type: Type.String,
     },
   },
+  dtpResponse: {
+    questionConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '1556AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Concept UUID for the encounter-level DTP response obs question.',
+    },
+    acceptedConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Concept UUID for the DTP response answer meaning accepted.',
+    },
+    rejectedConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Concept UUID for the DTP response answer meaning rejected.',
+    },
+    partiallyAcceptedConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB',
+      _description: 'Concept UUID for the DTP response answer meaning partially accepted.',
+    },
+  },
 };
 
 export interface ConfigObject {
@@ -76,4 +98,10 @@ export interface ConfigObject {
   requireIndication: boolean;
   durationUnitsDaysMap: Record<string, number>;
   drugCategoryConceptSets: Array<string>;
+  dtpResponse: {
+    questionConceptUuid: string;
+    acceptedConceptUuid: string;
+    rejectedConceptUuid: string;
+    partiallyAcceptedConceptUuid: string;
+  };
 }

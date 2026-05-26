@@ -66,6 +66,10 @@
   align-items: center;
 }
 
+.dtpResponseContainer {
+  padding: 0 layout.$spacing-03 layout.$spacing-03 layout.$spacing-03;
+}
+
 .addButton {
   svg {
     fill: currentColor !important;

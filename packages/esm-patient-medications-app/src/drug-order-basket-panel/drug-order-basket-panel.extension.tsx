@@ -1,7 +1,7 @@
 import React, { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
-import { Button, Tile } from '@carbon/react';
+import { Button, Select, SelectItem, Tile } from '@carbon/react';
 import {
   AddIcon,
   ChevronDownIcon,
@@ -22,6 +22,14 @@ import OrderBasketItemTile from './order-basket-item-tile.component';
 import RxIcon from './rx-icon.component';
 import styles from './drug-order-basket-panel.scss';
 
+type DtpResponse = 'ACCEPTED' | 'REJECTED' | 'PARTIALLY_ACCEPTED';
+
+type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
+  isReturnedPrescription?: boolean;
+  dtpResponse?: DtpResponse;
+  dtpResponseConceptUuid?: string;
+};
+
 /**
  * The extension is slotted into order-basket-slot in the main Order Basket workspace by default.
  * It renders the "Add +" button for drug orders, and lists pending drug orders in the order basket.
@@ -34,11 +42,46 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
   const isTablet = useLayoutType() === 'tablet';
 
   const responsiveSize = isTablet ? 'md' : 'sm';
+  const dtpResponseOptions = useMemo(
+    () => [
+      {
+        label: t('dtpResponseAccepted', 'Accepted'),
+        response: 'ACCEPTED' as DtpResponse,
+        conceptUuid: config.dtpResponse?.acceptedConceptUuid,
+      },
+      {
+        label: t('dtpResponseRejected', 'Rejected'),
+        response: 'REJECTED' as DtpResponse,
+        conceptUuid: config.dtpResponse?.rejectedConceptUuid,
+      },
+      {
+        label: t('dtpResponsePartiallyAccepted', 'Partially accepted'),
+        response: 'PARTIALLY_ACCEPTED' as DtpResponse,
+        conceptUuid: config.dtpResponse?.partiallyAcceptedConceptUuid,
+      },
+    ],
+    [
+      config.dtpResponse?.acceptedConceptUuid,
+      config.dtpResponse?.partiallyAcceptedConceptUuid,
+      config.dtpResponse?.rejectedConceptUuid,
+      t,
+    ],
+  );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
     prepMedicationOrderPostData,
   );
+  const returnedPrescriptionOrders = useMemo(
+    () => orders.filter((order) => (order as ReturnedPrescriptionBasketItem).isReturnedPrescription),
+    [orders],
+  );
+  const isReturnedPrescriptionBasket = returnedPrescriptionOrders.length > 0;
+  const selectedDtpResponse =
+    (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponseConceptUuid ??
+    (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponse ??
+    '';
+  const isDtpResponseMissing = isReturnedPrescriptionBasket && !selectedDtpResponse;
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {
     incompleteOrderBasketItems,
@@ -95,9 +138,52 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
     }
   }, [config.orderTypeUuid, config.drugOrderTypeUUID]);
 
+  useEffect(() => {
+    if (!isReturnedPrescriptionBasket) {
+      return;
+    }
+
+    const nextOrders = orders.map((order) => {
+      const returnedOrder = order as ReturnedPrescriptionBasketItem;
+      if (!returnedOrder.isReturnedPrescription || order.isOrderIncomplete === isDtpResponseMissing) {
+        return order;
+      }
+      return {
+        ...order,
+        isOrderIncomplete: isDtpResponseMissing,
+      };
+    });
+
+    if (nextOrders.some((order, index) => order !== orders[index])) {
+      setOrders(nextOrders);
+    }
+  }, [isDtpResponseMissing, isReturnedPrescriptionBasket, orders, setOrders]);
+
   const launchPalladiumDrugOrderForm = useCallback(() => {
     launchWorkspace2<AddDrugOrderWorkspaceProps, {}, {}>('add-drug-order-ethio', {});
   }, []);
+
+  const handleDtpResponseChange = useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedValue = event.target.value;
+      const selectedOption = dtpResponseOptions.find(
+        (option) => selectedValue === (option.conceptUuid || option.response),
+      );
+      setOrders(
+        orders.map((order) =>
+          (order as ReturnedPrescriptionBasketItem).isReturnedPrescription
+            ? {
+                ...order,
+                dtpResponse: selectedOption?.response,
+                dtpResponseConceptUuid: selectedOption?.conceptUuid,
+                isOrderIncomplete: !selectedOption,
+              }
+            : order,
+        ),
+      );
+    },
+    [dtpResponseOptions, orders, setOrders],
+  );
 
   return (
     <Tile
@@ -134,6 +220,23 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
           </Button>
         </div>
       </div>
+      {isReturnedPrescriptionBasket && (
+        <div className={styles.dtpResponseContainer}>
+          <Select
+            id="dtp-response"
+            invalid={isDtpResponseMissing}
+            invalidText={t('dtpResponseRequired', 'DTP response is required')}
+            labelText={t('dtpResponse', 'DTP response')}
+            onChange={handleDtpResponseChange}
+            size={responsiveSize}
+            value={selectedDtpResponse}>
+            <SelectItem text={t('selectDtpResponse', 'Select DTP response')} value="" />
+            {dtpResponseOptions.map((option) => (
+              <SelectItem key={option.response} text={option.label} value={option.conceptUuid || option.response} />
+            ))}
+          </Select>
+        </div>
+      )}
       {isExpanded && (
         <>
           {incompleteOrderBasketItems.length > 0 && (

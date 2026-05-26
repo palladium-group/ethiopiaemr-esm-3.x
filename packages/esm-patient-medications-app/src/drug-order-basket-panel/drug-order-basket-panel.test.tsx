@@ -58,4 +58,42 @@ describe('OrderBasketPanel', () => {
     rerender(<DrugOrderBasketPanel {...testProps} />); // re-render because the mocked hook does not trigger a render
     await expect(screen.getByText(/Drug Orders \(3\)/i)).toBeInTheDocument();
   });
+
+  test('renders and stores DTP response for returned prescription orders', async () => {
+    const user = userEvent.setup();
+    const returnedOrder = {
+      ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
+      action: 'REVISE',
+      isReturnedPrescription: true,
+    } as DrugOrderBasketItem & {
+      isReturnedPrescription: boolean;
+      dtpResponse?: string;
+      dtpResponseConceptUuid?: string;
+    };
+    let orders = [returnedOrder];
+    const mockSetOrders = jest.fn((newOrders: Array<DrugOrderBasketItem>) => {
+      orders = newOrders as typeof orders;
+    });
+    mockUseOrderBasket.mockImplementation(() => ({
+      orders,
+      setOrders: mockSetOrders,
+    }));
+    render(<DrugOrderBasketPanel {...testProps} />);
+
+    const dtpResponse = screen.getByLabelText(/dtp response/i);
+    expect(dtpResponse).toBeInTheDocument();
+    expect(screen.getByText(/dtp response is required/i)).toBeInTheDocument();
+    expect(mockSetOrders).toHaveBeenCalledWith([expect.objectContaining({ isOrderIncomplete: true })]);
+
+    await user.selectOptions(dtpResponse, 'PARTIALLY_ACCEPTED');
+
+    expect(mockSetOrders).toHaveBeenCalledWith([
+      expect.objectContaining({
+        dtpResponse: 'PARTIALLY_ACCEPTED',
+        dtpResponseConceptUuid: undefined,
+        isOrderIncomplete: false,
+        isReturnedPrescription: true,
+      }),
+    ]);
+  });
 });

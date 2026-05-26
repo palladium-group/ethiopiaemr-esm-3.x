@@ -78,6 +78,11 @@
       "name": "add-drug-order-ethio",
       "component": "addDrugOrderWorkspace",
       "window": "patient-chart-order-basket"
+    },
+    {
+      "name": "returned-prescription-basket-ethio",
+      "component": "returnedPrescriptionBasketWorkspace",
+      "window": "patient-chart-order-basket"
     }
   ]
 }

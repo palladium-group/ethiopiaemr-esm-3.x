@@ -176,6 +176,37 @@ describe('AddDrugOrderWorkspace drug search', () => {
     );
   });
 
+  test('saves returned prescription revise orders back to the basket without posting immediately', async () => {
+    const user = userEvent.setup();
+    const returnedOrder = {
+      ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
+      action: 'REVISE',
+      previousOrder: 'previous-order-uuid',
+      isReturnedPrescription: true,
+    };
+
+    renderAddDrugOrderWorkspace(returnedOrder);
+    const { result: hookResult } = renderHook(() =>
+      useOrderBasket(mockPatient, 'medications', ((x) => x) as unknown as PostDataPrepFunction),
+    );
+
+    const indicationField = screen.getByRole('textbox', { name: 'Indication' });
+    await user.type(indicationField, 'Returned prescription update');
+    await user.click(screen.getByText(/Save order/i));
+
+    await waitFor(() =>
+      expect(hookResult.current.orders).toEqual([
+        expect.objectContaining({
+          action: 'REVISE',
+          previousOrder: 'previous-order-uuid',
+          isReturnedPrescription: true,
+          indication: 'Returned prescription update',
+        }),
+      ]),
+    );
+    expect(mockCloseWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
+  });
+
   test('discarding a new order returns to drug search', async () => {
     const user = userEvent.setup();
 
@@ -231,11 +262,11 @@ describe('AddDrugOrderWorkspace drug search', () => {
   });
 });
 
-function renderAddDrugOrderWorkspace() {
+function renderAddDrugOrderWorkspace(order = null) {
   render(
     <AddDrugOrderWorkspace
       workspaceProps={{
-        order: null,
+        order,
         orderToEditOrdererUuid: null,
       }}
       groupProps={{

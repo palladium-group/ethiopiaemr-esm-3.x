@@ -49,6 +49,10 @@ export interface AddDrugOrderProps {
   closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
 }
 
+type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
+  isReturnedPrescription?: boolean;
+};
+
 /**
  * This workspace displays the drug order form for adding or editing a drug order.
  * On form submission, it saves the drug order to the (frontend) order basket.
@@ -72,7 +76,9 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
   );
   const [currentOrder, setCurrentOrder] = useState(initialOrder);
   const [searchTerm, setSearchTerm] = useState('');
-  const isEditingExistingOrder = currentOrder?.action === 'REVISE' || initialOrder != null;
+  const isReturnedPrescriptionOrder = Boolean((currentOrder as ReturnedPrescriptionBasketItem)?.isReturnedPrescription);
+  const isEditingExistingOrder =
+    !isReturnedPrescriptionOrder && (currentOrder?.action === 'REVISE' || initialOrder != null);
   const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
 
   const { drugCategoryConceptSets } = useConfig<ConfigObject>();
@@ -222,7 +228,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
     return (
       <DrugOrderForm
         initialOrderBasketItem={currentOrder}
-        onSave={currentOrder?.action === 'REVISE' ? submitDrugOrderToServer : saveDrugOrderToBasket}
+        onSave={isEditingExistingOrder ? submitDrugOrderToServer : saveDrugOrderToBasket}
         onCancel={isEditingExistingOrder ? closeWorkspace : () => setCurrentOrder(undefined)}
         patient={patient}
         visitContext={visitContext}

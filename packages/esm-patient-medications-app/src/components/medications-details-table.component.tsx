@@ -78,6 +78,10 @@ type OrderWithDtpStatusReason = Order & {
   statusReasonCodeableConcept?: DtpStatusReason;
 };
 
+type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
+  isReturnedPrescription?: boolean;
+};
+
 type MedicationDispenseSearchResponse = {
   entry?: Array<{
     resource?: fhir.MedicationDispense & {
@@ -113,6 +117,10 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
   const pageSize = 5;
   const { t } = useTranslation();
   const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patient.id, 'order-basket');
+  const launchReturnedPrescriptionBasket = useLaunchWorkspaceRequiringVisit(
+    patient.id,
+    'returned-prescription-basket-ethio',
+  );
   const config = useConfig<ConfigObject>();
   const showPrintButton = config.showPrintButton;
   const contentToPrintRef = useRef(null);
@@ -222,6 +230,30 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
       launchOrderBasket({}, { encounterUuid });
     },
     [launchOrderBasket, orders, setOrders],
+  );
+
+  const handleResendPrescriptionClick = useCallback(
+    (encounterUuid: string, encounterMedications: Array<Order>) => {
+      const ordersToResend = encounterMedications.filter(
+        (medication) => !orders.some((existingOrder) => existingOrder.uuid === medication.uuid),
+      );
+
+      if (!ordersToResend.length) {
+        return;
+      }
+
+      const returnedPrescriptionOrders = ordersToResend.map(
+        (medication) =>
+          ({
+            ...buildMedicationOrder(medication, 'REVISE'),
+            isReturnedPrescription: true,
+          } as ReturnedPrescriptionBasketItem),
+      );
+
+      setOrders([...orders, ...returnedPrescriptionOrders]);
+      launchReturnedPrescriptionBasket({}, { encounterUuid });
+    },
+    [launchReturnedPrescriptionBasket, orders, setOrders],
   );
 
   const tableRows = results?.map((medication) => ({
@@ -496,8 +528,14 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                                   size="sm"
                                   className={styles.renewAllButton}
                                   disabled={allOrdersAlreadyInBasket}
-                                  onClick={() => handleRenewAllClick(encounterUuid, encounterMedications)}>
-                                  {t('renewAll', 'Renew all')}
+                                  onClick={() =>
+                                    hasReturnedMedication
+                                      ? handleResendPrescriptionClick(encounterUuid, encounterMedications)
+                                      : handleRenewAllClick(encounterUuid, encounterMedications)
+                                  }>
+                                  {hasReturnedMedication
+                                    ? t('resendPrescription', 'Resend prescription')
+                                    : t('renewAll', 'Renew all')}
                                 </Button>
                               )}
                             </div>
