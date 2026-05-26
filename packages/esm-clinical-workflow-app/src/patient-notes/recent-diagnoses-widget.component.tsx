@@ -12,46 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
+import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import { formatDate, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type ClinicalWorkflowConfig } from '../config-schema';
 import { usePatientDiagnoses } from './diagnoses.resource';
 import styles from './recent-diagnoses-table.scss';
-
-interface CardHeaderProps {
-  title: string;
-  children?: React.ReactNode;
-}
-
-const CardHeader: React.FC<CardHeaderProps> = ({ title, children }) => (
-  <div className={styles.cardHeader}>
-    <h4 className={styles.cardTitle}>{title}</h4>
-    <div className={styles.cardHeaderActions}>{children}</div>
-  </div>
-);
-
-interface EmptyStateProps {
-  displayText: string;
-  headerTitle: string;
-}
-
-const EmptyState: React.FC<EmptyStateProps> = ({ displayText, headerTitle }) => (
-  <div className={styles.widgetCard}>
-    <CardHeader title={headerTitle} />
-    <p className={styles.emptyState}>{displayText}</p>
-  </div>
-);
-
-interface ErrorStateProps {
-  error: unknown;
-  headerTitle: string;
-}
-
-const ErrorState: React.FC<ErrorStateProps> = ({ error, headerTitle }) => (
-  <div className={styles.widgetCard}>
-    <CardHeader title={headerTitle} />
-    <p className={styles.errorState}>{error instanceof Error ? error.message : String(error)}</p>
-  </div>
-);
 
 interface RecentDiagnosesWidgetProps {
   patientUuid?: string;
@@ -88,12 +53,14 @@ const RecentDiagnosesWidget: React.FC<RecentDiagnosesWidgetProps> = ({ patientUu
   const { diagnoses, error, isLoading, isValidating } = usePatientDiagnoses(resolvedPatientUuid);
 
   const headerTitle = t('recentDiagnosesWidgetTitle', 'Recent diagnoses');
+  const displayText = t('diagnosesLowercase', 'diagnoses');
 
   if (isLoading) {
     return (
       <div className={styles.widgetCard}>
-        <CardHeader title={headerTitle} />
-        <DataTableSkeleton role="progressbar" compact={!isTablet} zebra />
+        <CardHeader title={headerTitle}>
+          <DataTableSkeleton role="progressbar" compact={!isTablet} zebra />
+        </CardHeader>
       </div>
     );
   }
@@ -103,12 +70,7 @@ const RecentDiagnosesWidget: React.FC<RecentDiagnosesWidgetProps> = ({ patientUu
   }
 
   if (!diagnoses?.length) {
-    return (
-      <EmptyState
-        headerTitle={headerTitle}
-        displayText={t('noDiagnosesFound', 'No diagnoses recorded for this patient')}
-      />
-    );
+    return <EmptyState displayText={displayText} headerTitle={headerTitle} />;
   }
 
   const visibleDiagnoses = diagnoses.slice(0, recentDiagnosesCount);
