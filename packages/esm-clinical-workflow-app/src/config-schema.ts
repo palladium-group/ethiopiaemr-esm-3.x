@@ -201,6 +201,18 @@ export const configSchema = {
       'Location tag names for emergency locations. Can specify multiple tags to support future OPD/IPD emergency separation.',
     _default: ['Emergency'],
   },
+  medicalRecordingUnitLocationTagUuid: {
+    _type: Type.UUID,
+    _description:
+      'Location tag UUID used to identify locations (e.g. MRU) that should see visits from all locations (no location filter).',
+    _default: 'b2b1f7aa-4c4f-4f26-8a45-6c8a1f5b2b2b',
+  },
+  medicalRecordingUnitLocationTagName: {
+    _type: Type.String,
+    _description:
+      'Fallback location tag name used when the configured MRU tag UUID does not match server data. Match is case-insensitive against tag display.',
+    _default: 'Medical Recording Unit',
+  },
   diagnosisConceptClass: {
     _type: Type.UUID,
     _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
@@ -315,6 +327,8 @@ export type ClinicalWorkflowConfig = {
     severe: string;
   };
   emergencyLocationTags: string[];
+  medicalRecordingUnitLocationTagUuid: string;
+  medicalRecordingUnitLocationTagName: string;
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;
