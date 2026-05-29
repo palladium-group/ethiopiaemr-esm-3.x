@@ -15,11 +15,14 @@ import {
   type OrderBasketWindowProps,
   type PatientWorkspace2DefinitionProps,
   type PatientWorkspaceGroupProps,
+  showOrderSuccessToast,
+  useMutatePatientOrders,
   useOrderBasket,
 } from '@openmrs/esm-patient-common-lib';
 import { type AddDrugOrderWorkspaceProps } from '../add-drug-order/add-drug-order.workspace';
 import { prepMedicationOrderPostData } from '../api/api';
 import { type ConfigObject } from '../config-schema';
+import { moduleName } from '../dashboard.meta';
 import DrugOrderBasketPanelExtension from '../drug-order-basket-panel/drug-order-basket-panel.extension';
 
 type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
@@ -43,6 +46,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
     externalModuleName: '@openmrs/esm-patient-orders-app',
   });
   const { currentProvider, sessionLocation } = useSession();
+  const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
   const { orders, setOrders, clearOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
@@ -113,7 +117,9 @@ export default function ReturnedPrescriptionBasketWorkspace({
       });
 
       clearOrders();
+      mutateOrders();
       mutateVisitContext?.();
+      showOrderSuccessToast(moduleName, returnedPrescriptionOrders);
       await closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
       showSnackbar({
@@ -131,6 +137,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
     closeWorkspace,
     currentProvider?.uuid,
     dtpResponse.questionConceptUuid,
+    mutateOrders,
     mutateVisitContext,
     orderEncounterType,
     patientUuid,
