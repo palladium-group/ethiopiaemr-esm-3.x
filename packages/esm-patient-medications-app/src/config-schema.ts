@@ -65,22 +65,22 @@ export const configSchema = {
   dtpResponse: {
     questionConceptUuid: {
       _type: Type.ConceptUuid,
-      _default: '1556AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: '83ab5a72-08de-48c4-94b5-e2587d722d45',
       _description: 'Concept UUID for the encounter-level DTP response obs question.',
     },
     acceptedConceptUuid: {
       _type: Type.ConceptUuid,
-      _default: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: '32757eaf-e2ed-41dc-a7d9-1f5650a2af5b',
       _description: 'Concept UUID for the DTP response answer meaning accepted.',
     },
     rejectedConceptUuid: {
       _type: Type.ConceptUuid,
-      _default: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: '01936f78-8c68-48a9-b517-ce22b1ee2c28',
       _description: 'Concept UUID for the DTP response answer meaning rejected.',
     },
     partiallyAcceptedConceptUuid: {
       _type: Type.ConceptUuid,
-      _default: '1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB',
+      _default: '1249ea8c-1723-4b34-a499-e81c787db801',
       _description: 'Concept UUID for the DTP response answer meaning partially accepted.',
     },
   },

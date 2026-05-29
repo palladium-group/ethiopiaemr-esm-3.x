@@ -27,8 +27,10 @@ const mockCloseWorkspace = jest.fn();
 const mockMutateVisitContext = jest.fn();
 const mockSetOrders = jest.fn();
 
-const dtpQuestionConceptUuid = '1556AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-const dtpAcceptedConceptUuid = '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const dtpQuestionConceptUuid = '83ab5a72-08de-48c4-94b5-e2587d722d45';
+const dtpAcceptedConceptUuid = '32757eaf-e2ed-41dc-a7d9-1f5650a2af5b';
+const dtpRejectedConceptUuid = '01936f78-8c68-48a9-b517-ce22b1ee2c28';
+const dtpPartiallyAcceptedConceptUuid = '1249ea8c-1723-4b34-a499-e81c787db801';
 const orderEncounterTypeUuid = 'order-encounter-type-uuid';
 const encounterUuid = 'enc-1';
 
@@ -122,8 +124,8 @@ describe('ReturnedPrescriptionBasketWorkspace', () => {
         dtpResponse: {
           questionConceptUuid: dtpQuestionConceptUuid,
           acceptedConceptUuid: dtpAcceptedConceptUuid,
-          rejectedConceptUuid: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-          partiallyAcceptedConceptUuid: '1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB',
+          rejectedConceptUuid: dtpRejectedConceptUuid,
+          partiallyAcceptedConceptUuid: dtpPartiallyAcceptedConceptUuid,
         },
       };
     });

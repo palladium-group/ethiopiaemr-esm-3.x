@@ -59,8 +59,8 @@
       }
     },
     {
-      "name": "drug-order-panel-ethio",
-      "component": "drugOrderPanelEthio",
+      "name": "drug-order-panel",
+      "component": "drugOrderPanel",
       "slot": "order-basket-slot",
       "order": 1
     },
