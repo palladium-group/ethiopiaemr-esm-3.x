@@ -2,14 +2,7 @@ import React, { type ComponentProps, useCallback, useEffect, useMemo, useState }
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import { Button, Select, SelectItem, Tile } from '@carbon/react';
-import {
-  AddIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  launchWorkspace2,
-  useConfig,
-  useLayoutType,
-} from '@openmrs/esm-framework';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import {
   type OrderBasketExtensionProps,
   useOrderBasket,
@@ -17,7 +10,6 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import type { ConfigObject } from '../config-schema';
 import { prepMedicationOrderPostData } from '../api/api';
-import type { AddDrugOrderWorkspaceProps } from '../add-drug-order/add-drug-order.workspace';
 import OrderBasketItemTile from './order-basket-item-tile.component';
 import RxIcon from './rx-icon.component';
 import styles from './drug-order-basket-panel.scss';
@@ -159,10 +151,6 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
     }
   }, [isDtpResponseMissing, isReturnedPrescriptionBasket, orders, setOrders]);
 
-  const launchPalladiumDrugOrderForm = useCallback(() => {
-    launchWorkspace2<AddDrugOrderWorkspaceProps, {}, {}>('add-drug-order-ethio', {});
-  }, []);
-
   const handleDtpResponseChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
       const selectedValue = event.target.value;
@@ -201,7 +189,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
             kind="ghost"
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
             iconDescription="Add medication"
-            onClick={launchPalladiumDrugOrderForm}
+            onClick={() => launchDrugOrderForm()}
             size={responsiveSize}>
             {t('add', 'Add')}
           </Button>

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../../../../../o3_community_repositories/openmrs-esm-patient-chart"
+		},
+		{
+			"path": "../../../.."
+		}
+	],
+	"settings": {
+		"typescript.tsdk": "node_modules/typescript/lib"
+	}
+}

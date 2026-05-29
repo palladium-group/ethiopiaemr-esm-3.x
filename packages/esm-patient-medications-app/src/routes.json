@@ -75,7 +75,7 @@
   ],
   "workspaces2": [
     {
-      "name": "add-drug-order-ethio",
+      "name": "add-drug-order",
       "component": "addDrugOrderWorkspace",
       "window": "patient-chart-order-basket"
     },

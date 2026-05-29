@@ -67,7 +67,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
   const launchDrugOrderForm = useCallback(
     (order?: DrugOrderBasketItem) => {
       launchWorkspace2<AddDrugOrderWorkspaceProps, OrderBasketWindowProps, PatientWorkspaceGroupProps>(
-        'add-drug-order-ethio',
+        'add-drug-order',
         order ? { order } : {},
         windowProps,
         groupProps,
