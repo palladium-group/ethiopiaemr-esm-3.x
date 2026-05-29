@@ -1,9 +1,11 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { openmrsFetch, restBaseUrl, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, showSnackbar, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
 import {
   type DrugOrderBasketItem,
+  type OrderBasketWindowProps,
+  type PatientWorkspace2DefinitionProps,
   showOrderSuccessToast,
   useMutatePatientOrders,
   useOrderBasket,
@@ -30,6 +32,21 @@ const dtpAcceptedConceptUuid = '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const orderEncounterTypeUuid = 'order-encounter-type-uuid';
 const encounterUuid = 'enc-1';
 
+const mockVisitContext: Visit = {
+  uuid: 'visit-uuid',
+  startDatetime: '2026-01-01T00:00:00.000+0000',
+  stopDatetime: null,
+  visitType: {
+    uuid: 'visit-type-uuid',
+    display: 'Outpatient',
+  },
+};
+
+type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
+  isReturnedPrescription?: boolean;
+  dtpResponseConceptUuid?: string;
+};
+
 jest.mock('../drug-order-basket-panel/drug-order-basket-panel.extension', () => ({
   __esModule: true,
   default: () => <div data-testid="drug-order-basket-panel" />,
@@ -42,14 +59,14 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({
   showOrderSuccessToast: jest.fn(),
 }));
 
-function createReturnedOrder(overrides: Partial<DrugOrderBasketItem> = {}) {
+function createReturnedOrder(overrides: Partial<ReturnedPrescriptionBasketItem> = {}) {
   return {
     ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
     action: 'REVISE',
     isReturnedPrescription: true,
     dtpResponseConceptUuid: dtpAcceptedConceptUuid,
     ...overrides,
-  } as DrugOrderBasketItem & { isReturnedPrescription: boolean; dtpResponseConceptUuid?: string };
+  } as ReturnedPrescriptionBasketItem;
 }
 
 function createOtherBasketOrder() {
@@ -59,6 +76,22 @@ function createOtherBasketOrder() {
   } as DrugOrderBasketItem;
 }
 
+const defaultWorkspaceProps: PatientWorkspace2DefinitionProps<{}, OrderBasketWindowProps> = {
+  closeWorkspace: mockCloseWorkspace,
+  launchChildWorkspace: jest.fn(),
+  workspaceProps: {},
+  workspaceName: 'returned-prescription-basket-ethio',
+  windowProps: { encounterUuid },
+  windowName: 'order-basket',
+  isRootWorkspace: false,
+  groupProps: {
+    patient: mockFhirPatient,
+    patientUuid: mockPatient.id,
+    visitContext: mockVisitContext,
+    mutateVisitContext: mockMutateVisitContext,
+  },
+};
+
 function renderWorkspace(orders: Array<DrugOrderBasketItem>) {
   mockUseOrderBasket.mockReturnValue({
     orders,
@@ -66,18 +99,7 @@ function renderWorkspace(orders: Array<DrugOrderBasketItem>) {
     clearOrders: jest.fn(),
   });
 
-  return renderWithSwr(
-    <ReturnedPrescriptionBasketWorkspace
-      groupProps={{
-        patient: mockFhirPatient,
-        patientUuid: mockPatient.id,
-        visitContext: { uuid: 'visit-uuid' },
-        mutateVisitContext: mockMutateVisitContext,
-      }}
-      windowProps={{ encounterUuid }}
-      closeWorkspace={mockCloseWorkspace}
-    />,
-  );
+  return renderWithSwr(<ReturnedPrescriptionBasketWorkspace {...defaultWorkspaceProps} />);
 }
 
 describe('ReturnedPrescriptionBasketWorkspace', () => {
