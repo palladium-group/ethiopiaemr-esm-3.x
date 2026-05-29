@@ -43,7 +43,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
     externalModuleName: '@openmrs/esm-patient-orders-app',
   });
   const { currentProvider, sessionLocation } = useSession();
-  const { orders, clearOrders } = useOrderBasket<DrugOrderBasketItem>(
+  const { orders, setOrders, clearOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
     prepMedicationOrderPostData,
@@ -142,6 +142,11 @@ export default function ReturnedPrescriptionBasketWorkspace({
     windowProps.encounterUuid,
   ]);
 
+  const handleCancel = useCallback(async () => {
+    setOrders(orders.filter((order) => !(order as ReturnedPrescriptionBasketItem).isReturnedPrescription));
+    await closeWorkspace({ discardUnsavedChanges: true });
+  }, [closeWorkspace, orders, setOrders]);
+
   return (
     <Workspace2 title={t('returnedPrescription', 'Returned prescription')}>
       <InlineNotification
@@ -156,7 +161,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
       />
       <DrugOrderBasketPanelExtension patient={patient} launchDrugOrderForm={launchDrugOrderForm} />
       <ButtonSet>
-        <Button kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+        <Button kind="secondary" onClick={handleCancel} disabled={isSubmitting}>
           {t('cancel', 'Cancel')}
         </Button>
         <Button disabled={!canSubmit || isSubmitting} onClick={handleSubmit}>
