@@ -47,7 +47,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
   });
   const { currentProvider, sessionLocation } = useSession();
   const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
-  const { orders, setOrders, clearOrders } = useOrderBasket<DrugOrderBasketItem>(
+  const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
     prepMedicationOrderPostData,
@@ -79,6 +79,10 @@ export default function ReturnedPrescriptionBasketWorkspace({
     },
     [groupProps, windowProps],
   );
+
+  const clearReturnedPrescriptionBasketItems = useCallback(() => {
+    setOrders(orders.filter((order) => !(order as ReturnedPrescriptionBasketItem).isReturnedPrescription));
+  }, [orders, setOrders]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) {
@@ -116,7 +120,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
         },
       });
 
-      clearOrders();
+      clearReturnedPrescriptionBasketItems();
       mutateOrders();
       mutateVisitContext?.();
       showOrderSuccessToast(moduleName, returnedPrescriptionOrders);
@@ -133,7 +137,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
     }
   }, [
     canSubmit,
-    clearOrders,
+    clearReturnedPrescriptionBasketItems,
     closeWorkspace,
     currentProvider?.uuid,
     dtpResponse.questionConceptUuid,
@@ -150,9 +154,9 @@ export default function ReturnedPrescriptionBasketWorkspace({
   ]);
 
   const handleCancel = useCallback(async () => {
-    setOrders(orders.filter((order) => !(order as ReturnedPrescriptionBasketItem).isReturnedPrescription));
+    clearReturnedPrescriptionBasketItems();
     await closeWorkspace({ discardUnsavedChanges: true });
-  }, [closeWorkspace, orders, setOrders]);
+  }, [clearReturnedPrescriptionBasketItems, closeWorkspace]);
 
   return (
     <Workspace2 title={t('returnedPrescription', 'Returned prescription')}>

@@ -11,18 +11,28 @@ const mockUseOrderBasket = jest.mocked(useOrderBasket);
 const mockUseConfig = jest.mocked(useConfig);
 const mockUseSession = jest.mocked(useSession);
 const mockLaunchOrderBasket = jest.fn();
+const mockLaunchReturnedPrescriptionBasket = jest.fn();
 const mockSetOrders = jest.fn();
 
 jest.mock('@openmrs/esm-patient-common-lib', () => ({
   ...jest.requireActual('@openmrs/esm-patient-common-lib'),
   useOrderBasket: jest.fn(),
-  useLaunchWorkspaceRequiringVisit: jest.fn(() => mockLaunchOrderBasket),
+  useLaunchWorkspaceRequiringVisit: jest.fn((_patientUuid, workspaceName) => {
+    if (workspaceName === 'returned-prescription-basket-ethio') {
+      return mockLaunchReturnedPrescriptionBasket;
+    }
+    if (workspaceName === 'order-basket') {
+      return mockLaunchOrderBasket;
+    }
+    return jest.fn();
+  }),
 }));
 
 describe('MedicationsDetailsTable', () => {
   beforeEach(() => {
     mockSetOrders.mockClear();
     mockLaunchOrderBasket.mockClear();
+    mockLaunchReturnedPrescriptionBasket.mockClear();
     mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
     mockUseOrderBasket.mockReturnValue({
@@ -297,6 +307,7 @@ describe('MedicationsDetailsTable', () => {
     expect(nextBasketItems).toHaveLength(2);
     expect(nextBasketItems.every((order) => order.action === 'RENEW')).toBe(true);
     expect(mockLaunchOrderBasket).toHaveBeenCalledWith({}, { encounterUuid: 'enc-1' });
+    expect(mockLaunchReturnedPrescriptionBasket).not.toHaveBeenCalled();
   });
 
   test('does not render resend prescription button when showResendPrescriptionButton is false', async () => {
@@ -381,7 +392,8 @@ describe('MedicationsDetailsTable', () => {
     expect(
       nextBasketItems.every((order) => (order as Order & { isReturnedPrescription?: boolean }).isReturnedPrescription),
     ).toBe(true);
-    expect(mockLaunchOrderBasket).toHaveBeenCalledWith({}, { encounterUuid: 'enc-1' });
+    expect(mockLaunchReturnedPrescriptionBasket).toHaveBeenCalledWith({}, { encounterUuid: 'enc-1' });
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
   });
 
   test('clicking renew all does not duplicate orders that are already in basket', async () => {
