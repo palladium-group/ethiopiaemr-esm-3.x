@@ -77,6 +77,7 @@ export default function MedicationsSummary({ patient }: MedicationsSummaryProps)
             showDiscontinueButton={false}
             showModifyButton={false}
             showRenewButton={true}
+            showResendPrescriptionButton={false}
             patient={patient}
           />
         ) : (

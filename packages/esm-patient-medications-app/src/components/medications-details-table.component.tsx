@@ -63,6 +63,7 @@ export interface MedicationsDetailsTableProps {
   showDiscontinueButton: boolean;
   showModifyButton: boolean;
   showRenewButton: boolean;
+  showResendPrescriptionButton?: boolean;
   patient: fhir.Patient;
 }
 
@@ -112,6 +113,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
   showDiscontinueButton,
   showModifyButton,
   showRenewButton,
+  showResendPrescriptionButton = true,
   patient,
 }) => {
   const pageSize = 5;
@@ -522,22 +524,25 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                                   </span>
                                 )}
                               </div>
-                              {!isPrinting && showRenewButton && encounterUuid && (
-                                <Button
-                                  kind="ghost"
-                                  size="sm"
-                                  className={styles.renewAllButton}
-                                  disabled={allOrdersAlreadyInBasket}
-                                  onClick={() =>
-                                    hasReturnedMedication
-                                      ? handleResendPrescriptionClick(encounterUuid, encounterMedications)
-                                      : handleRenewAllClick(encounterUuid, encounterMedications)
-                                  }>
-                                  {hasReturnedMedication
-                                    ? t('resendPrescription', 'Resend prescription')
-                                    : t('renewAll', 'Renew all')}
-                                </Button>
-                              )}
+                              {!isPrinting &&
+                                encounterUuid &&
+                                ((hasReturnedMedication && showResendPrescriptionButton) ||
+                                  (!hasReturnedMedication && showRenewButton)) && (
+                                  <Button
+                                    kind="ghost"
+                                    size="sm"
+                                    className={styles.renewAllButton}
+                                    disabled={allOrdersAlreadyInBasket}
+                                    onClick={() =>
+                                      hasReturnedMedication
+                                        ? handleResendPrescriptionClick(encounterUuid, encounterMedications)
+                                        : handleRenewAllClick(encounterUuid, encounterMedications)
+                                    }>
+                                    {hasReturnedMedication
+                                      ? t('resendPrescription', 'Resend prescription')
+                                      : t('renewAll', 'Renew all')}
+                                  </Button>
+                                )}
                             </div>
                           </TableCell>
                         </TableRow>,

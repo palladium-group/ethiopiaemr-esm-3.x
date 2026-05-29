@@ -299,6 +299,40 @@ describe('MedicationsDetailsTable', () => {
     expect(mockLaunchOrderBasket).toHaveBeenCalledWith({}, { encounterUuid: 'enc-1' });
   });
 
+  test('does not render resend prescription button when showResendPrescriptionButton is false', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
+        fulfillerStatus: 'DECLINED',
+        statusReasonCodeableConcept: {
+          text: 'Inappropriate dose',
+        },
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Past Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton={false}
+        showModifyButton={false}
+        showRenewButton
+        showResendPrescriptionButton={false}
+      />,
+    );
+
+    expect(await screen.findByText(/prescription returned/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /resend prescription/i })).not.toBeInTheDocument();
+  });
+
   test('clicking resend prescription adds returned encounter orders to basket as revise orders', async () => {
     const user = userEvent.setup();
     const medications = [
