@@ -144,16 +144,17 @@ export default function ReturnedPrescriptionBasketWorkspace({
 
   return (
     <Workspace2 title={t('returnedPrescription', 'Returned prescription')}>
-      <DrugOrderBasketPanelExtension patient={patient} launchDrugOrderForm={launchDrugOrderForm} />
       <InlineNotification
         kind="info"
         lowContrast
+        hideCloseButton
         title={t('returnedPrescriptionReview', 'Review returned prescription')}
         subtitle={t(
-          'returnedPrescriptionReviewMessage',
-          'Select a DTP response, update returned orders as needed, then sign and close to update the encounter.',
+          'returnedPrescriptionReviewIntro',
+          'Select a DTP response first, then update orders if needed before signing and closing.',
         )}
       />
+      <DrugOrderBasketPanelExtension patient={patient} launchDrugOrderForm={launchDrugOrderForm} />
       <ButtonSet>
         <Button kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
           {t('cancel', 'Cancel')}

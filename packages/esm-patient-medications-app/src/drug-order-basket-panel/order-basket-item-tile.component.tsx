@@ -10,9 +10,15 @@ export interface OrderBasketItemTileProps {
   orderBasketItem: DrugOrderBasketItem;
   onItemClick: () => void;
   onRemoveClick: () => void;
+  readOnly?: boolean;
 }
 
-export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRemoveClick }: OrderBasketItemTileProps) {
+export default function OrderBasketItemTile({
+  orderBasketItem,
+  onItemClick,
+  onRemoveClick,
+  readOnly = false,
+}: OrderBasketItemTileProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
 
@@ -96,17 +102,19 @@ export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRe
             )}
           </span>
         </div>
-        <IconButton
-          kind="ghost"
-          align="left"
-          size={isTablet ? 'lg' : 'sm'}
-          label={t('removeFromBasket', 'Remove from basket')}
-          onClick={() => {
-            shouldOnClickBeCalled.current = false;
-            onRemoveClick();
-          }}>
-          <TrashCanIcon size={16} className={styles.removeButton} />
-        </IconButton>
+        {!readOnly && (
+          <IconButton
+            kind="ghost"
+            align="left"
+            size={isTablet ? 'lg' : 'sm'}
+            label={t('removeFromBasket', 'Remove from basket')}
+            onClick={() => {
+              shouldOnClickBeCalled.current = false;
+              onRemoveClick();
+            }}>
+            <TrashCanIcon size={16} className={styles.removeButton} />
+          </IconButton>
+        )}
       </div>
       <ExtensionSlot
         name="order-item-additional-info-slot"
@@ -116,7 +124,7 @@ export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRe
     </div>
   );
 
-  return orderBasketItem.action === 'DISCONTINUE' ? (
+  return orderBasketItem.action === 'DISCONTINUE' || readOnly ? (
     <Tile>{tileContent}</Tile>
   ) : (
     <ClickableTile

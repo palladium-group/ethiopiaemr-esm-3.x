@@ -1,5 +1,6 @@
 @use '@carbon/colors';
 @use '@carbon/layout';
+@use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
 .desktopContainer {
@@ -67,7 +68,13 @@
 }
 
 .dtpResponseContainer {
-  padding: 0 layout.$spacing-03 layout.$spacing-03 layout.$spacing-03;
+  padding: layout.$spacing-03 layout.$spacing-03 0 layout.$spacing-03;
+}
+
+.dtpResponseHelperText {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin: layout.$spacing-03 0 0;
 }
 
 .addButton {

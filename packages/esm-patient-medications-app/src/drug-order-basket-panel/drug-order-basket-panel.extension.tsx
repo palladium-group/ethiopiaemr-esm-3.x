@@ -16,6 +16,10 @@ import styles from './drug-order-basket-panel.scss';
 
 type DtpResponse = 'ACCEPTED' | 'REJECTED' | 'PARTIALLY_ACCEPTED';
 
+function canEditReturnedPrescriptionOrders(dtpResponse?: DtpResponse) {
+  return dtpResponse === 'ACCEPTED' || dtpResponse === 'PARTIALLY_ACCEPTED';
+}
+
 type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
   isReturnedPrescription?: boolean;
   dtpResponse?: DtpResponse;
@@ -69,11 +73,38 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
     [orders],
   );
   const isReturnedPrescriptionBasket = returnedPrescriptionOrders.length > 0;
+  const selectedDtpResponseType = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponse;
+  const canEditReturnedOrders = canEditReturnedPrescriptionOrders(selectedDtpResponseType);
   const selectedDtpResponse =
     (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponseConceptUuid ??
     (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponse ??
     '';
   const isDtpResponseMissing = isReturnedPrescriptionBasket && !selectedDtpResponse;
+  const dtpResponseHelperText = useMemo(() => {
+    if (!isReturnedPrescriptionBasket) {
+      return null;
+    }
+    if (!selectedDtpResponseType) {
+      return t(
+        'dtpResponseHelperSelectFirst',
+        'Select a DTP response above to continue. Orders cannot be changed until then.',
+      );
+    }
+    if (selectedDtpResponseType === 'REJECTED') {
+      return t(
+        'dtpResponseHelperRejected',
+        'Prescription will be resubmitted without changes. Orders cannot be edited or removed.',
+      );
+    }
+    return t('dtpResponseHelperCanEdit', 'You can now update or remove orders before signing and closing.');
+  }, [isReturnedPrescriptionBasket, selectedDtpResponseType, t]);
+  const isReturnedOrderReadOnly = useCallback(
+    (order: DrugOrderBasketItem) =>
+      isReturnedPrescriptionBasket &&
+      Boolean((order as ReturnedPrescriptionBasketItem).isReturnedPrescription) &&
+      !canEditReturnedOrders,
+    [canEditReturnedOrders, isReturnedPrescriptionBasket],
+  );
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {
     incompleteOrderBasketItems,
@@ -178,6 +209,24 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
       className={classNames(isTablet ? styles.tabletTile : styles.desktopTile, {
         [styles.collapsedTile]: !isExpanded,
       })}>
+      {isReturnedPrescriptionBasket && (
+        <div className={styles.dtpResponseContainer}>
+          <Select
+            id="dtp-response"
+            invalid={isDtpResponseMissing}
+            invalidText={t('dtpResponseRequired', 'DTP response is required')}
+            labelText={t('dtpResponse', 'DTP response')}
+            onChange={handleDtpResponseChange}
+            size={responsiveSize}
+            value={selectedDtpResponse}>
+            <SelectItem text={t('selectDtpResponse', 'Select DTP response')} value="" />
+            {dtpResponseOptions.map((option) => (
+              <SelectItem key={option.response} text={option.label} value={option.conceptUuid || option.response} />
+            ))}
+          </Select>
+          {dtpResponseHelperText && <p className={styles.dtpResponseHelperText}>{dtpResponseHelperText}</p>}
+        </div>
+      )}
       <div className={classNames(isTablet ? styles.tabletContainer : styles.desktopContainer)}>
         <div className={styles.iconAndLabel}>
           <RxIcon isTablet={isTablet} />
@@ -185,10 +234,11 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
         </div>
         <div className={styles.buttonContainer}>
           <Button
+            aria-label={t('addMedication', 'Add medication')}
             className={styles.addButton}
+            disabled={isReturnedPrescriptionBasket && !canEditReturnedOrders}
             kind="ghost"
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-            iconDescription="Add medication"
             onClick={() => launchDrugOrderForm()}
             size={responsiveSize}>
             {t('add', 'Add')}
@@ -208,23 +258,6 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
           </Button>
         </div>
       </div>
-      {isReturnedPrescriptionBasket && (
-        <div className={styles.dtpResponseContainer}>
-          <Select
-            id="dtp-response"
-            invalid={isDtpResponseMissing}
-            invalidText={t('dtpResponseRequired', 'DTP response is required')}
-            labelText={t('dtpResponse', 'DTP response')}
-            onChange={handleDtpResponseChange}
-            size={responsiveSize}
-            value={selectedDtpResponse}>
-            <SelectItem text={t('selectDtpResponse', 'Select DTP response')} value="" />
-            {dtpResponseOptions.map((option) => (
-              <SelectItem key={option.response} text={option.label} value={option.conceptUuid || option.response} />
-            ))}
-          </Select>
-        </div>
-      )}
       {isExpanded && (
         <>
           {incompleteOrderBasketItems.length > 0 && (
@@ -233,6 +266,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={order}
+                  readOnly={isReturnedOrderReadOnly(order)}
                   onItemClick={() => launchDrugOrderForm(order)}
                   onRemoveClick={() => removeMedication(order)}
                 />
@@ -245,6 +279,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={order}
+                  readOnly={isReturnedOrderReadOnly(order)}
                   onItemClick={() => launchDrugOrderForm(order)}
                   onRemoveClick={() => removeMedication(order)}
                 />
@@ -258,6 +293,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={item}
+                  readOnly={isReturnedOrderReadOnly(item)}
                   onItemClick={() => launchDrugOrderForm(item)}
                   onRemoveClick={() => removeMedication(item)}
                 />
@@ -271,6 +307,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={item}
+                  readOnly={isReturnedOrderReadOnly(item)}
                   onItemClick={() => launchDrugOrderForm(item)}
                   onRemoveClick={() => removeMedication(item)}
                 />
@@ -284,6 +321,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={item}
+                  readOnly={isReturnedOrderReadOnly(item)}
                   onItemClick={() => launchDrugOrderForm(item)}
                   onRemoveClick={() => removeMedication(item)}
                 />

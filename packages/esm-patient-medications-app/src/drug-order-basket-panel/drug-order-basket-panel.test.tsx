@@ -59,6 +59,43 @@ describe('OrderBasketPanel', () => {
     await expect(screen.getByText(/Drug Orders \(3\)/i)).toBeInTheDocument();
   });
 
+  test('disables returned prescription order edits until DTP response allows changes', async () => {
+    const user = userEvent.setup();
+    const returnedOrder = {
+      ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
+      action: 'REVISE',
+      isReturnedPrescription: true,
+    } as DrugOrderBasketItem & { isReturnedPrescription: boolean; dtpResponse?: string };
+    let orders = [returnedOrder];
+    const mockSetOrders = jest.fn((newOrders: Array<DrugOrderBasketItem>) => {
+      orders = newOrders as typeof orders;
+    });
+    mockUseOrderBasket.mockImplementation(() => ({
+      orders,
+      setOrders: mockSetOrders,
+    }));
+
+    const { rerender } = render(<DrugOrderBasketPanel {...testProps} />);
+
+    expect(screen.getByText(/orders cannot be changed until then/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add medication/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /remove from basket/i })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText(/dtp response/i), 'ACCEPTED');
+    rerender(<DrugOrderBasketPanel {...testProps} />);
+
+    expect(screen.getByText(/you can now update or remove orders/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add medication/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /remove from basket/i })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText(/dtp response/i), 'REJECTED');
+    rerender(<DrugOrderBasketPanel {...testProps} />);
+
+    expect(screen.getByText(/resubmitted without changes/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add medication/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /remove from basket/i })).not.toBeInTheDocument();
+  });
+
   test('renders and stores DTP response for returned prescription orders', async () => {
     const user = userEvent.setup();
     const returnedOrder = {
