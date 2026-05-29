@@ -108,6 +108,14 @@
       "order": 6
     },
     {
+      "name": "finish-service-button",
+      "component": "finishServiceButton",
+      "slot": "patient-banner-bottom-slot",
+      "order": 3,
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "start-visit-button2",
       "component": "startVisitActionButton",
       "slot": "patient-actions-slot",

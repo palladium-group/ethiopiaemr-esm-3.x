@@ -1,6 +1,7 @@
 import { getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 import {
+  autoClaimsDashboardMeta,
   billableExemptionsDashboardMeta,
   billDepositDashboardMeta,
   clinicalChargesDashboardMeta,
@@ -57,6 +58,7 @@ export const clinicalServicesAvailable = getAsyncLifecycle(
   () => import('./service-catalog/clinical-service-available.component'),
   options,
 );
+export const autoClaims = getAsyncLifecycle(() => import('../claims/auto-claims/auto-claims.component'), options);
 export const paymentHistoryDashboard = getAsyncLifecycle(
   () => import('./payment-history/payment-dashboard.component'),
   options,
@@ -67,6 +69,7 @@ export const paymentPoints = getAsyncLifecycle(() => import('./payment-points/pa
 export const patientBilling = getAsyncLifecycle(() => import('./patient-billing/patient-billing.component'), options);
 export const billingAdmin = getAsyncLifecycle(() => import('./home.component'), options);
 export const servicesAvailableAdmin = getAsyncLifecycle(() => import('./services-available-home.component'), options);
+export const autoClaimsAdmin = getAsyncLifecycle(() => import('./auto-claims-home.component'), options);
 
 export const billDepositDashboardLink = getSyncLifecycle(createDashboardLink(billDepositDashboardMeta), options);
 export const billableExemptionsLink = getSyncLifecycle(createDashboardLink(billableExemptionsDashboardMeta), options);
@@ -79,3 +82,5 @@ export const clinicalServicesAvailableLink = getSyncLifecycle(
   createDashboardLink(serviceAvailabilityDashboardMeta),
   options,
 );
+
+export const autoClaimsAdminLink = getSyncLifecycle(createDashboardLink(autoClaimsDashboardMeta), options);

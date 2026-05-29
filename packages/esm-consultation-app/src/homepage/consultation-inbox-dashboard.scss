@@ -1,0 +1,29 @@
+.container {
+  padding: 1.5rem;
+}
+
+.header {
+  margin-bottom: 1rem;
+}
+
+.title {
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  color: var(--cds-text-secondary);
+}
+
+.description,
+.summary,
+.emptyState p {
+  color: var(--cds-text-secondary);
+}
+
+.summary {
+  margin-top: 1rem;
+}
+
+.emptyState {
+  margin-top: 1rem;
+}

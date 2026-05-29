@@ -3,6 +3,7 @@ export const EXEMPTED_PAYMENT_STATUS = 'EXEMPTED';
 export const spaBasePath = `${window.spaBase}/home`;
 export const billingAdminBasePath = `${window.spaBase}/billing-admin`;
 export const serviceAvailableBasePath = `${window.spaBase}/service-available-admin`;
+export const autoClaimsAdminBasePath = `${window.spaBase}/claims-admin`;
 
 export const colorsArray = [
   'red',
