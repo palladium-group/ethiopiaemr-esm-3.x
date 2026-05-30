@@ -1,0 +1,16 @@
+.panel {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+.title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.description {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+  margin: 0 0 0.5rem;
+}

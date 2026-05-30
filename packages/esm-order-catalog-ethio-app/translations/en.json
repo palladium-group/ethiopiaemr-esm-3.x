@@ -1,0 +1,8 @@
+{
+  "addOrders": "Add orders",
+  "close": "Close",
+  "orderCatalog": "Order catalog",
+  "orderCatalogPanelStub": "Browse lab, radiology, and procedure orders by category.",
+  "orderCatalogWorkspaceStub": "Order catalog workspace — browse UI coming in the next step.",
+  "orderCatalogWorkspaceTitle": "Order catalog"
+}
