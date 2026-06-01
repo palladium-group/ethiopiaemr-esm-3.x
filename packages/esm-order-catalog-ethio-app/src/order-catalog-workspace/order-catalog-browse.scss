@@ -1,0 +1,23 @@
+.browse {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  block-size: 100%;
+  inline-size: 100%;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.tabBarSkeleton {
+  padding: 0.75rem 1rem 0;
+}
+
+.tabContent {
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.empty {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 1rem;
+}

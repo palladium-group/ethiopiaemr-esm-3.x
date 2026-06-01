@@ -15,7 +15,15 @@
     {
       "name": "ethio-order-catalog",
       "component": "orderCatalogWorkspace",
-      "window": "patient-chart-order-basket-shadow"
+      "window": "ethio-order-catalog-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "ethio-order-catalog-window",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
     }
   ],
   "version": "1.0.0"

@@ -1,0 +1,97 @@
+.orderBtn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--border-strong-01, #8d8d8d);
+  border-radius: 4px;
+  background: var(--layer-01, #fff);
+  color: var(--text-primary, #161616);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.11s, border-color 0.11s, color 0.11s, box-shadow 0.11s;
+
+  &:hover {
+    background: var(--layer-hover-01, #e8e8e8);
+    border-color: var(--border-interactive, #0f62fe);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--focus, #0f62fe);
+    outline-offset: 1px;
+  }
+}
+
+/* Panels sit on top and read as grouping tiles: heavier weight + a leading accent bar. */
+.orderBtnPanel {
+  font-weight: 600;
+  border-left: 3px solid var(--border-interactive, #0f62fe);
+}
+
+/* Panel member tiles are visually subordinate to their panel. */
+.orderBtnChild {
+  min-height: 2rem;
+  font-size: 0.75rem;
+  background: var(--layer-02, #f4f4f4);
+}
+
+.orderBtnActive {
+  background: var(--support-success-inverse, #198038);
+  border-color: var(--support-success-inverse, #198038);
+  color: var(--text-on-color, #fff);
+
+  &:hover {
+    background: var(--support-success, #24a148);
+    border-color: var(--support-success, #24a148);
+    color: var(--text-on-color, #fff);
+  }
+}
+
+/* Partial panel: outlined green to signal "some, not all, members selected". */
+.orderBtnPartial {
+  border: 2px solid var(--support-success-inverse, #198038);
+  color: var(--support-success-inverse, #198038);
+  background: var(--layer-01, #fff);
+
+  &:hover {
+    background: var(--layer-hover-01, #e8e8e8);
+    border-color: var(--support-success, #24a148);
+    color: var(--support-success, #24a148);
+  }
+}
+
+.orderBtnDisabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background: var(--layer-01, #fff);
+  border-color: var(--border-subtle-01, #e0e0e0);
+  color: var(--text-disabled, #c6c6c6);
+
+  &:hover {
+    background: var(--layer-01, #fff);
+    border-color: var(--border-subtle-01, #e0e0e0);
+    box-shadow: none;
+  }
+}
+
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

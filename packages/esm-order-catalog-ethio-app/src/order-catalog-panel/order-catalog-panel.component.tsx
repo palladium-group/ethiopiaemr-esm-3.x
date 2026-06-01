@@ -2,15 +2,9 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import { launchWorkspace2, useConfig, usePatient } from '@openmrs/esm-framework';
-import {
-  type OrderBasketWindowProps,
-  type PatientWorkspaceGroupProps,
-  usePatientChartStore,
-  useStartVisitIfNeeded,
-} from '@openmrs/esm-patient-common-lib';
+import { useStartVisitIfNeeded } from '@openmrs/esm-patient-common-lib';
 import { type ConfigObject } from '../config-schema';
 import { ethioOrderCatalogWorkspaceName } from '../constants';
-import { type OrderCatalogWorkspaceLaunchProps } from '../order-catalog-workspace/order-catalog-workspace.component';
 import styles from './order-catalog-panel.scss';
 
 /**
@@ -21,7 +15,6 @@ const OrderCatalogPanel: React.FC = () => {
   const config = useConfig<ConfigObject>();
   const { patient } = usePatient();
   const patientUuid = patient?.id ?? '';
-  const { visitContext, mutateVisitContext } = usePatientChartStore(patientUuid);
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
   const handleAddOrders = useCallback(async () => {
@@ -34,18 +27,10 @@ const OrderCatalogPanel: React.FC = () => {
       return;
     }
 
-    launchWorkspace2<OrderCatalogWorkspaceLaunchProps, OrderBasketWindowProps, PatientWorkspaceGroupProps>(
-      ethioOrderCatalogWorkspaceName,
-      { patientUuid: patient.id },
-      { encounterUuid: '' },
-      {
-        patient,
-        patientUuid: patient.id,
-        visitContext,
-        mutateVisitContext,
-      },
-    );
-  }, [patient, startVisitIfNeeded, visitContext, mutateVisitContext]);
+    await launchWorkspace2(ethioOrderCatalogWorkspaceName, {
+      patientUuid: patient.id,
+    });
+  }, [patient, startVisitIfNeeded]);
 
   if (!config.orderCatalogEnabled || !patientUuid) {
     return null;

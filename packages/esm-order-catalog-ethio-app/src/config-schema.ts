@@ -13,9 +13,15 @@ export const configSchema = {
     _default: defaultAllOrderablesConceptUuid,
     _description: 'Root concept set UUID for All Orderables (lab, radiology, procedure tabs).',
   },
+  orderCatalogDisplayLocale: {
+    _type: Type.String,
+    _default: 'en',
+    _description: 'Locale used for concept display names from the REST API (e.g. en).',
+  },
 };
 
 export interface ConfigObject {
   orderCatalogEnabled: boolean;
   allOrderablesConceptUuid: string;
+  orderCatalogDisplayLocale: string;
 }
