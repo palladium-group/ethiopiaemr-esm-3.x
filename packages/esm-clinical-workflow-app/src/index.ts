@@ -16,6 +16,7 @@ import orderBasketActionButtonExtension from './patient-orders/order-basket-acti
 import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.component';
+import recentDiagnosesWidgetComponent from './patient-notes/recent-diagnoses-widget.component';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
@@ -168,3 +169,5 @@ export const finishServiceButton = getSyncLifecycle(FinishServiceButton, {
 });
 
 export const addPatientToWardSiderailButton = getSyncLifecycle(AddPatientToWardSiderailButton, options);
+
+export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);
