@@ -57,19 +57,42 @@ const RecentDiagnosesWidget: React.FC<RecentDiagnosesWidgetProps> = ({ patientUu
   const displayText = t('diagnosesLowercase', 'diagnoses');
 
   const navigateToDiagnosesDashboard = () => {
-    navigate({ to: `${window.spaBase}/patient/${patientUuid}/chart/diagnoses` });
+    if (!resolvedPatientUuid) {
+      return;
+    }
+    navigate({ to: `${window.spaBase}/patient/${resolvedPatientUuid}/chart/diagnoses` });
   };
 
+  if (!resolvedPatientUuid) {
+    return (
+      <div className={styles.widgetCard}>
+        <EmptyState displayText={displayText} headerTitle={headerTitle} />
+      </div>
+    );
+  }
+
   if (isLoading) {
-    return <DataTableSkeleton role="progressbar" />;
+    return (
+      <div className={styles.widgetCard}>
+        <DataTableSkeleton role="progressbar" />
+      </div>
+    );
   }
 
   if (error) {
-    return <ErrorState error={error} headerTitle={headerTitle} />;
+    return (
+      <div className={styles.widgetCard}>
+        <ErrorState error={error} headerTitle={headerTitle} />
+      </div>
+    );
   }
 
   if (!diagnoses?.length) {
-    return <EmptyState displayText={displayText} headerTitle={headerTitle} />;
+    return (
+      <div className={styles.widgetCard}>
+        <EmptyState displayText={displayText} headerTitle={headerTitle} />
+      </div>
+    );
   }
 
   const visibleDiagnoses = diagnoses.slice(0, recentDiagnosesCount);
@@ -96,7 +119,7 @@ const RecentDiagnosesWidget: React.FC<RecentDiagnosesWidgetProps> = ({ patientUu
         <Button
           kind="ghost"
           renderIcon={(props: ComponentProps<typeof CaretRightIcon>) => <CaretRightIcon size={16} {...props} />}
-          iconDescription="See More"
+          iconDescription={t('seeMore', 'See More')}
           onClick={navigateToDiagnosesDashboard}>
           {t('seeMore', 'See More')}
         </Button>
@@ -131,8 +154,8 @@ const RecentDiagnosesWidget: React.FC<RecentDiagnosesWidgetProps> = ({ patientUu
         <span className={styles.tableFooterItemCount}>
           {t('itemCount', '{{visible}} / {{total}} {{label}}', {
             visible: visibleDiagnoses.length,
-            total: visibleDiagnoses.length,
-            label: diagnoses.length === 1 ? t('itemSingular', 'item') : t('itemPlural', 'items'),
+            total: diagnoses.length,
+            label: visibleDiagnoses.length === 1 ? t('itemSingular', 'item') : t('itemPlural', 'items'),
           })}
         </span>
       </div>

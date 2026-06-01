@@ -28,8 +28,8 @@
   content: '';
   display: block;
   width: layout.$spacing-07;
-  padding-top: 0.188rem;
-  border-bottom: 0.375rem solid var(--brand-03, #{colors.$teal-60});
+  padding-top: layout.$spacing-01;
+  border-bottom: calc(#{layout.$spacing-02} + #{layout.$spacing-01}) solid var(--brand-03, #{colors.$teal-60});
 }
 
 .cardHeaderActions {
