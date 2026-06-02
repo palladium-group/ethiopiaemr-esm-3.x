@@ -1,7 +1,7 @@
 import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 
-const moduleName = '@palladium-ethiopia/esm-ethiopia-reports-app';
+const moduleName = '@palladium-ethiopia/esm-reports-app';
 
 const options = {
   featureName: 'ethiopia-reports',

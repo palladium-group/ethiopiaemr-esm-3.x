@@ -1,5 +1,5 @@
 {
-  "name": "@palladium-ethiopia/esm-ethiopia-reports-app",
+  "name": "@palladium-ethiopia/esm-reports-app",
   "version": "1.0.1",
   "description": "EthiopiaEMR reports app for OpenMRS 3 (left-nav report browser + runner)",
   "keywords": [
@@ -18,7 +18,7 @@
   "license": "MPL-2.0",
   "main": "src/index.ts",
   "source": true,
-  "browser": "dist/ethiopia-esm-reports-app.js",
+  "browser": "dist/esm-reports-app.js",
   "scripts": {
     "analyze": "rspack --mode=production --env analyze=true",
     "build": "rspack --mode=production",
