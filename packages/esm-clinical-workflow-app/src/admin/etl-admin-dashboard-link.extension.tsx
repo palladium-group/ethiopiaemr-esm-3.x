@@ -1,13 +1,26 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ConfigurableLink } from '@openmrs/esm-framework';
+import { navigate } from '@openmrs/esm-framework';
+import { Renew } from '@carbon/react/icons';
+import styles from './admin-dashboard-link.scss';
 
-const EtlAdminDashboardLink: React.FC = () => {
+interface NavLinkProps {
+  hideOverlay: (hide: boolean) => void;
+}
+
+const EtlAdminDashboardLink: React.FC<NavLinkProps> = ({ hideOverlay }) => {
   const { t } = useTranslation();
+
+  const handleClick = () => {
+    hideOverlay?.(false);
+    navigate({ to: `${window.openmrsBase}/ethiopiaemretl/etl/sync.page` });
+  };
+
   return (
-    <ConfigurableLink to={`${window.openmrsBase}/ethiopiaemretl/etl/sync.page`}>
-      {t('etlAdministration', 'ETL Administration')}
-    </ConfigurableLink>
+    <button type="button" onClick={handleClick} className={styles.navLinkItem}>
+      <Renew size={24} />
+      <span>{t('etlAdministration', 'ETL Administration')}</span>
+    </button>
   );
 };
 

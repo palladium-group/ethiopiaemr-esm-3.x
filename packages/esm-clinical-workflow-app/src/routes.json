@@ -130,14 +130,14 @@
     {
       "name": "ethiopiaemr-etl-admin-dashboard-link",
       "component": "etlAdminDashboardLink",
-      "slot": "app-menu-slot",
+      "slot": "navbar-items-slot",
       "online": true,
       "offline": false
     },
     {
       "name": "ethiopiaemr-reports-dashboard-link",
       "component": "reportsDashboardLink",
-      "slot": "app-menu-slot",
+      "slot": "navbar-items-slot",
       "online": true,
       "offline": false
     },
