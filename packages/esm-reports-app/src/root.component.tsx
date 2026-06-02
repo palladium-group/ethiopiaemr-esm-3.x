@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { WorkspaceContainer } from '@openmrs/esm-framework';
 import ReportsLeftNav from './left-nav/reports-left-nav.component';
 import InfoLanding from './report/info-landing.component';
 import ReportRunner from './report/report-runner.component';
@@ -18,7 +17,6 @@ const Root: React.FC = () => {
           <Route path="/:reportUuid" element={<ReportRunner />} />
         </Routes>
       </main>
-      <WorkspaceContainer key="ethiopia-reports" contextKey="ethiopia-reports" />
     </BrowserRouter>
   );
 };

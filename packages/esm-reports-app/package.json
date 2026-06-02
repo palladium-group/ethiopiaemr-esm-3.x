@@ -23,7 +23,7 @@
     "analyze": "rspack --mode=production --env analyze=true",
     "build": "rspack --mode=production",
     "coverage": "yarn test --coverage",
-    "debug": "npm run serve",
+    "debug": "yarn serve",
     "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.extension.tsx' 'src/**/*modal.tsx' 'src/index.ts' --config ../../tools/i18next-parser.config.js",
     "lint": "cross-env eslint src --ext ts,tsx",
     "serve": "rspack serve --mode=development",

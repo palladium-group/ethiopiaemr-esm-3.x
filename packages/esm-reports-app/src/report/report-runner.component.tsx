@@ -169,7 +169,7 @@ const ReportRunner: React.FC = () => {
         </div>
 
         <div className={styles.actions}>
-          <Button kind="primary" disabled={running} onClick={handleRun}>
+          <Button kind="primary" disabled={running || !allFilled} onClick={handleRun}>
             {running ? <InlineLoading description={t('running', 'Running…')} /> : t('runReport', 'Run Report')}
           </Button>
           {reportDefinition.designs.map((design) => (
