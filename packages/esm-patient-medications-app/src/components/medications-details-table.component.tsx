@@ -44,6 +44,7 @@ import {
   launchWorkspace2,
   openmrsFetch,
   PrinterIcon,
+  type StyleguideConfigObject,
   useConfig,
   useLayoutType,
   usePagination,
@@ -53,6 +54,7 @@ import { buildMedicationOrder } from '../api';
 import { type AddDrugOrderWorkspaceProps } from '../add-drug-order/add-drug-order.workspace';
 import { type ConfigObject } from '../config-schema';
 import PrintComponent from '../print/print.component';
+import { type ReturnedPrescriptionBasketItem } from '../types';
 import styles from './medications-details-table.scss';
 
 export interface MedicationsDetailsTableProps {
@@ -77,10 +79,6 @@ type DtpStatusReason = {
 
 type OrderWithDtpStatusReason = Order & {
   statusReasonCodeableConcept?: DtpStatusReason;
-};
-
-type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
-  isReturnedPrescription?: boolean;
 };
 
 type MedicationDispenseSearchResponse = {
@@ -126,7 +124,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
   const config = useConfig<ConfigObject>();
   const showPrintButton = config.showPrintButton;
   const contentToPrintRef = useRef(null);
-  const { excludePatientIdentifierCodeTypes } = useConfig();
+  const { excludePatientIdentifierCodeTypes } = useConfig<StyleguideConfigObject>();
   const [isPrinting, setIsPrinting] = useState(false);
 
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(patient, 'medications');
@@ -244,13 +242,14 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
         return;
       }
 
-      const returnedPrescriptionOrders = ordersToResend.map(
-        (medication) =>
-          ({
-            ...buildMedicationOrder(medication, 'REVISE'),
-            isReturnedPrescription: true,
-          } as ReturnedPrescriptionBasketItem),
-      );
+      const returnedPrescriptionOrders = ordersToResend.map((medication) => {
+        const isReturnedPrescription = isReturnedMedicationOrder(medication);
+        return {
+          ...buildMedicationOrder(medication, 'REVISE'),
+          isReturnedPrescription,
+          isOrderIncomplete: isReturnedPrescription,
+        } as ReturnedPrescriptionBasketItem;
+      });
 
       setOrders([...orders, ...returnedPrescriptionOrders]);
       launchReturnedPrescriptionBasket({}, { encounterUuid });

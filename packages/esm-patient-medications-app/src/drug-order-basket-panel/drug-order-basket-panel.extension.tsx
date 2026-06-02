@@ -10,21 +10,14 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import type { ConfigObject } from '../config-schema';
 import { prepMedicationOrderPostData } from '../api/api';
+import type { DtpResponse, ReturnedPrescriptionBasketItem } from '../types';
 import OrderBasketItemTile from './order-basket-item-tile.component';
 import RxIcon from './rx-icon.component';
 import styles from './drug-order-basket-panel.scss';
 
-type DtpResponse = 'ACCEPTED' | 'REJECTED' | 'PARTIALLY_ACCEPTED';
-
 function canEditReturnedPrescriptionOrders(dtpResponse?: DtpResponse) {
   return dtpResponse === 'ACCEPTED' || dtpResponse === 'PARTIALLY_ACCEPTED';
 }
-
-type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
-  isReturnedPrescription?: boolean;
-  dtpResponse?: DtpResponse;
-  dtpResponseConceptUuid?: string;
-};
 
 /**
  * The extension is slotted into order-basket-slot in the main Order Basket workspace by default.
@@ -74,12 +67,12 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
   );
   const isReturnedPrescriptionBasket = returnedPrescriptionOrders.length > 0;
   const selectedDtpResponseType = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponse;
+  const selectedDtpResponseConceptUuid = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)
+    ?.dtpResponseConceptUuid;
+  const selectedDtpResponseValue = selectedDtpResponseConceptUuid ?? selectedDtpResponseType ?? '';
+  const isDtpResponseSelected = Boolean(selectedDtpResponseConceptUuid || selectedDtpResponseType);
   const canEditReturnedOrders = canEditReturnedPrescriptionOrders(selectedDtpResponseType);
-  const selectedDtpResponse =
-    (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponseConceptUuid ??
-    (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponse ??
-    '';
-  const isDtpResponseMissing = isReturnedPrescriptionBasket && !selectedDtpResponse;
+  const isDtpResponseMissing = isReturnedPrescriptionBasket && !isDtpResponseSelected;
   const dtpResponseHelperText = useMemo(() => {
     if (!isReturnedPrescriptionBasket) {
       return null;
@@ -161,27 +154,6 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
     }
   }, [config.orderTypeUuid, config.drugOrderTypeUUID]);
 
-  useEffect(() => {
-    if (!isReturnedPrescriptionBasket) {
-      return;
-    }
-
-    const nextOrders = orders.map((order) => {
-      const returnedOrder = order as ReturnedPrescriptionBasketItem;
-      if (!returnedOrder.isReturnedPrescription || order.isOrderIncomplete === isDtpResponseMissing) {
-        return order;
-      }
-      return {
-        ...order,
-        isOrderIncomplete: isDtpResponseMissing,
-      };
-    });
-
-    if (nextOrders.some((order, index) => order !== orders[index])) {
-      setOrders(nextOrders);
-    }
-  }, [isDtpResponseMissing, isReturnedPrescriptionBasket, orders, setOrders]);
-
   const handleDtpResponseChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
       const selectedValue = event.target.value;
@@ -218,7 +190,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
             labelText={t('dtpResponse', 'DTP response')}
             onChange={handleDtpResponseChange}
             size={responsiveSize}
-            value={selectedDtpResponse}>
+            value={selectedDtpResponseValue}>
             <SelectItem text={t('selectDtpResponse', 'Select DTP response')} value="" />
             {dtpResponseOptions.map((option) => (
               <SelectItem key={option.response} text={option.label} value={option.conceptUuid || option.response} />

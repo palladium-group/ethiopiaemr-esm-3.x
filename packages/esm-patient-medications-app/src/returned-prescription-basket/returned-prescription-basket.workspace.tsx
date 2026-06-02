@@ -24,15 +24,7 @@ import { prepMedicationOrderPostData } from '../api/api';
 import { type ConfigObject } from '../config-schema';
 import { moduleName } from '../dashboard.meta';
 import DrugOrderBasketPanelExtension from '../drug-order-basket-panel/drug-order-basket-panel.extension';
-
-type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
-  isReturnedPrescription?: boolean;
-  dtpResponseConceptUuid?: string;
-};
-
-type PatientOrdersConfig = {
-  orderEncounterType: string;
-};
+import { type ReturnedPrescriptionBasketItem } from '../types';
 
 export default function ReturnedPrescriptionBasketWorkspace({
   groupProps,
@@ -42,7 +34,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
   const { t } = useTranslation();
   const { patient, patientUuid, visitContext, mutateVisitContext } = groupProps;
   const { dtpResponse } = useConfig<ConfigObject>();
-  const { orderEncounterType } = useConfig<PatientOrdersConfig>({
+  const { orderEncounterType } = useConfig<{ orderEncounterType: string }>({
     externalModuleName: '@openmrs/esm-patient-orders-app',
   });
   const { currentProvider, sessionLocation } = useSession();
