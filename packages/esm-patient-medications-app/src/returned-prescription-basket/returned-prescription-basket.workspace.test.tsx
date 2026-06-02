@@ -31,7 +31,9 @@ const dtpQuestionConceptUuid = '83ab5a72-08de-48c4-94b5-e2587d722d45';
 const dtpAcceptedConceptUuid = '32757eaf-e2ed-41dc-a7d9-1f5650a2af5b';
 const dtpRejectedConceptUuid = '01936f78-8c68-48a9-b517-ce22b1ee2c28';
 const dtpPartiallyAcceptedConceptUuid = '1249ea8c-1723-4b34-a499-e81c787db801';
+const dtpRemarkConceptUuid = '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const orderEncounterTypeUuid = 'order-encounter-type-uuid';
+const defaultDtpRemark = 'Returned prescription reviewed with patient.';
 const encounterUuid = 'enc-1';
 
 const mockVisitContext: Visit = {
@@ -47,6 +49,7 @@ const mockVisitContext: Visit = {
 type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
   isReturnedPrescription?: boolean;
   dtpResponseConceptUuid?: string;
+  dtpRemark?: string;
 };
 
 jest.mock('../drug-order-basket-panel/drug-order-basket-panel.extension', () => ({
@@ -67,6 +70,7 @@ function createReturnedOrder(overrides: Partial<ReturnedPrescriptionBasketItem> 
     action: 'REVISE',
     isReturnedPrescription: true,
     dtpResponseConceptUuid: dtpAcceptedConceptUuid,
+    dtpRemark: defaultDtpRemark,
     ...overrides,
   } as ReturnedPrescriptionBasketItem;
 }
@@ -127,12 +131,22 @@ describe('ReturnedPrescriptionBasketWorkspace', () => {
           rejectedConceptUuid: dtpRejectedConceptUuid,
           partiallyAcceptedConceptUuid: dtpPartiallyAcceptedConceptUuid,
         },
+        dtpRemark: {
+          conceptUuid: dtpRemarkConceptUuid,
+          maxLength: 500,
+        },
       };
     });
   });
 
   test('disables sign and close when DTP response is not selected', () => {
     renderWorkspace([createReturnedOrder({ dtpResponseConceptUuid: undefined })]);
+
+    expect(screen.getByRole('button', { name: /sign and close/i })).toBeDisabled();
+  });
+
+  test('disables sign and close when remark is not provided', () => {
+    renderWorkspace([createReturnedOrder({ dtpRemark: '' })]);
 
     expect(screen.getByRole('button', { name: /sign and close/i })).toBeDisabled();
   });
@@ -173,6 +187,10 @@ describe('ReturnedPrescriptionBasketWorkspace', () => {
             {
               concept: dtpQuestionConceptUuid,
               value: dtpAcceptedConceptUuid,
+            },
+            {
+              concept: dtpRemarkConceptUuid,
+              value: defaultDtpRemark,
             },
           ],
           orders: expect.arrayContaining([

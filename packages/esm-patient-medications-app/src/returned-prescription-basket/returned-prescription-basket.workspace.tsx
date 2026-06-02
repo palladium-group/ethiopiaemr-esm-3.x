@@ -33,7 +33,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
 }: PatientWorkspace2DefinitionProps<{}, OrderBasketWindowProps>) {
   const { t } = useTranslation();
   const { patient, patientUuid, visitContext, mutateVisitContext } = groupProps;
-  const { dtpResponse } = useConfig<ConfigObject>();
+  const { dtpResponse, dtpRemark: dtpRemarkConfig } = useConfig<ConfigObject>();
   const { orderEncounterType } = useConfig<{ orderEncounterType: string }>({
     externalModuleName: '@openmrs/esm-patient-orders-app',
   });
@@ -51,11 +51,14 @@ export default function ReturnedPrescriptionBasketWorkspace({
   );
   const selectedDtpResponseConceptUuid = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)
     ?.dtpResponseConceptUuid;
+  const selectedDtpRemark = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpRemark?.trim();
   const canSubmit = Boolean(
     windowProps.encounterUuid &&
       returnedPrescriptionOrders.length > 0 &&
       selectedDtpResponseConceptUuid &&
+      selectedDtpRemark &&
       dtpResponse.questionConceptUuid &&
+      dtpRemarkConfig.conceptUuid &&
       currentProvider?.uuid &&
       sessionLocation?.uuid,
   );
@@ -84,7 +87,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
     const encounterUuid = windowProps.encounterUuid;
     const ordererUuid = currentProvider?.uuid;
     const locationUuid = sessionLocation?.uuid;
-    if (!encounterUuid || !ordererUuid || !locationUuid || !selectedDtpResponseConceptUuid) {
+    if (!encounterUuid || !ordererUuid || !locationUuid || !selectedDtpResponseConceptUuid || !selectedDtpRemark) {
       return;
     }
 
@@ -104,6 +107,10 @@ export default function ReturnedPrescriptionBasketWorkspace({
             {
               concept: dtpResponse.questionConceptUuid,
               value: selectedDtpResponseConceptUuid,
+            },
+            {
+              concept: dtpRemarkConfig.conceptUuid,
+              value: selectedDtpRemark,
             },
           ],
           orders: returnedPrescriptionOrders.map((order) =>
@@ -132,12 +139,14 @@ export default function ReturnedPrescriptionBasketWorkspace({
     clearReturnedPrescriptionBasketItems,
     closeWorkspace,
     currentProvider?.uuid,
+    dtpRemarkConfig.conceptUuid,
     dtpResponse.questionConceptUuid,
     mutateOrders,
     mutateVisitContext,
     orderEncounterType,
     patientUuid,
     returnedPrescriptionOrders,
+    selectedDtpRemark,
     selectedDtpResponseConceptUuid,
     sessionLocation?.uuid,
     t,
@@ -159,7 +168,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
         title={t('returnedPrescriptionReview', 'Review returned prescription')}
         subtitle={t(
           'returnedPrescriptionReviewIntro',
-          'Select a DTP response first, then update orders if needed before signing and closing.',
+          'Select a DTP response, enter a remark, then update orders if needed before signing and closing.',
         )}
       />
       <DrugOrderBasketPanelExtension patient={patient} launchDrugOrderForm={launchDrugOrderForm} />

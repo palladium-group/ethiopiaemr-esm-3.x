@@ -84,6 +84,19 @@ export const configSchema = {
       _description: 'Concept UUID for the DTP response answer meaning partially accepted.',
     },
   },
+  dtpRemark: {
+    conceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Concept UUID for the encounter-level free-text DTP remark obs (Text datatype).',
+    },
+    maxLength: {
+      _type: Type.Number,
+      _default: 500,
+      _description: 'Maximum number of characters allowed in the DTP remark field.',
+      _validators: [validator((v: unknown) => typeof v === 'number' && v > 0, 'Must be greater than zero')],
+    },
+  },
 };
 
 export interface ConfigObject {
@@ -103,5 +116,9 @@ export interface ConfigObject {
     acceptedConceptUuid: string;
     rejectedConceptUuid: string;
     partiallyAcceptedConceptUuid: string;
+  };
+  dtpRemark: {
+    conceptUuid: string;
+    maxLength: number;
   };
 }

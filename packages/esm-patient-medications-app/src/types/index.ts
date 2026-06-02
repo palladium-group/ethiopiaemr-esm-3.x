@@ -6,4 +6,11 @@ export type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
   isReturnedPrescription?: boolean;
   dtpResponse?: DtpResponse;
   dtpResponseConceptUuid?: string;
+  dtpRemark?: string;
 };
+
+export function isReturnedPrescriptionBasketIncomplete(order: ReturnedPrescriptionBasketItem): boolean {
+  const hasDtpResponse = Boolean(order.dtpResponseConceptUuid || order.dtpResponse);
+  const hasRemark = Boolean(order.dtpRemark?.trim());
+  return !hasDtpResponse || !hasRemark;
+}

@@ -1,7 +1,7 @@
 import React, { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
-import { Button, Select, SelectItem, Tile } from '@carbon/react';
+import { Button, Select, SelectItem, TextArea, Tile } from '@carbon/react';
 import { AddIcon, ChevronDownIcon, ChevronUpIcon, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import {
   type OrderBasketExtensionProps,
@@ -10,7 +10,11 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import type { ConfigObject } from '../config-schema';
 import { prepMedicationOrderPostData } from '../api/api';
-import type { DtpResponse, ReturnedPrescriptionBasketItem } from '../types';
+import {
+  isReturnedPrescriptionBasketIncomplete,
+  type DtpResponse,
+  type ReturnedPrescriptionBasketItem,
+} from '../types';
 import OrderBasketItemTile from './order-basket-item-tile.component';
 import RxIcon from './rx-icon.component';
 import styles from './drug-order-basket-panel.scss';
@@ -72,7 +76,13 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
   const selectedDtpResponseValue = selectedDtpResponseConceptUuid ?? selectedDtpResponseType ?? '';
   const isDtpResponseSelected = Boolean(selectedDtpResponseConceptUuid || selectedDtpResponseType);
   const canEditReturnedOrders = canEditReturnedPrescriptionOrders(selectedDtpResponseType);
+  const selectedDtpRemark = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpRemark ?? '';
   const isDtpResponseMissing = isReturnedPrescriptionBasket && !isDtpResponseSelected;
+  const isDtpRemarkMissing = isReturnedPrescriptionBasket && !selectedDtpRemark.trim();
+  const [dtpResponseTouched, setDtpResponseTouched] = useState(false);
+  const [dtpRemarkTouched, setDtpRemarkTouched] = useState(false);
+  const showDtpResponseError = dtpResponseTouched && isDtpResponseMissing;
+  const showDtpRemarkError = dtpRemarkTouched && isDtpRemarkMissing;
   const dtpResponseHelperText = useMemo(() => {
     if (!isReturnedPrescriptionBasket) {
       return null;
@@ -154,26 +164,61 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
     }
   }, [config.orderTypeUuid, config.drugOrderTypeUUID]);
 
+  useEffect(() => {
+    if (!isReturnedPrescriptionBasket) {
+      setDtpResponseTouched(false);
+      setDtpRemarkTouched(false);
+    }
+  }, [isReturnedPrescriptionBasket]);
+
   const handleDtpResponseChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
+      setDtpResponseTouched(true);
       const selectedValue = event.target.value;
       const selectedOption = dtpResponseOptions.find(
         (option) => selectedValue === (option.conceptUuid || option.response),
       );
       setOrders(
-        orders.map((order) =>
-          (order as ReturnedPrescriptionBasketItem).isReturnedPrescription
-            ? {
-                ...order,
-                dtpResponse: selectedOption?.response,
-                dtpResponseConceptUuid: selectedOption?.conceptUuid,
-                isOrderIncomplete: !selectedOption,
-              }
-            : order,
-        ),
+        orders.map((order) => {
+          if (!(order as ReturnedPrescriptionBasketItem).isReturnedPrescription) {
+            return order;
+          }
+          const updatedOrder: ReturnedPrescriptionBasketItem = {
+            ...order,
+            dtpResponse: selectedOption?.response,
+            dtpResponseConceptUuid: selectedOption?.conceptUuid,
+          };
+          return {
+            ...updatedOrder,
+            isOrderIncomplete: isReturnedPrescriptionBasketIncomplete(updatedOrder),
+          };
+        }),
       );
     },
     [dtpResponseOptions, orders, setOrders],
+  );
+
+  const handleDtpRemarkChange = useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setDtpRemarkTouched(true);
+      const remark = event.target.value.slice(0, config.dtpRemark?.maxLength ?? 500);
+      setOrders(
+        orders.map((order) => {
+          if (!(order as ReturnedPrescriptionBasketItem).isReturnedPrescription) {
+            return order;
+          }
+          const updatedOrder: ReturnedPrescriptionBasketItem = {
+            ...order,
+            dtpRemark: remark,
+          };
+          return {
+            ...updatedOrder,
+            isOrderIncomplete: isReturnedPrescriptionBasketIncomplete(updatedOrder),
+          };
+        }),
+      );
+    },
+    [config.dtpRemark?.maxLength, orders, setOrders],
   );
 
   return (
@@ -185,7 +230,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
         <div className={styles.dtpResponseContainer}>
           <Select
             id="dtp-response"
-            invalid={isDtpResponseMissing}
+            invalid={showDtpResponseError}
             invalidText={t('dtpResponseRequired', 'DTP response is required')}
             labelText={t('dtpResponse', 'DTP response')}
             onChange={handleDtpResponseChange}
@@ -197,6 +242,20 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
             ))}
           </Select>
           {dtpResponseHelperText && <p className={styles.dtpResponseHelperText}>{dtpResponseHelperText}</p>}
+          <TextArea
+            className={styles.dtpRemark}
+            enableCounter
+            id="dtp-remark"
+            invalid={showDtpRemarkError}
+            invalidText={t('dtpRemarkRequired', 'Remark is required')}
+            labelText={t('dtpRemark', 'Remark')}
+            maxCount={config.dtpRemark?.maxLength ?? 500}
+            onBlur={() => setDtpRemarkTouched(true)}
+            onChange={handleDtpRemarkChange}
+            placeholder={t('dtpRemarkPlaceholder', 'Enter a remark for this returned prescription')}
+            rows={3}
+            value={selectedDtpRemark}
+          />
         </div>
       )}
       <div className={classNames(isTablet ? styles.tabletContainer : styles.desktopContainer)}>
