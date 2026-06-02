@@ -1,0 +1,31 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.adminTile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: layout.$spacing-03;
+  width: 100%;
+  height: 100%;
+  padding: layout.$spacing-05;
+  background: colors.$white-0;
+  border: 1px solid colors.$gray-20;
+  cursor: pointer;
+
+  &:hover {
+    background: colors.$gray-10;
+    border-color: colors.$gray-30;
+  }
+
+  .icon {
+    color: colors.$blue-60;
+  }
+
+  .label {
+    @include type.type-style('body-short-02');
+    color: colors.$gray-100;
+    text-align: left;
+  }
+}
