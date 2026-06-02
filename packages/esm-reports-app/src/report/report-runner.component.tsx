@@ -37,7 +37,7 @@ const ReportRunner: React.FC = () => {
     };
   }, [reportUuid]);
 
-  const params = reportDefinition?.parameters ?? [];
+  const params = useMemo(() => reportDefinition?.parameters ?? [], [reportDefinition]);
 
   const allFilled = useMemo(
     () => params.every((p) => paramValues[p.name] && paramValues[p.name].length > 0),
