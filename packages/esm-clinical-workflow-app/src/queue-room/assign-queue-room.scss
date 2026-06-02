@@ -1,0 +1,39 @@
+@use '@carbon/layout';
+
+// Let the room list render outside the modal scroll area (Carbon floating menus).
+.modal {
+  :global(.cds--modal-container) {
+    overflow: visible;
+  }
+
+  :global(.cds--modal-content) {
+    overflow: visible;
+  }
+}
+
+.modalBody {
+  overflow: visible;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: visible;
+  padding-bottom: layout.$spacing-07;
+}
+
+.patientName {
+  font-weight: 600;
+}
+
+.errorText {
+  color: var(--cds-support-error);
+}
+
+.roomDropdown {
+  :global(.cds--list-box__menu) {
+    z-index: 10000;
+    max-height: 14rem;
+  }
+}

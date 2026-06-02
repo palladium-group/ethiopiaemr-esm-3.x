@@ -1,0 +1,166 @@
+import React, { type ComponentProps } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Button,
+  DataTable,
+  DataTableSkeleton,
+  InlineLoading,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@carbon/react';
+import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { navigate, formatDate, parseDate, useConfig, useLayoutType, CaretRightIcon } from '@openmrs/esm-framework';
+import { type ClinicalWorkflowConfig } from '../config-schema';
+import { usePatientDiagnoses } from './diagnoses.resource';
+import styles from './recent-diagnoses-table.scss';
+
+interface RecentDiagnosesWidgetProps {
+  patientUuid?: string;
+  patient?: fhir.Patient;
+}
+
+function getDiagnosisOrderLabel(rank: number, t: (key: string, fallback: string) => string) {
+  if (rank === 1) {
+    return t('primary', 'Primary');
+  }
+  if (rank === 2) {
+    return t('secondary', 'Secondary');
+  }
+  return t('unknown', 'Unknown');
+}
+
+function getDiagnosisCertaintyLabel(certainty: string, t: (key: string, fallback: string) => string) {
+  const certaintyValue = certainty?.toUpperCase();
+  if (certaintyValue === 'PROVISIONAL' || certaintyValue === 'PRESUMED') {
+    return t('presumed', 'Presumed');
+  }
+  if (certaintyValue === 'CONFIRMED') {
+    return t('confirmed', 'Confirmed');
+  }
+  return certainty ? t(certainty.toLowerCase(), certainty) : '--';
+}
+
+const RecentDiagnosesWidget: React.FC<RecentDiagnosesWidgetProps> = ({ patientUuid, patient }) => {
+  const { t } = useTranslation();
+  const { recentDiagnosesCount } = useConfig<ClinicalWorkflowConfig>();
+  const isTablet = useLayoutType() === 'tablet';
+
+  const resolvedPatientUuid = patientUuid ?? patient?.id;
+  const { diagnoses, error, isLoading, isValidating } = usePatientDiagnoses(resolvedPatientUuid);
+
+  const headerTitle = t('recentDiagnosesWidgetTitle', 'Recent diagnoses');
+  const displayText = t('diagnosesLowercase', 'diagnoses');
+
+  const navigateToDiagnosesDashboard = () => {
+    if (!resolvedPatientUuid) {
+      return;
+    }
+    navigate({ to: `${window.spaBase}/patient/${resolvedPatientUuid}/chart/diagnoses` });
+  };
+
+  if (!resolvedPatientUuid) {
+    return (
+      <div className={styles.widgetCard}>
+        <EmptyState displayText={displayText} headerTitle={headerTitle} />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className={styles.widgetCard}>
+        <DataTableSkeleton role="progressbar" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.widgetCard}>
+        <ErrorState error={error} headerTitle={headerTitle} />
+      </div>
+    );
+  }
+
+  if (!diagnoses?.length) {
+    return (
+      <div className={styles.widgetCard}>
+        <EmptyState displayText={displayText} headerTitle={headerTitle} />
+      </div>
+    );
+  }
+
+  const visibleDiagnoses = diagnoses.slice(0, recentDiagnosesCount);
+
+  const headers = [
+    { key: 'display', header: t('diagnosis', 'Diagnosis') },
+    { key: 'date', header: t('date', 'Date') },
+    { key: 'order', header: t('order', 'Order') },
+    { key: 'certainty', header: t('certainty', 'Certainty') },
+  ];
+
+  const rows = visibleDiagnoses.map((diagnosis) => ({
+    id: diagnosis.id,
+    display: diagnosis.display ?? '--',
+    date: diagnosis.encounterDatetime ? formatDate(parseDate(diagnosis.encounterDatetime), { time: false }) : '--',
+    order: getDiagnosisOrderLabel(diagnosis.rank, t),
+    certainty: getDiagnosisCertaintyLabel(diagnosis.certainty, t),
+  }));
+
+  return (
+    <div className={styles.widgetCard}>
+      <CardHeader title={headerTitle}>
+        <span>{isValidating ? <InlineLoading /> : null}</span>
+        <Button
+          kind="ghost"
+          renderIcon={(props: ComponentProps<typeof CaretRightIcon>) => <CaretRightIcon size={16} {...props} />}
+          iconDescription={t('seeMore', 'See More')}
+          onClick={navigateToDiagnosesDashboard}>
+          {t('seeMore', 'See More')}
+        </Button>
+      </CardHeader>
+      <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'} useZebraStyles>
+        {({ rows: dataRows, headers: dataHeaders, getHeaderProps, getTableProps }) => (
+          <TableContainer>
+            <Table {...getTableProps()} aria-label={headerTitle} className={styles.table}>
+              <TableHead>
+                <TableRow>
+                  {dataHeaders.map((header) => (
+                    <TableHeader {...getHeaderProps({ header })} key={header.key}>
+                      {header.header}
+                    </TableHeader>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {dataRows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </DataTable>
+      <div className={styles.tableFooter}>
+        <span className={styles.tableFooterItemCount}>
+          {t('itemCount', '{{visible}} / {{total}} {{label}}', {
+            visible: visibleDiagnoses.length,
+            total: diagnoses.length,
+            label: visibleDiagnoses.length === 1 ? t('itemSingular', 'item') : t('itemPlural', 'items'),
+          })}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+export default RecentDiagnosesWidget;

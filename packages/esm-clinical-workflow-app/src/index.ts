@@ -16,9 +16,11 @@ import orderBasketActionButtonExtension from './patient-orders/order-basket-acti
 import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.component';
+import recentDiagnosesWidgetComponent from './patient-notes/recent-diagnoses-widget.component';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
+import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
@@ -131,6 +133,23 @@ export const queueTableTransferColumn = getAsyncLifecycle(
   options,
 );
 
+export const queueTableRoomColumn = getAsyncLifecycle(
+  () => import('./queue-room/queue-table-room-column.component'),
+  options,
+);
+
+export const queueTableActionsColumn = getAsyncLifecycle(
+  () => import('./queue-room/queue-table-actions-column.component'),
+  options,
+);
+
+export const assignQueueRoomModal = getAsyncLifecycle(() => import('./queue-room/assign-queue-room.modal'), options);
+
+export const filteredQueueTableDashboard = getAsyncLifecycle(
+  () => import('./queue-room/filtered-queue-table-dashboard.component'),
+  options,
+);
+
 export const patientTransferDetailsModal = getAsyncLifecycle(
   () => import('./patient-transfer/transfer-details.modal'),
   options,
@@ -146,8 +165,14 @@ export const startVisitActionButton = getSyncLifecycle(startVisitActionButtonCom
   moduleName,
 });
 
+export const finishServiceButton = getSyncLifecycle(FinishServiceButton, {
+  featureName: 'finish-service-button',
+  moduleName,
+});
+
 export const addPatientToWardSiderailButton = getSyncLifecycle(AddPatientToWardSiderailButton, options);
 
 export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, options);
 
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
+export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);

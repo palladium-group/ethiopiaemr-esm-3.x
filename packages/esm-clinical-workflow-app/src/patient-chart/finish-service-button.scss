@@ -1,0 +1,28 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.finishServiceLinkWrapper {
+  margin-left: layout.$spacing-03;
+  margin-right: layout.$spacing-03;
+}
+
+.finishServiceLink {
+  @include type.type-style('body-compact-01');
+
+  color: var(--cds-link-primary, #0f62fe);
+  background-color: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+
+  &:hover:not(:disabled),
+  &:focus:not(:disabled) {
+    text-decoration: none;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
