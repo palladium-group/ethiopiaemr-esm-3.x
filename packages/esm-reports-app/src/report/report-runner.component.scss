@@ -1,0 +1,44 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.container {
+  padding: layout.$spacing-05 layout.$spacing-06;
+}
+
+.title {
+  @include type.type-style('heading-04');
+  margin-bottom: layout.$spacing-02;
+}
+
+.description {
+  @include type.type-style('body-01');
+  color: var(--cds-text-secondary, #525252);
+  margin-bottom: layout.$spacing-05;
+}
+
+.formPanel {
+  padding: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.field {
+  min-width: 12rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  align-items: center;
+}
+
+.status {
+  margin-top: layout.$spacing-04;
+}

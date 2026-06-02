@@ -1,0 +1,26 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.results {
+  margin-top: layout.$spacing-05;
+}
+
+.dataset {
+  margin-bottom: layout.$spacing-06;
+}
+
+.dsTitle {
+  @include type.type-style('heading-compact-02');
+  margin-bottom: layout.$spacing-03;
+}
+
+.scroll {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.empty {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary, #525252);
+  padding: layout.$spacing-03 0;
+}

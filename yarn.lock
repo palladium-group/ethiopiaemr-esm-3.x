@@ -3724,6 +3724,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-reports-app@workspace:packages/esm-reports-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-reports-app@workspace:packages/esm-reports-app"
+  dependencies:
+    "@carbon/react": "npm:^1.83.0"
+    classnames: "npm:^2.3.2"
+    lodash-es: "npm:^4.17.15"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 11.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@parcel/watcher-android-arm64@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-android-arm64@npm:2.5.1"
