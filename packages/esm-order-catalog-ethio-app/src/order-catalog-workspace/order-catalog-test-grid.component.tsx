@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   filterPartitionedTests,
   getPanelSelectionState,
+  getStandaloneOrderablesSectionLabel,
   getVisiblePanelChildren,
   hasVisiblePartitionedTests,
   isPanelExpanded,
@@ -11,13 +12,14 @@ import {
   toggleChildSelection,
   toggleTestSelection,
 } from '../api/order-catalog.utils';
-import { type CatalogTest } from '../types/order-catalog.types';
+import { type CatalogTest, type OrderCatalogOrderType } from '../types/order-catalog.types';
 import OrderCatalogOrderButton from './order-catalog-order-button.component';
 import styles from './order-catalog-test-grid.scss';
 
 export interface OrderCatalogTestGridProps {
   /** All top-level orderables in the active category (panels + standalone tests). */
   tests: Array<CatalogTest>;
+  orderType: OrderCatalogOrderType;
   searchTerm: string;
   selectedUuids: Set<string>;
   onSelectionChange: (next: Set<string>) => void;
@@ -25,11 +27,13 @@ export interface OrderCatalogTestGridProps {
 
 const OrderCatalogTestGrid: React.FC<OrderCatalogTestGridProps> = ({
   tests,
+  orderType,
   searchTerm,
   selectedUuids,
   onSelectionChange,
 }) => {
   const { t } = useTranslation();
+  const standaloneSectionLabel = useMemo(() => getStandaloneOrderablesSectionLabel(orderType, t), [orderType, t]);
   const partition = useMemo(
     () => filterPartitionedTests(partitionCategoryTests(tests), searchTerm),
     [tests, searchTerm],
@@ -93,7 +97,7 @@ const OrderCatalogTestGrid: React.FC<OrderCatalogTestGridProps> = ({
 
       {partition.standaloneTests.length > 0 ? (
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>{t('tests', 'Tests')}</h3>
+          <h3 className={styles.sectionTitle}>{standaloneSectionLabel}</h3>
           <ul className={styles.orderList}>
             {partition.standaloneTests.map((test) => (
               <li key={test.uuid} className={styles.orderListItem}>

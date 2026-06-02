@@ -1,23 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSWRConfig } from 'swr';
 import { showSnackbar, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
-import {
-  invalidateVisitAndEncounterData,
-  type OrderBasketItem,
-  type TestOrderBasketItem,
-  postOrdersOnNewEncounter,
-  showOrderSuccessToast,
-  useMutatePatientOrders,
-  useOrderBasket,
-} from '@openmrs/esm-patient-common-lib';
+import { type TestOrderBasketItem, useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import {
   buildCatalogBasketPayload,
   collectSelectedOrdersAcrossTabs,
+  createPrepImagingOrderPostData,
+  createPrepProceduresOrderPostData,
   imagingBasketGrouping,
   mergeCatalogIntoBasket,
-  prepImagingOrderPostData,
-  prepProceduresOrderPostData,
   prepTestOrderPostData,
   proceduresBasketGrouping,
 } from '../api/order-catalog-basket';
@@ -32,21 +23,7 @@ export interface UseOrderCatalogActionsOptions {
   tabs: Array<CatalogTab> | undefined;
   selectedUuids: Set<string>;
   orderDetails: Record<string, OrderDetail>;
-  mutateVisitContext?: () => void;
   onClose?: () => void;
-}
-
-function getEarliestScheduledDate(orders: Array<OrderBasketItem>): Date | undefined {
-  const timestamps = orders
-    .map((order) => order.scheduledDate)
-    .filter((date): date is Date => date instanceof Date)
-    .map((date) => date.getTime());
-
-  if (!timestamps.length) {
-    return undefined;
-  }
-
-  return new Date(Math.min(...timestamps));
 }
 
 export function useOrderCatalogActions({
@@ -55,22 +32,25 @@ export function useOrderCatalogActions({
   tabs,
   selectedUuids,
   orderDetails,
-  mutateVisitContext,
   onClose,
 }: UseOrderCatalogActionsOptions) {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const session = useSession();
-  const { mutate: globalMutate } = useSWRConfig();
-  const { mutate: mutatePatientOrders } = useMutatePatientOrders(patient.id);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSigning, setIsSigning] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [validationErrorsByUuid, setValidationErrorsByUuid] = useState<
     Record<string, Array<OrderDetailValidationError>>
   >({});
 
   const labGrouping = config.labOrderTypeUuid;
+  const prepImagingOrderPostData = useMemo(
+    () => createPrepImagingOrderPostData(config.radiologyOrderTypeUuid, config.careSettingUuid),
+    [config.careSettingUuid, config.radiologyOrderTypeUuid],
+  );
+  const prepProceduresOrderPostData = useMemo(
+    () => createPrepProceduresOrderPostData(config.procedureOrderTypeUuid, config.careSettingUuid),
+    [config.careSettingUuid, config.procedureOrderTypeUuid],
+  );
 
   const { orders: labOrders, setOrders: setLabOrders } = useOrderBasket<TestOrderBasketItem>(
     patient,
@@ -87,7 +67,6 @@ export function useOrderCatalogActions({
     proceduresBasketGrouping,
     prepProceduresOrderPostData,
   );
-  const { clearOrders } = useOrderBasket(patient);
 
   const selectedCount = tabs ? collectSelectedOrdersAcrossTabs(tabs, selectedUuids).length : 0;
   const canActOnSelection = selectedCount > 0;
@@ -114,16 +93,13 @@ export function useOrderCatalogActions({
     return true;
   }, [orderDetails, selectedCount, selectedUuids, t, tabs]);
 
-  const syncSelectionToBasket = useCallback((): {
-    ok: boolean;
-    basketOrders?: Array<OrderBasketItem>;
-  } => {
+  const syncSelectionToBasket = useCallback((): boolean => {
     if (!tabs?.length || selectedCount === 0) {
-      return { ok: false };
+      return false;
     }
 
     if (!ensureValidSelections()) {
-      return { ok: false };
+      return false;
     }
 
     const ordererUuid = session?.currentProvider?.uuid;
@@ -133,7 +109,7 @@ export function useOrderCatalogActions({
         subtitle: t('addToBasketMissingProvider', 'No ordering provider is available for this session.'),
         kind: 'error',
       });
-      return { ok: false };
+      return false;
     }
 
     const payload = buildCatalogBasketPayload(tabs, selectedUuids, orderDetails, visit, ordererUuid);
@@ -154,10 +130,7 @@ export function useOrderCatalogActions({
       setProcedureOrders(nextProcedures);
     }
 
-    return {
-      ok: true,
-      basketOrders: [...nextLab, ...nextImaging, ...nextProcedures],
-    };
+    return true;
   }, [
     imagingOrders,
     labOrders,
@@ -175,11 +148,10 @@ export function useOrderCatalogActions({
     ensureValidSelections,
   ]);
 
-  const saveToBasket = useCallback(async () => {
-    setSubmitError(null);
+  const saveAndClose = useCallback(async () => {
     setIsSaving(true);
     try {
-      const { ok } = syncSelectionToBasket();
+      const ok = syncSelectionToBasket();
       if (!ok) {
         return false;
       }
@@ -191,95 +163,20 @@ export function useOrderCatalogActions({
         }),
         kind: 'success',
       });
+
+      onClose?.();
       return true;
     } finally {
       setIsSaving(false);
     }
-  }, [selectedCount, syncSelectionToBasket, t]);
-
-  const signAndClose = useCallback(async () => {
-    setSubmitError(null);
-    setIsSigning(true);
-
-    const abortController = new AbortController();
-
-    try {
-      const { ok, basketOrders } = syncSelectionToBasket();
-      if (!ok || !basketOrders?.length) {
-        return false;
-      }
-
-      const ordererUuid = session?.currentProvider?.uuid;
-      const locationUuid = session?.sessionLocation?.uuid;
-
-      if (!ordererUuid || !locationUuid) {
-        showSnackbar({
-          title: t('signAndCloseErrorTitle', 'Cannot sign orders'),
-          subtitle: t('signAndCloseMissingSession', 'Provider or session location is missing.'),
-          kind: 'error',
-        });
-        return false;
-      }
-
-      const encounterDate = getEarliestScheduledDate(basketOrders);
-
-      const postedEncounter = await postOrdersOnNewEncounter(
-        patient.id,
-        config.orderEncounterType,
-        visit,
-        locationUuid,
-        ordererUuid,
-        abortController,
-        encounterDate,
-      );
-
-      clearOrders();
-      mutateVisitContext?.();
-      invalidateVisitAndEncounterData(globalMutate, patient.id);
-      await mutatePatientOrders();
-
-      showOrderSuccessToast('@openmrs/esm-patient-orders-app', basketOrders);
-
-      onClose?.();
-      return Boolean(postedEncounter);
-    } catch (error: unknown) {
-      const message =
-        (error as { responseBody?: { error?: { message?: string } } })?.responseBody?.error?.message ??
-        (error instanceof Error ? error.message : t('signAndCloseGenericError', 'Failed to sign orders.'));
-      setSubmitError(message);
-      showSnackbar({
-        title: t('signAndCloseErrorTitle', 'Cannot sign orders'),
-        subtitle: message,
-        kind: 'error',
-      });
-      return false;
-    } finally {
-      setIsSigning(false);
-    }
-  }, [
-    clearOrders,
-    config.orderEncounterType,
-    globalMutate,
-    mutatePatientOrders,
-    mutateVisitContext,
-    onClose,
-    patient.id,
-    session?.currentProvider?.uuid,
-    session?.sessionLocation?.uuid,
-    syncSelectionToBasket,
-    t,
-    visit,
-  ]);
+  }, [onClose, selectedCount, syncSelectionToBasket, t]);
 
   return {
-    saveToBasket,
-    signAndClose,
+    saveAndClose,
     selectedCount,
     canActOnSelection,
     isSaving,
-    isSigning,
-    isBusy: isSaving || isSigning,
-    submitError,
+    isBusy: isSaving,
     validationErrorsByUuid,
     clearValidationErrors: () => setValidationErrorsByUuid({}),
   };

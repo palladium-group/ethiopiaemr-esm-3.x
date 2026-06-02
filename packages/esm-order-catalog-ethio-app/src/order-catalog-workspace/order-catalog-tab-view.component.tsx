@@ -104,6 +104,7 @@ const OrderCatalogTabView: React.FC<OrderCatalogTabViewProps> = ({
             ) : (
               <OrderCatalogTestGrid
                 tests={activeCategory.tests}
+                orderType={tab.orderType}
                 searchTerm={searchTerm}
                 selectedUuids={selectedUuids}
                 onSelectionChange={onSelectionChange}

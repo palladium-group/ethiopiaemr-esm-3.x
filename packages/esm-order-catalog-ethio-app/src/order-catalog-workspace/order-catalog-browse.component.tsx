@@ -14,15 +14,9 @@ export interface OrderCatalogBrowseProps {
   patient: fhir.Patient;
   visit: Visit;
   onRequestClose: () => void;
-  mutateVisitContext?: () => void;
 }
 
-const OrderCatalogBrowse: React.FC<OrderCatalogBrowseProps> = ({
-  patient,
-  visit,
-  onRequestClose,
-  mutateVisitContext,
-}) => {
+const OrderCatalogBrowse: React.FC<OrderCatalogBrowseProps> = ({ patient, visit, onRequestClose }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { tabs, error, isLoading } = useOrderCatalog(config.allOrderablesConceptUuid, config.orderCatalogDisplayLocale);
@@ -33,14 +27,11 @@ const OrderCatalogBrowse: React.FC<OrderCatalogBrowseProps> = ({
   const activeTab = tabs?.[activeTabIndex];
 
   const {
-    saveToBasket,
-    signAndClose,
+    saveAndClose,
     selectedCount,
     canActOnSelection,
     isSaving,
-    isSigning,
     isBusy,
-    submitError,
     validationErrorsByUuid,
     clearValidationErrors,
   } = useOrderCatalogActions({
@@ -49,7 +40,6 @@ const OrderCatalogBrowse: React.FC<OrderCatalogBrowseProps> = ({
     tabs,
     selectedUuids,
     orderDetails,
-    mutateVisitContext,
     onClose: onRequestClose,
   });
 
@@ -109,34 +99,19 @@ const OrderCatalogBrowse: React.FC<OrderCatalogBrowseProps> = ({
 
       {showFooter ? (
         <footer className={styles.footer}>
-          {submitError ? (
-            <p className={styles.footerError} role="alert">
-              {submitError}
-            </p>
-          ) : null}
           <ButtonSet className={styles.footerActions}>
             <Button kind="secondary" disabled={isBusy} onClick={onRequestClose}>
               {t('close', 'Close')}
             </Button>
             <Button
-              kind="tertiary"
-              disabled={!canActOnSelection || isBusy}
-              onClick={() => {
-                saveToBasket();
-              }}>
-              {isSaving
-                ? t('savingToBasket', 'Saving…')
-                : t('saveToBasket', 'Save to basket ({{count}})', { count: selectedCount })}
-            </Button>
-            <Button
               kind="primary"
               disabled={!canActOnSelection || isBusy}
               onClick={() => {
-                signAndClose();
+                saveAndClose();
               }}>
-              {isSigning
-                ? t('signingOrders', 'Signing…')
-                : t('signAndClose', 'Sign and close ({{count}})', { count: selectedCount })}
+              {isSaving
+                ? t('savingAndClosing', 'Saving…')
+                : t('saveAndClose', 'Save and close ({{count}})', { count: selectedCount })}
             </Button>
           </ButtonSet>
         </footer>

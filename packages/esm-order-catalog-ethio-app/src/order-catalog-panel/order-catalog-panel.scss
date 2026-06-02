@@ -1,16 +1,75 @@
-.panel {
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--cds-border-subtle);
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.desktopContainer {
+  background-color: colors.$gray-10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
 }
 
-.title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin: 0 0 0.25rem;
+.tabletContainer {
+  @extend .desktopContainer;
+  background-color: colors.$white-0;
 }
 
-.description {
-  font-size: 0.75rem;
-  color: var(--cds-text-secondary);
-  margin: 0 0 0.5rem;
+.tile {
+  position: relative;
+  border-left: layout.$spacing-02 solid colors.$purple-70;
+  background-color: colors.$white-0;
+  border-right: none;
+  padding: 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: colors.$purple-20;
+  }
+}
+
+.tabletTile {
+  @extend .tile;
+  border-top: 1px solid colors.$purple-20;
+}
+
+.collapsedTile {
+  border-bottom: none;
+  min-height: 0;
+}
+
+.tabletTile.collapsedTile {
+  border-bottom: 1px solid $grey-2;
+}
+
+.heading {
+  margin-left: layout.$spacing-03;
+}
+
+.iconAndLabel {
+  display: flex;
+  align-items: center;
+  margin: layout.$spacing-03;
+}
+
+.buttonContainer {
+  display: flex;
+  align-items: center;
+}
+
+.addButton {
+  svg {
+    fill: currentColor !important;
+  }
+}
+
+.chevron {
+  svg {
+    fill: black;
+  }
 }

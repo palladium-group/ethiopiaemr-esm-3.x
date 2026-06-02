@@ -2,6 +2,7 @@ import {
   collectSelectedItems,
   getConceptDisplayName,
   getPanelSelectionState,
+  getStandaloneOrderablesSectionLabel,
   getTestsForConceptClassGroup,
   inferOrderTypeFromTab,
   parseOrderCatalogCategory,
@@ -120,6 +121,13 @@ describe('order-catalog.utils', () => {
 
   it('infers order types from tab labels', () => {
     expect(inferOrderTypeFromTab({ uuid: 'a', display: 'Procedure Orders' }, 'en')).toBe('procedure');
+  });
+
+  it('uses order-type-specific standalone section labels', () => {
+    const t = (key: string, defaultValue: string) => defaultValue;
+    expect(getStandaloneOrderablesSectionLabel('lab', t)).toBe('Tests');
+    expect(getStandaloneOrderablesSectionLabel('radiology', t)).toBe('Studies');
+    expect(getStandaloneOrderablesSectionLabel('procedure', t)).toBe('Procedures');
   });
 
   it('partitions panels above standalone tests', () => {

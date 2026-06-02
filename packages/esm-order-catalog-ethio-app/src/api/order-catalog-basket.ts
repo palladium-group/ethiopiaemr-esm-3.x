@@ -25,6 +25,12 @@ export const defaultCareSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
 
 export const defaultLabOrderTypeUuid = '52a447d3-a64a-11e3-9aeb-50e549534c5e';
 
+/** Matches `@kenyaemr/esm-imaging-orders-app` orders.radiologyOrderTypeUuid default. */
+export const defaultRadiologyOrderTypeUuid = 'b4a7c280-369e-4d12-9ce8-18e36783fed6';
+
+/** Matches `@kenyaemr/esm-procedure-orders-app` procedureOrderTypeUuid default. */
+export const defaultProcedureOrderTypeUuid = 'b4a7c280-369e-4d12-9ce8-18e36783fed6';
+
 /** Default order encounter type from Ethiopia EMR distro (`esm-patient-orders-app`). */
 export const defaultOrderEncounterTypeUuid = '7df67b83-1b84-4fe2-b1b7-794b4e9bfcc3';
 
@@ -270,47 +276,53 @@ function resolveImagingScheduledDate(order: ImagingOrderBasketItem): string | un
   return order.scheduleDate;
 }
 
-export const prepImagingOrderPostData: PostDataPrepFunction = (
-  order: ImagingOrderBasketItem,
-  patientUuid,
-  encounterUuid,
-  _orderingProviderUuid,
-): ImagingOrderPost => {
-  const basePayload = {
-    type: 'procedureorder' as const,
-    patient: patientUuid,
-    careSetting: order.careSetting ?? defaultCareSettingUuid,
-    orderer: order.orderer ?? _orderingProviderUuid,
-    encounter: encounterUuid ?? undefined,
-    concept: order.testType?.conceptUuid,
-    orderReason: order.orderReason,
-    orderReasonNonCoded: order.orderReasonNonCoded,
-    commentToFulfiller: order.commentsToFulfiller,
-    laterality: order.laterality,
-    bodySite: order.bodySite,
-    scheduledDate: resolveImagingScheduledDate(order),
-  };
-
-  if (order.action === 'NEW' || order.action === 'RENEW') {
-    return {
-      ...basePayload,
-      action: 'NEW',
-      careSetting: defaultCareSettingUuid,
-      instructions: order.instructions,
-      urgency: order.urgency,
+export function createPrepImagingOrderPostData(
+  radiologyOrderTypeUuid: string,
+  careSettingUuid: string,
+): PostDataPrepFunction {
+  return (order: ImagingOrderBasketItem, patientUuid, encounterUuid, _orderingProviderUuid): ImagingOrderPost => {
+    const basePayload = {
+      type: 'procedureorder' as const,
+      orderType: radiologyOrderTypeUuid,
+      patient: patientUuid,
+      careSetting: order.careSetting ?? careSettingUuid,
+      orderer: order.orderer ?? _orderingProviderUuid,
+      encounter: encounterUuid ?? undefined,
+      concept: order.testType?.conceptUuid,
+      orderReason: order.orderReason,
+      orderReasonNonCoded: order.orderReasonNonCoded,
+      commentToFulfiller: order.commentsToFulfiller,
+      laterality: order.laterality,
+      bodySite: order.bodySite,
+      scheduledDate: resolveImagingScheduledDate(order),
     };
-  }
 
-  if (order.action === 'REVISE') {
-    return { ...basePayload, action: 'REVISE', instructions: order.instructions };
-  }
+    if (order.action === 'NEW' || order.action === 'RENEW') {
+      return {
+        ...basePayload,
+        action: 'NEW',
+        careSetting: careSettingUuid,
+        instructions: order.instructions,
+        urgency: order.urgency,
+      };
+    }
 
-  if (order.action === 'DISCONTINUE') {
-    return { ...basePayload, action: 'DISCONTINUE' };
-  }
+    if (order.action === 'REVISE') {
+      return { ...basePayload, action: 'REVISE', instructions: order.instructions };
+    }
 
-  throw new Error(`Unknown order action: ${order.action}.`);
-};
+    if (order.action === 'DISCONTINUE') {
+      return { ...basePayload, action: 'DISCONTINUE' };
+    }
+
+    throw new Error(`Unknown order action: ${order.action}.`);
+  };
+}
+
+export const prepImagingOrderPostData = createPrepImagingOrderPostData(
+  defaultRadiologyOrderTypeUuid,
+  defaultCareSettingUuid,
+);
 
 function resolveProcedureScheduledDate(order: ProcedureOrderBasketItem): string | undefined {
   if (order.urgency !== 'ON_SCHEDULED_DATE') {
@@ -322,80 +334,81 @@ function resolveProcedureScheduledDate(order: ProcedureOrderBasketItem): string 
   return order.scheduleDate;
 }
 
-export const prepProceduresOrderPostData: PostDataPrepFunction = (
-  order: ProcedureOrderBasketItem,
-  patientUuid,
-  encounterUuid,
-  orderingProviderUuid,
-): ProcedureOrderPost => {
-  const scheduledDate = resolveProcedureScheduledDate(order);
+export function createPrepProceduresOrderPostData(
+  procedureOrderTypeUuid: string,
+  careSettingUuid: string,
+): PostDataPrepFunction {
+  return (order: ProcedureOrderBasketItem, patientUuid, encounterUuid, orderingProviderUuid): ProcedureOrderPost => {
+    const scheduledDate = resolveProcedureScheduledDate(order);
 
-  if (order.action === 'NEW' || order.action === 'RENEW') {
-    return {
-      action: 'NEW',
-      type: 'procedureorder',
-      patient: patientUuid,
-      careSetting: defaultCareSettingUuid,
-      orderer: order.orderer ?? orderingProviderUuid,
-      encounter: encounterUuid,
-      concept: order.testType.conceptUuid,
-      frequency: order.frequency,
-      numberOfRepeats: order.numberOfRepeats,
-      urgency: order.urgency,
-      commentToFulfiller: order.commentsToFulfiller,
-      instructions: order.instructions,
-      orderReason: order.orderReason,
-      orderReasonNonCoded: order.orderReasonNonCoded,
+    const sharedProcedureFields = {
+      orderType: procedureOrderTypeUuid,
+      laterality: order.laterality,
       bodySite: order.bodySite,
       category: order.category,
-      scheduledDate,
-    };
-  }
-
-  if (order.action === 'REVISE') {
-    return {
-      action: 'REVISE',
-      type: 'procedureorder',
-      patient: patientUuid,
-      careSetting: order.careSetting ?? defaultCareSettingUuid,
-      orderer: order.orderer ?? orderingProviderUuid,
-      encounter: encounterUuid,
-      concept: order.testType.conceptUuid,
       frequency: order.frequency,
       numberOfRepeats: order.numberOfRepeats,
-      urgency: order.urgency,
       commentToFulfiller: order.commentsToFulfiller,
-      instructions: order.instructions,
-      orderReason: order.orderReason,
       orderReasonNonCoded: order.orderReasonNonCoded,
-      bodySite: order.bodySite,
-      category: order.category,
       scheduledDate,
     };
-  }
 
-  if (order.action === 'DISCONTINUE') {
-    return {
-      action: 'DISCONTINUE',
-      type: 'procedureorder',
-      patient: patientUuid,
-      careSetting: order.careSetting ?? defaultCareSettingUuid,
-      orderer: order.orderer ?? orderingProviderUuid,
-      encounter: encounterUuid,
-      concept: order.testType.conceptUuid,
-      frequency: order.frequency,
-      numberOfRepeats: order.numberOfRepeats,
-      urgency: order.urgency,
-      commentToFulfiller: order.commentsToFulfiller,
-      orderReason: order.orderReason,
-      orderReasonNonCoded: order.orderReasonNonCoded,
-      previousOrder: order.previousOrder,
-      scheduledDate,
-    };
-  }
+    if (order.action === 'NEW' || order.action === 'RENEW') {
+      return {
+        action: 'NEW',
+        type: 'procedureorder',
+        patient: patientUuid,
+        careSetting: careSettingUuid,
+        orderer: order.orderer ?? orderingProviderUuid,
+        encounter: encounterUuid,
+        concept: order.testType.conceptUuid,
+        urgency: order.urgency,
+        instructions: order.instructions,
+        orderReason: order.orderReason,
+        ...sharedProcedureFields,
+      };
+    }
 
-  throw new Error(`Unknown order action: ${order.action}.`);
-};
+    if (order.action === 'REVISE') {
+      return {
+        action: 'REVISE',
+        type: 'procedureorder',
+        patient: patientUuid,
+        careSetting: order.careSetting ?? careSettingUuid,
+        orderer: order.orderer ?? orderingProviderUuid,
+        encounter: encounterUuid,
+        concept: order.testType.conceptUuid,
+        urgency: order.urgency,
+        instructions: order.instructions,
+        orderReason: order.orderReason,
+        ...sharedProcedureFields,
+      };
+    }
+
+    if (order.action === 'DISCONTINUE') {
+      return {
+        action: 'DISCONTINUE',
+        type: 'procedureorder',
+        patient: patientUuid,
+        careSetting: order.careSetting ?? careSettingUuid,
+        orderer: order.orderer ?? orderingProviderUuid,
+        encounter: encounterUuid,
+        concept: order.testType.conceptUuid,
+        urgency: order.urgency,
+        orderReason: order.orderReason,
+        previousOrder: order.previousOrder,
+        ...sharedProcedureFields,
+      };
+    }
+
+    throw new Error(`Unknown order action: ${order.action}.`);
+  };
+}
+
+export const prepProceduresOrderPostData = createPrepProceduresOrderPostData(
+  defaultProcedureOrderTypeUuid,
+  defaultCareSettingUuid,
+);
 
 export function mergeCatalogIntoBasket<T extends { testType: { conceptUuid: string } }>(
   existing: Array<T>,

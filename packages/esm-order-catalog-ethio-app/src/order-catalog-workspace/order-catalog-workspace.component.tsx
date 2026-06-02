@@ -24,7 +24,6 @@ const OrderCatalogWorkspace: React.FC<OrderCatalogWorkspaceProps> = ({ groupProp
         <OrderCatalogBrowse
           patient={groupProps.patient}
           visit={groupProps.visitContext}
-          mutateVisitContext={groupProps.mutateVisitContext}
           onRequestClose={() => {
             closeWorkspace({ closeWindow: true });
           }}

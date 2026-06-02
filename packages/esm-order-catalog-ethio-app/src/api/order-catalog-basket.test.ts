@@ -41,4 +41,42 @@ describe('order-catalog-basket', () => {
     const lines = collectSelectedOrdersAcrossTabs(tabs, new Set(['glucose-uuid']));
     expect(lines[0].orderType).toBe('lab');
   });
+
+  it('places radiology selections in the imaging basket', () => {
+    const radiologyTabs: Array<CatalogTab> = [
+      {
+        uuid: 'rad-tab',
+        displayName: 'Radiology',
+        orderType: 'radiology',
+        categories: [
+          {
+            uuid: 'xray',
+            displayName: 'X-Ray',
+            tests: [
+              {
+                uuid: 'cxr-uuid',
+                displayName: 'Chest X-Ray',
+                conceptClassName: 'Test',
+                conceptClassDescription: 'Test',
+                isPanel: false,
+                childTests: [],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const payload = buildCatalogBasketPayload(
+      radiologyTabs,
+      new Set(['cxr-uuid']),
+      { 'cxr-uuid': { urgency: 'ROUTINE', orderReasonNonCoded: 'clinical indication' } },
+      mockVisit,
+      'provider-uuid',
+    );
+
+    expect(payload.imaging).toHaveLength(1);
+    expect(payload.imaging[0].testType.conceptUuid).toBe('cxr-uuid');
+    expect(payload.procedures).toHaveLength(0);
+  });
 });

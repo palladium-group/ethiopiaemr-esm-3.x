@@ -43,6 +43,7 @@ export interface ProcedureOrderBasketItem extends OrderBasketItem {
 }
 
 export interface ImagingOrderPost extends OrderPost {
+  orderType?: string;
   scheduledDate?: string;
   commentToFulfiller?: string;
   laterality?: string;
@@ -50,6 +51,7 @@ export interface ImagingOrderPost extends OrderPost {
 }
 
 export interface ProcedureOrderPost extends OrderPost {
+  orderType?: string;
   scheduledDate?: string;
   commentToFulfiller?: string;
   numberOfRepeats?: string;

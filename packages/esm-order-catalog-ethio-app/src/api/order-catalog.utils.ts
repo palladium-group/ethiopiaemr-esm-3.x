@@ -81,6 +81,21 @@ export function inferOrderTypeFromTab(tabConcept: CatalogConceptResponse, locale
   return 'lab';
 }
 
+/** Section heading for non-panel orderables in the browse grid (varies by tab order type). */
+export function getStandaloneOrderablesSectionLabel(
+  orderType: OrderCatalogOrderType,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  switch (orderType) {
+    case 'radiology':
+      return t('standaloneRadiologyOrderables', 'Studies');
+    case 'procedure':
+      return t('standaloneProcedureOrderables', 'Procedures');
+    default:
+      return t('standaloneLabOrderables', 'Tests');
+  }
+}
+
 function mapTest(concept: CatalogConceptResponse, locale: string): CatalogTest {
   const childMembers = concept.setMembers ?? [];
   return {
