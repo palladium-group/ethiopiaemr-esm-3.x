@@ -40,6 +40,7 @@ export async function downloadReportDesign(
   reportUuid: string,
   designUuid: string,
   params: Record<string, string>,
+  signal?: AbortSignal,
 ): Promise<void> {
   const body = {
     status: 'REQUESTED',
@@ -54,24 +55,27 @@ export async function downloadReportDesign(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body,
+    signal,
   });
   const requestUuid = queued.data?.uuid;
   if (!requestUuid) {
     throw new Error('Report request was not accepted by the server.');
   }
 
-  await pollUntilComplete(requestUuid);
+  await pollUntilComplete(requestUuid, signal);
 
   const downloaded = await openmrsFetch<{ fileContent: string; contentType?: string; filename?: string }>(
     `${DOWNLOAD_URL}?reportRequestUuid=${encodeURIComponent(requestUuid)}`,
+    { signal },
   );
   const { fileContent, contentType, filename } = downloaded.data;
   saveBlob(base64ToBytes(fileContent), contentType || 'application/octet-stream', filename || 'report.xls');
 }
 
-async function pollUntilComplete(requestUuid: string): Promise<void> {
+async function pollUntilComplete(requestUuid: string, signal?: AbortSignal): Promise<void> {
   for (let attempt = 0; attempt <= 60; attempt++) {
-    const response = await openmrsFetch<{ status: string }>(`${REQUEST_URL}/${requestUuid}?v=default`);
+    signal?.throwIfAborted();
+    const response = await openmrsFetch<{ status: string }>(`${REQUEST_URL}/${requestUuid}?v=default`, { signal });
     const status = response.data?.status;
     if (status === 'COMPLETED') {
       return;

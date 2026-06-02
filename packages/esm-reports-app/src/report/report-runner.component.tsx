@@ -1,7 +1,15 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { Button, DatePicker, DatePickerInput, InlineLoading, InlineNotification, Layer } from '@carbon/react';
+import {
+  Button,
+  DatePicker,
+  DatePickerInput,
+  InlineLoading,
+  InlineNotification,
+  Layer,
+  TextInput,
+} from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { type EthiopiaReportsConfig } from '../config-schema';
 import { useReportDefinition } from '../api/reports.resource';
@@ -20,6 +28,14 @@ const ReportRunner: React.FC = () => {
   const [running, setRunning] = useState(false);
   const [downloadingUuid, setDownloadingUuid] = useState<string | null>(null);
   const [status, setStatus] = useState<{ text: string; kind: 'success' | 'error' } | null>(null);
+  const downloadAbortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight download poll when the component unmounts or the report changes.
+  useEffect(() => {
+    return () => {
+      downloadAbortRef.current?.abort();
+    };
+  }, [reportUuid]);
 
   const params = reportDefinition?.parameters ?? [];
 
@@ -59,12 +75,18 @@ const ReportRunner: React.FC = () => {
         setStatus({ text: t('fillAllFields', 'Please fill in all required fields.'), kind: 'error' });
         return;
       }
+      downloadAbortRef.current?.abort();
+      const controller = new AbortController();
+      downloadAbortRef.current = controller;
       setDownloadingUuid(designUuid);
       setStatus({ text: t('generatingDownload', 'Generating download, please wait…'), kind: 'success' });
       try {
-        await downloadReportDesign(reportUuid, designUuid, paramValues);
+        await downloadReportDesign(reportUuid, designUuid, paramValues, controller.signal);
         setStatus({ text: t('downloadReady', 'Download ready.'), kind: 'success' });
       } catch (e) {
+        if ((e as Error)?.name === 'AbortError') {
+          return;
+        }
         setStatus({ text: (e as Error)?.message ?? t('downloadFailed', 'Download failed.'), kind: 'error' });
       } finally {
         setDownloadingUuid(null);
@@ -102,37 +124,48 @@ const ReportRunner: React.FC = () => {
 
       <Layer className={styles.formPanel}>
         <div className={styles.fields}>
-          {params.map((param) => (
-            <DatePicker
-              key={param.name}
-              datePickerType="single"
-              dateFormat="Y-m-d"
-              className={styles.field}
-              onChange={(dates: Array<Date>) => {
-                // Carbon's single DatePicker fires onChange with an empty array when it
-                // closes without a (re)selection — e.g. when focus moves to the other
-                // date field. Treat that as "no change" so it doesn't clobber a value the
-                // user already picked. An explicit clear is handled via the input's
-                // onChange below.
-                const d = dates?.[0];
-                if (d) {
-                  setParam(param.name, formatIsoDate(d));
-                }
-              }}>
-              <DatePickerInput
+          {params.map((param) =>
+            param.type === 'date' ? (
+              <DatePicker
+                key={param.name}
+                datePickerType="single"
+                dateFormat="Y-m-d"
+                className={styles.field}
+                onChange={(dates: Array<Date>) => {
+                  // Carbon's single DatePicker fires onChange with an empty array when it
+                  // closes without a (re)selection — e.g. when focus moves to the other
+                  // date field. Treat that as "no change" so it doesn't clobber a value the
+                  // user already picked. An explicit clear is handled via the input's
+                  // onChange below.
+                  const d = dates?.[0];
+                  if (d) {
+                    setParam(param.name, formatIsoDate(d));
+                  }
+                }}>
+                <DatePickerInput
+                  id={`param-${param.name}`}
+                  labelText={param.label}
+                  placeholder="yyyy-mm-dd"
+                  size="md"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    if (!e.target.value) {
+                      setParam(param.name, '');
+                    }
+                  }}
+                />
+              </DatePicker>
+            ) : (
+              <TextInput
+                key={param.name}
                 id={`param-${param.name}`}
                 labelText={param.label}
-                placeholder="yyyy-mm-dd"
                 size="md"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  // Keep state in sync when the field is cleared manually.
-                  if (!e.target.value) {
-                    setParam(param.name, '');
-                  }
-                }}
+                className={styles.field}
+                value={paramValues[param.name] ?? ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setParam(param.name, e.target.value)}
               />
-            </DatePicker>
-          ))}
+            ),
+          )}
         </div>
 
         <div className={styles.actions}>
