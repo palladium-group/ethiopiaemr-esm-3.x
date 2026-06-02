@@ -11,7 +11,7 @@ interface NavTileLinkProps {
 
 const NavTileLink: React.FC<NavTileLinkProps> = ({ hideOverlay, icon, label, to }) => {
   const handleClick = () => {
-    hideOverlay?.(false);
+    hideOverlay(false);
     navigate({ to });
   };
 

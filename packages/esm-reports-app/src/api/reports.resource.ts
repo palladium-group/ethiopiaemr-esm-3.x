@@ -30,6 +30,8 @@ export interface ReportDefinition {
   designs: Array<ReportDesign>;
 }
 
+// These are legacy module fragment actions served directly by the servlet container,
+// not REST resources — intentionally omitting restBaseUrl. The proxy must allow these paths.
 const GROUPED_REPORTS_URL = '/ethiopiaemrreports/report/reportUtils/getGroupedReports.action';
 const REPORT_DETAILS_URL = '/ethiopiaemrreports/report/reportUtils/getReportDetails.action';
 

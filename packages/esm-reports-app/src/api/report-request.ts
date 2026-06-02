@@ -15,7 +15,9 @@ export async function runReport(reportUuid: string, params: Record<string, strin
     .join('&');
   const url = `${restBaseUrl}/reportingrest/reportdata/${reportUuid}${query ? `?${query}` : ''}`;
 
-  const response = await openmrsFetch<{ dataSets?: Array<any> }>(url);
+  const response = await openmrsFetch<{
+    dataSets?: Array<{ definition?: { name?: string }; rows?: Array<Record<string, unknown>> }>;
+  }>(url);
   const dataSets = response.data?.dataSets ?? [];
   return dataSets.map((ds) => ({
     name: ds?.definition?.name ?? 'Dataset',
@@ -51,6 +53,7 @@ export async function downloadReportDesign(
     renderingMode: { argument: designUuid },
   };
 
+  // openmrsFetch serialises plain objects to JSON when Content-Type is application/json.
   const queued = await openmrsFetch<{ uuid: string }>(REQUEST_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -72,8 +75,12 @@ export async function downloadReportDesign(
   saveBlob(base64ToBytes(fileContent), contentType || 'application/octet-stream', filename || 'report.xls');
 }
 
+const POLL_MAX_ATTEMPTS = 30;
+const POLL_BASE_DELAY_MS = 2000;
+const POLL_MAX_DELAY_MS = 30000;
+
 async function pollUntilComplete(requestUuid: string, signal?: AbortSignal): Promise<void> {
-  for (let attempt = 0; attempt <= 60; attempt++) {
+  for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
     signal?.throwIfAborted();
     const response = await openmrsFetch<{ status: string }>(`${REQUEST_URL}/${requestUuid}?v=default`, { signal });
     const status = response.data?.status;
@@ -83,9 +90,10 @@ async function pollUntilComplete(requestUuid: string, signal?: AbortSignal): Pro
     if (status === 'FAILED') {
       throw new Error('Report evaluation failed on the server.');
     }
-    await delay(1000);
+    const backoff = Math.min(POLL_BASE_DELAY_MS * 2 ** attempt, POLL_MAX_DELAY_MS);
+    await delay(backoff);
   }
-  throw new Error('Report timed out.');
+  throw new Error('Report timed out after waiting too long for the server.');
 }
 
 function base64ToBytes(b64: string): Uint8Array {

@@ -60,7 +60,11 @@ const ReportResults: React.FC<ReportResultsProps> = ({ reportUuid, dataSets, col
         return (
           <div key={`${ds.name}-${idx}`} className={styles.dataset}>
             <h4 className={styles.dsTitle}>{ds.name}</h4>
-            <DataTable rows={tableRows as any} headers={headers} size="sm" useZebraStyles>
+            <DataTable
+              rows={tableRows as Array<{ id: string } & Record<string, string>>}
+              headers={headers}
+              size="sm"
+              useZebraStyles>
               {({ rows, headers: hdrs, getHeaderProps, getTableProps }) => (
                 <TableContainer>
                   <div className={styles.scroll}>

@@ -223,7 +223,7 @@
   "unknown": "Unknown",
   "unknownError": "An unknown error occurred",
   "visitDate": "Visit date",
-  "visitMainDiagnosisAlreadyExists": "",
+  "visitMainDiagnosisAlreadyExists": "A main diagnosis is already recorded on this visit. Only one main diagnosis is allowed per visit.",
   "visitNote": "Visit note",
   "visitNoteNowVisible": "It is now visible on the Visits page",
   "visitNoteSaved": "Visit note saved",
