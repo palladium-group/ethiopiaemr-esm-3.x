@@ -87,7 +87,7 @@ export const configSchema = {
   dtpRemark: {
     conceptUuid: {
       _type: Type.ConceptUuid,
-      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'c4e8f1a2-6d3b-4f7e-9a2c-1b5d8e7f3a6c',
       _description: 'Concept UUID for the encounter-level free-text DTP remark obs (Text datatype).',
     },
     maxLength: {
