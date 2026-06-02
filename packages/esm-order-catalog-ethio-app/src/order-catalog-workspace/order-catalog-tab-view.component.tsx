@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from '@carbon/react';
 import { filterPartitionedTests, hasVisiblePartitionedTests, partitionCategoryTests } from '../api/order-catalog.utils';
+import { type OrderDetailValidationError } from '../api/order-catalog-validation';
 import { type CatalogTab, type OrderDetail } from '../types/order-catalog.types';
 import OrderCatalogSelectedList from './order-catalog-selected-list.component';
 import OrderCatalogTestGrid from './order-catalog-test-grid.component';
@@ -14,6 +15,7 @@ export interface OrderCatalogTabViewProps {
   orderDetails: Record<string, OrderDetail>;
   onDetailsChange: (uuid: string, detail: OrderDetail) => void;
   onRemoveDetail: (uuid: string) => void;
+  validationErrorsByUuid?: Record<string, Array<OrderDetailValidationError>>;
 }
 
 const OrderCatalogTabView: React.FC<OrderCatalogTabViewProps> = ({
@@ -23,15 +25,17 @@ const OrderCatalogTabView: React.FC<OrderCatalogTabViewProps> = ({
   orderDetails,
   onDetailsChange,
   onRemoveDetail,
+  validationErrorsByUuid,
 }) => {
   const { t } = useTranslation();
-  const [activeCategoryUuid, setActiveCategoryUuid] = useState<string | null>(() => tab.categories[0]?.uuid ?? null);
+  const defaultCategoryUuid = tab.categories[0]?.uuid ?? null;
+  const [activeCategoryUuid, setActiveCategoryUuid] = useState<string | null>(() => defaultCategoryUuid);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    setActiveCategoryUuid(tab.categories[0]?.uuid ?? null);
+    setActiveCategoryUuid(defaultCategoryUuid);
     setSearchTerm('');
-  }, [tab.uuid]);
+  }, [tab.uuid, defaultCategoryUuid]);
 
   const activeCategory = useMemo(
     () => tab.categories.find((category) => category.uuid === activeCategoryUuid),
@@ -76,6 +80,7 @@ const OrderCatalogTabView: React.FC<OrderCatalogTabViewProps> = ({
             orderDetails={orderDetails}
             onDetailsChange={onDetailsChange}
             onRemoveDetail={onRemoveDetail}
+            validationErrorsByUuid={validationErrorsByUuid}
           />
         </aside>
 

@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, Close } from '@carbon/react/icons';
 import classNames from 'classnames';
 import { collectSelectedItems, togglePanelSelection, toggleTestSelection } from '../api/order-catalog.utils';
+import { type OrderDetailValidationError } from '../api/order-catalog-validation';
 import { type CatalogTab, type CatalogTest, type OrderDetail } from '../types/order-catalog.types';
 import OrderCatalogOrderDetailForm from './order-catalog-order-detail-form.component';
 import styles from './order-catalog-selected-list.scss';
@@ -14,6 +15,7 @@ export interface OrderCatalogSelectedListProps {
   orderDetails: Record<string, OrderDetail>;
   onDetailsChange: (uuid: string, detail: OrderDetail) => void;
   onRemoveDetail: (uuid: string) => void;
+  validationErrorsByUuid?: Record<string, Array<OrderDetailValidationError>>;
 }
 
 function findTestByUuid(tab: CatalogTab, uuid: string): { test: CatalogTest; panel?: CatalogTest } | undefined {
@@ -40,10 +42,25 @@ const OrderCatalogSelectedList: React.FC<OrderCatalogSelectedListProps> = ({
   orderDetails,
   onDetailsChange,
   onRemoveDetail,
+  validationErrorsByUuid = {},
 }) => {
   const { t } = useTranslation();
   const items = useMemo(() => collectSelectedItems(tab, selectedUuids), [tab, selectedUuids]);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    const invalidUuids = Object.keys(validationErrorsByUuid);
+    if (!invalidUuids.length) {
+      return;
+    }
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      for (const uuid of invalidUuids) {
+        next.add(uuid);
+      }
+      return next;
+    });
+  }, [validationErrorsByUuid]);
 
   const toggleExpanded = (uuid: string) => {
     setExpanded((prev) => {
@@ -90,8 +107,12 @@ const OrderCatalogSelectedList: React.FC<OrderCatalogSelectedListProps> = ({
           <ul className={styles.selectedList}>
             {items.map((item) => {
               const isExpanded = expanded.has(item.uuid);
+              const itemErrors = validationErrorsByUuid[item.uuid];
+              const hasErrors = Boolean(itemErrors?.length);
               return (
-                <li key={item.uuid} className={styles.selectedItem}>
+                <li
+                  key={item.uuid}
+                  className={classNames(styles.selectedItem, { [styles.selectedItemInvalid]: hasErrors })}>
                   <div className={styles.itemHeader}>
                     <button
                       type="button"
@@ -117,6 +138,7 @@ const OrderCatalogSelectedList: React.FC<OrderCatalogSelectedListProps> = ({
                       idPrefix={`order-detail-${item.uuid}`}
                       orderType={tab.orderType}
                       value={orderDetails[item.uuid]}
+                      validationErrors={itemErrors}
                       onChange={(detail) => onDetailsChange(item.uuid, detail)}
                     />
                   ) : null}

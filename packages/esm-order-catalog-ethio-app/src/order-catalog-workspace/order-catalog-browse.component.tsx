@@ -1,15 +1,28 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SkeletonText, Tab, TabList, Tabs } from '@carbon/react';
-import { useConfig } from '@openmrs/esm-framework';
+import { Button, ButtonSet, SkeletonText, Tab, TabList, Tabs } from '@carbon/react';
+import { useConfig, type Visit } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import { useOrderCatalog } from '../api/order-catalog.resource';
 import { type ConfigObject } from '../config-schema';
 import { type OrderDetail } from '../types/order-catalog.types';
 import OrderCatalogTabView from './order-catalog-tab-view.component';
+import { useOrderCatalogActions } from './use-order-catalog-actions';
 import styles from './order-catalog-browse.scss';
 
-const OrderCatalogBrowse: React.FC = () => {
+export interface OrderCatalogBrowseProps {
+  patient: fhir.Patient;
+  visit: Visit;
+  onRequestClose: () => void;
+  mutateVisitContext?: () => void;
+}
+
+const OrderCatalogBrowse: React.FC<OrderCatalogBrowseProps> = ({
+  patient,
+  visit,
+  onRequestClose,
+  mutateVisitContext,
+}) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { tabs, error, isLoading } = useOrderCatalog(config.allOrderablesConceptUuid, config.orderCatalogDisplayLocale);
@@ -17,8 +30,33 @@ const OrderCatalogBrowse: React.FC = () => {
   const [selectedUuids, setSelectedUuids] = useState<Set<string>>(() => new Set());
   const [orderDetails, setOrderDetails] = useState<Record<string, OrderDetail>>({});
 
-  const handleDetailsChange = (uuid: string, detail: OrderDetail) =>
+  const activeTab = tabs?.[activeTabIndex];
+
+  const {
+    saveToBasket,
+    signAndClose,
+    selectedCount,
+    canActOnSelection,
+    isSaving,
+    isSigning,
+    isBusy,
+    submitError,
+    validationErrorsByUuid,
+    clearValidationErrors,
+  } = useOrderCatalogActions({
+    patient,
+    visit,
+    tabs,
+    selectedUuids,
+    orderDetails,
+    mutateVisitContext,
+    onClose: onRequestClose,
+  });
+
+  const handleDetailsChange = (uuid: string, detail: OrderDetail) => {
+    clearValidationErrors();
     setOrderDetails((prev) => ({ ...prev, [uuid]: detail }));
+  };
 
   const handleRemoveDetail = (uuid: string) =>
     setOrderDetails((prev) => {
@@ -30,7 +68,7 @@ const OrderCatalogBrowse: React.FC = () => {
       return next;
     });
 
-  const activeTab = tabs?.[activeTabIndex];
+  const showFooter = !isLoading && !error && Boolean(tabs?.length);
 
   return (
     <div className={styles.browse}>
@@ -62,11 +100,47 @@ const OrderCatalogBrowse: React.FC = () => {
             orderDetails={orderDetails}
             onDetailsChange={handleDetailsChange}
             onRemoveDetail={handleRemoveDetail}
+            validationErrorsByUuid={validationErrorsByUuid}
           />
         ) : isLoading ? (
           <SkeletonText paragraph lineCount={8} />
         ) : null}
       </div>
+
+      {showFooter ? (
+        <footer className={styles.footer}>
+          {submitError ? (
+            <p className={styles.footerError} role="alert">
+              {submitError}
+            </p>
+          ) : null}
+          <ButtonSet className={styles.footerActions}>
+            <Button kind="secondary" disabled={isBusy} onClick={onRequestClose}>
+              {t('close', 'Close')}
+            </Button>
+            <Button
+              kind="tertiary"
+              disabled={!canActOnSelection || isBusy}
+              onClick={() => {
+                saveToBasket();
+              }}>
+              {isSaving
+                ? t('savingToBasket', 'Saving…')
+                : t('saveToBasket', 'Save to basket ({{count}})', { count: selectedCount })}
+            </Button>
+            <Button
+              kind="primary"
+              disabled={!canActOnSelection || isBusy}
+              onClick={() => {
+                signAndClose();
+              }}>
+              {isSigning
+                ? t('signingOrders', 'Signing…')
+                : t('signAndClose', 'Sign and close ({{count}})', { count: selectedCount })}
+            </Button>
+          </ButtonSet>
+        </footer>
+      ) : null}
     </div>
   );
 };

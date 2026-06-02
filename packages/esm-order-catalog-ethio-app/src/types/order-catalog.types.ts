@@ -58,6 +58,14 @@ export interface CatalogTab extends CatalogTabStub {
   categories: Array<CatalogCategory>;
 }
 
+/** Selected catalog row with the tab order type used for forms and basket routing. */
+export interface CatalogSelectedOrderLine {
+  uuid: string;
+  displayName: string;
+  isPanel: boolean;
+  orderType: OrderCatalogOrderType;
+}
+
 /** Raw concept shape returned by the OpenMRS REST custom representation. */
 export interface CatalogConceptResponse {
   uuid: string;

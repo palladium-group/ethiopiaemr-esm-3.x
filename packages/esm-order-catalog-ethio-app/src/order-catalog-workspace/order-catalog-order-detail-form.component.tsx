@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DatePicker, DatePickerInput, NumberInput, Select, SelectItem, TextArea, TextInput } from '@carbon/react';
+import { type OrderDetailValidationError } from '../api/order-catalog-validation';
 import {
   createDefaultOrderDetail,
   type OrderCatalogOrderType,
@@ -16,6 +17,14 @@ export interface OrderCatalogOrderDetailFormProps {
   orderType: OrderCatalogOrderType;
   value: OrderDetail | undefined;
   onChange: (next: OrderDetail) => void;
+  validationErrors?: Array<OrderDetailValidationError>;
+}
+
+function hasFieldError(
+  errors: Array<OrderDetailValidationError> | undefined,
+  field: OrderDetailValidationError['field'],
+): boolean {
+  return Boolean(errors?.some((error) => error.field === field));
 }
 
 const OrderCatalogOrderDetailForm: React.FC<OrderCatalogOrderDetailFormProps> = ({
@@ -23,6 +32,7 @@ const OrderCatalogOrderDetailForm: React.FC<OrderCatalogOrderDetailFormProps> = 
   orderType,
   value,
   onChange,
+  validationErrors,
 }) => {
   const { t } = useTranslation();
   const detail = value ?? createDefaultOrderDetail();
@@ -43,6 +53,7 @@ const OrderCatalogOrderDetailForm: React.FC<OrderCatalogOrderDetailFormProps> = 
 
   const showReason = orderType === 'radiology' || orderType === 'procedure';
   const showComments = orderType === 'radiology' || orderType === 'procedure';
+  const reasonRequired = showReason;
 
   return (
     <div className={styles.form}>
@@ -51,6 +62,8 @@ const OrderCatalogOrderDetailForm: React.FC<OrderCatalogOrderDetailFormProps> = 
         size="sm"
         labelText={t('priority', 'Priority')}
         value={detail.urgency}
+        invalid={hasFieldError(validationErrors, 'urgency')}
+        invalidText={validationErrors?.find((e) => e.field === 'urgency')?.message}
         onChange={(event) => update({ urgency: event.target.value as OrderUrgency })}>
         {urgencyOptions.map((option) => (
           <SelectItem key={option.value} value={option.value} text={option.label} />
@@ -67,6 +80,8 @@ const OrderCatalogOrderDetailForm: React.FC<OrderCatalogOrderDetailFormProps> = 
             size="sm"
             placeholder="dd/mm/yyyy"
             labelText={t('scheduledDate', 'Scheduled date')}
+            invalid={hasFieldError(validationErrors, 'scheduledDate')}
+            invalidText={validationErrors?.find((e) => e.field === 'scheduledDate')?.message}
           />
         </DatePicker>
       ) : null}
@@ -115,6 +130,9 @@ const OrderCatalogOrderDetailForm: React.FC<OrderCatalogOrderDetailFormProps> = 
           rows={2}
           labelText={t('orderReason', 'Order reason')}
           value={detail.orderReasonNonCoded ?? ''}
+          required={reasonRequired}
+          invalid={hasFieldError(validationErrors, 'orderReasonNonCoded')}
+          invalidText={validationErrors?.find((e) => e.field === 'orderReasonNonCoded')?.message}
           onChange={(event) => update({ orderReasonNonCoded: event.target.value })}
         />
       ) : null}

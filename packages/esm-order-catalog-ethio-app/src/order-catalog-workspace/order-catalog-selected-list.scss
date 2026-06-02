@@ -55,6 +55,10 @@
   }
 }
 
+.selectedItemInvalid {
+  background: var(--support-error-inverse, #fff1f1);
+}
+
 .itemHeader {
   display: flex;
   align-items: center;
