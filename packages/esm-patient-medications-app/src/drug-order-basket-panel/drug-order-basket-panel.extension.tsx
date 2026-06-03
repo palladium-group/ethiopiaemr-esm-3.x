@@ -183,12 +183,6 @@ function DrugOrderBasketPanelExtension({
   }, [orders]);
 
   useEffect(() => {
-    if (config.orderTypeUuid !== config.drugOrderTypeUUID) {
-      console.warn('orderTypeUuid does not match drugOrderTypeUUID — order basket filtering may not work as expected');
-    }
-  }, [config.orderTypeUuid, config.drugOrderTypeUUID]);
-
-  useEffect(() => {
     if (!isReturnedPrescriptionBasket) {
       setDtpResponseTouched(false);
       setDtpRemarkTouched(false);

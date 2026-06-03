@@ -13,6 +13,7 @@ import {
 import { mockDrugSearchResultApiData, mockFhirPatient, mockSessionDataResponse } from '__mocks__';
 import { getTemplateOrderBasketItem } from '../add-drug-order/drug-search/drug-search.resource';
 import { mockPatient, renderWithSwr } from 'tools';
+import { type ReturnedPrescriptionBasketItem } from '../types';
 import ReturnedPrescriptionBasketWorkspace from './returned-prescription-basket.workspace';
 import { setSeedReturnedPrescriptionDtpInTests } from './returned-prescription-basket.test-helpers';
 
@@ -45,12 +46,6 @@ const mockVisitContext: Visit = {
     uuid: 'visit-type-uuid',
     display: 'Outpatient',
   },
-};
-
-type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
-  isReturnedPrescription?: boolean;
-  dtpResponseConceptUuid?: string;
-  dtpRemark?: string;
 };
 
 jest.mock('../drug-order-basket-panel/drug-order-basket-panel.extension', () => {
