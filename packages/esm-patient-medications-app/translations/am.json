@@ -169,5 +169,18 @@
   "unknown": "Unknown",
   "unknownEncounterDate": "Unknown date",
   "updated": "Updated",
-  "usingADifferentTerm": "using a different term"
+  "usingADifferentTerm": "using a different term",
+  "variableDose0000": "00:00{{unitSuffix}}",
+  "variableDose0600": "06:00{{unitSuffix}}",
+  "variableDose1200": "12:00{{unitSuffix}}",
+  "variableDose1800": "18:00{{unitSuffix}}",
+  "variableDoseEvening": "Evening{{unitSuffix}}",
+  "variableDoseMorning": "Morning{{unitSuffix}}",
+  "variableDoseNoon": "Noon{{unitSuffix}}",
+  "variableDoseSchedule": "Dose schedule",
+  "variablePattern": "Pattern",
+  "variablePatternQ6h": "4 times daily (Q6H)",
+  "variablePatternTid": "3 times daily (TID)",
+  "variableValidationError": "Complete route, dose unit, all dose slots, and prescription duration before saving.",
+  "variableValidationErrorTitle": "Incomplete variable regimen"
 }

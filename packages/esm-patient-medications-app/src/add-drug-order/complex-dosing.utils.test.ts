@@ -1,13 +1,17 @@
 import {
   calculateTaperingQuantity,
   calculateTaperingTotalDurationDays,
+  calculateHybridQuantity,
   calculateVariableQuantity,
+  serializeHybridDosage,
   serializeTaperingDosage,
   serializeVariableDosage,
+  validateHybridDosing,
   validateTaperingDosing,
   validateVariableDosing,
 } from './complex-dosing.utils';
 import type {
+  HybridDosingState,
   TaperingDosingState,
   TaperingPhase,
   TaperingValidationMessages,
@@ -363,6 +367,247 @@ describe('validateVariableDosing', () => {
 
     expect(result.isValid).toBe(false);
     expect(result.errors.slots.at1800?.dose).toBe('Dosage is required');
+  });
+});
+
+describe('calculateHybridQuantity', () => {
+  const daysUnit = { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' };
+
+  it('sums each phase daily total times phase days', () => {
+    const state: HybridDosingState = {
+      route: null,
+      unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Units' },
+      phases: [
+        {
+          id: 'phase-1',
+          duration: 7,
+          durationUnit: daysUnit,
+          pattern: 'tid',
+          tidDoses: { morning: 10, noon: 6, evening: 8 },
+          q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+        },
+        {
+          id: 'phase-2',
+          duration: 3,
+          durationUnit: daysUnit,
+          pattern: 'q6h',
+          tidDoses: { morning: null, noon: null, evening: null },
+          q6hDoses: { at0600: 5, at1200: 5, at1800: 5, at0000: 5 },
+        },
+      ],
+    };
+
+    // (24 * 7) + (20 * 3) = 168 + 60 = 228
+    expect(calculateHybridQuantity(state, durationUnitsDaysMap)).toBe(228);
+  });
+
+  it('returns null when a phase is missing a dose', () => {
+    const state: HybridDosingState = {
+      route: null,
+      unit: null,
+      phases: [
+        {
+          id: 'phase-1',
+          duration: 7,
+          durationUnit: daysUnit,
+          pattern: 'tid',
+          tidDoses: { morning: 10, noon: null, evening: 8 },
+          q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+        },
+      ],
+    };
+
+    expect(calculateHybridQuantity(state, durationUnitsDaysMap)).toBeNull();
+  });
+
+  it('returns null when a phase is missing duration', () => {
+    const state: HybridDosingState = {
+      route: null,
+      unit: null,
+      phases: [
+        {
+          id: 'phase-1',
+          duration: null,
+          durationUnit: daysUnit,
+          pattern: 'tid',
+          tidDoses: { morning: 10, noon: 6, evening: 8 },
+          q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+        },
+      ],
+    };
+
+    expect(calculateHybridQuantity(state, durationUnitsDaysMap)).toBeNull();
+  });
+
+  it('returns null for no phases', () => {
+    expect(calculateHybridQuantity({ route: null, unit: null, phases: [] }, durationUnitsDaysMap)).toBeNull();
+  });
+});
+
+describe('serializeHybridDosage', () => {
+  const daysUnit = { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' };
+
+  const hybridState: HybridDosingState = {
+    route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Subcutaneous' },
+    unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Units' },
+    phases: [
+      {
+        id: 'phase-1',
+        duration: 7,
+        durationUnit: daysUnit,
+        pattern: 'tid',
+        tidDoses: { morning: 10, noon: 6, evening: 8 },
+        q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+      },
+      {
+        id: 'phase-2',
+        duration: 7,
+        durationUnit: daysUnit,
+        pattern: 'tid',
+        tidDoses: { morning: 12, noon: 8, evening: 10 },
+        q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+      },
+    ],
+  };
+
+  it('serializes hybrid phases with duration and TID slots', () => {
+    expect(serializeHybridDosage(hybridState)).toBe(
+      'Phase 1 (7 Days): Morning: 10 Units, Noon: 6 Units, Evening: 8 Units; ' +
+        'Phase 2 (7 Days): Morning: 12 Units, Noon: 8 Units, Evening: 10 Units',
+    );
+  });
+
+  it('serializes Q6H phases', () => {
+    expect(
+      serializeHybridDosage({
+        ...hybridState,
+        phases: [
+          {
+            id: 'phase-1',
+            duration: 3,
+            durationUnit: daysUnit,
+            pattern: 'q6h',
+            tidDoses: { morning: null, noon: null, evening: null },
+            q6hDoses: { at0600: 10, at1200: 10, at1800: 10, at0000: 5 },
+          },
+        ],
+      }),
+    ).toBe('Phase 1 (3 Days): 06:00: 10 Units, 12:00: 10 Units, 18:00: 10 Units, 00:00: 5 Units');
+  });
+
+  it('skips phases with no duration or no doses', () => {
+    expect(
+      serializeHybridDosage({
+        ...hybridState,
+        phases: [
+          hybridState.phases[0],
+          {
+            id: 'phase-2',
+            duration: null,
+            durationUnit: daysUnit,
+            pattern: 'tid',
+            tidDoses: { morning: 12, noon: 8, evening: 10 },
+            q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+          },
+        ],
+      }),
+    ).toBe('Phase 1 (7 Days): Morning: 10 Units, Noon: 6 Units, Evening: 8 Units');
+  });
+
+  it('returns null when nothing is complete', () => {
+    expect(
+      serializeHybridDosage({
+        route: null,
+        unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Units' },
+        phases: [
+          {
+            id: 'phase-1',
+            duration: null,
+            durationUnit: null,
+            pattern: 'tid',
+            tidDoses: { morning: null, noon: null, evening: null },
+            q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('validateHybridDosing', () => {
+  const daysUnit = { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' };
+
+  const validState: HybridDosingState = {
+    route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+    unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+    phases: [
+      {
+        id: 'phase-1',
+        duration: 7,
+        durationUnit: daysUnit,
+        pattern: 'tid',
+        tidDoses: { morning: 10, noon: 6, evening: 8 },
+        q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+      },
+    ],
+  };
+
+  it('returns valid for a complete hybrid regimen', () => {
+    expect(validateHybridDosing(validState, variableValidationMessages).isValid).toBe(true);
+  });
+
+  it('requires route and dose unit', () => {
+    const result = validateHybridDosing({ ...validState, route: null, unit: null }, variableValidationMessages);
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.route).toBe('Route is required');
+    expect(result.errors.unit).toBe('Dose unit is required');
+  });
+
+  it('flags per-phase duration, duration unit, and TID slot errors', () => {
+    const result = validateHybridDosing(
+      {
+        ...validState,
+        phases: [
+          {
+            id: 'phase-1',
+            duration: null,
+            durationUnit: null,
+            pattern: 'tid',
+            tidDoses: { morning: 10, noon: null, evening: 8 },
+            q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+          },
+        ],
+      },
+      variableValidationMessages,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.phases['phase-1'].duration).toBe('Duration is required');
+    expect(result.errors.phases['phase-1'].durationUnit).toBe('Duration unit is required');
+    expect(result.errors.phases['phase-1'].slots?.noon?.dose).toBe('Dosage is required');
+  });
+
+  it('validates Q6H slots when phase pattern is q6h', () => {
+    const result = validateHybridDosing(
+      {
+        ...validState,
+        phases: [
+          {
+            id: 'phase-1',
+            duration: 3,
+            durationUnit: daysUnit,
+            pattern: 'q6h',
+            tidDoses: { morning: null, noon: null, evening: null },
+            q6hDoses: { at0600: 5, at1200: null, at1800: 5, at0000: 5 },
+          },
+        ],
+      },
+      variableValidationMessages,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.phases['phase-1'].slots?.at1200?.dose).toBe('Dosage is required');
   });
 });
 

@@ -60,20 +60,26 @@ import { useActivePatientOrders, useRequireOutpatientQuantity } from '../api';
 import { useOrderConfig } from '../api/order-config';
 import { type ConfigObject } from '../config-schema';
 import {
+  createEmptyHybridPhase,
   createEmptyTaperingPhase,
+  createInitialHybridState,
   createInitialTaperingState,
   createInitialVariableState,
   DOSING_TYPES,
   type DosingType,
+  type HybridDosingState,
   type TaperingDosingState,
   type VariableDosingState,
 } from './complex-dosing.types';
 import {
   calculateTaperingQuantity,
   calculateTaperingTotalDurationDays,
+  calculateHybridQuantity,
   calculateVariableQuantity,
+  serializeHybridDosage,
   serializeTaperingDosage,
   serializeVariableDosage,
+  validateHybridDosing,
   validateTaperingDosing,
   validateVariableDosing,
 } from './complex-dosing.utils';
@@ -81,6 +87,7 @@ import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from '
 import { TaperingDoseForm } from './tapering-dose-form.component';
 import taperingStyles from './tapering-dose-form.scss';
 import { VariableDoseForm } from './variable-dose-form.component';
+import { HybridDoseForm } from './hybrid-dose-form.component';
 import styles from './drug-order-form.scss';
 
 export interface DrugOrderFormProps {
@@ -222,8 +229,10 @@ export function DrugOrderForm({
   const [dosingType, setDosingType] = useState<DosingType>('standard');
   const [taperingState, setTaperingState] = useState<TaperingDosingState>(() => createInitialTaperingState());
   const [variableState, setVariableState] = useState<VariableDosingState>(() => createInitialVariableState());
+  const [hybridState, setHybridState] = useState<HybridDosingState>(() => createInitialHybridState());
   const [showTaperingValidationErrors, setShowTaperingValidationErrors] = useState(false);
   const [showVariableValidationErrors, setShowVariableValidationErrors] = useState(false);
+  const [showHybridValidationErrors, setShowHybridValidationErrors] = useState(false);
 
   const dosingTypeSelectedIndex = DOSING_TYPES.indexOf(dosingType);
 
@@ -253,6 +262,14 @@ export function DrugOrderForm({
       );
     }
 
+    if (dosingType === 'hybrid') {
+      if (watchedQuantityUnits && watchedQuantityUnits.valueCoded !== hybridState.unit?.valueCoded) {
+        return null;
+      }
+
+      return calculateHybridQuantity(hybridState, durationUnitsDaysMap);
+    }
+
     if (
       watchedDosage == null ||
       watchedDosage <= 0 ||
@@ -278,6 +295,7 @@ export function DrugOrderForm({
     dosingType,
     taperingState,
     variableState,
+    hybridState,
     watchedDosage,
     watchedFrequency?.frequencyPerDay,
     watchedDuration,
@@ -288,7 +306,13 @@ export function DrugOrderForm({
   ]);
 
   const doseUnitForQuantity =
-    dosingType === 'tapering' ? taperingState.unit : dosingType === 'variable' ? variableState.unit : watchedUnit;
+    dosingType === 'tapering'
+      ? taperingState.unit
+      : dosingType === 'variable'
+      ? variableState.unit
+      : dosingType === 'hybrid'
+      ? hybridState.unit
+      : watchedUnit;
 
   useEffect(() => {
     if (!requireOutpatientQuantity || isManualOverride) {
@@ -427,6 +451,11 @@ export function DrugOrderForm({
     [taperingState.phases, durationUnitsDaysMap],
   );
 
+  const hybridTotalDurationDays = useMemo(
+    () => calculateTaperingTotalDurationDays(hybridState.phases, durationUnitsDaysMap),
+    [hybridState.phases, durationUnitsDaysMap],
+  );
+
   const taperingDosagePreview = useMemo(
     () => (dosingType === 'tapering' && !watchedIsFreeText ? serializeTaperingDosage(taperingState) : null),
     [dosingType, watchedIsFreeText, taperingState],
@@ -435,6 +464,11 @@ export function DrugOrderForm({
   const variableDosagePreview = useMemo(
     () => (dosingType === 'variable' && !watchedIsFreeText ? serializeVariableDosage(variableState) : null),
     [dosingType, watchedIsFreeText, variableState],
+  );
+
+  const hybridDosagePreview = useMemo(
+    () => (dosingType === 'hybrid' && !watchedIsFreeText ? serializeHybridDosage(hybridState) : null),
+    [dosingType, watchedIsFreeText, hybridState],
   );
 
   const taperingValidationMessages = useMemo(
@@ -474,6 +508,11 @@ export function DrugOrderForm({
     [variableState, watchedDuration, watchedDurationUnit, variableValidationMessages],
   );
 
+  const hybridValidationResult = useMemo(
+    () => validateHybridDosing(hybridState, variableValidationMessages),
+    [hybridState, variableValidationMessages],
+  );
+
   const handleFormSave = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -481,6 +520,7 @@ export function DrugOrderForm({
       if (dosingType === 'tapering' && !watchedIsFreeText) {
         setShowTaperingValidationErrors(true);
         setShowVariableValidationErrors(false);
+        setShowHybridValidationErrors(false);
 
         if (!taperingValidationResult.isValid) {
           return;
@@ -507,6 +547,7 @@ export function DrugOrderForm({
       if (dosingType === 'variable' && !watchedIsFreeText) {
         setShowVariableValidationErrors(true);
         setShowTaperingValidationErrors(false);
+        setShowHybridValidationErrors(false);
 
         if (variableValidationResult.errors.duration) {
           setError('duration', { type: 'manual', message: variableValidationResult.errors.duration });
@@ -540,8 +581,36 @@ export function DrugOrderForm({
         return;
       }
 
+      if (dosingType === 'hybrid' && !watchedIsFreeText) {
+        setShowTaperingValidationErrors(false);
+        setShowVariableValidationErrors(false);
+        setShowHybridValidationErrors(true);
+
+        if (!hybridValidationResult.isValid) {
+          return;
+        }
+
+        const serializedDosage = serializeHybridDosage(hybridState);
+        setValue('isFreeTextDosage', true);
+        setValue('freeTextDosage', serializedDosage ?? '');
+        setValue('dosage', null);
+        setValue('unit', null);
+        setValue('frequency', null);
+        setValue('route', hybridState.route, { shouldValidate: true });
+        setValue('duration', hybridTotalDurationDays, { shouldValidate: true });
+        setValue('durationUnit', defaultDaysDurationUnit, { shouldValidate: true });
+
+        if (!getValues('quantityUnits') && hybridState.unit) {
+          setValue('quantityUnits', hybridState.unit, { shouldValidate: true });
+        }
+
+        await handleSubmit(handleFormSubmission, handleFormSubmissionError)();
+        return;
+      }
+
       setShowTaperingValidationErrors(false);
       setShowVariableValidationErrors(false);
+      setShowHybridValidationErrors(false);
       await handleSubmit(handleFormSubmission, handleFormSubmissionError)(event);
     },
     [
@@ -552,6 +621,9 @@ export function DrugOrderForm({
       handleFormSubmission,
       handleFormSubmissionError,
       handleSubmit,
+      hybridState,
+      hybridTotalDurationDays,
+      hybridValidationResult.isValid,
       setError,
       setValue,
       taperingState,
@@ -571,6 +643,7 @@ export function DrugOrderForm({
       setDosingType(newType);
       setShowTaperingValidationErrors(false);
       setShowVariableValidationErrors(false);
+      setShowHybridValidationErrors(false);
 
       if (newType === 'tapering') {
         setTaperingState((prev) => ({
@@ -586,6 +659,15 @@ export function DrugOrderForm({
           ...prev,
           route: prev.route ?? (getValues('route') as VariableDosingState['route']) ?? null,
           unit: prev.unit ?? (getValues('unit') as VariableDosingState['unit']) ?? null,
+        }));
+      }
+
+      if (newType === 'hybrid') {
+        setHybridState((prev) => ({
+          ...prev,
+          route: prev.route ?? (getValues('route') as HybridDosingState['route']) ?? null,
+          unit: prev.unit ?? (getValues('unit') as HybridDosingState['unit']) ?? null,
+          phases: prev.phases.length > 0 ? prev.phases : [createEmptyHybridPhase(defaultDaysDurationUnit)],
         }));
       }
     },
@@ -924,6 +1006,39 @@ export function DrugOrderForm({
                         </div>
                       )}
                     </>
+                  ) : dosingType === 'hybrid' ? (
+                    <>
+                      {showHybridValidationErrors && !hybridValidationResult.isValid && (
+                        <InlineNotification
+                          kind="error"
+                          lowContrast
+                          className={styles.inlineNotification}
+                          subtitle={t(
+                            'hybridValidationError',
+                            'Complete route, dose unit, and each phase’s duration and dose slots before saving.',
+                          )}
+                          title={t('hybridValidationErrorTitle', 'Incomplete phased regimen')}
+                        />
+                      )}
+                      <HybridDoseForm
+                        state={hybridState}
+                        drugRoutes={drugRoutes}
+                        drugDosingUnits={drugDosingUnits}
+                        durationUnits={durationUnits}
+                        defaultDurationUnit={defaultDaysDurationUnit}
+                        onStateChange={setHybridState}
+                        validationErrors={showHybridValidationErrors ? hybridValidationResult.errors : null}
+                        filterItemsByName={filterItemsByName}
+                      />
+                      {hybridDosagePreview && (
+                        <div className={taperingStyles.dosagePreview}>
+                          <span className={taperingStyles.dosagePreviewLabel}>
+                            {t('dosageSummary', 'Dosage summary')}
+                          </span>
+                          <span className={taperingStyles.dosagePreviewValue}>{hybridDosagePreview}</span>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <p className={styles.complexDosingPlaceholder}>
                       {t('complexDosingComingSoon', 'This dosing type will be available in a future update.')}
@@ -957,13 +1072,15 @@ export function DrugOrderForm({
                     </InputWrapper>
                   </div>
                 </Column>
-                {dosingType === 'tapering' && !watchedIsFreeText ? (
+                {(dosingType === 'tapering' || dosingType === 'hybrid') && !watchedIsFreeText ? (
                   <Column lg={16} md={4} sm={4}>
                     <div className={taperingStyles.totalDuration}>
                       <span className={taperingStyles.totalDurationLabel}>{t('totalDuration', 'Total duration')}</span>
                       <span className={taperingStyles.totalDurationValue}>
-                        {taperingTotalDurationDays != null
-                          ? t('totalDurationDays', '{{count}} Days', { count: taperingTotalDurationDays })
+                        {(dosingType === 'tapering' ? taperingTotalDurationDays : hybridTotalDurationDays) != null
+                          ? t('totalDurationDays', '{{count}} Days', {
+                              count: dosingType === 'tapering' ? taperingTotalDurationDays : hybridTotalDurationDays,
+                            })
                           : t('totalDurationIncomplete', '—')}
                       </span>
                     </div>

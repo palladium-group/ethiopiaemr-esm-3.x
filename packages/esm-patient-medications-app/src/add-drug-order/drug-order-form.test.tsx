@@ -1083,6 +1083,183 @@ describe('DrugOrderForm - variable validation', () => {
   });
 });
 
+describe('DrugOrderForm - hybrid dosing UI', () => {
+  it('renders phase cards with duration and TID dose schedule when hybrid is selected', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await user.click(screen.getByRole('tab', { name: /hybrid/i }));
+
+    expect(screen.getByText(/phase 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/dose schedule/i)).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /3 times daily/i })).toBeChecked();
+    expect(screen.getByLabelText(/morning/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/noon/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/evening/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add phase/i })).toBeInTheDocument();
+  });
+
+  it('switches a phase to Q6H slots when its pattern is changed', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await user.click(screen.getByRole('tab', { name: /hybrid/i }));
+    await user.click(screen.getByRole('radio', { name: /4 times daily/i }));
+
+    expect(screen.getByLabelText(/06:00/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/12:00/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/18:00/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/00:00/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/morning/i)).not.toBeInTheDocument();
+  });
+
+  it('adds and removes phases', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await user.click(screen.getByRole('tab', { name: /hybrid/i }));
+    await user.click(screen.getByRole('button', { name: /add phase/i }));
+
+    expect(screen.getByText(/phase 2/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /remove phase/i }));
+
+    expect(screen.queryByText(/phase 2/i)).not.toBeInTheDocument();
+  });
+
+  it('seeds route and unit from standard form when switching to hybrid', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('Tablet');
+    });
+
+    const standardRoute = screen.getByRole('combobox', { name: /^route$/i });
+    await user.click(standardRoute);
+    await user.click(screen.getByRole('option', { name: /oral/i }));
+
+    await user.click(screen.getByRole('tab', { name: /hybrid/i }));
+
+    expect(screen.getByRole('combobox', { name: /^route$/i })).toHaveValue('Oral');
+    expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('Tablet');
+  });
+});
+
+describe('DrugOrderForm - hybrid dosage serialization', () => {
+  it('saves hybrid phases as freeTextDosage on submit', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+    const item = createNewOrderBasketItem({
+      dosage: 1,
+      unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+      route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+      frequency: {
+        valueCoded: 'once-daily-uuid',
+        value: 'Once daily',
+        frequencyPerDay: 1.0,
+      },
+      duration: 7,
+      durationUnit: { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+      pillsDispensed: 1,
+      quantityUnits: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+      numRefills: 0,
+      indication: 'Diabetes',
+    });
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={item}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /hybrid/i }));
+
+    await user.click(screen.getByRole('combobox', { name: /^route$/i }));
+    await user.click(screen.getByText('Oral'));
+
+    await user.click(screen.getByRole('combobox', { name: /dose unit/i }));
+    await user.click(screen.getByText('Tablet'));
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    await user.clear(durationInput);
+    await user.type(durationInput, '7');
+
+    await user.click(screen.getByRole('combobox', { name: /duration unit/i }));
+    await user.click(screen.getByText('Days'));
+
+    await user.clear(screen.getByLabelText(/morning/i));
+    await user.type(screen.getByLabelText(/morning/i), '10');
+    await user.clear(screen.getByLabelText(/noon/i));
+    await user.type(screen.getByLabelText(/noon/i), '6');
+    await user.clear(screen.getByLabelText(/evening/i));
+    await user.type(screen.getByLabelText(/evening/i), '8');
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/phase 1 \(7 days\): morning: 10 tablet, noon: 6 tablet, evening: 8 tablet/i),
+      ).toBeInTheDocument();
+    });
+
+    const quantityInput = screen.getByRole('spinbutton', { name: /quantity to dispense/i });
+    await waitFor(() => {
+      expect(quantityInput).toHaveValue(168);
+    });
+
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isFreeTextDosage: true,
+          freeTextDosage: 'Phase 1 (7 Days): Morning: 10 Tablet, Noon: 6 Tablet, Evening: 8 Tablet',
+          dosage: null,
+          unit: null,
+          frequency: null,
+          route: expect.objectContaining({ value: 'Oral' }),
+          pillsDispensed: 168,
+        }),
+      );
+    });
+  });
+
+  it('blocks submission and shows an error when hybrid phases are incomplete', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+    const item = createNewOrderBasketItem({
+      dosage: 1,
+      unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+      route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+      frequency: { valueCoded: 'once-daily-uuid', value: 'Once daily', frequencyPerDay: 1.0 },
+    });
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={item}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /hybrid/i }));
+
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    expect(await screen.findByText(/incomplete phased regimen/i)).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+});
+
 describe('DrugOrderForm - variable dosing UI', () => {
   it('renders TID dose schedule when variable is selected', async () => {
     const user = userEvent.setup();
