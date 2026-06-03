@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ButtonSet, InlineLoading, InlineNotification } from '@carbon/react';
 import {
@@ -25,6 +25,7 @@ import { type ConfigObject } from '../config-schema';
 import { moduleName } from '../dashboard.meta';
 import DrugOrderBasketPanelExtension from '../drug-order-basket-panel/drug-order-basket-panel.extension';
 import { type ReturnedPrescriptionBasketItem, type ReturnedPrescriptionDtpState } from '../types';
+import { buildReturnedPrescriptionOrderPayloads } from './returned-prescription-basket.utils';
 
 export default function ReturnedPrescriptionBasketWorkspace({
   groupProps,
@@ -46,6 +47,17 @@ export default function ReturnedPrescriptionBasketWorkspace({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [returnedPrescriptionDtp, setReturnedPrescriptionDtp] = useState<ReturnedPrescriptionDtpState>({});
+  const initialResendOrdersRef = useRef<DrugOrderBasketItem[] | null>(null);
+
+  useEffect(() => {
+    initialResendOrdersRef.current = null;
+  }, [windowProps.encounterUuid]);
+
+  useEffect(() => {
+    if (orders.length > 0 && initialResendOrdersRef.current === null) {
+      initialResendOrdersRef.current = orders.map((order) => ({ ...order }));
+    }
+  }, [orders]);
   const returnedPrescriptionOrders = useMemo(
     () => orders.filter((order) => (order as ReturnedPrescriptionBasketItem).isReturnedPrescription),
     [orders],
@@ -113,7 +125,14 @@ export default function ReturnedPrescriptionBasketWorkspace({
               value: selectedDtpRemark,
             },
           ],
-          orders: orders.map((order) => prepMedicationOrderPostData(order, patientUuid, encounterUuid, ordererUuid)),
+          orders: buildReturnedPrescriptionOrderPayloads(
+            initialResendOrdersRef.current ?? [],
+            orders,
+            prepMedicationOrderPostData,
+            patientUuid,
+            encounterUuid,
+            ordererUuid,
+          ),
         },
       });
 

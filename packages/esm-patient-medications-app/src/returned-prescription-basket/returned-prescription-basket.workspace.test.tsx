@@ -14,6 +14,7 @@ import { mockDrugSearchResultApiData, mockFhirPatient, mockSessionDataResponse }
 import { getTemplateOrderBasketItem } from '../add-drug-order/drug-search/drug-search.resource';
 import { mockPatient, renderWithSwr } from 'tools';
 import ReturnedPrescriptionBasketWorkspace from './returned-prescription-basket.workspace';
+import { setSeedReturnedPrescriptionDtpInTests } from './returned-prescription-basket.test-helpers';
 
 const mockOpenmrsFetch = openmrsFetch as jest.Mock;
 const mockShowSnackbar = showSnackbar as jest.Mock;
@@ -52,10 +53,32 @@ type ReturnedPrescriptionBasketItem = DrugOrderBasketItem & {
   dtpRemark?: string;
 };
 
-jest.mock('../drug-order-basket-panel/drug-order-basket-panel.extension', () => ({
-  __esModule: true,
-  default: () => <div data-testid="drug-order-basket-panel" />,
-}));
+jest.mock('../drug-order-basket-panel/drug-order-basket-panel.extension', () => {
+  const React = require('react');
+  const { shouldSeedReturnedPrescriptionDtpInTests } = require('./returned-prescription-basket.test-helpers');
+
+  function DrugOrderBasketPanelMock({
+    onReturnedPrescriptionDtpChange,
+  }: {
+    onReturnedPrescriptionDtpChange?: (state: { dtpResponseConceptUuid: string; dtpRemark: string }) => void;
+  }) {
+    React.useEffect(() => {
+      if (shouldSeedReturnedPrescriptionDtpInTests()) {
+        onReturnedPrescriptionDtpChange?.({
+          dtpResponseConceptUuid: '32757eaf-e2ed-41dc-a7d9-1f5650a2af5b',
+          dtpRemark: 'Returned prescription reviewed with patient.',
+        });
+      }
+    }, [onReturnedPrescriptionDtpChange]);
+
+    return React.createElement('div', { 'data-testid': 'drug-order-basket-panel' });
+  }
+
+  return {
+    __esModule: true,
+    default: DrugOrderBasketPanelMock,
+  };
+});
 
 jest.mock('@openmrs/esm-patient-common-lib', () => ({
   ...jest.requireActual('@openmrs/esm-patient-common-lib'),
@@ -65,8 +88,11 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({
 }));
 
 function createReturnedOrder(overrides: Partial<ReturnedPrescriptionBasketItem> = {}) {
+  const serverOrderUuid = overrides.previousOrder ?? overrides.uuid ?? 'returned-order-uuid';
   return {
     ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
+    uuid: serverOrderUuid,
+    previousOrder: serverOrderUuid,
     action: 'REVISE',
     isReturnedPrescription: true,
     dtpResponseConceptUuid: dtpAcceptedConceptUuid,
@@ -110,6 +136,7 @@ function renderWorkspace(orders: Array<DrugOrderBasketItem>) {
 
 describe('ReturnedPrescriptionBasketWorkspace', () => {
   beforeEach(() => {
+    setSeedReturnedPrescriptionDtpInTests(false);
     mockSetOrders.mockClear();
     mockCloseWorkspace.mockClear().mockResolvedValue(undefined);
     mockMutateVisitContext.mockClear();
@@ -231,6 +258,47 @@ describe('ReturnedPrescriptionBasketWorkspace', () => {
       }),
     );
     expect(mockSetOrders).toHaveBeenCalledWith([]);
+  });
+
+  test('sign and close posts DISCONTINUE for removed initial resend orders', async () => {
+    const user = userEvent.setup();
+    setSeedReturnedPrescriptionDtpInTests(true);
+    const returnedOrder = createReturnedOrder({ uuid: 'amox-uuid', previousOrder: 'amox-uuid' });
+    const otherOrder = createOtherBasketOrder();
+
+    mockUseOrderBasket.mockReturnValue({
+      orders: [returnedOrder, otherOrder],
+      setOrders: mockSetOrders,
+      clearOrders: jest.fn(),
+    });
+    const { rerender } = renderWithSwr(<ReturnedPrescriptionBasketWorkspace {...defaultWorkspaceProps} />);
+
+    mockUseOrderBasket.mockReturnValue({
+      orders: [otherOrder],
+      setOrders: mockSetOrders,
+      clearOrders: jest.fn(),
+    });
+    rerender(<ReturnedPrescriptionBasketWorkspace {...defaultWorkspaceProps} />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /sign and close/i })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: /sign and close/i }));
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/encounter/${encounterUuid}`,
+      expect.objectContaining({
+        body: expect.objectContaining({
+          orders: expect.arrayContaining([
+            expect.objectContaining({ action: 'NEW', type: 'drugorder' }),
+            expect.objectContaining({
+              action: 'DISCONTINUE',
+              type: 'drugorder',
+              previousOrder: 'amox-uuid',
+            }),
+          ]),
+        }),
+      }),
+    );
   });
 
   test('shows error snackbar when encounter save fails', async () => {
