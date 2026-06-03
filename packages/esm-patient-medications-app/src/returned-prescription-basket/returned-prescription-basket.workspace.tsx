@@ -24,7 +24,7 @@ import { prepMedicationOrderPostData } from '../api/api';
 import { type ConfigObject } from '../config-schema';
 import { moduleName } from '../dashboard.meta';
 import DrugOrderBasketPanelExtension from '../drug-order-basket-panel/drug-order-basket-panel.extension';
-import { type ReturnedPrescriptionBasketItem } from '../types';
+import { type ReturnedPrescriptionBasketItem, type ReturnedPrescriptionDtpState } from '../types';
 
 export default function ReturnedPrescriptionBasketWorkspace({
   groupProps,
@@ -45,16 +45,20 @@ export default function ReturnedPrescriptionBasketWorkspace({
     prepMedicationOrderPostData,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [returnedPrescriptionDtp, setReturnedPrescriptionDtp] = useState<ReturnedPrescriptionDtpState>({});
   const returnedPrescriptionOrders = useMemo(
     () => orders.filter((order) => (order as ReturnedPrescriptionBasketItem).isReturnedPrescription),
     [orders],
   );
-  const selectedDtpResponseConceptUuid = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)
-    ?.dtpResponseConceptUuid;
-  const selectedDtpRemark = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpRemark?.trim();
+  const selectedDtpResponseConceptUuid =
+    returnedPrescriptionDtp.dtpResponseConceptUuid ??
+    (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponseConceptUuid;
+  const selectedDtpRemark =
+    returnedPrescriptionDtp.dtpRemark?.trim() ??
+    (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpRemark?.trim();
   const canSubmit = Boolean(
     windowProps.encounterUuid &&
-      returnedPrescriptionOrders.length > 0 &&
+      orders.length > 0 &&
       selectedDtpResponseConceptUuid &&
       selectedDtpRemark &&
       dtpResponse.questionConceptUuid &&
@@ -74,10 +78,6 @@ export default function ReturnedPrescriptionBasketWorkspace({
     },
     [groupProps, windowProps],
   );
-
-  const clearReturnedPrescriptionBasketItems = useCallback(() => {
-    setOrders(orders.filter((order) => !(order as ReturnedPrescriptionBasketItem).isReturnedPrescription));
-  }, [orders, setOrders]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) {
@@ -113,16 +113,14 @@ export default function ReturnedPrescriptionBasketWorkspace({
               value: selectedDtpRemark,
             },
           ],
-          orders: returnedPrescriptionOrders.map((order) =>
-            prepMedicationOrderPostData(order, patientUuid, encounterUuid, ordererUuid),
-          ),
+          orders: orders.map((order) => prepMedicationOrderPostData(order, patientUuid, encounterUuid, ordererUuid)),
         },
       });
 
-      clearReturnedPrescriptionBasketItems();
+      setOrders([]);
       mutateOrders();
       mutateVisitContext?.();
-      showOrderSuccessToast(moduleName, returnedPrescriptionOrders);
+      showOrderSuccessToast(moduleName, orders);
       await closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
       showSnackbar({
@@ -136,7 +134,6 @@ export default function ReturnedPrescriptionBasketWorkspace({
     }
   }, [
     canSubmit,
-    clearReturnedPrescriptionBasketItems,
     closeWorkspace,
     currentProvider?.uuid,
     dtpRemarkConfig.conceptUuid,
@@ -144,20 +141,22 @@ export default function ReturnedPrescriptionBasketWorkspace({
     mutateOrders,
     mutateVisitContext,
     orderEncounterType,
+    orders,
     patientUuid,
-    returnedPrescriptionOrders,
     selectedDtpRemark,
     selectedDtpResponseConceptUuid,
     sessionLocation?.uuid,
+    setOrders,
     t,
     visitContext?.uuid,
     windowProps.encounterUuid,
   ]);
 
   const handleCancel = useCallback(async () => {
-    clearReturnedPrescriptionBasketItems();
+    setOrders([]);
+    setReturnedPrescriptionDtp({});
     await closeWorkspace({ discardUnsavedChanges: true });
-  }, [clearReturnedPrescriptionBasketItems, closeWorkspace]);
+  }, [closeWorkspace, setOrders]);
 
   return (
     <Workspace2 title={t('returnedPrescription', 'Returned prescription')}>
@@ -171,7 +170,13 @@ export default function ReturnedPrescriptionBasketWorkspace({
           'Select a DTP response, enter a remark, then update orders if needed before signing and closing.',
         )}
       />
-      <DrugOrderBasketPanelExtension patient={patient} launchDrugOrderForm={launchDrugOrderForm} />
+      <DrugOrderBasketPanelExtension
+        patient={patient}
+        launchDrugOrderForm={launchDrugOrderForm}
+        isReturnedPrescriptionWorkspace
+        returnedPrescriptionDtp={returnedPrescriptionDtp}
+        onReturnedPrescriptionDtpChange={setReturnedPrescriptionDtp}
+      />
       <ButtonSet>
         <Button kind="secondary" onClick={handleCancel} disabled={isSubmitting}>
           {t('cancel', 'Cancel')}

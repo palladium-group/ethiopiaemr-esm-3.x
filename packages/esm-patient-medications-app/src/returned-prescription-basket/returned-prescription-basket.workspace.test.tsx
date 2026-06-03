@@ -151,7 +151,7 @@ describe('ReturnedPrescriptionBasketWorkspace', () => {
     expect(screen.getByRole('button', { name: /sign and close/i })).toBeDisabled();
   });
 
-  test('cancel removes only returned prescription orders from the basket', async () => {
+  test('cancel clears returned prescription basket orders', async () => {
     const user = userEvent.setup();
     const returnedOrder = createReturnedOrder();
     const otherOrder = createOtherBasketOrder();
@@ -160,7 +160,7 @@ describe('ReturnedPrescriptionBasketWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
 
-    expect(mockSetOrders).toHaveBeenCalledWith([otherOrder]);
+    expect(mockSetOrders).toHaveBeenCalledWith([]);
     expect(mockCloseWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
@@ -209,7 +209,7 @@ describe('ReturnedPrescriptionBasketWorkspace', () => {
     expect(mockCloseWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
   });
 
-  test('sign and close keeps non-returned basket orders after success', async () => {
+  test('sign and close posts all basket orders and clears the basket', async () => {
     const user = userEvent.setup();
     const returnedOrder = createReturnedOrder();
     const otherOrder = createOtherBasketOrder();
@@ -218,8 +218,19 @@ describe('ReturnedPrescriptionBasketWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: /sign and close/i }));
 
-    await waitFor(() => expect(mockSetOrders).toHaveBeenCalled());
-    expect(mockSetOrders).toHaveBeenCalledWith([otherOrder]);
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/encounter/${encounterUuid}`,
+      expect.objectContaining({
+        body: expect.objectContaining({
+          orders: expect.arrayContaining([
+            expect.objectContaining({ action: 'REVISE', type: 'drugorder' }),
+            expect.objectContaining({ action: 'NEW', type: 'drugorder' }),
+          ]),
+        }),
+      }),
+    );
+    expect(mockSetOrders).toHaveBeenCalledWith([]);
   });
 
   test('shows error snackbar when encounter save fails', async () => {

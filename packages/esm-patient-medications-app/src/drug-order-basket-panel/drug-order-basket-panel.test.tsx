@@ -133,4 +133,46 @@ describe('OrderBasketPanel', () => {
       }),
     ]);
   });
+
+  test('keeps DTP fields visible in returned prescription workspace after declined orders are removed', async () => {
+    const user = userEvent.setup();
+    const returnedOrder = {
+      ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
+      action: 'REVISE',
+      isReturnedPrescription: false,
+    } as DrugOrderBasketItem;
+    let orders = [returnedOrder];
+    const mockSetOrders = jest.fn((newOrders: Array<DrugOrderBasketItem>) => {
+      orders = newOrders;
+    });
+    mockUseOrderBasket.mockImplementation(() => ({
+      orders,
+      setOrders: mockSetOrders,
+    }));
+
+    const { rerender } = render(
+      <DrugOrderBasketPanel
+        {...testProps}
+        isReturnedPrescriptionWorkspace
+        returnedPrescriptionDtp={{ dtpResponse: 'ACCEPTED', dtpRemark: 'Reviewed with patient' }}
+        onReturnedPrescriptionDtpChange={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/dtp response/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/remark/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /remove from basket/i }));
+    rerender(
+      <DrugOrderBasketPanel
+        {...testProps}
+        isReturnedPrescriptionWorkspace
+        returnedPrescriptionDtp={{ dtpResponse: 'ACCEPTED', dtpRemark: 'Reviewed with patient' }}
+        onReturnedPrescriptionDtpChange={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/dtp response/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/remark/i)).toBeInTheDocument();
+  });
 });

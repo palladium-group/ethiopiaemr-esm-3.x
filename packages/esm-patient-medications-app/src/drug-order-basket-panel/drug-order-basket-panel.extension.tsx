@@ -12,7 +12,9 @@ import type { ConfigObject } from '../config-schema';
 import { prepMedicationOrderPostData } from '../api/api';
 import {
   isReturnedPrescriptionBasketIncomplete,
+  isReturnedPrescriptionDtpIncomplete,
   type DtpResponse,
+  type ReturnedPrescriptionDtpState,
   type ReturnedPrescriptionBasketItem,
 } from '../types';
 import OrderBasketItemTile from './order-basket-item-tile.component';
@@ -23,13 +25,25 @@ function canEditReturnedPrescriptionOrders(dtpResponse?: DtpResponse) {
   return dtpResponse === 'ACCEPTED' || dtpResponse === 'PARTIALLY_ACCEPTED';
 }
 
+export type DrugOrderBasketPanelExtensionProps = OrderBasketExtensionProps & {
+  isReturnedPrescriptionWorkspace?: boolean;
+  returnedPrescriptionDtp?: ReturnedPrescriptionDtpState;
+  onReturnedPrescriptionDtpChange?: (dtp: ReturnedPrescriptionDtpState) => void;
+};
+
 /**
  * The extension is slotted into order-basket-slot in the main Order Basket workspace by default.
  * It renders the "Add +" button for drug orders, and lists pending drug orders in the order basket.
  *
  * Designs: https://app.zeplin.io/project/60d59321e8100b0324762e05/screen/62c6bb9500e7671a618efa56
  */
-function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBasketExtensionProps) {
+function DrugOrderBasketPanelExtension({
+  patient,
+  launchDrugOrderForm,
+  isReturnedPrescriptionWorkspace = false,
+  returnedPrescriptionDtp,
+  onReturnedPrescriptionDtpChange,
+}: DrugOrderBasketPanelExtensionProps) {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
@@ -69,14 +83,19 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
     () => orders.filter((order) => (order as ReturnedPrescriptionBasketItem).isReturnedPrescription),
     [orders],
   );
-  const isReturnedPrescriptionBasket = returnedPrescriptionOrders.length > 0;
-  const selectedDtpResponseType = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponse;
-  const selectedDtpResponseConceptUuid = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)
-    ?.dtpResponseConceptUuid;
+  const isReturnedPrescriptionBasket = isReturnedPrescriptionWorkspace || returnedPrescriptionOrders.length > 0;
+  const selectedDtpResponseType = isReturnedPrescriptionWorkspace
+    ? returnedPrescriptionDtp?.dtpResponse
+    : (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponse;
+  const selectedDtpResponseConceptUuid = isReturnedPrescriptionWorkspace
+    ? returnedPrescriptionDtp?.dtpResponseConceptUuid
+    : (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpResponseConceptUuid;
   const selectedDtpResponseValue = selectedDtpResponseConceptUuid ?? selectedDtpResponseType ?? '';
   const isDtpResponseSelected = Boolean(selectedDtpResponseConceptUuid || selectedDtpResponseType);
   const canEditReturnedOrders = canEditReturnedPrescriptionOrders(selectedDtpResponseType);
-  const selectedDtpRemark = (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpRemark ?? '';
+  const selectedDtpRemark = isReturnedPrescriptionWorkspace
+    ? returnedPrescriptionDtp?.dtpRemark ?? ''
+    : (returnedPrescriptionOrders[0] as ReturnedPrescriptionBasketItem)?.dtpRemark ?? '';
   const isDtpResponseMissing = isReturnedPrescriptionBasket && !isDtpResponseSelected;
   const isDtpRemarkMissing = isReturnedPrescriptionBasket && !selectedDtpRemark.trim();
   const [dtpResponseTouched, setDtpResponseTouched] = useState(false);
@@ -102,11 +121,16 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
     return t('dtpResponseHelperCanEdit', 'You can now update or remove orders before signing and closing.');
   }, [isReturnedPrescriptionBasket, selectedDtpResponseType, t]);
   const isReturnedOrderReadOnly = useCallback(
-    (order: DrugOrderBasketItem) =>
-      isReturnedPrescriptionBasket &&
-      Boolean((order as ReturnedPrescriptionBasketItem).isReturnedPrescription) &&
-      !canEditReturnedOrders,
-    [canEditReturnedOrders, isReturnedPrescriptionBasket],
+    (order: DrugOrderBasketItem) => {
+      if (!isReturnedPrescriptionBasket || canEditReturnedOrders) {
+        return false;
+      }
+      if (isReturnedPrescriptionWorkspace) {
+        return true;
+      }
+      return Boolean((order as ReturnedPrescriptionBasketItem).isReturnedPrescription);
+    },
+    [canEditReturnedOrders, isReturnedPrescriptionBasket, isReturnedPrescriptionWorkspace],
   );
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {
@@ -178,6 +202,14 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
       const selectedOption = dtpResponseOptions.find(
         (option) => selectedValue === (option.conceptUuid || option.response),
       );
+      if (isReturnedPrescriptionWorkspace && onReturnedPrescriptionDtpChange) {
+        onReturnedPrescriptionDtpChange({
+          ...returnedPrescriptionDtp,
+          dtpResponse: selectedOption?.response,
+          dtpResponseConceptUuid: selectedOption?.conceptUuid,
+        });
+        return;
+      }
       setOrders(
         orders.map((order) => {
           if (!(order as ReturnedPrescriptionBasketItem).isReturnedPrescription) {
@@ -195,13 +227,27 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
         }),
       );
     },
-    [dtpResponseOptions, orders, setOrders],
+    [
+      dtpResponseOptions,
+      isReturnedPrescriptionWorkspace,
+      onReturnedPrescriptionDtpChange,
+      orders,
+      returnedPrescriptionDtp,
+      setOrders,
+    ],
   );
 
   const handleDtpRemarkChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => {
       setDtpRemarkTouched(true);
       const remark = event.target.value.slice(0, config.dtpRemark?.maxLength ?? 500);
+      if (isReturnedPrescriptionWorkspace && onReturnedPrescriptionDtpChange) {
+        onReturnedPrescriptionDtpChange({
+          ...returnedPrescriptionDtp,
+          dtpRemark: remark,
+        });
+        return;
+      }
       setOrders(
         orders.map((order) => {
           if (!(order as ReturnedPrescriptionBasketItem).isReturnedPrescription) {
@@ -218,7 +264,14 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: OrderBa
         }),
       );
     },
-    [config.dtpRemark?.maxLength, orders, setOrders],
+    [
+      config.dtpRemark?.maxLength,
+      isReturnedPrescriptionWorkspace,
+      onReturnedPrescriptionDtpChange,
+      orders,
+      returnedPrescriptionDtp,
+      setOrders,
+    ],
   );
 
   return (
