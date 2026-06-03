@@ -84,6 +84,9 @@ type OrderWithDtpStatusReason = Order & {
 type MedicationDispenseSearchResponse = {
   entry?: Array<{
     resource?: fhir.MedicationDispense & {
+      prescription?: {
+        reference?: string;
+      };
       statusReasonCodeableConcept?: DtpStatusReason;
     };
   }>;
@@ -101,6 +104,48 @@ function getDtpReasonText(statusReason?: DtpStatusReason) {
 
 function getDtpReasonFromOrder(order: Order) {
   return getDtpReasonText((order as OrderWithDtpStatusReason).statusReasonCodeableConcept);
+}
+
+function getOrderUuidFromPrescriptionReference(reference?: string) {
+  if (!reference) {
+    return undefined;
+  }
+
+  const medicationRequestMatch = reference.match(/MedicationRequest\/([0-9a-f-]+)/i);
+  if (medicationRequestMatch) {
+    return medicationRequestMatch[1];
+  }
+
+  if (/^[0-9a-f-]{36}$/i.test(reference)) {
+    return reference;
+  }
+
+  return undefined;
+}
+
+function buildDtpReasonByOrderUuidFromDispenseBundle(data?: MedicationDispenseSearchResponse) {
+  const dtpReasonByOrderUuid = new Map<string, string>();
+
+  data?.entry?.forEach(({ resource: dispense }) => {
+    if (dispense?.status !== 'declined') {
+      return;
+    }
+
+    const orderUuid = getOrderUuidFromPrescriptionReference(dispense.prescription?.reference);
+    const dtpReason = getDtpReasonText(dispense.statusReasonCodeableConcept);
+    if (orderUuid && dtpReason && !dtpReasonByOrderUuid.has(orderUuid)) {
+      dtpReasonByOrderUuid.set(orderUuid, dtpReason);
+    }
+  });
+
+  return dtpReasonByOrderUuid;
+}
+
+async function fetchReturnedMedicationDispenses(orderUuids: Array<string>) {
+  const { data } = await openmrsFetch<MedicationDispenseSearchResponse>(
+    `${fhirBaseUrl}/MedicationDispense?prescription=${orderUuids.join(',')}`,
+  );
+  return data;
 }
 
 const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
@@ -138,33 +183,15 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
         .sort() ?? [],
     [medications],
   );
-  const { data: returnedMedicationDispenseResponses } = useSWRImmutable(
+  const { data: returnedMedicationDispenseBundle } = useSWRImmutable(
     returnedOrderUuidsMissingReason.length
       ? ['returned-medication-dispenses', ...returnedOrderUuidsMissingReason]
       : null,
-    ([, ...orderUuids]: Array<string>) =>
-      Promise.all(
-        orderUuids.map((orderUuid) =>
-          openmrsFetch<MedicationDispenseSearchResponse>(
-            `${fhirBaseUrl}/MedicationDispense?prescription=${encodeURIComponent(`MedicationRequest/${orderUuid}`)}`,
-          ),
-        ),
-      ),
+    ([, ...orderUuids]: Array<string>) => fetchReturnedMedicationDispenses(orderUuids),
   );
   const dtpReasonByOrderUuid = useMemo(
-    () =>
-      new Map(
-        returnedMedicationDispenseResponses
-          ?.map(({ data }, index) => {
-            const declinedDispense = data.entry
-              ?.map((entry) => entry.resource)
-              .find((dispense) => dispense?.status === 'declined');
-            const dtpReason = getDtpReasonText(declinedDispense?.statusReasonCodeableConcept);
-            return dtpReason ? [returnedOrderUuidsMissingReason[index], dtpReason] : null;
-          })
-          .filter(Boolean) as Array<[string, string]>,
-      ),
-    [returnedMedicationDispenseResponses, returnedOrderUuidsMissingReason],
+    () => buildDtpReasonByOrderUuidFromDispenseBundle(returnedMedicationDispenseBundle),
+    [returnedMedicationDispenseBundle],
   );
 
   const tableHeaders = [
