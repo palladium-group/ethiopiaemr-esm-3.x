@@ -70,6 +70,7 @@ import {
   calculateTaperingQuantity,
   calculateTaperingTotalDurationDays,
   serializeTaperingDosage,
+  validateTaperingDosing,
 } from './complex-dosing.utils';
 import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from './drug-order-form.resource';
 import { TaperingDoseForm } from './tapering-dose-form.component';
@@ -212,6 +213,7 @@ export function DrugOrderForm({
   );
   const [dosingType, setDosingType] = useState<DosingType>('standard');
   const [taperingState, setTaperingState] = useState<TaperingDosingState>(() => createInitialTaperingState());
+  const [showTaperingValidationErrors, setShowTaperingValidationErrors] = useState(false);
 
   const dosingTypeSelectedIndex = DOSING_TYPES.indexOf(dosingType);
 
@@ -405,11 +407,36 @@ export function DrugOrderForm({
     [dosingType, watchedIsFreeText, taperingState],
   );
 
+  const taperingValidationMessages = useMemo(
+    () => ({
+      routeRequired: t('selectRouteErrorMessage', 'Route is required'),
+      unitRequired: t('selectUnitErrorMessage', 'Dose unit is required'),
+      doseRequired: t('dosageRequiredErrorMessage', 'Dosage is required'),
+      doseGreaterThanZero: t('dosageGreaterThanZeroErrorMessage', 'Dose must be greater than 0'),
+      frequencyRequired: t('selectFrequencyErrorMessage', 'Frequency is required'),
+      durationRequired: t('durationRequiredErrorMessage', 'Duration is required'),
+      durationGreaterThanZero: t('durationGreaterThanZeroErrorMessage', 'Duration must be greater than 0'),
+      durationUnitRequired: t('durationUnitRequiredErrorMessage', 'Duration unit is required'),
+    }),
+    [t],
+  );
+
+  const taperingValidationResult = useMemo(
+    () => validateTaperingDosing(taperingState, taperingValidationMessages),
+    [taperingState, taperingValidationMessages],
+  );
+
   const handleFormSave = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
       if (dosingType === 'tapering' && !watchedIsFreeText) {
+        setShowTaperingValidationErrors(true);
+
+        if (!taperingValidationResult.isValid) {
+          return;
+        }
+
         const serializedDosage = serializeTaperingDosage(taperingState);
         setValue('isFreeTextDosage', true);
         setValue('freeTextDosage', serializedDosage ?? '');
@@ -428,6 +455,7 @@ export function DrugOrderForm({
         return;
       }
 
+      setShowTaperingValidationErrors(false);
       await handleSubmit(handleFormSubmission, handleFormSubmissionError)(event);
     },
     [
@@ -440,6 +468,7 @@ export function DrugOrderForm({
       setValue,
       taperingState,
       taperingTotalDurationDays,
+      taperingValidationResult.isValid,
       watchedIsFreeText,
     ],
   );
@@ -448,6 +477,7 @@ export function DrugOrderForm({
     ({ index }: { index: number }) => {
       const newType = DOSING_TYPES[index] ?? 'standard';
       setDosingType(newType);
+      setShowTaperingValidationErrors(false);
 
       if (newType === 'tapering') {
         setTaperingState((prev) => ({
@@ -729,6 +759,18 @@ export function DrugOrderForm({
                     </>
                   ) : dosingType === 'tapering' ? (
                     <>
+                      {showTaperingValidationErrors && !taperingValidationResult.isValid && (
+                        <InlineNotification
+                          kind="error"
+                          lowContrast
+                          className={styles.inlineNotification}
+                          subtitle={t(
+                            'taperingValidationError',
+                            'Complete all tapering fields in every phase before saving.',
+                          )}
+                          title={t('taperingValidationErrorTitle', 'Incomplete tapering regimen')}
+                        />
+                      )}
                       <TaperingDoseForm
                         state={taperingState}
                         drugRoutes={drugRoutes}
@@ -737,6 +779,7 @@ export function DrugOrderForm({
                         durationUnits={durationUnits}
                         defaultDurationUnit={defaultDaysDurationUnit}
                         onStateChange={setTaperingState}
+                        validationErrors={showTaperingValidationErrors ? taperingValidationResult.errors : null}
                         filterItemsByName={filterItemsByName}
                         filterItemsBySynonymNames={filterItemsBySynonymNames}
                       />

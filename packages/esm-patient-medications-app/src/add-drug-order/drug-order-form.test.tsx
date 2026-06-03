@@ -803,3 +803,85 @@ describe('DrugOrderForm - tapering dosage serialization', () => {
     });
   });
 });
+
+describe('DrugOrderForm - tapering validation', () => {
+  it('blocks save and shows errors when tapering fields are incomplete', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={createNewOrderBasketItem({
+          indication: 'Hypertension',
+          numRefills: 0,
+        })}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /tapering/i }));
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/incomplete tapering regimen/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/dosage is required/i)).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('allows save after all tapering fields are completed', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={createNewOrderBasketItem({
+          indication: 'Hypertension',
+          numRefills: 0,
+          pillsDispensed: null,
+          quantityUnits: null,
+        })}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /tapering/i }));
+
+    await user.click(screen.getByRole('combobox', { name: /^route$/i }));
+    await user.click(screen.getByText('Oral'));
+
+    await user.click(screen.getByRole('combobox', { name: /dose unit/i }));
+    await user.click(screen.getByText('Tablet'));
+
+    const doseInput = screen.getByRole('spinbutton', { name: /^dose$/i });
+    await user.clear(doseInput);
+    await user.type(doseInput, '40');
+
+    await user.click(screen.getByRole('combobox', { name: /^frequency$/i }));
+    await user.click(screen.getByText('Once daily'));
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    await user.clear(durationInput);
+    await user.type(durationInput, '7');
+
+    await user.click(screen.getByRole('combobox', { name: /duration unit/i }));
+    await user.click(screen.getByText('Days'));
+
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalled();
+    });
+    expect(screen.queryByText(/incomplete tapering regimen/i)).not.toBeInTheDocument();
+  });
+});

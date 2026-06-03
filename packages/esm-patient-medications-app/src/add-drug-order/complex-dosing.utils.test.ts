@@ -2,12 +2,24 @@ import {
   calculateTaperingQuantity,
   calculateTaperingTotalDurationDays,
   serializeTaperingDosage,
+  validateTaperingDosing,
 } from './complex-dosing.utils';
-import type { TaperingDosingState, TaperingPhase } from './complex-dosing.types';
+import type { TaperingDosingState, TaperingPhase, TaperingValidationMessages } from './complex-dosing.types';
 
 const durationUnitsDaysMap = {
   '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 1,
   '1073AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 7,
+};
+
+const validationMessages: TaperingValidationMessages = {
+  routeRequired: 'Route is required',
+  unitRequired: 'Dose unit is required',
+  doseRequired: 'Dosage is required',
+  doseGreaterThanZero: 'Dose must be greater than 0',
+  frequencyRequired: 'Frequency is required',
+  durationRequired: 'Duration is required',
+  durationGreaterThanZero: 'Duration must be greater than 0',
+  durationUnitRequired: 'Duration unit is required',
 };
 
 function createPhase(overrides: Partial<TaperingPhase>): TaperingPhase {
@@ -187,5 +199,46 @@ describe('serializeTaperingDosage', () => {
         ],
       }),
     ).toBe('Phase 1: 40mg, Once daily, 7 Days');
+  });
+});
+
+describe('validateTaperingDosing', () => {
+  const validState: TaperingDosingState = {
+    route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+    unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+    phases: [
+      createPhase({
+        dose: 40,
+        frequency: { valueCoded: 'once-daily-uuid', value: 'Once daily', frequencyPerDay: 1 },
+        duration: 7,
+        durationUnit: { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+      }),
+    ],
+  };
+
+  it('returns valid for a complete tapering regimen', () => {
+    expect(validateTaperingDosing(validState, validationMessages).isValid).toBe(true);
+  });
+
+  it('requires route and dose unit', () => {
+    const result = validateTaperingDosing({ ...validState, route: null, unit: null }, validationMessages);
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.route).toBe('Route is required');
+    expect(result.errors.unit).toBe('Dose unit is required');
+  });
+
+  it('flags zero dose and incomplete added phases', () => {
+    const result = validateTaperingDosing(
+      {
+        ...validState,
+        phases: [{ ...validState.phases[0], dose: 0 }, createPhase({ id: 'phase-2', dose: 20 })],
+      },
+      validationMessages,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.phases['phase-1']?.dose).toBe('Dose must be greater than 0');
+    expect(result.errors.phases['phase-2']?.frequency).toBe('Frequency is required');
   });
 });

@@ -18,6 +18,35 @@ export type TaperingDosingState = {
   phases: Array<TaperingPhase>;
 };
 
+export type TaperingPhaseFieldErrors = {
+  dose?: string;
+  frequency?: string;
+  duration?: string;
+  durationUnit?: string;
+};
+
+export type TaperingValidationErrors = {
+  route?: string;
+  unit?: string;
+  phases: Record<string, TaperingPhaseFieldErrors>;
+};
+
+export type TaperingValidationMessages = {
+  routeRequired: string;
+  unitRequired: string;
+  doseRequired: string;
+  doseGreaterThanZero: string;
+  frequencyRequired: string;
+  durationRequired: string;
+  durationGreaterThanZero: string;
+  durationUnitRequired: string;
+};
+
+export type TaperingValidationResult = {
+  isValid: boolean;
+  errors: TaperingValidationErrors;
+};
+
 export function createEmptyTaperingPhase(defaultDurationUnit?: DurationUnit | null): TaperingPhase {
   return {
     id: createTaperingPhaseId(),
