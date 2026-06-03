@@ -1,0 +1,12 @@
+@use '@carbon/layout';
+
+.menuItem {
+  max-width: none;
+}
+
+.actionsCell {
+  display: flex;
+  justify-content: flex-end;
+  height: layout.$spacing-09;
+  align-items: center;
+}

@@ -1,0 +1,77 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.tableWrapper {
+  padding: 0 layout.$spacing-05 layout.$spacing-05;
+}
+
+.validatingRow {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 layout.$spacing-03 layout.$spacing-03 0;
+}
+
+.tableContainer {
+  background-color: colors.$gray-10;
+
+  a {
+    text-decoration: none;
+  }
+
+  th {
+    color: $text-02;
+  }
+
+  :global(.cds--data-table) {
+    background-color: $ui-03;
+  }
+
+  :global(.cds--data-table tbody tr) {
+    block-size: auto;
+  }
+
+  :global(.cds--data-table td),
+  :global(.cds--data-table th) {
+    block-size: auto;
+    padding-block: layout.$spacing-04;
+  }
+}
+
+.queueTable {
+  a {
+    text-decoration: none;
+  }
+}
+
+.tileContainer {
+  border-top: 1px solid $ui-03;
+  padding: layout.$spacing-07 layout.$spacing-05;
+  background: white;
+  margin: 0;
+}
+
+.tile {
+  background-color: colors.$gray-10;
+  margin: auto;
+  width: fit-content;
+}
+
+.tileContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.content {
+  @include type.type-style('heading-compact-02');
+  color: $text-02;
+  margin-bottom: layout.$spacing-03;
+}
+
+.helper {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}

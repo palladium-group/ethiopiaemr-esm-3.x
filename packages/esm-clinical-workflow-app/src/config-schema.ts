@@ -1,4 +1,4 @@
-import { Type } from '@openmrs/esm-framework';
+import { Type, validator } from '@openmrs/esm-framework';
 import notesConfigSchema, { type VisitNoteConfigObject } from './patient-notes/visit-note-config-schema';
 
 export const configSchema = {
@@ -120,6 +120,12 @@ export const configSchema = {
     _description: 'Default queue entry status UUID (e.g. Waiting status)',
     _default: '167407AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
+  finishedServiceQueueStatusUuid: {
+    _type: Type.String,
+    _description:
+      'Queue entry status UUID used when finishing service from the patient chart banner (e.g. Finished Service)',
+    _default: '167409AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
   visitQueueNumberAttributeTypeUuid: {
     _type: Type.String,
     _description: 'Visit attribute type UUID for queue number',
@@ -195,6 +201,18 @@ export const configSchema = {
       'Location tag names for emergency locations. Can specify multiple tags to support future OPD/IPD emergency separation.',
     _default: ['Emergency'],
   },
+  medicalRecordingUnitLocationTagUuid: {
+    _type: Type.UUID,
+    _description:
+      'Location tag UUID used to identify locations (e.g. MRU) that should see visits from all locations (no location filter).',
+    _default: 'b2b1f7aa-4c4f-4f26-8a45-6c8a1f5b2b2b',
+  },
+  medicalRecordingUnitLocationTagName: {
+    _type: Type.String,
+    _description:
+      'Fallback location tag name used when the configured MRU tag UUID does not match server data. Match is case-insensitive against tag display.',
+    _default: 'Medical Recording Unit',
+  },
   diagnosisConceptClass: {
     _type: Type.UUID,
     _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
@@ -258,6 +276,12 @@ export const configSchema = {
     _description: 'UUID of the Transfer Note concept',
     _default: 'f4162fe3-f7e3-4062-9bb3-aa1a4b1044a5',
   },
+  recentDiagnosesCount: {
+    _type: Type.Number,
+    _default: 5,
+    _description: 'Maximum number of recent diagnoses to display in the Recent Diagnoses widget.',
+    _validators: [validator((v) => Number.isInteger(v) && v > 0, 'Must be a positive integer.')],
+  },
 };
 
 export interface PatientTypeConfig {
@@ -284,6 +308,7 @@ export type ClinicalWorkflowConfig = {
   enforceTriagePrivileges: boolean;
   triageDefinitions: Array<TriageDefinitionConfig>;
   defaultQueueStatusUuid: string;
+  finishedServiceQueueStatusUuid: string;
   visitQueueNumberAttributeTypeUuid: string;
   billingVisitAttributeTypes: {
     paymentMethod: string;
@@ -308,9 +333,12 @@ export type ClinicalWorkflowConfig = {
     severe: string;
   };
   emergencyLocationTags: string[];
+  medicalRecordingUnitLocationTagUuid: string;
+  medicalRecordingUnitLocationTagName: string;
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;
+  recentDiagnosesCount: number;
 };
 
 export interface VisitNoteConfig {

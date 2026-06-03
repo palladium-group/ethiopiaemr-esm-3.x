@@ -1,0 +1,98 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.widgetCard {
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  margin: layout.$spacing-05 0;
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: colors.$white;
+  min-height: layout.$spacing-09;
+}
+
+.cardTitle {
+  margin: 0;
+  color: colors.$gray-100;
+  @include type.type-style('heading-compact-02');
+}
+
+.cardTitle::after {
+  content: '';
+  display: block;
+  width: layout.$spacing-07;
+  padding-top: layout.$spacing-01;
+  border-bottom: calc(#{layout.$spacing-02} + #{layout.$spacing-01}) solid var(--brand-03, #{colors.$teal-60});
+}
+
+.cardHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.table {
+  width: 100%;
+}
+
+.table :global(thead tr) {
+  background-color: colors.$gray-20;
+}
+
+.table :global(thead th),
+.table :global(thead th .cds--table-header-label) {
+  background-color: colors.$gray-20;
+  color: colors.$gray-100;
+  @include type.type-style('heading-compact-01');
+}
+
+.table :global(tbody tr td) {
+  background-color: colors.$white;
+  border-bottom: 1px solid colors.$gray-20;
+  color: colors.$gray-100;
+  @include type.type-style('body-compact-01');
+}
+
+.table :global(tbody tr:hover td),
+.table :global(tbody tr:hover + tr td) {
+  background-color: colors.$gray-10;
+}
+
+.emptyState {
+  margin: 0;
+  padding: layout.$spacing-06 layout.$spacing-05;
+  text-align: center;
+  color: colors.$gray-70;
+  background-color: colors.$white;
+  @include type.type-style('body-compact-01');
+}
+
+.errorState {
+  margin: 0;
+  padding: layout.$spacing-06 layout.$spacing-05;
+  color: colors.$red-60;
+  background-color: colors.$white;
+  @include type.type-style('body-compact-01');
+}
+
+.tableFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: colors.$gray-10;
+  border-top: 1px solid colors.$gray-20;
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.tableFooterItemCount {
+  color: colors.$gray-70;
+}

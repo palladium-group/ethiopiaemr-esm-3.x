@@ -81,6 +81,24 @@
       "slot": "queue-table-transfer-status-slot"
     },
     {
+      "name": "queue-table-room-column",
+      "component": "queueTableRoomColumn",
+      "slot": "queue-table-room-assignment-slot"
+    },
+    {
+      "name": "queue-table-actions-column",
+      "component": "queueTableActionsColumn",
+      "slot": "queue-table-actions-slot"
+    },
+    {
+      "name": "filtered-queue-table-dashboard",
+      "component": "filteredQueueTableDashboard",
+      "slot": "service-queues-dashboard-slot",
+      "order": -10,
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "transfer-notes-overview-widget",
       "component": "transferNotesOverview",
       "slot": "patient-chart-summary-dashboard-slot",
@@ -88,6 +106,14 @@
         "fullWidth": false
       },
       "order": 6
+    },
+    {
+      "name": "finish-service-button",
+      "component": "finishServiceButton",
+      "slot": "patient-banner-bottom-slot",
+      "order": 3,
+      "online": true,
+      "offline": true
     },
     {
       "name": "start-visit-button2",
@@ -100,6 +126,27 @@
       "name": "add-patient-to-ward-siderail-button",
       "component": "addPatientToWardSiderailButton",
       "slot": "ward-ui-extension-hidden-slot"
+    },
+    {
+      "name": "ethiopiaemr-etl-admin-dashboard-link",
+      "component": "etlAdminDashboardLink",
+      "slot": "navbar-items-slot",
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "ethiopiaemr-reports-dashboard-link",
+      "component": "reportsDashboardLink",
+      "slot": "navbar-items-slot",
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "recent-diagnoses-widget",
+      "component": "recentDiagnosesWidget",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "online": true,
+      "offline": false
     }
   ],
   "workspaces": [
@@ -183,6 +230,10 @@
     {
       "name": "patient-transfer-details-modal",
       "component": "patientTransferDetailsModal"
+    },
+    {
+      "name": "assign-queue-room-modal",
+      "component": "assignQueueRoomModal"
     }
   ]
 }

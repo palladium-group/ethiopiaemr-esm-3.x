@@ -1,0 +1,20 @@
+{
+  "download": "Download",
+  "downloadFailed": "Download failed.",
+  "downloadReady": "Download ready.",
+  "errorLoadingReport": "Could not load this report.",
+  "errorLoadingReports": "Could not load the report list.",
+  "ethiopiaEmrReports": "EthiopiaEMR Reports",
+  "fillAllFields": "Please fill in all required fields.",
+  "generatingDownload": "Generating…",
+  "loading": "Loading…",
+  "noData": "No data returned.",
+  "noRows": "No rows.",
+  "reportCompleted": "Report completed successfully.",
+  "reportFailed": "Report evaluation failed on the server.",
+  "reports": "Reports",
+  "running": "Running…",
+  "runReport": "Run Report",
+  "selectAReport": "Select a report",
+  "selectAReportToBegin": "Select a report from the menu on the left to get started."
+}

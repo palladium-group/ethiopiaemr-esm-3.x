@@ -13,7 +13,7 @@
     "postinstall": "husky install",
     "prettier": "prettier --config prettier.config.js --write \"packages/**/*.{ts,tsx,css,scss}\" \"e2e/**/*.ts\"",
     "release": "yarn workspaces foreach --all --topological version",
-    "start": "openmrs develop --sources packages/esm-clinical-workflow-app packages/esm-billing-app packages/esm-patient-registration-app packages/esm-admin-app packages/esm-patient-medications-ethio-app packages/esm-consultation-app packages/esm-order-catalog-ethio-app --port 8095",
+    "start": "openmrs develop --sources packages/esm-clinical-workflow-app packages/esm-billing-app packages/esm-patient-registration-app packages/esm-admin-app packages/esm-patient-medications-app packages/esm-consultation-app packages/esm-order-catalog-ethio-app --port 8095",
     "test-e2e": "playwright test",
     "verify": "turbo run lint && turbo run typescript"
   },
@@ -21,6 +21,7 @@
     "*.{js,jsx,ts,tsx}": "eslint --cache --fix"
   },
   "resolutions": {
+    "@openmrs/esm-patient-common-lib": "12.1.1-pre.11242",
     "@types/d3-dispatch": "3.0.6",
     "@carbon/react": "1.83.0",
     "sass": "^1.54.3",
@@ -41,8 +42,8 @@
   },
   "devDependencies": {
     "@carbon/pictograms-react": "^11.66.0",
-    "@openmrs/esm-framework": "next",
-    "@openmrs/esm-patient-common-lib": "^12.0.2-pre.10146",
+    "@openmrs/esm-framework": "8.0.1-pre.3623",
+    "@openmrs/esm-patient-common-lib": "12.1.1-pre.11242",
     "@playwright/test": "^1.30.0",
     "@rspack/cli": "^1.5.5",
     "@rspack/core": "^1.5.5",

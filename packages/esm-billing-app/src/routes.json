@@ -21,6 +21,10 @@
     {
       "component": "servicesAvailableAdmin",
       "route": "service-available-admin"
+    },
+    {
+      "component": "autoClaimsAdmin",
+      "route": "claims-admin"
     }
   ],
   "extensions": [
@@ -290,6 +294,20 @@
       "slot": "clinical-services-available-dashboard-slot"
     },
     {
+      "name": "auto-claims-dashboard-link",
+      "component": "autoClaimsAdminLink",
+      "slot": "auto-claims-admin-dashboard-slot",
+      "meta": {
+        "name": "auto-claims",
+        "title": "Claims",
+        "slot": "auto-claims-dashboard-slot"
+      }
+    },
+    { "name": "auto-claims-dashboard",
+      "component": "autoClaims",
+      "slot": "auto-claims-dashboard-slot"
+    },
+    {
       "name": "payment-history-dashboard-link",
       "component": "paymentHistoryLink",
       "slot": "billing-admin-dashboard-slot",
@@ -345,10 +363,16 @@
       "title": "Create Charge Item Form",
       "type": "other-form"
     },
-     {
+    {
       "name": "available-service-form",
       "component": "addServiceAvailableForm",
       "title": "Create Service Available Form",
+      "type": "other-form"
+    },
+    {
+      "name": "edit-claim-form",
+      "component": "editClaimForm",
+      "title": "Edit Claim Form",
       "type": "other-form"
     },
     {
@@ -457,6 +481,10 @@
     {
       "name": "delete-payment-point-modal",
       "component": "deletePaymentPointModal"
+    },
+    {
+      "name": "claims-pdf-export-modal",
+      "component": "claimsPdfExportModal"
     }
   ]
 }
