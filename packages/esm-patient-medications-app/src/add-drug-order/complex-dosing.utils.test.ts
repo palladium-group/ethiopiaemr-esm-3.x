@@ -1,10 +1,19 @@
 import {
   calculateTaperingQuantity,
   calculateTaperingTotalDurationDays,
+  calculateVariableQuantity,
   serializeTaperingDosage,
+  serializeVariableDosage,
   validateTaperingDosing,
+  validateVariableDosing,
 } from './complex-dosing.utils';
-import type { TaperingDosingState, TaperingPhase, TaperingValidationMessages } from './complex-dosing.types';
+import type {
+  TaperingDosingState,
+  TaperingPhase,
+  TaperingValidationMessages,
+  VariableDosingState,
+  VariableValidationMessages,
+} from './complex-dosing.types';
 
 const durationUnitsDaysMap = {
   '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 1,
@@ -17,6 +26,16 @@ const validationMessages: TaperingValidationMessages = {
   doseRequired: 'Dosage is required',
   doseGreaterThanZero: 'Dose must be greater than 0',
   frequencyRequired: 'Frequency is required',
+  durationRequired: 'Duration is required',
+  durationGreaterThanZero: 'Duration must be greater than 0',
+  durationUnitRequired: 'Duration unit is required',
+};
+
+const variableValidationMessages: VariableValidationMessages = {
+  routeRequired: 'Route is required',
+  unitRequired: 'Dose unit is required',
+  doseRequired: 'Dosage is required',
+  doseGreaterThanZero: 'Dose must be greater than 0',
   durationRequired: 'Duration is required',
   durationGreaterThanZero: 'Duration must be greater than 0',
   durationUnitRequired: 'Duration unit is required',
@@ -199,6 +218,151 @@ describe('serializeTaperingDosage', () => {
         ],
       }),
     ).toBe('Phase 1: 40mg, Once daily, 7 Days');
+  });
+});
+
+describe('calculateVariableQuantity', () => {
+  const tidState = {
+    route: null,
+    unit: null,
+    pattern: 'tid' as const,
+    tidDoses: { morning: 12, noon: 8, evening: 10 },
+    q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+  };
+
+  it('returns null when a TID slot is incomplete', () => {
+    expect(
+      calculateVariableQuantity(
+        { ...tidState, tidDoses: { morning: 12, noon: null, evening: 10 } },
+        30,
+        '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        durationUnitsDaysMap,
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null when duration is incomplete', () => {
+    expect(
+      calculateVariableQuantity(tidState, null, '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', durationUnitsDaysMap),
+    ).toBeNull();
+  });
+
+  it('calculates quantity as sum of daily doses times duration in days', () => {
+    expect(calculateVariableQuantity(tidState, 30, '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', durationUnitsDaysMap)).toBe(
+      900,
+    );
+  });
+
+  it('calculates quantity for Q6H using all four slots', () => {
+    expect(
+      calculateVariableQuantity(
+        {
+          route: null,
+          unit: null,
+          pattern: 'q6h',
+          tidDoses: { morning: null, noon: null, evening: null },
+          q6hDoses: { at0600: 10, at1200: 10, at1800: 10, at0000: 5 },
+        },
+        7,
+        '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        durationUnitsDaysMap,
+      ),
+    ).toBe(245);
+  });
+});
+
+describe('serializeVariableDosage', () => {
+  const tidState: VariableDosingState = {
+    route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Subcutaneous' },
+    unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Units' },
+    pattern: 'tid',
+    tidDoses: { morning: 12, noon: 8, evening: 10 },
+    q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+  };
+
+  it('serializes TID slots into freeTextDosage format', () => {
+    expect(serializeVariableDosage(tidState)).toBe('Pattern: TID, Morning: 12 Units, Noon: 8 Units, Evening: 10 Units');
+  });
+
+  it('serializes Q6H slots into freeTextDosage format', () => {
+    expect(
+      serializeVariableDosage({
+        ...tidState,
+        pattern: 'q6h',
+        q6hDoses: { at0600: 10, at1200: 10, at1800: 10, at0000: 5 },
+      }),
+    ).toBe('Pattern: Q6H, 06:00: 10 Units, 12:00: 10 Units, 18:00: 10 Units, 00:00: 5 Units');
+  });
+
+  it('returns null when no slot has a valid dose', () => {
+    expect(
+      serializeVariableDosage({
+        ...tidState,
+        tidDoses: { morning: null, noon: null, evening: null },
+      }),
+    ).toBeNull();
+  });
+
+  it('skips incomplete slots and serializes only complete ones', () => {
+    expect(
+      serializeVariableDosage({
+        ...tidState,
+        tidDoses: { morning: 12, noon: null, evening: 10 },
+      }),
+    ).toBe('Pattern: TID, Morning: 12 Units, Evening: 10 Units');
+  });
+});
+
+describe('validateVariableDosing', () => {
+  const validState: VariableDosingState = {
+    route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+    unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+    pattern: 'tid',
+    tidDoses: { morning: 12, noon: 8, evening: 10 },
+    q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+  };
+
+  const durationUnit = { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' };
+
+  it('returns valid for a complete variable TID regimen', () => {
+    expect(validateVariableDosing(validState, 30, durationUnit, variableValidationMessages).isValid).toBe(true);
+  });
+
+  it('requires route, dose unit, all TID slots, and duration', () => {
+    const result = validateVariableDosing(
+      {
+        ...validState,
+        route: null,
+        unit: null,
+        tidDoses: { morning: 12, noon: null, evening: 10 },
+      },
+      null,
+      null,
+      variableValidationMessages,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.route).toBe('Route is required');
+    expect(result.errors.unit).toBe('Dose unit is required');
+    expect(result.errors.slots.noon?.dose).toBe('Dosage is required');
+    expect(result.errors.duration).toBe('Duration is required');
+    expect(result.errors.durationUnit).toBe('Duration unit is required');
+  });
+
+  it('validates all Q6H slots when pattern is q6h', () => {
+    const result = validateVariableDosing(
+      {
+        ...validState,
+        pattern: 'q6h',
+        q6hDoses: { at0600: 10, at1200: 10, at1800: null, at0000: 5 },
+      },
+      7,
+      durationUnit,
+      variableValidationMessages,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.slots.at1800?.dose).toBe('Dosage is required');
   });
 });
 

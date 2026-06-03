@@ -72,3 +72,65 @@ export function createInitialTaperingState(defaultDurationUnit?: DurationUnit | 
     phases: [createEmptyTaperingPhase(defaultDurationUnit)],
   };
 }
+
+export type VariablePattern = 'tid' | 'q6h';
+
+export type VariableTidDoses = {
+  morning: number | null;
+  noon: number | null;
+  evening: number | null;
+};
+
+export type VariableQ6hDoses = {
+  at0600: number | null;
+  at1200: number | null;
+  at1800: number | null;
+  at0000: number | null;
+};
+
+export type VariableDosingState = {
+  route: MedicationRoute | null;
+  unit: DosingUnit | null;
+  pattern: VariablePattern;
+  tidDoses: VariableTidDoses;
+  q6hDoses: VariableQ6hDoses;
+};
+
+export function createInitialVariableState(): VariableDosingState {
+  return {
+    route: null,
+    unit: null,
+    pattern: 'tid',
+    tidDoses: { morning: null, noon: null, evening: null },
+    q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
+  };
+}
+
+export type VariableSlotKey = keyof VariableTidDoses | keyof VariableQ6hDoses;
+
+export type VariableSlotFieldErrors = {
+  dose?: string;
+};
+
+export type VariableValidationErrors = {
+  route?: string;
+  unit?: string;
+  slots: Partial<Record<VariableSlotKey, VariableSlotFieldErrors>>;
+  duration?: string;
+  durationUnit?: string;
+};
+
+export type VariableValidationMessages = {
+  routeRequired: string;
+  unitRequired: string;
+  doseRequired: string;
+  doseGreaterThanZero: string;
+  durationRequired: string;
+  durationGreaterThanZero: string;
+  durationUnitRequired: string;
+};
+
+export type VariableValidationResult = {
+  isValid: boolean;
+  errors: VariableValidationErrors;
+};

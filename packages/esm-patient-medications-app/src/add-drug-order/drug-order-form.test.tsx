@@ -885,3 +885,248 @@ describe('DrugOrderForm - tapering validation', () => {
     expect(screen.queryByText(/incomplete tapering regimen/i)).not.toBeInTheDocument();
   });
 });
+
+describe('DrugOrderForm - variable quantity auto-calculation', () => {
+  it('auto-calculates quantity from variable TID doses and prescription duration', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        dosage: 1,
+        unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+        route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+        frequency: {
+          valueCoded: 'once-daily-uuid',
+          value: 'Once daily',
+          frequencyPerDay: 1.0,
+        },
+        duration: 30,
+        durationUnit: { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+        pillsDispensed: null,
+        quantityUnits: null,
+        numRefills: 0,
+        indication: 'Diabetes',
+      }),
+    );
+
+    await user.click(screen.getByRole('tab', { name: /variable/i }));
+
+    const variableUnitCombobox = screen.getByRole('combobox', { name: /dose unit/i });
+    await user.click(variableUnitCombobox);
+    await user.click(screen.getByText('Tablet'));
+
+    await user.clear(screen.getByLabelText(/morning/i));
+    await user.type(screen.getByLabelText(/morning/i), '12');
+    await user.clear(screen.getByLabelText(/noon/i));
+    await user.type(screen.getByLabelText(/noon/i), '8');
+    await user.clear(screen.getByLabelText(/evening/i));
+    await user.type(screen.getByLabelText(/evening/i), '10');
+
+    const quantityInput = screen.getByRole('spinbutton', { name: /quantity to dispense/i });
+    await waitFor(() => {
+      expect(quantityInput).toHaveValue(900);
+    });
+    expect(screen.getByText(/auto-calculated/i)).toBeInTheDocument();
+  });
+});
+
+describe('DrugOrderForm - variable dosage serialization', () => {
+  it('saves variable TID doses as freeTextDosage on submit', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+    const item = createNewOrderBasketItem({
+      dosage: 1,
+      unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+      route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+      frequency: {
+        valueCoded: 'once-daily-uuid',
+        value: 'Once daily',
+        frequencyPerDay: 1.0,
+      },
+      duration: 30,
+      durationUnit: { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+      pillsDispensed: 30,
+      quantityUnits: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+      numRefills: 0,
+      indication: 'Diabetes',
+    });
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={item}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /variable/i }));
+
+    const variableRouteCombobox = screen.getByRole('combobox', { name: /^route$/i });
+    await user.click(variableRouteCombobox);
+    await user.click(screen.getByText('Oral'));
+
+    const variableUnitCombobox = screen.getByRole('combobox', { name: /dose unit/i });
+    await user.click(variableUnitCombobox);
+    await user.click(screen.getByText('Tablet'));
+
+    await user.clear(screen.getByLabelText(/morning/i));
+    await user.type(screen.getByLabelText(/morning/i), '12');
+    await user.clear(screen.getByLabelText(/noon/i));
+    await user.type(screen.getByLabelText(/noon/i), '8');
+    await user.clear(screen.getByLabelText(/evening/i));
+    await user.type(screen.getByLabelText(/evening/i), '10');
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/pattern: tid, morning: 12 tablet, noon: 8 tablet, evening: 10 tablet/i),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isFreeTextDosage: true,
+          freeTextDosage: 'Pattern: TID, Morning: 12 Tablet, Noon: 8 Tablet, Evening: 10 Tablet',
+          dosage: null,
+          unit: null,
+          frequency: null,
+          route: expect.objectContaining({ value: 'Oral' }),
+          duration: 30,
+          durationUnit: expect.objectContaining({ value: 'Days' }),
+        }),
+      );
+    });
+  });
+});
+
+describe('DrugOrderForm - variable validation', () => {
+  it('blocks save and shows errors when variable fields are incomplete', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={createNewOrderBasketItem({
+          indication: 'Diabetes',
+          numRefills: 0,
+          duration: null,
+          durationUnit: null,
+        })}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /variable/i }));
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/incomplete variable regimen/i)).toBeInTheDocument();
+    });
+    expect(screen.getAllByText(/dosage is required/i).length).toBeGreaterThan(0);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('allows save after all variable fields are completed', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={createNewOrderBasketItem({
+          indication: 'Diabetes',
+          numRefills: 0,
+          pillsDispensed: null,
+          quantityUnits: null,
+          duration: 30,
+          durationUnit: { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+        })}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /variable/i }));
+
+    await user.click(screen.getByRole('combobox', { name: /^route$/i }));
+    await user.click(screen.getByText('Oral'));
+
+    await user.click(screen.getByRole('combobox', { name: /dose unit/i }));
+    await user.click(screen.getByText('Tablet'));
+
+    await user.clear(screen.getByLabelText(/morning/i));
+    await user.type(screen.getByLabelText(/morning/i), '12');
+    await user.clear(screen.getByLabelText(/noon/i));
+    await user.type(screen.getByLabelText(/noon/i), '8');
+    await user.clear(screen.getByLabelText(/evening/i));
+    await user.type(screen.getByLabelText(/evening/i), '10');
+
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalled();
+    });
+    expect(screen.queryByText(/incomplete variable regimen/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('DrugOrderForm - variable dosing UI', () => {
+  it('renders TID dose schedule when variable is selected', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await user.click(screen.getByRole('tab', { name: /variable/i }));
+
+    expect(screen.getByText(/dose schedule/i)).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /3 times daily/i })).toBeChecked();
+    expect(screen.getByLabelText(/morning/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/noon/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/evening/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/06:00/i)).not.toBeInTheDocument();
+  });
+
+  it('renders Q6H dose slots when pattern is changed', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await user.click(screen.getByRole('tab', { name: /variable/i }));
+    await user.click(screen.getByRole('radio', { name: /4 times daily/i }));
+
+    expect(screen.getByLabelText(/06:00/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/12:00/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/18:00/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/00:00/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/morning/i)).not.toBeInTheDocument();
+  });
+
+  it('seeds route and unit from standard form when switching to variable', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('Tablet');
+    });
+
+    const standardRoute = screen.getByRole('combobox', { name: /^route$/i });
+    await user.click(standardRoute);
+    await user.click(screen.getByRole('option', { name: /oral/i }));
+
+    await user.click(screen.getByRole('tab', { name: /variable/i }));
+
+    expect(screen.getByRole('combobox', { name: /^route$/i })).toHaveValue('Oral');
+    expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('Tablet');
+  });
+});

@@ -62,19 +62,25 @@ import { type ConfigObject } from '../config-schema';
 import {
   createEmptyTaperingPhase,
   createInitialTaperingState,
+  createInitialVariableState,
   DOSING_TYPES,
   type DosingType,
   type TaperingDosingState,
+  type VariableDosingState,
 } from './complex-dosing.types';
 import {
   calculateTaperingQuantity,
   calculateTaperingTotalDurationDays,
+  calculateVariableQuantity,
   serializeTaperingDosage,
+  serializeVariableDosage,
   validateTaperingDosing,
+  validateVariableDosing,
 } from './complex-dosing.utils';
 import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from './drug-order-form.resource';
 import { TaperingDoseForm } from './tapering-dose-form.component';
 import taperingStyles from './tapering-dose-form.scss';
+import { VariableDoseForm } from './variable-dose-form.component';
 import styles from './drug-order-form.scss';
 
 export interface DrugOrderFormProps {
@@ -166,6 +172,8 @@ export function DrugOrderForm({
     getValues,
     handleSubmit,
     setValue,
+    setError,
+    clearErrors,
     watch,
   } = drugOrderForm;
 
@@ -213,7 +221,9 @@ export function DrugOrderForm({
   );
   const [dosingType, setDosingType] = useState<DosingType>('standard');
   const [taperingState, setTaperingState] = useState<TaperingDosingState>(() => createInitialTaperingState());
+  const [variableState, setVariableState] = useState<VariableDosingState>(() => createInitialVariableState());
   const [showTaperingValidationErrors, setShowTaperingValidationErrors] = useState(false);
+  const [showVariableValidationErrors, setShowVariableValidationErrors] = useState(false);
 
   const dosingTypeSelectedIndex = DOSING_TYPES.indexOf(dosingType);
 
@@ -228,6 +238,19 @@ export function DrugOrderForm({
       }
 
       return calculateTaperingQuantity(taperingState, durationUnitsDaysMap);
+    }
+
+    if (dosingType === 'variable') {
+      if (watchedQuantityUnits && watchedQuantityUnits.valueCoded !== variableState.unit?.valueCoded) {
+        return null;
+      }
+
+      return calculateVariableQuantity(
+        variableState,
+        watchedDuration,
+        watchedDurationUnit?.valueCoded,
+        durationUnitsDaysMap,
+      );
     }
 
     if (
@@ -254,6 +277,7 @@ export function DrugOrderForm({
     watchedAsNeeded,
     dosingType,
     taperingState,
+    variableState,
     watchedDosage,
     watchedFrequency?.frequencyPerDay,
     watchedDuration,
@@ -263,7 +287,8 @@ export function DrugOrderForm({
     durationUnitsDaysMap,
   ]);
 
-  const doseUnitForQuantity = dosingType === 'tapering' ? taperingState.unit : watchedUnit;
+  const doseUnitForQuantity =
+    dosingType === 'tapering' ? taperingState.unit : dosingType === 'variable' ? variableState.unit : watchedUnit;
 
   useEffect(() => {
     if (!requireOutpatientQuantity || isManualOverride) {
@@ -407,6 +432,11 @@ export function DrugOrderForm({
     [dosingType, watchedIsFreeText, taperingState],
   );
 
+  const variableDosagePreview = useMemo(
+    () => (dosingType === 'variable' && !watchedIsFreeText ? serializeVariableDosage(variableState) : null),
+    [dosingType, watchedIsFreeText, variableState],
+  );
+
   const taperingValidationMessages = useMemo(
     () => ({
       routeRequired: t('selectRouteErrorMessage', 'Route is required'),
@@ -426,12 +456,31 @@ export function DrugOrderForm({
     [taperingState, taperingValidationMessages],
   );
 
+  const variableValidationMessages = useMemo(
+    () => ({
+      routeRequired: t('selectRouteErrorMessage', 'Route is required'),
+      unitRequired: t('selectUnitErrorMessage', 'Dose unit is required'),
+      doseRequired: t('dosageRequiredErrorMessage', 'Dosage is required'),
+      doseGreaterThanZero: t('dosageGreaterThanZeroErrorMessage', 'Dose must be greater than 0'),
+      durationRequired: t('durationRequiredErrorMessage', 'Duration is required'),
+      durationGreaterThanZero: t('durationGreaterThanZeroErrorMessage', 'Duration must be greater than 0'),
+      durationUnitRequired: t('durationUnitRequiredErrorMessage', 'Duration unit is required'),
+    }),
+    [t],
+  );
+
+  const variableValidationResult = useMemo(
+    () => validateVariableDosing(variableState, watchedDuration, watchedDurationUnit, variableValidationMessages),
+    [variableState, watchedDuration, watchedDurationUnit, variableValidationMessages],
+  );
+
   const handleFormSave = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
       if (dosingType === 'tapering' && !watchedIsFreeText) {
         setShowTaperingValidationErrors(true);
+        setShowVariableValidationErrors(false);
 
         if (!taperingValidationResult.isValid) {
           return;
@@ -455,20 +504,63 @@ export function DrugOrderForm({
         return;
       }
 
+      if (dosingType === 'variable' && !watchedIsFreeText) {
+        setShowVariableValidationErrors(true);
+        setShowTaperingValidationErrors(false);
+
+        if (variableValidationResult.errors.duration) {
+          setError('duration', { type: 'manual', message: variableValidationResult.errors.duration });
+        } else {
+          clearErrors('duration');
+        }
+
+        if (variableValidationResult.errors.durationUnit) {
+          setError('durationUnit', { type: 'manual', message: variableValidationResult.errors.durationUnit });
+        } else {
+          clearErrors('durationUnit');
+        }
+
+        if (!variableValidationResult.isValid) {
+          return;
+        }
+
+        const serializedDosage = serializeVariableDosage(variableState);
+        setValue('isFreeTextDosage', true);
+        setValue('freeTextDosage', serializedDosage ?? '');
+        setValue('dosage', null);
+        setValue('unit', null);
+        setValue('frequency', null);
+        setValue('route', variableState.route, { shouldValidate: true });
+
+        if (!getValues('quantityUnits') && variableState.unit) {
+          setValue('quantityUnits', variableState.unit, { shouldValidate: true });
+        }
+
+        await handleSubmit(handleFormSubmission, handleFormSubmissionError)();
+        return;
+      }
+
       setShowTaperingValidationErrors(false);
+      setShowVariableValidationErrors(false);
       await handleSubmit(handleFormSubmission, handleFormSubmissionError)(event);
     },
     [
+      clearErrors,
       defaultDaysDurationUnit,
       dosingType,
       getValues,
       handleFormSubmission,
       handleFormSubmissionError,
       handleSubmit,
+      setError,
       setValue,
       taperingState,
       taperingTotalDurationDays,
       taperingValidationResult.isValid,
+      variableState,
+      variableValidationResult.errors.duration,
+      variableValidationResult.errors.durationUnit,
+      variableValidationResult.isValid,
       watchedIsFreeText,
     ],
   );
@@ -478,6 +570,7 @@ export function DrugOrderForm({
       const newType = DOSING_TYPES[index] ?? 'standard';
       setDosingType(newType);
       setShowTaperingValidationErrors(false);
+      setShowVariableValidationErrors(false);
 
       if (newType === 'tapering') {
         setTaperingState((prev) => ({
@@ -485,6 +578,14 @@ export function DrugOrderForm({
           route: prev.route ?? (getValues('route') as TaperingDosingState['route']) ?? null,
           unit: prev.unit ?? (getValues('unit') as TaperingDosingState['unit']) ?? null,
           phases: prev.phases.length > 0 ? prev.phases : [createEmptyTaperingPhase(defaultDaysDurationUnit)],
+        }));
+      }
+
+      if (newType === 'variable') {
+        setVariableState((prev) => ({
+          ...prev,
+          route: prev.route ?? (getValues('route') as VariableDosingState['route']) ?? null,
+          unit: prev.unit ?? (getValues('unit') as VariableDosingState['unit']) ?? null,
         }));
       }
     },
@@ -789,6 +890,37 @@ export function DrugOrderForm({
                             {t('dosageSummary', 'Dosage summary')}
                           </span>
                           <span className={taperingStyles.dosagePreviewValue}>{taperingDosagePreview}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : dosingType === 'variable' ? (
+                    <>
+                      {showVariableValidationErrors && !variableValidationResult.isValid && (
+                        <InlineNotification
+                          kind="error"
+                          lowContrast
+                          className={styles.inlineNotification}
+                          subtitle={t(
+                            'variableValidationError',
+                            'Complete route, dose unit, all dose slots, and prescription duration before saving.',
+                          )}
+                          title={t('variableValidationErrorTitle', 'Incomplete variable regimen')}
+                        />
+                      )}
+                      <VariableDoseForm
+                        state={variableState}
+                        drugRoutes={drugRoutes}
+                        drugDosingUnits={drugDosingUnits}
+                        onStateChange={setVariableState}
+                        validationErrors={showVariableValidationErrors ? variableValidationResult.errors : null}
+                        filterItemsByName={filterItemsByName}
+                      />
+                      {variableDosagePreview && (
+                        <div className={taperingStyles.dosagePreview}>
+                          <span className={taperingStyles.dosagePreviewLabel}>
+                            {t('dosageSummary', 'Dosage summary')}
+                          </span>
+                          <span className={taperingStyles.dosagePreviewValue}>{variableDosagePreview}</span>
                         </div>
                       )}
                     </>
