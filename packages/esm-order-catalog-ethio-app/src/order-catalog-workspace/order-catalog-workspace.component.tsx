@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Workspace2 } from '@openmrs/esm-framework';
+import { useConfig, Workspace2 } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../config-schema';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import OrderCatalogBrowse from './order-catalog-browse.component';
 import styles from './order-catalog-workspace.scss';
@@ -13,6 +14,11 @@ export type OrderCatalogWorkspaceProps = PatientWorkspace2DefinitionProps<OrderC
 
 const OrderCatalogWorkspace: React.FC<OrderCatalogWorkspaceProps> = ({ groupProps, closeWorkspace }) => {
   const { t } = useTranslation();
+  const config = useConfig<ConfigObject>();
+
+  if (!config.orderCatalogEnabled) {
+    return null;
+  }
 
   if (!groupProps?.patient || !groupProps?.visitContext) {
     return null;

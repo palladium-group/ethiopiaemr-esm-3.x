@@ -8,9 +8,11 @@ import {
   ChevronUpIcon,
   launchWorkspace2,
   MaybeIcon,
+  useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { type OrderBasketExtensionProps, useStartVisitIfNeeded } from '@openmrs/esm-patient-common-lib';
+import { type ConfigObject } from '../config-schema';
 import { ethioOrderCatalogWorkspaceName } from '../constants';
 import OrderCatalogBasketItemTile from './order-catalog-basket-item-tile.component';
 import { partitionBasketOrders } from './order-catalog-basket-panel.utils';
@@ -18,7 +20,9 @@ import { useCatalogBasketOrders } from './use-catalog-basket-orders';
 import styles from './order-catalog-panel.scss';
 
 const OrderCatalogPanel: React.FC<Partial<OrderBasketExtensionProps>> = (props) => {
-  if (!props.patient?.id) {
+  const config = useConfig<ConfigObject>();
+
+  if (!config.orderCatalogEnabled || !props.patient?.id) {
     return null;
   }
 

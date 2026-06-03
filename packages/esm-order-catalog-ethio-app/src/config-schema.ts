@@ -9,6 +9,12 @@ import {
 } from './api/order-catalog-basket';
 
 export const configSchema = {
+  orderCatalogEnabled: {
+    _type: Type.Boolean,
+    _default: false,
+    _description:
+      'When true, shows the All orderables catalog in the order basket and hides legacy lab, imaging, and procedure panels. When false, legacy ordering is unchanged.',
+  },
   allOrderablesConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultAllOrderablesConceptUuid,
@@ -51,6 +57,7 @@ export const configSchema = {
 };
 
 export interface ConfigObject {
+  orderCatalogEnabled: boolean;
   allOrderablesConceptUuid: string;
   orderCatalogDisplayLocale: string;
   labOrderTypeUuid: string;

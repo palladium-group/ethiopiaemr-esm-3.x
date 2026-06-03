@@ -1,6 +1,7 @@
 import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import { moduleName } from './constants';
+import { subscribeOrderBasketSlotToCatalogConfig } from './order-catalog-extension-slot-config';
 import OrderCatalogPanel from './order-catalog-panel/order-catalog-panel.component';
 import OrderCatalogWorkspace from './order-catalog-workspace/order-catalog-workspace.component';
 
@@ -13,6 +14,7 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+  subscribeOrderBasketSlotToCatalogConfig();
 }
 
 export const orderCatalogPanel = getSyncLifecycle(OrderCatalogPanel, options);
