@@ -647,3 +647,159 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     });
   });
 });
+
+describe('DrugOrderForm - tapering quantity auto-calculation', () => {
+  it('auto-calculates quantity from tapering phases', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        dosage: 1,
+        unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+        route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+        frequency: {
+          valueCoded: 'once-daily-uuid',
+          value: 'Once daily',
+          frequencyPerDay: 1.0,
+        },
+        duration: 7,
+        durationUnit: { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+        pillsDispensed: null,
+        quantityUnits: null,
+        numRefills: 0,
+        indication: 'Hypertension',
+      }),
+    );
+
+    await user.click(screen.getByRole('tab', { name: /tapering/i }));
+
+    const taperingUnitCombobox = screen.getByRole('combobox', { name: /dose unit/i });
+    await user.click(taperingUnitCombobox);
+    await user.click(screen.getByText('Tablet'));
+
+    const doseInput = screen.getByRole('spinbutton', { name: /^dose$/i });
+    await user.clear(doseInput);
+    await user.type(doseInput, '40');
+
+    const frequencyCombobox = screen.getByRole('combobox', { name: /^frequency$/i });
+    await user.click(frequencyCombobox);
+    await user.click(screen.getByText('Once daily'));
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    await user.clear(durationInput);
+    await user.type(durationInput, '7');
+
+    const durationUnitCombobox = screen.getByRole('combobox', { name: /duration unit/i });
+    await user.click(durationUnitCombobox);
+    await user.click(screen.getByText('Days'));
+
+    const quantityInput = screen.getByRole('spinbutton', { name: /quantity to dispense/i });
+    await waitFor(() => {
+      expect(quantityInput).toHaveValue(280);
+    });
+    expect(screen.getByText(/auto-calculated/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /add phase/i }));
+
+    const phaseDoseInputs = screen.getAllByRole('spinbutton', { name: /^dose$/i });
+    await user.clear(phaseDoseInputs[1]);
+    await user.type(phaseDoseInputs[1], '20');
+
+    const phaseFrequencyComboboxes = screen.getAllByRole('combobox', { name: /^frequency$/i });
+    await user.click(phaseFrequencyComboboxes[1]);
+    await user.click(screen.getByText('Once daily'));
+
+    const phaseDurationInputs = screen.getAllByRole('spinbutton', { name: /^duration$/i });
+    await user.clear(phaseDurationInputs[1]);
+    await user.type(phaseDurationInputs[1], '7');
+
+    const phaseDurationUnitComboboxes = screen.getAllByRole('combobox', { name: /duration unit/i });
+    await user.click(phaseDurationUnitComboboxes[1]);
+    await user.click(screen.getByText('Days'));
+
+    await waitFor(() => {
+      expect(quantityInput).toHaveValue(420);
+    });
+  });
+});
+
+describe('DrugOrderForm - tapering dosage serialization', () => {
+  it('saves tapering phases as freeTextDosage on submit', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+    const item = createNewOrderBasketItem({
+      dosage: 1,
+      unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+      route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+      frequency: {
+        valueCoded: 'once-daily-uuid',
+        value: 'Once daily',
+        frequencyPerDay: 1.0,
+      },
+      duration: 7,
+      durationUnit: { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+      pillsDispensed: 14,
+      quantityUnits: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+      numRefills: 0,
+      indication: 'Hypertension',
+    });
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={item}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /tapering/i }));
+
+    const taperingRouteCombobox = screen.getByRole('combobox', { name: /^route$/i });
+    await user.click(taperingRouteCombobox);
+    await user.click(screen.getByText('Oral'));
+
+    const taperingUnitCombobox = screen.getByRole('combobox', { name: /dose unit/i });
+    await user.click(taperingUnitCombobox);
+    await user.click(screen.getByText('Tablet'));
+
+    const doseInput = screen.getByRole('spinbutton', { name: /^dose$/i });
+    await user.clear(doseInput);
+    await user.type(doseInput, '40');
+
+    const frequencyCombobox = screen.getByRole('combobox', { name: /^frequency$/i });
+    await user.click(frequencyCombobox);
+    await user.click(screen.getByText('Once daily'));
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    await user.clear(durationInput);
+    await user.type(durationInput, '7');
+
+    const durationUnitCombobox = screen.getByRole('combobox', { name: /duration unit/i });
+    await user.click(durationUnitCombobox);
+    await user.click(screen.getByText('Days'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/phase 1: 40tablet, once daily, 7 days/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isFreeTextDosage: true,
+          freeTextDosage: 'Phase 1: 40Tablet, Once daily, 7 Days',
+          dosage: null,
+          unit: null,
+          frequency: null,
+          route: expect.objectContaining({ value: 'Oral' }),
+          duration: 7,
+          durationUnit: expect.objectContaining({ value: 'Days' }),
+        }),
+      );
+    });
+  });
+});

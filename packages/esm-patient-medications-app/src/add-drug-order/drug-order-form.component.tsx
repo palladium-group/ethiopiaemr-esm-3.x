@@ -1,4 +1,13 @@
-import React, { type ChangeEvent, type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  type ChangeEvent,
+  type ComponentProps,
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import {
@@ -7,6 +16,7 @@ import {
   Checkbox,
   Column,
   ComboBox,
+  ContentSwitcher,
   Form,
   FormGroup,
   FormLabel,
@@ -15,6 +25,7 @@ import {
   InlineNotification,
   Layer,
   NumberInput,
+  Switch,
   TextArea,
   TextInput,
   Toggle,
@@ -48,7 +59,21 @@ import {
 import { useActivePatientOrders, useRequireOutpatientQuantity } from '../api';
 import { useOrderConfig } from '../api/order-config';
 import { type ConfigObject } from '../config-schema';
+import {
+  createEmptyTaperingPhase,
+  createInitialTaperingState,
+  DOSING_TYPES,
+  type DosingType,
+  type TaperingDosingState,
+} from './complex-dosing.types';
+import {
+  calculateTaperingQuantity,
+  calculateTaperingTotalDurationDays,
+  serializeTaperingDosage,
+} from './complex-dosing.utils';
 import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from './drug-order-form.resource';
+import { TaperingDoseForm } from './tapering-dose-form.component';
+import taperingStyles from './tapering-dose-form.scss';
 import styles from './drug-order-form.scss';
 
 export interface DrugOrderFormProps {
@@ -185,11 +210,24 @@ export function DrugOrderForm({
   const [isManualOverride, setIsManualOverride] = useState(
     initialOrderBasketItem?.isQuantityManual ?? (isExistingOrder && initialOrderBasketItem?.pillsDispensed != null),
   );
+  const [dosingType, setDosingType] = useState<DosingType>('standard');
+  const [taperingState, setTaperingState] = useState<TaperingDosingState>(() => createInitialTaperingState());
+
+  const dosingTypeSelectedIndex = DOSING_TYPES.indexOf(dosingType);
 
   const calculatedQuantity = useMemo(() => {
     if (watchedIsFreeText || watchedAsNeeded) {
       return null;
     }
+
+    if (dosingType === 'tapering') {
+      if (watchedQuantityUnits && watchedQuantityUnits.valueCoded !== taperingState.unit?.valueCoded) {
+        return null;
+      }
+
+      return calculateTaperingQuantity(taperingState, durationUnitsDaysMap);
+    }
+
     if (
       watchedDosage == null ||
       watchedDosage <= 0 ||
@@ -212,6 +250,8 @@ export function DrugOrderForm({
   }, [
     watchedIsFreeText,
     watchedAsNeeded,
+    dosingType,
+    taperingState,
     watchedDosage,
     watchedFrequency?.frequencyPerDay,
     watchedDuration,
@@ -221,6 +261,8 @@ export function DrugOrderForm({
     durationUnitsDaysMap,
   ]);
 
+  const doseUnitForQuantity = dosingType === 'tapering' ? taperingState.unit : watchedUnit;
+
   useEffect(() => {
     if (!requireOutpatientQuantity || isManualOverride) {
       return;
@@ -228,8 +270,8 @@ export function DrugOrderForm({
 
     if (calculatedQuantity != null) {
       setValue('pillsDispensed', calculatedQuantity, { shouldValidate: true });
-      if (!watchedQuantityUnits && watchedUnit) {
-        setValue('quantityUnits', watchedUnit, { shouldValidate: true });
+      if (!watchedQuantityUnits && doseUnitForQuantity) {
+        setValue('quantityUnits', doseUnitForQuantity, { shouldValidate: true });
       }
     } else if (getValues('pillsDispensed') != null) {
       setValue('pillsDispensed', null);
@@ -238,8 +280,7 @@ export function DrugOrderForm({
     requireOutpatientQuantity,
     isManualOverride,
     calculatedQuantity,
-    watchedFrequency?.frequencyPerDay,
-    watchedUnit,
+    doseUnitForQuantity,
     watchedQuantityUnits,
     getValues,
     setValue,
@@ -251,47 +292,50 @@ export function DrugOrderForm({
 
   const handleRecalculate = useCallback(() => {
     setValue('pillsDispensed', calculatedQuantity, { shouldValidate: true });
-    if (!watchedQuantityUnits && watchedUnit) {
-      setValue('quantityUnits', watchedUnit, { shouldValidate: true });
+    if (!watchedQuantityUnits && doseUnitForQuantity) {
+      setValue('quantityUnits', doseUnitForQuantity, { shouldValidate: true });
     }
     setIsManualOverride(false);
-  }, [calculatedQuantity, setValue, watchedQuantityUnits, watchedUnit]);
+  }, [calculatedQuantity, doseUnitForQuantity, setValue, watchedQuantityUnits]);
 
-  const handleFormSubmission = async (data: MedicationOrderFormData) => {
-    const newBasketItem = {
-      ...initialOrderBasketItem,
-      drug: data.drug,
-      isFreeTextDosage: data.isFreeTextDosage,
-      freeTextDosage: data.freeTextDosage,
-      dosage: data.dosage,
-      unit: data.unit,
-      route: data.route,
-      patientInstructions: data.patientInstructions,
-      asNeeded: data.asNeeded,
-      asNeededCondition: data.asNeededCondition,
-      duration: data.duration,
-      durationUnit: data.durationUnit,
-      pillsDispensed: data.pillsDispensed,
-      isQuantityManual: isManualOverride,
-      quantityUnits: data.quantityUnits,
-      numRefills: data.numRefills,
-      indication: data.indication,
-      frequency: data.frequency,
-      startDate: data.startDate,
-      action: initialOrderBasketItem?.action ?? 'NEW',
-      commonMedicationName: data.drug.display,
-      display: data.drug.display,
-      visit: initialOrderBasketItem?.visit ?? visitContext, // TODO: they really should be the same
-    } as DrugOrderBasketItem;
+  const handleFormSubmission = useCallback(
+    async (data: MedicationOrderFormData) => {
+      const newBasketItem = {
+        ...initialOrderBasketItem,
+        drug: data.drug,
+        isFreeTextDosage: data.isFreeTextDosage,
+        freeTextDosage: data.freeTextDosage,
+        dosage: data.dosage,
+        unit: data.unit,
+        route: data.route,
+        patientInstructions: data.patientInstructions,
+        asNeeded: data.asNeeded,
+        asNeededCondition: data.asNeededCondition,
+        duration: data.duration,
+        durationUnit: data.durationUnit,
+        pillsDispensed: data.pillsDispensed,
+        isQuantityManual: isManualOverride,
+        quantityUnits: data.quantityUnits,
+        numRefills: data.numRefills,
+        indication: data.indication,
+        frequency: data.frequency,
+        startDate: data.startDate,
+        action: initialOrderBasketItem?.action ?? 'NEW',
+        commonMedicationName: data.drug.display,
+        display: data.drug.display,
+        visit: initialOrderBasketItem?.visit ?? visitContext, // TODO: they really should be the same
+      } as DrugOrderBasketItem;
 
-    await onSave(newBasketItem);
-  };
+      await onSave(newBasketItem);
+    },
+    [initialOrderBasketItem, isManualOverride, onSave, visitContext],
+  );
 
-  const handleFormSubmissionError = (errors: FieldErrors<MedicationOrderFormData>) => {
+  const handleFormSubmissionError = useCallback((errors: FieldErrors<MedicationOrderFormData>) => {
     if (errors) {
       console.error('Error in drug order form', errors);
     }
-  };
+  }, []);
 
   const drugDosingUnits: Array<DosingUnit> = useMemo(
     () => orderConfigObject?.drugDosingUnits ?? [],
@@ -344,6 +388,77 @@ export function DrugOrderForm({
         },
       ],
     [orderConfigObject, daysDurationUnit],
+  );
+
+  const defaultDaysDurationUnit = useMemo(
+    () => durationUnits.find((unit) => unit.valueCoded === daysDurationUnit?.uuid) ?? durationUnits[0] ?? null,
+    [durationUnits, daysDurationUnit?.uuid],
+  );
+
+  const taperingTotalDurationDays = useMemo(
+    () => calculateTaperingTotalDurationDays(taperingState.phases, durationUnitsDaysMap),
+    [taperingState.phases, durationUnitsDaysMap],
+  );
+
+  const taperingDosagePreview = useMemo(
+    () => (dosingType === 'tapering' && !watchedIsFreeText ? serializeTaperingDosage(taperingState) : null),
+    [dosingType, watchedIsFreeText, taperingState],
+  );
+
+  const handleFormSave = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+
+      if (dosingType === 'tapering' && !watchedIsFreeText) {
+        const serializedDosage = serializeTaperingDosage(taperingState);
+        setValue('isFreeTextDosage', true);
+        setValue('freeTextDosage', serializedDosage ?? '');
+        setValue('dosage', null);
+        setValue('unit', null);
+        setValue('frequency', null);
+        setValue('route', taperingState.route, { shouldValidate: true });
+        setValue('duration', taperingTotalDurationDays, { shouldValidate: true });
+        setValue('durationUnit', defaultDaysDurationUnit, { shouldValidate: true });
+
+        if (!getValues('quantityUnits') && taperingState.unit) {
+          setValue('quantityUnits', taperingState.unit, { shouldValidate: true });
+        }
+
+        await handleSubmit(handleFormSubmission, handleFormSubmissionError)();
+        return;
+      }
+
+      await handleSubmit(handleFormSubmission, handleFormSubmissionError)(event);
+    },
+    [
+      defaultDaysDurationUnit,
+      dosingType,
+      getValues,
+      handleFormSubmission,
+      handleFormSubmissionError,
+      handleSubmit,
+      setValue,
+      taperingState,
+      taperingTotalDurationDays,
+      watchedIsFreeText,
+    ],
+  );
+
+  const handleDosingTypeChange = useCallback(
+    ({ index }: { index: number }) => {
+      const newType = DOSING_TYPES[index] ?? 'standard';
+      setDosingType(newType);
+
+      if (newType === 'tapering') {
+        setTaperingState((prev) => ({
+          ...prev,
+          route: prev.route ?? (getValues('route') as TaperingDosingState['route']) ?? null,
+          unit: prev.unit ?? (getValues('unit') as TaperingDosingState['unit']) ?? null,
+          phases: prev.phases.length > 0 ? prev.phases : [createEmptyTaperingPhase(defaultDaysDurationUnit)],
+        }));
+      }
+    },
+    [defaultDaysDurationUnit, getValues],
   );
 
   const orderFrequencies: Array<MedicationFrequency> = useMemo(() => {
@@ -421,10 +536,7 @@ export function DrugOrderForm({
           </span>
         </div>
         <ExtensionSlot name="allergy-list-pills-slot" state={{ patientUuid: patient?.id }} />
-        <Form
-          className={styles.orderForm}
-          onSubmit={handleSubmit(handleFormSubmission, handleFormSubmissionError)}
-          id="drugOrderForm">
+        <Form className={styles.orderForm} onSubmit={handleFormSave} id="drugOrderForm">
           <div>
             {errorFetchingOrderConfig && (
               <InlineNotification
@@ -478,124 +590,170 @@ export function DrugOrderForm({
               ) : (
                 <>
                   <Grid className={styles.gridRow}>
-                    <Column lg={8} md={4} sm={4} className={styles.linkedInput}>
-                      <InputWrapper>
-                        <div className={styles.numberInput}>
-                          <ControlledFieldInput
-                            control={control}
-                            type="number"
-                            name="dosage"
-                            id="doseSelection"
-                            placeholder={t('editDoseComboBoxPlaceholder', 'Dose')}
-                            label={t('editDoseComboBoxTitle', 'Dose')}
-                            min={0.01}
-                            hideSteppers={true}
-                            step={0.01}
-                          />
-                        </div>
-                      </InputWrapper>
-                    </Column>
-                    <Column lg={8} md={4} sm={4}>
-                      <InputWrapper>
-                        <ControlledFieldInput
-                          control={control}
-                          name="unit"
-                          type="comboBox"
-                          getValues={getValues}
-                          id="dosingUnits"
-                          shouldFilterItem={filterItemsByName}
-                          placeholder={t('editDosageUnitsPlaceholder', 'Unit')}
-                          titleText={t('editDosageUnitsTitle', 'Dose unit')}
-                          items={drugDosingUnits}
-                          itemToString={(item: CommonMedicationValueCoded) => item?.value}
-                          handleAfterChange={handleUnitAfterChange}
-                        />
-                      </InputWrapper>
+                    <Column lg={16} md={8} sm={4}>
+                      <div className={styles.dosingTypeSelector}>
+                        <span className={styles.dosingTypeLabel}>{t('dosingType', 'Dosing type')}</span>
+                        <ContentSwitcher
+                          size={isTablet ? 'md' : 'sm'}
+                          selectedIndex={dosingTypeSelectedIndex}
+                          onChange={handleDosingTypeChange}>
+                          <Switch name="standard" text={t('dosingTypeStandard', 'Standard')} />
+                          <Switch name="tapering" text={t('dosingTypeTapering', 'Tapering')} />
+                          <Switch name="variable" text={t('dosingTypeVariable', 'Variable')} />
+                          <Switch name="hybrid" text={t('dosingTypeHybrid', 'Hybrid')} />
+                        </ContentSwitcher>
+                      </div>
                     </Column>
                   </Grid>
-                  <Grid className={styles.gridRow}>
-                    <Column lg={16} md={4} sm={4}>
-                      <InputWrapper>
-                        <ControlledFieldInput
-                          control={control}
-                          id="editRoute"
-                          items={drugRoutes}
-                          itemToString={(item: CommonMedicationValueCoded) => item?.value}
-                          name="route"
-                          placeholder={t('editRouteComboBoxTitle', 'Route')}
-                          shouldFilterItem={filterItemsByName}
-                          titleText={t('editRouteComboBoxTitle', 'Route')}
-                          type="comboBox"
-                        />
-                      </InputWrapper>
-                    </Column>
-                    <Column lg={16} md={4} sm={4}>
-                      <InputWrapper>
-                        <ControlledFieldInput
-                          control={control}
-                          name="frequency"
-                          type="comboBox"
-                          id="editFrequency"
-                          items={orderFrequencies}
-                          shouldFilterItem={filterItemsBySynonymNames}
-                          placeholder={t('editFrequencyComboBoxTitle', 'Frequency')}
-                          titleText={t('editFrequencyComboBoxTitle', 'Frequency')}
-                          itemToString={(item: CommonMedicationValueCoded) => item?.value}
-                        />
-                      </InputWrapper>
-                    </Column>
-                  </Grid>
-
-                  <Grid className={styles.gridRow}>
-                    <Column lg={16} md={4} sm={4}>
-                      <InputWrapper>
-                        <ControlledFieldInput
-                          control={control}
-                          name="patientInstructions"
-                          type="textArea"
-                          labelText={t('patientInstructions', 'Patient instructions')}
-                          placeholder={t(
-                            'patientInstructionsPlaceholder',
-                            'Additional dosing instructions (e.g. "Take after eating")',
-                          )}
-                          maxLength={65535}
-                          rows={isTablet ? 6 : 4}
-                        />
-                      </InputWrapper>
-                    </Column>
-                    <Column className={styles.prn} lg={16} md={4} sm={4}>
+                  {dosingType === 'standard' ? (
+                    <>
                       <Grid className={styles.gridRow}>
-                        <Column lg={6} md={8} sm={4}>
+                        <Column lg={8} md={4} sm={4} className={styles.linkedInput}>
                           <InputWrapper>
-                            <FormGroup legendText={t('prn', 'P.R.N.')}>
+                            <div className={styles.numberInput}>
                               <ControlledFieldInput
                                 control={control}
-                                name="asNeeded"
-                                type="checkbox"
-                                id="prn"
-                                labelText={t('takeAsNeeded', 'Take as needed')}
+                                type="number"
+                                name="dosage"
+                                id="doseSelection"
+                                placeholder={t('editDoseComboBoxPlaceholder', 'Dose')}
+                                label={t('editDoseComboBoxTitle', 'Dose')}
+                                min={0.01}
+                                hideSteppers={true}
+                                step={0.01}
                               />
-                            </FormGroup>
+                            </div>
                           </InputWrapper>
                         </Column>
-
-                        <Column lg={10} md={8} sm={4}>
+                        <Column lg={8} md={4} sm={4}>
                           <InputWrapper>
                             <ControlledFieldInput
                               control={control}
-                              name="asNeededCondition"
-                              type="textArea"
-                              labelText={t('prnReason', 'P.R.N. reason')}
-                              placeholder={t('prnReasonPlaceholder', 'Reason to take medicine')}
-                              rows={3}
-                              maxLength={255}
-                              disabled={!watch('asNeeded')}
+                              name="unit"
+                              type="comboBox"
+                              getValues={getValues}
+                              id="dosingUnits"
+                              shouldFilterItem={filterItemsByName}
+                              placeholder={t('editDosageUnitsPlaceholder', 'Unit')}
+                              titleText={t('editDosageUnitsTitle', 'Dose unit')}
+                              items={drugDosingUnits}
+                              itemToString={(item: CommonMedicationValueCoded) => item?.value}
+                              handleAfterChange={handleUnitAfterChange}
                             />
                           </InputWrapper>
                         </Column>
                       </Grid>
-                    </Column>
-                  </Grid>
+                      <Grid className={styles.gridRow}>
+                        <Column lg={16} md={4} sm={4}>
+                          <InputWrapper>
+                            <ControlledFieldInput
+                              control={control}
+                              id="editRoute"
+                              items={drugRoutes}
+                              itemToString={(item: CommonMedicationValueCoded) => item?.value}
+                              name="route"
+                              placeholder={t('editRouteComboBoxTitle', 'Route')}
+                              shouldFilterItem={filterItemsByName}
+                              titleText={t('editRouteComboBoxTitle', 'Route')}
+                              type="comboBox"
+                            />
+                          </InputWrapper>
+                        </Column>
+                        <Column lg={16} md={4} sm={4}>
+                          <InputWrapper>
+                            <ControlledFieldInput
+                              control={control}
+                              name="frequency"
+                              type="comboBox"
+                              id="editFrequency"
+                              items={orderFrequencies}
+                              shouldFilterItem={filterItemsBySynonymNames}
+                              placeholder={t('editFrequencyComboBoxTitle', 'Frequency')}
+                              titleText={t('editFrequencyComboBoxTitle', 'Frequency')}
+                              itemToString={(item: CommonMedicationValueCoded) => item?.value}
+                            />
+                          </InputWrapper>
+                        </Column>
+                      </Grid>
+
+                      <Grid className={styles.gridRow}>
+                        <Column lg={16} md={4} sm={4}>
+                          <InputWrapper>
+                            <ControlledFieldInput
+                              control={control}
+                              name="patientInstructions"
+                              type="textArea"
+                              labelText={t('patientInstructions', 'Patient instructions')}
+                              placeholder={t(
+                                'patientInstructionsPlaceholder',
+                                'Additional dosing instructions (e.g. "Take after eating")',
+                              )}
+                              maxLength={65535}
+                              rows={isTablet ? 6 : 4}
+                            />
+                          </InputWrapper>
+                        </Column>
+                        <Column className={styles.prn} lg={16} md={4} sm={4}>
+                          <Grid className={styles.gridRow}>
+                            <Column lg={6} md={8} sm={4}>
+                              <InputWrapper>
+                                <FormGroup legendText={t('prn', 'P.R.N.')}>
+                                  <ControlledFieldInput
+                                    control={control}
+                                    name="asNeeded"
+                                    type="checkbox"
+                                    id="prn"
+                                    labelText={t('takeAsNeeded', 'Take as needed')}
+                                  />
+                                </FormGroup>
+                              </InputWrapper>
+                            </Column>
+
+                            <Column lg={10} md={8} sm={4}>
+                              <InputWrapper>
+                                <ControlledFieldInput
+                                  control={control}
+                                  name="asNeededCondition"
+                                  type="textArea"
+                                  labelText={t('prnReason', 'P.R.N. reason')}
+                                  placeholder={t('prnReasonPlaceholder', 'Reason to take medicine')}
+                                  rows={3}
+                                  maxLength={255}
+                                  disabled={!watch('asNeeded')}
+                                />
+                              </InputWrapper>
+                            </Column>
+                          </Grid>
+                        </Column>
+                      </Grid>
+                    </>
+                  ) : dosingType === 'tapering' ? (
+                    <>
+                      <TaperingDoseForm
+                        state={taperingState}
+                        drugRoutes={drugRoutes}
+                        drugDosingUnits={drugDosingUnits}
+                        orderFrequencies={orderFrequencies}
+                        durationUnits={durationUnits}
+                        defaultDurationUnit={defaultDaysDurationUnit}
+                        onStateChange={setTaperingState}
+                        filterItemsByName={filterItemsByName}
+                        filterItemsBySynonymNames={filterItemsBySynonymNames}
+                      />
+                      {taperingDosagePreview && (
+                        <div className={taperingStyles.dosagePreview}>
+                          <span className={taperingStyles.dosagePreviewLabel}>
+                            {t('dosageSummary', 'Dosage summary')}
+                          </span>
+                          <span className={taperingStyles.dosagePreviewValue}>{taperingDosagePreview}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className={styles.complexDosingPlaceholder}>
+                      {t('complexDosingComingSoon', 'This dosing type will be available in a future update.')}
+                    </p>
+                  )}
                 </>
               )}
             </section>
@@ -624,45 +782,60 @@ export function DrugOrderForm({
                     </InputWrapper>
                   </div>
                 </Column>
-                <Column lg={8} md={2} sm={4} className={styles.linkedInput}>
-                  <InputWrapper>
-                    {!isTablet ? (
-                      <ControlledFieldInput
-                        control={control}
-                        name="duration"
-                        type="number"
-                        id="durationInput"
-                        label={t('duration', 'Duration')}
-                        min={0}
-                        step={1}
-                        allowEmpty
-                      />
-                    ) : (
-                      <CustomNumberInput
-                        control={control}
-                        isTablet={isTablet}
-                        setValue={setValue}
-                        name="duration"
-                        labelText={t('duration', 'Duration')}
-                      />
-                    )}
-                  </InputWrapper>
-                </Column>
-                <Column className={styles.durationUnit} lg={8} md={2} sm={4}>
-                  <InputWrapper>
-                    <ControlledFieldInput
-                      control={control}
-                      name="durationUnit"
-                      type="comboBox"
-                      id="durationUnitPlaceholder"
-                      titleText={t('durationUnit', 'Duration unit')}
-                      items={durationUnits}
-                      itemToString={(item: CommonMedicationValueCoded) => item?.value}
-                      placeholder={t('durationUnitPlaceholder', 'Duration Unit')}
-                      shouldFilterItem={filterItemsByName}
-                    />
-                  </InputWrapper>
-                </Column>
+                {dosingType === 'tapering' && !watchedIsFreeText ? (
+                  <Column lg={16} md={4} sm={4}>
+                    <div className={taperingStyles.totalDuration}>
+                      <span className={taperingStyles.totalDurationLabel}>{t('totalDuration', 'Total duration')}</span>
+                      <span className={taperingStyles.totalDurationValue}>
+                        {taperingTotalDurationDays != null
+                          ? t('totalDurationDays', '{{count}} Days', { count: taperingTotalDurationDays })
+                          : t('totalDurationIncomplete', '—')}
+                      </span>
+                    </div>
+                  </Column>
+                ) : (
+                  <>
+                    <Column lg={8} md={2} sm={4} className={styles.linkedInput}>
+                      <InputWrapper>
+                        {!isTablet ? (
+                          <ControlledFieldInput
+                            control={control}
+                            name="duration"
+                            type="number"
+                            id="durationInput"
+                            label={t('duration', 'Duration')}
+                            min={0}
+                            step={1}
+                            allowEmpty
+                          />
+                        ) : (
+                          <CustomNumberInput
+                            control={control}
+                            isTablet={isTablet}
+                            setValue={setValue}
+                            name="duration"
+                            labelText={t('duration', 'Duration')}
+                          />
+                        )}
+                      </InputWrapper>
+                    </Column>
+                    <Column className={styles.durationUnit} lg={8} md={2} sm={4}>
+                      <InputWrapper>
+                        <ControlledFieldInput
+                          control={control}
+                          name="durationUnit"
+                          type="comboBox"
+                          id="durationUnitPlaceholder"
+                          titleText={t('durationUnit', 'Duration unit')}
+                          items={durationUnits}
+                          itemToString={(item: CommonMedicationValueCoded) => item?.value}
+                          placeholder={t('durationUnitPlaceholder', 'Duration Unit')}
+                          shouldFilterItem={filterItemsByName}
+                        />
+                      </InputWrapper>
+                    </Column>
+                  </>
+                )}
               </Grid>
             </section>
             <section className={styles.formSection}>
