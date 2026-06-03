@@ -1,0 +1,94 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.desktopContainer {
+  background-color: colors.$gray-10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.tabletContainer {
+  @extend .desktopContainer;
+  background-color: colors.$white-0;
+}
+
+.desktopTile {
+  position: relative;
+  border-left: layout.$spacing-02 solid colors.$cyan-70;
+  background-color: colors.$white-0;
+  border-right: none;
+  padding: 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: colors.$cyan-20;
+  }
+}
+
+.tabletTile {
+  @extend .desktopTile;
+  border-top: 1px solid colors.$cyan-20;
+}
+
+.collapsedTile {
+  border-bottom: none;
+  min-height: 0;
+
+  .orderBasketHeader {
+    margin-bottom: 0;
+  }
+}
+
+.tabletTile.collapsedTile {
+  border-bottom: 1px solid $grey-2;
+}
+
+.heading {
+  margin-left: layout.$spacing-03;
+}
+
+.iconAndLabel {
+  display: flex;
+  align-items: center;
+  margin: layout.$spacing-03;
+}
+
+.buttonContainer {
+  display: flex;
+  align-items: center;
+}
+
+.dtpResponseContainer {
+  padding: layout.$spacing-03 layout.$spacing-03 0 layout.$spacing-03;
+}
+
+.dtpResponseHelperText {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin: layout.$spacing-03 0 0;
+}
+
+.dtpRemark {
+  margin-top: layout.$spacing-05;
+}
+
+.addButton {
+  svg {
+    fill: currentColor !important;
+  }
+}
+
+.chevron {
+  svg {
+    fill: black;
+  }
+}

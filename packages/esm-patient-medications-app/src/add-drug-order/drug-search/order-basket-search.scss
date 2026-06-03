@@ -1,0 +1,107 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.searchPopupContainer {
+  position: relative;
+  height: 100%;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.comboBoxWrapper {
+  padding: layout.$spacing-05;
+  border-bottom: 1px solid colors.$gray-20;
+
+  :global(.cds--label) {
+    margin: 0;
+    padding: 0.25rem;
+  }
+}
+
+.breadcrumbsContainer {
+  padding: layout.$spacing-03 layout.$spacing-05;
+  background-color: colors.$gray-10;
+}
+
+.breadcrumbItem {
+  cursor: pointer;
+}
+
+.categoriesContainer {
+  padding: layout.$spacing-05;
+}
+
+.sectionTitle {
+  @include type.type-style('heading-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+}
+
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: layout.$spacing-03;
+}
+
+.categoryTile {
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  background-color: colors.$gray-10;
+
+  &:hover {
+    background-color: colors.$gray-20;
+  }
+}
+
+.folderIcon {
+  margin-right: layout.$spacing-03;
+  fill: colors.$blue-60;
+}
+
+.categoryName {
+  @include type.type-style('body-01');
+  font-weight: 600;
+}
+
+.drugResultsWrapper {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-top: layout.$spacing-03;
+
+  h5.sectionTitle {
+    padding-left: layout.$spacing-05;
+    margin-top: layout.$spacing-05;
+  }
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  padding: layout.$spacing-05;
+}
+
+.errorTile {
+  margin: layout.$spacing-05;
+  color: colors.$red-60;
+}
+
+.separatorContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: layout.$spacing-05;
+}
+
+:global(.omrs-breakpoint-lt-desktop) {
+  .searchPopupContainer {
+    height: 100%;
+  }
+}
+
+.searchInput {
+  margin-top: layout.$spacing-03;
+}
