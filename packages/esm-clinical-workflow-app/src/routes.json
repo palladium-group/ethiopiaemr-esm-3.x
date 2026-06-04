@@ -130,7 +130,9 @@
     {
       "name": "recent-diagnoses-widget",
       "component": "recentDiagnosesWidget",
-      "slot": "patient-chart-summary-dashboard-slot"
+      "slot": "patient-chart-summary-dashboard-slot",
+      "online": true,
+      "offline": false
     },
     {
       "name": "immunization-register-action-button",
