@@ -128,6 +128,20 @@
       "slot": "ward-ui-extension-hidden-slot"
     },
     {
+      "name": "ethiopiaemr-etl-admin-dashboard-link",
+      "component": "etlAdminDashboardLink",
+      "slot": "navbar-items-slot",
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "ethiopiaemr-reports-dashboard-link",
+      "component": "reportsDashboardLink",
+      "slot": "navbar-items-slot",
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "recent-diagnoses-widget",
       "component": "recentDiagnosesWidget",
       "slot": "patient-chart-summary-dashboard-slot",

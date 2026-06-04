@@ -1,0 +1,65 @@
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #525252);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border-subtle-01, #e0e0e0);
+}
+
+.orderList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.orderListItem {
+  flex: 0 0 calc(20% - 0.5rem);
+  min-width: 8rem;
+  max-width: calc(20% - 0.5rem);
+}
+
+/* Panel members appear indented under their panel, with a connecting accent. */
+.panelMembers {
+  margin-left: 0.5rem;
+  padding: 0.5rem 0 0.5rem 0.75rem;
+  border-left: 2px dashed var(--border-interactive, #0f62fe);
+}
+
+.panelMembersTitle {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary, #525252);
+}
+
+@media (max-width: 64rem) {
+  .orderListItem {
+    flex: 0 0 calc(33.333% - 0.5rem);
+    max-width: calc(33.333% - 0.5rem);
+  }
+}
+
+@media (max-width: 42rem) {
+  .orderListItem {
+    flex: 0 0 calc(50% - 0.5rem);
+    max-width: calc(50% - 0.5rem);
+  }
+}

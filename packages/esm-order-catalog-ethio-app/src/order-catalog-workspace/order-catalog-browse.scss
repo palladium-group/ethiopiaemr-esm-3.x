@@ -1,0 +1,47 @@
+.browse {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  block-size: 100%;
+  inline-size: 100%;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.tabBarSkeleton {
+  padding: 0.75rem 1rem 0;
+}
+
+.tabContent {
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.empty {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 1rem;
+}
+
+.footer {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  border-top: 1px solid var(--border-subtle-01, #e0e0e0);
+  padding: 0.75rem 1rem;
+  background: var(--layer-01, #fff);
+  box-shadow: 0 -2px 6px rgb(0 0 0 / 8%);
+}
+
+.footerError {
+  color: var(--support-error, #da1e28);
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+}
+
+.footerActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

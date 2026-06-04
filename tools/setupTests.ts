@@ -9,7 +9,13 @@ declare global {
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultNameSpace: string) => defaultNameSpace,
+    t: (key: string, defaultValue?: string, options: Record<string, string> = {}) => {
+      let translatedString = defaultValue || key;
+      Object.entries(options).forEach(([optionKey, optionValue]) => {
+        translatedString = translatedString.replace(new RegExp(`{{${optionKey}}}`, 'g'), optionValue);
+      });
+      return translatedString;
+    },
   }),
 }));
 
@@ -38,3 +44,11 @@ class ResizeObserverMock {
 }
 
 global.ResizeObserver = ResizeObserverMock as any;
+
+class IntersectionObserverMock {
+  observe = jest.fn();
+  unobserve = jest.fn();
+  disconnect = jest.fn();
+}
+
+global.IntersectionObserver = IntersectionObserverMock as any;

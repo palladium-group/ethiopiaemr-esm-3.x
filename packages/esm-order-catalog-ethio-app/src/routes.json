@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "ethio-order-catalog-panel",
+      "component": "orderCatalogPanel",
+      "slot": "order-basket-slot",
+      "order": 1
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "ethio-order-catalog",
+      "component": "orderCatalogWorkspace",
+      "window": "ethio-order-catalog-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "ethio-order-catalog-window",
+      "group": "patient-chart",
+      "width": "extra-wide",
+      "canMaximize": true
+    }
+  ],
+  "version": "1.0.0"
+}

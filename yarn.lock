@@ -3254,7 +3254,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openmrs/esm-framework@npm:8.0.1-pre.3623, @openmrs/esm-framework@npm:next":
+"@openmrs/esm-framework@npm:8.0.1-pre.3623":
   version: 8.0.1-pre.3623
   resolution: "@openmrs/esm-framework@npm:8.0.1-pre.3623"
   dependencies:
@@ -3328,18 +3328,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openmrs/esm-patient-common-lib@npm:^12.0.2-pre.10146":
-  version: 12.0.2-pre.10146
-  resolution: "@openmrs/esm-patient-common-lib@npm:12.0.2-pre.10146"
+"@openmrs/esm-patient-common-lib@npm:12.1.1-pre.11242":
+  version: 12.1.1-pre.11242
+  resolution: "@openmrs/esm-patient-common-lib@npm:12.1.1-pre.11242"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
-    lodash-es: "npm:^4.17.23"
+    lodash-es: "npm:^4.18.1"
     uuid: "npm:^8.3.2"
   peerDependencies:
     "@openmrs/esm-framework": 9.x
     react: 18.x
     single-spa: 6.x
-  checksum: 10/d9dee8defe7d92a5d48eb83242159fb60e7759b10539062439190a393f1955127331a876c9a7a635f940701c014ffbaaac3c26b1120779ee9b589d5a0d2097ee
+  checksum: 10/f05e463dd1620fcedd1c2c6de61a3af5711d473ca66d4a3937b871191c24b83dc89615158d219bafa12d78986d68ee5107fd82fab44714932fcf9c937efa5de8
   languageName: node
   linkType: hard
 
@@ -3536,8 +3536,8 @@ __metadata:
   dependencies:
     "@carbon/pictograms-react": "npm:^11.66.0"
     "@hookform/resolvers": "npm:^3.1.1"
-    "@openmrs/esm-framework": "npm:next"
-    "@openmrs/esm-patient-common-lib": "npm:^12.0.2-pre.10146"
+    "@openmrs/esm-framework": "npm:8.0.1-pre.3623"
+    "@openmrs/esm-patient-common-lib": "npm:12.1.1-pre.11242"
     "@playwright/test": "npm:^1.30.0"
     "@rspack/cli": "npm:^1.5.5"
     "@rspack/core": "npm:^1.5.5"
@@ -3679,17 +3679,35 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@palladium-ethiopia/esm-patient-medications-ethio-app@workspace:packages/esm-patient-medications-ethio-app":
+"@palladium-ethiopia/esm-order-catalog-ethio-app@workspace:packages/esm-order-catalog-ethio-app":
   version: 0.0.0-use.local
-  resolution: "@palladium-ethiopia/esm-patient-medications-ethio-app@workspace:packages/esm-patient-medications-ethio-app"
+  resolution: "@palladium-ethiopia/esm-order-catalog-ethio-app@workspace:packages/esm-order-catalog-ethio-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-patient-common-lib": "npm:^12.0.2-pre.10146"
-    lodash-es: "npm:^4.17.23"
-    react-to-print: "npm:^2.14.13"
     webpack: "npm:^5.99.9"
   peerDependencies:
     "@openmrs/esm-framework": 9.x
+    "@openmrs/esm-patient-common-lib": 12.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
+"@palladium-ethiopia/esm-patient-medications-app@workspace:packages/esm-patient-medications-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-patient-medications-app@workspace:packages/esm-patient-medications-app"
+  dependencies:
+    "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-patient-common-lib": "npm:12.1.1-pre.11242"
+    lodash-es: "npm:^4.18.1"
+    openmrs: "npm:next"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
     "@openmrs/esm-patient-common-lib": 12.x
     dayjs: 1.x
     react: 18.x
@@ -3719,6 +3737,23 @@ __metadata:
     dayjs: 1.x
     react: 18.x
     react-i18next: 16.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
+"@palladium-ethiopia/esm-reports-app@workspace:packages/esm-reports-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-reports-app@workspace:packages/esm-reports-app"
+  dependencies:
+    "@carbon/react": "npm:^1.83.0"
+    classnames: "npm:^2.3.2"
+    lodash-es: "npm:^4.17.15"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 11.x
     react-router-dom: 6.x
     swr: 2.x
   languageName: unknown
@@ -14849,7 +14884,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash-es@npm:^4.17.11, lodash-es@npm:^4.17.23":
+"lodash-es@npm:^4.17.11":
   version: 4.17.23
   resolution: "lodash-es@npm:4.17.23"
   checksum: 10/1feae200df22eb0bd93ca86d485e77784b8a9fb1d13e91b66e9baa7a7e5e04be088c12a7e20c2250fc0bd3db1bc0ef0affc7d9e3810b6af2455a3c6bf6dde59e
@@ -14860,6 +14895,13 @@ __metadata:
   version: 4.17.22
   resolution: "lodash-es@npm:4.17.22"
   checksum: 10/e93bcb57f9105b99269ff0fdcae5c2e6a5b607c7c520a6d8b5270ab608bd0c7e3346b03db5ddd994e569562600b7702615455c5f208418f9e82990aac0b76a91
+  languageName: node
+  linkType: hard
+
+"lodash-es@npm:^4.18.1":
+  version: 4.18.1
+  resolution: "lodash-es@npm:4.18.1"
+  checksum: 10/8bfad225ef09ef42b04283cdaf7830efcc2ba29ae41b56501c74422155ee1ccaa1f0f6e8319def3451a1fe54dec501c8e4bee622bae2b2d98ac993731e0a5cce
   languageName: node
   linkType: hard
 
@@ -17693,16 +17735,6 @@ __metadata:
     react: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
     react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
   checksum: 10/cc4e438b5b7e5c67a73ca3d87ff0f1b5a550a7e6c1a1911cded14c9591b286efd82029bd0447e016b0b404f274d546a108e760fd7867e6b73342dba450282a29
-  languageName: node
-  linkType: hard
-
-"react-to-print@npm:^2.14.13":
-  version: 2.15.1
-  resolution: "react-to-print@npm:2.15.1"
-  peerDependencies:
-    react: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
-  checksum: 10/0786fd5dd055b5b50f9a0dba99f0ccb30b9407b8e77748f5fc2557446ed0d0c65759e927cc2cdaa9e34f286838bbb230d3b0ba03d20b9754d0469fc4dac7c529
   languageName: node
   linkType: hard
 
