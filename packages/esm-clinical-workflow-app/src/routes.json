@@ -131,6 +131,11 @@
       "name": "recent-diagnoses-widget",
       "component": "recentDiagnosesWidget",
       "slot": "patient-chart-summary-dashboard-slot"
+    },
+    {
+      "name": "immunization-register-action-button",
+      "component": "immunizationRegisterActionButton",
+      "slot": "patient-chart-immunizations-dashboard-slot"
     }
   ],
   "workspaces": [
