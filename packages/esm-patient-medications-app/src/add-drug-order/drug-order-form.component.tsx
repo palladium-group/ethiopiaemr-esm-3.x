@@ -367,7 +367,7 @@ export function DrugOrderForm({
         pillsDispensed: data.pillsDispensed,
         isQuantityManual: isManualOverride,
         quantityUnits: data.quantityUnits,
-        numRefills: data.numRefills,
+        numRefills: 0,
         indication: data.indication,
         frequency: data.frequency,
         startDate: data.startDate,
@@ -1176,30 +1176,6 @@ export function DrugOrderForm({
                       titleText={t('editDispensingUnit', 'Quantity unit')}
                       type="comboBox"
                     />
-                  </InputWrapper>
-                </Column>
-                <Column lg={8} md={3} sm={4}>
-                  <InputWrapper>
-                    {!isTablet ? (
-                      <ControlledFieldInput
-                        control={control}
-                        name="numRefills"
-                        type="number"
-                        id="prescriptionRefills"
-                        min={0}
-                        label={t('prescriptionRefills', 'Prescription refills')}
-                        max={99}
-                        allowEmpty
-                      />
-                    ) : (
-                      <CustomNumberInput
-                        control={control}
-                        isTablet={isTablet}
-                        setValue={setValue}
-                        name="numRefills"
-                        labelText={t('prescriptionRefills', 'Prescription refills')}
-                      />
-                    )}
                   </InputWrapper>
                 </Column>
               </Grid>
