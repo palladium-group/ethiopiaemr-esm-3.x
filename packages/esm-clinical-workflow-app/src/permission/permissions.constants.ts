@@ -24,6 +24,10 @@ export enum Permissions {
   ViewTriage = 'ethiopiaemr: Triage: View Triage',
   AddTriageForm = 'ethiopiaemr: Triage: Add Triage Form',
   TriageRegisterNewPatient = 'ethiopiaemr: Triage: Register Patient',
+  ViewAdultTriageDashboard = 'ethiopiaemr: Triage: View Adult Triage Dashboard',
+  ViewPediatricTriageDashboard = 'ethiopiaemr: Triage: View Pediatric Triage Dashboard',
+  ViewEmergencyTriageDashboard = 'ethiopiaemr: Triage: View Emergency Triage Dashboard',
+  ViewGynecologicalTriageDashboard = 'ethiopiaemr: Triage: View Gynecological Triage Dashboard',
 
   // MRU Permissions
   ViewMRU = 'ethiopiaemr: MRU: View MRU',

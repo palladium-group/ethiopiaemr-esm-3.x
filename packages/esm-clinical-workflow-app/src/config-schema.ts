@@ -1,5 +1,6 @@
 import { Type, validator } from '@openmrs/esm-framework';
 import notesConfigSchema, { type VisitNoteConfigObject } from './patient-notes/visit-note-config-schema';
+import { Permissions } from './permission/permissions.constants';
 
 export const configSchema = {
   enforceTriagePrivileges: {
@@ -20,7 +21,7 @@ export const configSchema = {
         displayName: 'Adult Triage',
         enabled: true,
         order: 0,
-        privilege: 'Adult Triage Access',
+        privilege: Permissions.ViewAdultTriageDashboard,
       },
       {
         id: 'pediatric',
@@ -29,7 +30,7 @@ export const configSchema = {
         displayName: 'Pediatric Triage',
         enabled: true,
         order: 1,
-        privilege: 'Pediatric Triage Access',
+        privilege: Permissions.ViewPediatricTriageDashboard,
       },
       {
         id: 'emergency',
@@ -38,7 +39,7 @@ export const configSchema = {
         displayName: 'Emergency Triage',
         enabled: true,
         order: 2,
-        privilege: 'Emergency Triage Access',
+        privilege: Permissions.ViewEmergencyTriageDashboard,
         routePath: 'emergency-triage',
       },
       {
@@ -48,7 +49,7 @@ export const configSchema = {
         displayName: 'Gynecological Triage',
         enabled: true,
         order: 3,
-        privilege: 'Gynecological Triage Access',
+        privilege: Permissions.ViewGynecologicalTriageDashboard,
       },
     ],
     _elements: {
