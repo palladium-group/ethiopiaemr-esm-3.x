@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -28,11 +28,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import type { ClinicalWorkflowConfig } from '../config-schema';
+import { validateMrnNumber } from './patient-registration.mrn-validation';
 import {
   registerNewPatient,
   buildPatientRegistrationPayload,
   buildDisabilityTypeAttributeValue,
   calculateDOBFromAgeFields,
+  patientIdentifierTypeExists,
+  patientMrnIdentifierInUse,
   saveAllergy,
   saveCondition,
 } from './patient-registration.resource';
@@ -50,91 +53,102 @@ const genderOptions = [
   },
 ];
 
-const patientRegistrationSchema = z
-  .object({
-    firstName: z.string().min(1, 'Given name is required'),
-    middleName: z.string().min(1, "Father's name is required"),
-    lastName: z.string().min(1, "Grandfather's name is required"),
-    gender: z.enum(['Male', 'Female'], {
-      required_error: 'Gender is required',
-    }),
-    ageYears: z
-      .union([z.number().min(0).max(150), z.null()])
-      .optional()
-      .nullable(),
-    ageMonths: z
-      .union([z.number().min(0).max(11), z.null()])
-      .optional()
-      .nullable(),
-    ageDays: z
-      .union([z.number().min(0).max(31), z.null()])
-      .optional()
-      .nullable(),
-    ageHours: z
-      .union([z.number().min(0).max(23), z.null()])
-      .optional()
-      .nullable(),
-    ageMinutes: z
-      .union([z.number().min(0).max(59), z.null()])
-      .optional()
-      .nullable(),
-    isEstimatedDOB: z.boolean().optional().default(false),
-    dateOfBirth: z
-      .date({
-        required_error: 'Date of birth is required',
-      })
-      .refine((date) => date <= new Date(), {
-        message: 'Date of birth cannot be in the future',
-      })
-      .optional()
-      .nullable(),
-    disabilityNone: z.boolean().optional().default(true),
-    disabilityVisionLoss: z.boolean().optional().default(false),
-    disabilityHearingLoss: z.boolean().optional().default(false),
-    disabilityMobilityImpairment: z.boolean().optional().default(false),
-    disabilityOther: z.boolean().optional().default(false),
-    disabilityOtherSpecify: z.string().optional().default(''),
-  })
-  .refine(
-    (data) => {
-      const hasDateOfBirth = !!data.dateOfBirth;
-      const hasAgeFields =
-        (data.ageYears !== undefined && data.ageYears !== null && data.ageYears >= 0) ||
-        (data.ageMonths !== undefined && data.ageMonths !== null && data.ageMonths >= 0) ||
-        (data.ageDays !== undefined && data.ageDays !== null && data.ageDays >= 0) ||
-        (data.ageHours !== undefined && data.ageHours !== null && data.ageHours >= 0) ||
-        (data.ageMinutes !== undefined && data.ageMinutes !== null && data.ageMinutes >= 0);
-      return hasDateOfBirth || hasAgeFields;
-    },
-    {
-      message: 'Please provide either date of birth or age information',
-      path: ['dateOfBirth'],
-    },
-  )
-  .superRefine((data, ctx) => {
-    if (data.disabilityOther && !(data.disabilityOtherSpecify ?? '').trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Please specify when Other is selected',
-        path: ['disabilityOtherSpecify'],
-      });
-    }
-    if (
-      data.disabilityNone &&
-      (data.disabilityVisionLoss ||
-        data.disabilityHearingLoss ||
-        data.disabilityMobilityImpairment ||
-        data.disabilityOther)
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Uncheck specific disability types when No disability is selected',
-        path: ['disabilityNone'],
-      });
-    }
-  });
+function createPatientRegistrationSchema(mrnNumberLength: number) {
+  return z
+    .object({
+      firstName: z.string().min(1, 'Given name is required'),
+      middleName: z.string().min(1, "Father's name is required"),
+      lastName: z.string().min(1, "Grandfather's name is required"),
+      gender: z.enum(['Male', 'Female'], {
+        required_error: 'Gender is required',
+      }),
+      mrnNumber: z.string().optional().default(''),
+      ageYears: z
+        .union([z.number().min(0).max(150), z.null()])
+        .optional()
+        .nullable(),
+      ageMonths: z
+        .union([z.number().min(0).max(11), z.null()])
+        .optional()
+        .nullable(),
+      ageDays: z
+        .union([z.number().min(0).max(31), z.null()])
+        .optional()
+        .nullable(),
+      ageHours: z
+        .union([z.number().min(0).max(23), z.null()])
+        .optional()
+        .nullable(),
+      ageMinutes: z
+        .union([z.number().min(0).max(59), z.null()])
+        .optional()
+        .nullable(),
+      isEstimatedDOB: z.boolean().optional().default(false),
+      dateOfBirth: z
+        .date({
+          required_error: 'Date of birth is required',
+        })
+        .refine((date) => date <= new Date(), {
+          message: 'Date of birth cannot be in the future',
+        })
+        .optional()
+        .nullable(),
+      disabilityNone: z.boolean().optional().default(true),
+      disabilityVisionLoss: z.boolean().optional().default(false),
+      disabilityHearingLoss: z.boolean().optional().default(false),
+      disabilityMobilityImpairment: z.boolean().optional().default(false),
+      disabilityOther: z.boolean().optional().default(false),
+      disabilityOtherSpecify: z.string().optional().default(''),
+    })
+    .refine(
+      (data) => {
+        const hasDateOfBirth = !!data.dateOfBirth;
+        const hasAgeFields =
+          (data.ageYears !== undefined && data.ageYears !== null && data.ageYears >= 0) ||
+          (data.ageMonths !== undefined && data.ageMonths !== null && data.ageMonths >= 0) ||
+          (data.ageDays !== undefined && data.ageDays !== null && data.ageDays >= 0) ||
+          (data.ageHours !== undefined && data.ageHours !== null && data.ageHours >= 0) ||
+          (data.ageMinutes !== undefined && data.ageMinutes !== null && data.ageMinutes >= 0);
+        return hasDateOfBirth || hasAgeFields;
+      },
+      {
+        message: 'Please provide either date of birth or age information',
+        path: ['dateOfBirth'],
+      },
+    )
+    .superRefine((data, ctx) => {
+      const mrnError = validateMrnNumber(data.mrnNumber, mrnNumberLength);
+      if (mrnError) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: mrnError,
+          path: ['mrnNumber'],
+        });
+      }
+      if (data.disabilityOther && !(data.disabilityOtherSpecify ?? '').trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please specify when Other is selected',
+          path: ['disabilityOtherSpecify'],
+        });
+      }
+      if (
+        data.disabilityNone &&
+        (data.disabilityVisionLoss ||
+          data.disabilityHearingLoss ||
+          data.disabilityMobilityImpairment ||
+          data.disabilityOther)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Uncheck specific disability types when No disability is selected',
+          path: ['disabilityNone'],
+        });
+      }
+    });
+}
 
-export type PatientRegistrationFormData = z.infer<typeof patientRegistrationSchema>;
+export type PatientRegistrationFormData = z.infer<ReturnType<typeof createPatientRegistrationSchema>>;
 
 type PatientRegistrationProps = DefaultWorkspaceProps & {
   onPatientRegistered?: (patientUuid: string) => void;
@@ -154,6 +168,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     disabilityStatusAttributeTypeUuid,
     healthIdLookupUrl,
     healthIdIdentifierTypeUuid,
+    mrnNumberLength,
+    mrnIdentifierTypeUuid,
     bloodTypeAttributeTypeUuid,
     phoneAttributeTypeUuid,
     emailAttributeTypeUuid,
@@ -161,6 +177,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   } = useConfig<ClinicalWorkflowConfig>();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
+  const patientRegistrationSchema = useMemo(() => createPatientRegistrationSchema(mrnNumberLength), [mrnNumberLength]);
 
   const [healthIdInput, setHealthIdInput] = useState('');
   const [submittedHealthId, setSubmittedHealthId] = useState<string | null>(null);
@@ -174,13 +191,15 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     isNotFound: healthIdNotFound,
   } = useHealthIdLookup(submittedHealthId, healthIdLookupUrl);
 
+  const registrationResolver = useMemo(() => zodResolver(patientRegistrationSchema), [patientRegistrationSchema]);
+
   const {
     control,
     handleSubmit,
     setValue,
     formState: { errors, isSubmitting, isDirty, isSubmitted },
   } = useForm<PatientRegistrationFormData>({
-    resolver: zodResolver(patientRegistrationSchema),
+    resolver: registrationResolver,
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
     shouldFocusError: false,
@@ -203,6 +222,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
       disabilityMobilityImpairment: false,
       disabilityOther: false,
       disabilityOtherSpecify: '',
+      mrnNumber: '',
     },
   });
 
@@ -313,6 +333,52 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
   const onSubmit = async (data: PatientRegistrationFormData) => {
     const uuid = generateOfflineUuid()?.replace('OFFLINE+', '');
+    const trimmedMrn = (data.mrnNumber ?? '').trim();
+    let persistMrnIdentifier = false;
+
+    if (trimmedMrn) {
+      const configuredMrnTypeUuid = mrnIdentifierTypeUuid?.trim();
+      if (!configuredMrnTypeUuid) {
+        showSnackbar({
+          title: t('mrnNotSaved', 'MRN could not be saved'),
+          subtitle: t(
+            'mrnIdentifierTypeNotConfigured',
+            'Set mrnIdentifierTypeUuid in clinical workflow configuration to a valid patient identifier type.',
+          ),
+          kind: 'error',
+          isLowContrast: true,
+        });
+        return;
+      }
+
+      const mrnTypeExists = await patientIdentifierTypeExists(configuredMrnTypeUuid);
+      if (!mrnTypeExists) {
+        showSnackbar({
+          title: t('mrnNotSaved', 'MRN could not be saved'),
+          subtitle: t(
+            'mrnIdentifierTypeMissingOnServer',
+            'The configured MRN identifier type was not found on this server. Deploy the MRN patient identifier metadata or update mrnIdentifierTypeUuid.',
+          ),
+          kind: 'error',
+          isLowContrast: true,
+        });
+        return;
+      }
+
+      const mrnAlreadyInUse = await patientMrnIdentifierInUse(trimmedMrn, configuredMrnTypeUuid);
+      if (mrnAlreadyInUse) {
+        showSnackbar({
+          title: t('mrnDuplicate', 'MRN already in use'),
+          subtitle: t('mrnDuplicateDetail', 'Another patient already has this MRN. Enter a different value.'),
+          kind: 'error',
+          isLowContrast: true,
+        });
+        return;
+      }
+
+      persistMrnIdentifier = true;
+    }
+
     try {
       // Extract Health ID extra fields to include in initial registration
       const healthIdExtraFields = healthIdPatient?.fhir
@@ -335,6 +401,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         disabilityStatusAttributeTypeUuid,
         resolvedHealthId ?? undefined,
         healthIdIdentifierTypeUuid || undefined,
+        mrnIdentifierTypeUuid || undefined,
         healthIdAddresses.length > 0 ? healthIdAddresses : undefined,
         healthIdExtraFields.bloodType,
         bloodTypeAttributeTypeUuid,
@@ -342,6 +409,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         phoneAttributeTypeUuid,
         healthIdExtraFields.email,
         emailAttributeTypeUuid,
+        persistMrnIdentifier,
       );
 
       const patient = await registerNewPatient(registrationPayload);
@@ -503,6 +571,32 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
             />
           )}
         </div>
+
+        <Controller
+          name="mrnNumber"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <ResponsiveWrapper>
+              <TextInput
+                id="mrn-number"
+                labelText={t('mrnNumber', 'MRN')}
+                helperText={t('mrnNumberHelper', 'Optional. Enter {{length}} numeric digits.', {
+                  length: mrnNumberLength,
+                })}
+                value={value ?? ''}
+                onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, mrnNumberLength))}
+                invalid={isSubmitted && !!errors.mrnNumber}
+                invalidText={isSubmitted ? errors.mrnNumber?.message : ''}
+                placeholder={t('enterMrnNumber', 'Enter MRN')}
+                size="md"
+                type="text"
+                inputMode="numeric"
+                maxLength={mrnNumberLength}
+                disabled={isSubmitting}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
 
         <Controller
           name="firstName"
