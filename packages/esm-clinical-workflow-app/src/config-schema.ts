@@ -282,6 +282,14 @@ export const configSchema = {
     _description: 'Maximum number of recent diagnoses to display in the Recent Diagnoses widget.',
     _validators: [validator((v) => Number.isInteger(v) && v > 0, 'Must be a positive integer.')],
   },
+  formUuid: {
+    _type: Type.UUID,
+    _default: '391dcd54-05bf-4a75-8b86-9db066d1e360',
+  },
+  formName: {
+    _type: Type.String,
+    _default: 'Routine Immunization Register',
+  },
 };
 
 export interface PatientTypeConfig {
@@ -391,4 +399,9 @@ export interface ChartConfig {
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;
+}
+
+export interface ImmunizationRegisterConfig {
+  formUuid: string;
+  formName: string;
 }

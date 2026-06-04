@@ -22,6 +22,7 @@ import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/vis
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
 import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
+import ImmunizationRegisterActionButton from './patient-immunization/immunization-register-action-button.component';
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 import EtlAdminDashboardLink from './admin/etl-admin-dashboard-link.extension';
@@ -99,6 +100,8 @@ export const clinicalFormsActionButton = getSyncLifecycle(clinicalFormsActionBut
 export const visitNoteActionButton = getSyncLifecycle(visitNotesActionButtonExtension, options);
 
 export const patientTransferActionButton = getSyncLifecycle(patientTransferActionButtonExtension, options);
+
+export const immunizationRegisterActionButton = getSyncLifecycle(ImmunizationRegisterActionButton, options);
 
 export const confirmTransferDialog = getAsyncLifecycle(
   () => import('./patient-transfer/confirm-transfer-dialog.modal'),

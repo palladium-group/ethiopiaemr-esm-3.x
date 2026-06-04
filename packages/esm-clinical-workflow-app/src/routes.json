@@ -147,6 +147,11 @@
       "slot": "patient-chart-summary-dashboard-slot",
       "online": true,
       "offline": false
+    },
+    {
+      "name": "immunization-register-action-button",
+      "component": "immunizationRegisterActionButton",
+      "slot": "patient-chart-immunizations-dashboard-slot"
     }
   ],
   "workspaces": [
