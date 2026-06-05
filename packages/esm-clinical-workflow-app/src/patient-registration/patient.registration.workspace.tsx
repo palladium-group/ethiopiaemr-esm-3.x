@@ -175,6 +175,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     emailAttributeTypeUuid,
     allergySeverityConceptUuids,
   } = useConfig<ClinicalWorkflowConfig>();
+  const canSaveMrn = !!mrnIdentifierTypeUuid?.trim();
   const { sessionLocation } = useSession();
   const { identifier } = useGenerateIdentifier(identifierSourceUuid);
   const patientRegistrationSchema = useMemo(() => createPatientRegistrationSchema(mrnNumberLength), [mrnNumberLength]);
@@ -339,44 +340,57 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     if (trimmedMrn) {
       const configuredMrnTypeUuid = mrnIdentifierTypeUuid?.trim();
       if (!configuredMrnTypeUuid) {
+        // MRN is optional: don't block patient registration when MRN isn't configured/supported.
         showSnackbar({
           title: t('mrnNotSaved', 'MRN could not be saved'),
           subtitle: t(
             'mrnIdentifierTypeNotConfigured',
             'Set mrnIdentifierTypeUuid in clinical workflow configuration to a valid patient identifier type.',
           ),
-          kind: 'error',
+          kind: 'warning',
           isLowContrast: true,
         });
-        return;
-      }
+      } else {
+        try {
+          const [mrnTypeExists, mrnAlreadyInUse] = await Promise.all([
+            patientIdentifierTypeExists(configuredMrnTypeUuid),
+            patientMrnIdentifierInUse(trimmedMrn, configuredMrnTypeUuid),
+          ]);
 
-      const mrnTypeExists = await patientIdentifierTypeExists(configuredMrnTypeUuid);
-      if (!mrnTypeExists) {
-        showSnackbar({
-          title: t('mrnNotSaved', 'MRN could not be saved'),
-          subtitle: t(
-            'mrnIdentifierTypeMissingOnServer',
-            'The configured MRN identifier type was not found on this server. Deploy the MRN patient identifier metadata or update mrnIdentifierTypeUuid.',
-          ),
-          kind: 'error',
-          isLowContrast: true,
-        });
-        return;
+          if (!mrnTypeExists) {
+            showSnackbar({
+              title: t('mrnNotSaved', 'MRN could not be saved'),
+              subtitle: t(
+                'mrnIdentifierTypeMissingOnServer',
+                'The configured MRN identifier type was not found on this server. Deploy the MRN patient identifier metadata or update mrnIdentifierTypeUuid.',
+              ),
+              kind: 'warning',
+              isLowContrast: true,
+            });
+          } else if (mrnAlreadyInUse) {
+            showSnackbar({
+              title: t('mrnDuplicate', 'MRN already in use'),
+              subtitle: t('mrnDuplicateDetail', 'Another patient already has this MRN. Enter a different value.'),
+              kind: 'error',
+              isLowContrast: true,
+            });
+            return;
+          } else {
+            persistMrnIdentifier = true;
+          }
+        } catch (error) {
+          // Don't silently allow duplicates if we couldn't validate; MRN is optional, so proceed without it.
+          showSnackbar({
+            title: t('mrnNotSaved', 'MRN could not be saved'),
+            subtitle: t(
+              'mrnValidationFailed',
+              'Could not validate MRN right now. Patient will be registered, but MRN will not be saved.',
+            ),
+            kind: 'warning',
+            isLowContrast: true,
+          });
+        }
       }
-
-      const mrnAlreadyInUse = await patientMrnIdentifierInUse(trimmedMrn, configuredMrnTypeUuid);
-      if (mrnAlreadyInUse) {
-        showSnackbar({
-          title: t('mrnDuplicate', 'MRN already in use'),
-          subtitle: t('mrnDuplicateDetail', 'Another patient already has this MRN. Enter a different value.'),
-          kind: 'error',
-          isLowContrast: true,
-        });
-        return;
-      }
-
-      persistMrnIdentifier = true;
     }
 
     try {
@@ -573,32 +587,6 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         </div>
 
         <Controller
-          name="mrnNumber"
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <ResponsiveWrapper>
-              <TextInput
-                id="mrn-number"
-                labelText={t('mrnNumber', 'MRN')}
-                helperText={t('mrnNumberHelper', 'Optional. Enter {{length}} numeric digits.', {
-                  length: mrnNumberLength,
-                })}
-                value={value ?? ''}
-                onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, mrnNumberLength))}
-                invalid={isSubmitted && !!errors.mrnNumber}
-                invalidText={isSubmitted ? errors.mrnNumber?.message : ''}
-                placeholder={t('enterMrnNumber', 'Enter MRN')}
-                size="md"
-                type="text"
-                inputMode="numeric"
-                maxLength={mrnNumberLength}
-                disabled={isSubmitting}
-              />
-            </ResponsiveWrapper>
-          )}
-        />
-
-        <Controller
           name="firstName"
           control={control}
           render={({ field: { onChange, value } }) => (
@@ -660,6 +648,34 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
             </ResponsiveWrapper>
           )}
         />
+
+        {canSaveMrn ? (
+          <Controller
+            name="mrnNumber"
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <ResponsiveWrapper>
+                <TextInput
+                  id="mrn-number"
+                  labelText={t('mrnNumber', 'MRN')}
+                  helperText={t('mrnNumberHelper', 'Optional. Enter {{length}} numeric digits.', {
+                    length: mrnNumberLength,
+                  })}
+                  value={value ?? ''}
+                  onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, mrnNumberLength))}
+                  invalid={isSubmitted && !!errors.mrnNumber}
+                  invalidText={isSubmitted ? errors.mrnNumber?.message : ''}
+                  placeholder={t('enterMrnNumber', 'Enter MRN')}
+                  size="md"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={mrnNumberLength}
+                  disabled={isSubmitting}
+                />
+              </ResponsiveWrapper>
+            )}
+          />
+        ) : null}
 
         <Controller
           name="gender"

@@ -71,8 +71,11 @@ export async function patientMrnIdentifierInUse(mrn: string, identifierTypeUuid:
           patientIdentifier.identifierType?.uuid === trimmedTypeUuid,
       ),
     );
-  } catch {
-    return false;
+  } catch (error) {
+    // Don't silently pass on network errors: upstream should decide how to proceed.
+    // eslint-disable-next-line no-console
+    console.error('[MRN duplicate check] Failed:', error);
+    throw error;
   }
 }
 
@@ -84,8 +87,10 @@ export async function patientIdentifierTypeExists(identifierTypeUuid: string): P
   try {
     const response = await openmrsFetch<{ uuid?: string }>(`${restBaseUrl}/patientidentifiertype/${trimmedUuid}`);
     return !!response?.data?.uuid;
-  } catch {
-    return false;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('[MRN identifier type check] Failed:', error);
+    throw error;
   }
 }
 
