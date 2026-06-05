@@ -8,10 +8,11 @@ export interface TransferData {
   encounterDatetime: string;
   transferDate: string;
   fromLocation: string;
+  toLocation: string;
   note: string;
 }
 
-export function useTransferData(visitUuid: string, patientUuid: string) {
+export function useTransferData(visitUuid: string, patientUuid: string, transferLocation: string) {
   const config = useConfig<ClinicalWorkflowConfig>();
   const { transferEncounterTypeUuid, transferNoteConceptUuid } = config;
   const url = visitUuid
@@ -30,8 +31,8 @@ export function useTransferData(visitUuid: string, patientUuid: string) {
     );
     const transferEncounter = sortedResults[0];
 
-    return parseTransferEncounter(transferEncounter, transferNoteConceptUuid);
-  }, [data, transferNoteConceptUuid]);
+    return parseTransferEncounter(transferEncounter, transferNoteConceptUuid, transferLocation);
+  }, [data, transferNoteConceptUuid, transferLocation]);
 
   return {
     transferData,
@@ -40,7 +41,11 @@ export function useTransferData(visitUuid: string, patientUuid: string) {
   };
 }
 
-function parseTransferEncounter(encounter: Encounter, transferNoteConceptUuid: string): TransferData {
+function parseTransferEncounter(
+  encounter: Encounter,
+  transferNoteConceptUuid: string,
+  transferLocation: string,
+): TransferData {
   const obs = encounter.obs || [];
 
   return {
@@ -48,6 +53,7 @@ function parseTransferEncounter(encounter: Encounter, transferNoteConceptUuid: s
     encounterDatetime: encounter.encounterDatetime,
     transferDate: encounter.encounterDatetime,
     fromLocation: encounter.location?.display || 'Not specified',
+    toLocation: transferLocation || 'Not specified',
     note: findObsValue(obs, transferNoteConceptUuid) || 'Not specified',
   };
 }
