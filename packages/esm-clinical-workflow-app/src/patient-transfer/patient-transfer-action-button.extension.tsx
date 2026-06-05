@@ -118,14 +118,14 @@ const PatientTransferActionButton: React.FC<PatientChartWorkspaceActionButtonPro
   return (
     <ActionMenuButton2
       icon={(iconProps: ComponentProps<typeof ArrowsHorizontal>) => <ArrowsHorizontal {...iconProps} />}
-      label={t('transferPatient', 'Transfer Patient')}
+      label={t('linkPatient', 'Link Patient')}
       workspaceToLaunch={{
         workspaceName: 'patient-form-entry-workspace' as const,
         workspaceProps: {
           form: {
             uuid: transferFormUuid ?? '',
-            display: t('transferPatient', 'Transfer Patient'),
-            name: 'Transfer Patient',
+            display: t('linkPatient', 'Link Patient'),
+            name: 'Link Patient',
           },
           encounterUuid: '',
         },
