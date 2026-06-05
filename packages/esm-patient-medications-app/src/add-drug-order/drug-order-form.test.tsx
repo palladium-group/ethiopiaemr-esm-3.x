@@ -1307,3 +1307,110 @@ describe('DrugOrderForm - variable dosing UI', () => {
     expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('Tablet');
   });
 });
+
+describe('DrugOrderForm - complex dosing state lifecycle', () => {
+  it('clears complex dosing state when the form is opened for a different drug', async () => {
+    const user = userEvent.setup();
+    const sharedProps = {
+      patient: mockPatient,
+      visitContext: null,
+      onSave: jest.fn(),
+      saveButtonText: 'Save order',
+      onCancel: jest.fn(),
+      workspaceTitle: 'Add drug order',
+    };
+
+    const { rerender } = render(
+      <DrugOrderForm
+        initialOrderBasketItem={createNewOrderBasketItem({ indication: 'Hypertension' })}
+        {...sharedProps}
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /tapering/i }));
+    expect(screen.getByRole('button', { name: /add phase/i })).toBeInTheDocument();
+
+    // Re-open the form for a different drug; the tapering phases must not carry over.
+    const itemForDifferentDrug = {
+      ...createNewOrderBasketItem({ indication: 'Hypertension' }),
+      drug: mockDrugSearchResultApiData[1],
+    } as DrugOrderBasketItem;
+
+    rerender(<DrugOrderForm initialOrderBasketItem={itemForDifferentDrug} {...sharedProps} />);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /add phase/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('preserves complex dosing state when switching tapering -> variable -> tapering', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem({ indication: 'Hypertension' }));
+
+    await user.click(screen.getByRole('tab', { name: /tapering/i }));
+
+    const taperingUnitCombobox = screen.getByRole('combobox', { name: /dose unit/i });
+    await user.click(taperingUnitCombobox);
+    await user.click(screen.getByText('Tablet'));
+
+    const doseInput = screen.getByRole('spinbutton', { name: /^dose$/i });
+    await user.clear(doseInput);
+    await user.type(doseInput, '40');
+
+    // Switch away to variable, then back to tapering.
+    await user.click(screen.getByRole('tab', { name: /variable/i }));
+    await user.click(screen.getByRole('tab', { name: /tapering/i }));
+
+    // The previously entered tapering dose and unit should still be present.
+    await waitFor(() => {
+      expect(screen.getByRole('spinbutton', { name: /^dose$/i })).toHaveValue(40);
+    });
+    expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('Tablet');
+  });
+
+  it('saves free-text dosage instead of a serialized regimen when free text is enabled with a complex type selected', async () => {
+    const user = userEvent.setup();
+    const onSave = jest.fn().mockResolvedValue(undefined);
+    const item = createNewOrderBasketItem({
+      indication: 'Hypertension',
+      pillsDispensed: 14,
+      quantityUnits: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+    });
+
+    render(
+      <DrugOrderForm
+        initialOrderBasketItem={item}
+        patient={mockPatient}
+        visitContext={null}
+        onSave={onSave}
+        saveButtonText="Save order"
+        onCancel={jest.fn()}
+        workspaceTitle="Add drug order"
+      />,
+    );
+
+    // Select a complex dosing type first, then turn on free text dosage.
+    await user.click(screen.getByRole('tab', { name: /tapering/i }));
+    await user.click(screen.getByRole('switch', { name: /free text dosage/i }));
+
+    const freeTextArea = screen.getByPlaceholderText(/free text dosage/i);
+    await user.type(freeTextArea, 'Take as directed by physician');
+
+    // Enabling free text clears the auto-calculated quantity, so set it manually.
+    const quantityInput = screen.getByRole('spinbutton', { name: /quantity to dispense/i });
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '14');
+
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isFreeTextDosage: true,
+          freeTextDosage: 'Take as directed by physician',
+        }),
+      );
+    });
+    expect(onSave.mock.calls[0][0].freeTextDosage).not.toMatch(/Phase 1/i);
+  });
+});

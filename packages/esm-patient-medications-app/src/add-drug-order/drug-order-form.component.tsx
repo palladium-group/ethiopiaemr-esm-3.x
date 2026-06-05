@@ -225,14 +225,14 @@ export function DrugOrderForm({
   const [showVariableValidationErrors, setShowVariableValidationErrors] = useState(false);
   const [showHybridValidationErrors, setShowHybridValidationErrors] = useState(false);
 
-  // Complex dosing route/unit/phases are drug-specific, so clear them when the selected drug
-  // changes. The ref keeps the reset from running on the initial mount.
-  const previousDrugUuidRef = useRef(drug?.uuid);
+  // Complex dosing route/unit/phases are drug-specific, so clear them when the form is opened
+  // for a different drug. The ref keeps the reset from running on the initial mount.
+  const previousDrugUuidRef = useRef(initialOrderBasketItem?.drug?.uuid);
   useEffect(() => {
-    if (previousDrugUuidRef.current === drug?.uuid) {
+    if (previousDrugUuidRef.current === initialOrderBasketItem?.drug?.uuid) {
       return;
     }
-    previousDrugUuidRef.current = drug?.uuid;
+    previousDrugUuidRef.current = initialOrderBasketItem?.drug?.uuid;
     setDosingType('standard');
     setTaperingState(createInitialTaperingState());
     setVariableState(createInitialVariableState());
@@ -240,7 +240,7 @@ export function DrugOrderForm({
     setShowTaperingValidationErrors(false);
     setShowVariableValidationErrors(false);
     setShowHybridValidationErrors(false);
-  }, [drug?.uuid]);
+  }, [initialOrderBasketItem?.drug?.uuid]);
 
   const dosingTypeSelectedIndex = DOSING_TYPES.indexOf(dosingType);
 
