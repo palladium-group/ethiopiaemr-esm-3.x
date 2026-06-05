@@ -24,7 +24,7 @@
       "offline": false
     },
     {
-      "name": "consultation-dashboard-link",
+      "name": "patient-consultation-dashboard-link",
       "component": "consultationDashboardLink",
       "slot": "patient-chart-dashboard-slot",
       "meta": {
@@ -35,7 +35,7 @@
       "order": 9
     },
     {
-      "name": "consultation-dashboard",
+      "name": "patient-consultation-dashboard",
       "component": "consultationDashboard",
       "slot": "patient-chart-consultation-dashboard-slot",
       "meta": {
