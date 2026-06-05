@@ -388,6 +388,51 @@ export function DrugOrderForm({
     }
   }, []);
 
+  // Toggles the validation banner for one complex dosing type and hides the others.
+  const setActiveComplexValidation = useCallback((activeType: DosingType | null) => {
+    setShowTaperingValidationErrors(activeType === 'tapering');
+    setShowVariableValidationErrors(activeType === 'variable');
+    setShowHybridValidationErrors(activeType === 'hybrid');
+  }, []);
+
+  // Shared save path for complex dosing types: serialize the regimen into freeTextDosage,
+  // clear the standard dosage fields, and submit. duration/durationUnit are only set for
+  // types that span a known number of days (tapering, hybrid).
+  const applyComplexDosingAndSubmit = useCallback(
+    async ({
+      serializedDosage,
+      route,
+      unit,
+      durationDays,
+      durationUnit,
+    }: {
+      serializedDosage: string | null;
+      route: MedicationRoute | null;
+      unit: DosingUnit | null;
+      durationDays?: number | null;
+      durationUnit?: DurationUnit | null;
+    }) => {
+      setValue('isFreeTextDosage', true);
+      setValue('freeTextDosage', serializedDosage ?? '');
+      setValue('dosage', null);
+      setValue('unit', null);
+      setValue('frequency', null);
+      setValue('route', route, { shouldValidate: true });
+      if (durationDays != null) {
+        setValue('duration', durationDays, { shouldValidate: true });
+      }
+      if (durationUnit) {
+        setValue('durationUnit', durationUnit, { shouldValidate: true });
+      }
+      if (!getValues('quantityUnits') && unit) {
+        setValue('quantityUnits', unit, { shouldValidate: true });
+      }
+
+      await handleSubmit(handleFormSubmission, handleFormSubmissionError)();
+    },
+    [getValues, handleFormSubmission, handleFormSubmissionError, handleSubmit, setValue],
+  );
+
   const drugDosingUnits: Array<DosingUnit> = useMemo(
     () => orderConfigObject?.drugDosingUnits ?? [],
     [orderConfigObject?.drugDosingUnits],
@@ -518,36 +563,23 @@ export function DrugOrderForm({
       event.preventDefault();
 
       if (dosingType === 'tapering' && !watchedIsFreeText) {
-        setShowTaperingValidationErrors(true);
-        setShowVariableValidationErrors(false);
-        setShowHybridValidationErrors(false);
-
+        setActiveComplexValidation('tapering');
         if (!taperingValidationResult.isValid) {
           return;
         }
 
-        const serializedDosage = serializeTaperingDosage(taperingState);
-        setValue('isFreeTextDosage', true);
-        setValue('freeTextDosage', serializedDosage ?? '');
-        setValue('dosage', null);
-        setValue('unit', null);
-        setValue('frequency', null);
-        setValue('route', taperingState.route, { shouldValidate: true });
-        setValue('duration', taperingTotalDurationDays, { shouldValidate: true });
-        setValue('durationUnit', defaultDaysDurationUnit, { shouldValidate: true });
-
-        if (!getValues('quantityUnits') && taperingState.unit) {
-          setValue('quantityUnits', taperingState.unit, { shouldValidate: true });
-        }
-
-        await handleSubmit(handleFormSubmission, handleFormSubmissionError)();
+        await applyComplexDosingAndSubmit({
+          serializedDosage: serializeTaperingDosage(taperingState),
+          route: taperingState.route,
+          unit: taperingState.unit,
+          durationDays: taperingTotalDurationDays,
+          durationUnit: defaultDaysDurationUnit,
+        });
         return;
       }
 
       if (dosingType === 'variable' && !watchedIsFreeText) {
-        setShowVariableValidationErrors(true);
-        setShowTaperingValidationErrors(false);
-        setShowHybridValidationErrors(false);
+        setActiveComplexValidation('variable');
 
         if (variableValidationResult.errors.duration) {
           setError('duration', { type: 'manual', message: variableValidationResult.errors.duration });
@@ -565,67 +597,46 @@ export function DrugOrderForm({
           return;
         }
 
-        const serializedDosage = serializeVariableDosage(variableState);
-        setValue('isFreeTextDosage', true);
-        setValue('freeTextDosage', serializedDosage ?? '');
-        setValue('dosage', null);
-        setValue('unit', null);
-        setValue('frequency', null);
-        setValue('route', variableState.route, { shouldValidate: true });
-
-        if (!getValues('quantityUnits') && variableState.unit) {
-          setValue('quantityUnits', variableState.unit, { shouldValidate: true });
-        }
-
-        await handleSubmit(handleFormSubmission, handleFormSubmissionError)();
+        await applyComplexDosingAndSubmit({
+          serializedDosage: serializeVariableDosage(variableState),
+          route: variableState.route,
+          unit: variableState.unit,
+        });
         return;
       }
 
       if (dosingType === 'hybrid' && !watchedIsFreeText) {
-        setShowTaperingValidationErrors(false);
-        setShowVariableValidationErrors(false);
-        setShowHybridValidationErrors(true);
-
+        setActiveComplexValidation('hybrid');
         if (!hybridValidationResult.isValid) {
           return;
         }
 
-        const serializedDosage = serializeHybridDosage(hybridState);
-        setValue('isFreeTextDosage', true);
-        setValue('freeTextDosage', serializedDosage ?? '');
-        setValue('dosage', null);
-        setValue('unit', null);
-        setValue('frequency', null);
-        setValue('route', hybridState.route, { shouldValidate: true });
-        setValue('duration', hybridTotalDurationDays, { shouldValidate: true });
-        setValue('durationUnit', defaultDaysDurationUnit, { shouldValidate: true });
-
-        if (!getValues('quantityUnits') && hybridState.unit) {
-          setValue('quantityUnits', hybridState.unit, { shouldValidate: true });
-        }
-
-        await handleSubmit(handleFormSubmission, handleFormSubmissionError)();
+        await applyComplexDosingAndSubmit({
+          serializedDosage: serializeHybridDosage(hybridState),
+          route: hybridState.route,
+          unit: hybridState.unit,
+          durationDays: hybridTotalDurationDays,
+          durationUnit: defaultDaysDurationUnit,
+        });
         return;
       }
 
-      setShowTaperingValidationErrors(false);
-      setShowVariableValidationErrors(false);
-      setShowHybridValidationErrors(false);
+      setActiveComplexValidation(null);
       await handleSubmit(handleFormSubmission, handleFormSubmissionError)(event);
     },
     [
+      applyComplexDosingAndSubmit,
       clearErrors,
       defaultDaysDurationUnit,
       dosingType,
-      getValues,
       handleFormSubmission,
       handleFormSubmissionError,
       handleSubmit,
       hybridState,
       hybridTotalDurationDays,
       hybridValidationResult.isValid,
+      setActiveComplexValidation,
       setError,
-      setValue,
       taperingState,
       taperingTotalDurationDays,
       taperingValidationResult.isValid,
@@ -1039,11 +1050,7 @@ export function DrugOrderForm({
                         </div>
                       )}
                     </>
-                  ) : (
-                    <p className={styles.complexDosingPlaceholder}>
-                      {t('complexDosingComingSoon', 'This dosing type will be available in a future update.')}
-                    </p>
-                  )}
+                  ) : null}
                 </>
               )}
             </section>
