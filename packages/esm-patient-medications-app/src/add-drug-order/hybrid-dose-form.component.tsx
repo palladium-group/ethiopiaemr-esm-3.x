@@ -1,16 +1,6 @@
-import React, { type ReactNode, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Button,
-  Column,
-  ComboBox,
-  Grid,
-  IconButton,
-  Layer,
-  NumberInput,
-  RadioButton,
-  RadioButtonGroup,
-} from '@carbon/react';
+import { Button, Column, ComboBox, Grid, IconButton, NumberInput, RadioButton, RadioButtonGroup } from '@carbon/react';
 import { Close } from '@carbon/react/icons';
 import { AddIcon, useLayoutType } from '@openmrs/esm-framework';
 import type { DosingUnit, DurationUnit, MedicationRoute } from '@openmrs/esm-patient-common-lib';
@@ -23,6 +13,7 @@ import {
   type VariableQ6hDoses,
   type VariableTidDoses,
 } from './complex-dosing.types';
+import { InputWrapper, parseDoseValue } from './complex-dosing-form.utils';
 import formStyles from './drug-order-form.scss';
 import styles from './hybrid-dose-form.scss';
 
@@ -35,20 +26,6 @@ export interface HybridDoseFormProps {
   onStateChange: (state: HybridDosingState) => void;
   validationErrors?: HybridValidationErrors | null;
   filterItemsByName: (menu: { item?: { value?: string }; inputValue?: string }) => boolean;
-}
-
-function InputWrapper({ children }: { children: ReactNode }) {
-  const isTablet = useLayoutType() === 'tablet';
-  return (
-    <Layer level={isTablet ? 1 : 0}>
-      <div className={formStyles.field}>{children}</div>
-    </Layer>
-  );
-}
-
-function parseDoseValue(value: string | number): number | null {
-  const number = parseFloat(String(value));
-  return isNaN(number) ? null : number;
 }
 
 export function HybridDoseForm({

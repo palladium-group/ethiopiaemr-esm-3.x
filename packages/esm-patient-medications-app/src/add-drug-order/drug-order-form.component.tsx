@@ -23,7 +23,6 @@ import {
   Grid,
   IconButton,
   InlineNotification,
-  Layer,
   NumberInput,
   Switch,
   TextArea,
@@ -83,6 +82,7 @@ import {
   validateTaperingDosing,
   validateVariableDosing,
 } from './complex-dosing.utils';
+import { InputWrapper } from './complex-dosing-form.utils';
 import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from './drug-order-form.resource';
 import { TaperingDoseForm } from './tapering-dose-form.component';
 import taperingStyles from './tapering-dose-form.scss';
@@ -145,15 +145,6 @@ function MedicationInfoHeader({
         }}
       />
     </div>
-  );
-}
-
-function InputWrapper({ children }) {
-  const isTablet = useLayoutType() === 'tablet';
-  return (
-    <Layer level={isTablet ? 1 : 0}>
-      <div className={styles.field}>{children}</div>
-    </Layer>
   );
 }
 
@@ -233,6 +224,23 @@ export function DrugOrderForm({
   const [showTaperingValidationErrors, setShowTaperingValidationErrors] = useState(false);
   const [showVariableValidationErrors, setShowVariableValidationErrors] = useState(false);
   const [showHybridValidationErrors, setShowHybridValidationErrors] = useState(false);
+
+  // Complex dosing route/unit/phases are drug-specific, so clear them when the selected drug
+  // changes. The ref keeps the reset from running on the initial mount.
+  const previousDrugUuidRef = useRef(drug?.uuid);
+  useEffect(() => {
+    if (previousDrugUuidRef.current === drug?.uuid) {
+      return;
+    }
+    previousDrugUuidRef.current = drug?.uuid;
+    setDosingType('standard');
+    setTaperingState(createInitialTaperingState());
+    setVariableState(createInitialVariableState());
+    setHybridState(createInitialHybridState());
+    setShowTaperingValidationErrors(false);
+    setShowVariableValidationErrors(false);
+    setShowHybridValidationErrors(false);
+  }, [drug?.uuid]);
 
   const dosingTypeSelectedIndex = DOSING_TYPES.indexOf(dosingType);
 
@@ -581,6 +589,9 @@ export function DrugOrderForm({
       if (dosingType === 'variable' && !watchedIsFreeText) {
         setActiveComplexValidation('variable');
 
+        // Variable mode reuses the shared "Prescription duration" react-hook-form fields, so their
+        // errors must be pushed into react-hook-form here. Route, unit, and dose slots live in
+        // variableState and surface through the validationErrors prop instead (as in tapering/hybrid).
         if (variableValidationResult.errors.duration) {
           setError('duration', { type: 'manual', message: variableValidationResult.errors.duration });
         } else {

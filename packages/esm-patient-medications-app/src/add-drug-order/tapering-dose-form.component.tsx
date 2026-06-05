@@ -1,6 +1,6 @@
-import React, { type ReactNode, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Column, ComboBox, Grid, IconButton, Layer, NumberInput } from '@carbon/react';
+import { Button, Column, ComboBox, Grid, IconButton, NumberInput } from '@carbon/react';
 import { Close } from '@carbon/react/icons';
 import { AddIcon, useLayoutType } from '@openmrs/esm-framework';
 import type { DosingUnit, DurationUnit, MedicationFrequency, MedicationRoute } from '@openmrs/esm-patient-common-lib';
@@ -10,6 +10,7 @@ import {
   type TaperingPhase,
   type TaperingValidationErrors,
 } from './complex-dosing.types';
+import { InputWrapper, parseDoseValue } from './complex-dosing-form.utils';
 import formStyles from './drug-order-form.scss';
 import styles from './tapering-dose-form.scss';
 
@@ -24,15 +25,6 @@ export interface TaperingDoseFormProps {
   validationErrors?: TaperingValidationErrors | null;
   filterItemsByName: (menu: { item?: { value?: string }; inputValue?: string }) => boolean;
   filterItemsBySynonymNames: (menu: { item?: { names?: Array<string> }; inputValue?: string }) => boolean;
-}
-
-function InputWrapper({ children }: { children: ReactNode }) {
-  const isTablet = useLayoutType() === 'tablet';
-  return (
-    <Layer level={isTablet ? 1 : 0}>
-      <div className={formStyles.field}>{children}</div>
-    </Layer>
-  );
 }
 
 export function TaperingDoseForm({
@@ -155,10 +147,7 @@ export function TaperingDoseForm({
                       invalidText={phaseErrors?.dose}
                       label={t('editDoseComboBoxTitle', 'Dose')}
                       min={0.01}
-                      onChange={(_, { value }) => {
-                        const number = parseFloat(String(value));
-                        updatePhase(phase.id, { dose: isNaN(number) ? null : number });
-                      }}
+                      onChange={(_, { value }) => updatePhase(phase.id, { dose: parseDoseValue(value) })}
                       size={inputSize}
                       step={0.01}
                       value={typeof phase.dose === 'number' ? phase.dose : ''}
@@ -193,10 +182,7 @@ export function TaperingDoseForm({
                     invalidText={phaseErrors?.duration}
                     label={t('duration', 'Duration')}
                     min={0}
-                    onChange={(_, { value }) => {
-                      const number = parseFloat(String(value));
-                      updatePhase(phase.id, { duration: isNaN(number) ? null : number });
-                    }}
+                    onChange={(_, { value }) => updatePhase(phase.id, { duration: parseDoseValue(value) })}
                     size={inputSize}
                     step={1}
                     value={typeof phase.duration === 'number' ? phase.duration : ''}

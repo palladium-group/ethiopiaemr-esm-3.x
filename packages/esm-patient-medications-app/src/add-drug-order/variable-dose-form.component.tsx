@@ -1,6 +1,6 @@
-import React, { type ReactNode, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Column, ComboBox, Grid, Layer, NumberInput, RadioButton, RadioButtonGroup } from '@carbon/react';
+import { Column, ComboBox, Grid, NumberInput, RadioButton, RadioButtonGroup } from '@carbon/react';
 import { useLayoutType } from '@openmrs/esm-framework';
 import type { DosingUnit, MedicationRoute } from '@openmrs/esm-patient-common-lib';
 import {
@@ -10,6 +10,7 @@ import {
   type VariableTidDoses,
   type VariableValidationErrors,
 } from './complex-dosing.types';
+import { InputWrapper, parseDoseValue } from './complex-dosing-form.utils';
 import formStyles from './drug-order-form.scss';
 import styles from './variable-dose-form.scss';
 
@@ -20,20 +21,6 @@ export interface VariableDoseFormProps {
   onStateChange: (state: VariableDosingState) => void;
   validationErrors?: VariableValidationErrors | null;
   filterItemsByName: (menu: { item?: { value?: string }; inputValue?: string }) => boolean;
-}
-
-function InputWrapper({ children }: { children: ReactNode }) {
-  const isTablet = useLayoutType() === 'tablet';
-  return (
-    <Layer level={isTablet ? 1 : 0}>
-      <div className={formStyles.field}>{children}</div>
-    </Layer>
-  );
-}
-
-function parseDoseValue(value: string | number): number | null {
-  const number = parseFloat(String(value));
-  return isNaN(number) ? null : number;
 }
 
 export function VariableDoseForm({
