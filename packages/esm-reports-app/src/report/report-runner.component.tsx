@@ -48,6 +48,16 @@ const ReportRunner: React.FC = () => {
     setParamValues((prev) => ({ ...prev, [name]: value }));
   }, []);
 
+  // The backend reports a parameter's type as its fully-qualified Java class name
+  // (e.g. "java.util.Date"), while older/other sources may send a bare "date".
+  // Normalize so any Date-like type renders the Carbon date picker.
+  const isDateParam = useCallback((type: string | undefined | null) => {
+    if (!type) {
+      return false;
+    }
+    return type === 'date' || type.toLowerCase().endsWith('.date') || type.toLowerCase() === 'date';
+  }, []);
+
   const handleRun = useCallback(async () => {
     if (!reportUuid || !allFilled) {
       setStatus({ text: t('fillAllFields', 'Please fill in all required fields.'), kind: 'error' });
@@ -125,7 +135,7 @@ const ReportRunner: React.FC = () => {
       <Layer className={styles.formPanel}>
         <div className={styles.fields}>
           {params.map((param) =>
-            param.type === 'date' ? (
+            isDateParam(param.type) ? (
               <DatePicker
                 key={param.name}
                 datePickerType="single"
