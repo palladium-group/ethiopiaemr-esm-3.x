@@ -1,9 +1,9 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
-import useSWR from 'swr';
-import { appointmentServiceListUrl } from '../constants';
-import type { AppointmentService } from '../types';
+import useSWR, { mutate as globalMutate } from 'swr';
+import { appointmentServiceListUrl, appointmentServiceUrl } from '../constants';
+import type { AppointmentService, AppointmentServiceSavePayload } from '../types';
 
-const appointmentServicesSwrKey = 'appointment-services';
+export const appointmentServicesSwrKey = 'appointment-services';
 
 function parseAppointmentServicesResponse(data: unknown): Array<AppointmentService> {
   if (Array.isArray(data)) {
@@ -29,4 +29,18 @@ export function useAppointmentServices() {
     isValidating,
     mutate,
   };
+}
+
+export function saveAppointmentService(payload: AppointmentServiceSavePayload) {
+  return openmrsFetch(appointmentServiceUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: payload,
+  });
+}
+
+export function revalidateAppointmentServices() {
+  return globalMutate(appointmentServicesSwrKey);
 }

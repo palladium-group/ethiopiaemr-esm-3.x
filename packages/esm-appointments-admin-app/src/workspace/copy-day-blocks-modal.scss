@@ -1,0 +1,13 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.description {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+}
+
+.quickSelect {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+}
