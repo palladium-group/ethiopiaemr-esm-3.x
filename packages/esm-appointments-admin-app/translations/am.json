@@ -1,3 +1,19 @@
 {
-  "appointmentServiceAdmin": "Appointment service admin"
+  "actions": "Actions",
+  "appointmentServiceAdmin": "Appointment service admin",
+  "appointmentServiceAdminComingSoon": "Appointment service availability configuration coming soon.",
+  "appointmentServices": "Appointment services",
+  "configure": "Configure",
+  "configureAppointmentService": "Configure appointment service",
+  "configureServiceTitle": "Configure {{serviceName}}",
+  "configuringService": "Configuring: {{serviceName}}",
+  "errorLoadingServices": "Error loading appointment services",
+  "maxAppointmentsLimit": "Max appointments",
+  "noAppointmentServices": "No appointment services found",
+  "notConfigured": "Not configured",
+  "notSet": "Not set",
+  "selectServiceFromList": "Select a service from the list to configure availability.",
+  "serviceName": "Service name",
+  "weeklyBlocks": "Weekly blocks",
+  "weeklyBlocksCount": "{{count}} block(s)"
 }

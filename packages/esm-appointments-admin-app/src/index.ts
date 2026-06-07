@@ -15,9 +15,10 @@ const options = {
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
-export function startupApp() {
-  defineConfigSchema(moduleName, configSchema);
-}
+// Register synchronously so frontend config keys are recognized at bootstrap.
+defineConfigSchema(moduleName, configSchema);
+
+export function startupApp() {}
 
 export const appointmentServiceAdminHome = getAsyncLifecycle(() => import('./home/home.component'), options);
 
