@@ -40,6 +40,8 @@ export interface BillingConfig {
   enableClaims: boolean;
   enablePreAuth: boolean;
   paymentAPIBaseUrl: string;
+  showStockAvailability: boolean;
+  stockInventoryUrl: string;
 }
 
 export const configSchema: ConfigSchema = {
@@ -250,5 +252,16 @@ export const configSchema: ConfigSchema = {
     _type: Type.String,
     _description: 'The base url that will be used to make any backend calls related to telebirr.',
     _default: 'https://api.telebirr.com/v1',
+  },
+  showStockAvailability: {
+    _type: Type.Boolean,
+    _default: true,
+    _description: 'Whether to show drug stock availability in the drug order workspace.',
+  },
+  stockInventoryUrl: {
+    _type: Type.String,
+    _default: '${restBaseUrl}/ethiopiaemrcustommodule/stock/inventory?drugUuid=${drugUuid}&limit=10&totalCount=true',
+    _description:
+      'Optional REST URL for pharmacy stock inventory. When set, stock is fetched from this endpoint instead of the internal stockmanagement module, and drug prices are hidden in the drug order workspace. Supports ${restBaseUrl} and ${drugUuid} placeholders. The backend module is responsible for calling external systems.',
   },
 };

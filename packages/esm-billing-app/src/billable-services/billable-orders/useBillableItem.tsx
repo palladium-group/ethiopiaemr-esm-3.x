@@ -1,7 +1,8 @@
 import useSWRImmutable from 'swr/immutable';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import useSWR from 'swr';
 import first from 'lodash-es/first';
+
+export { useSockItemInventory, useStockItemQuantity } from './stock-inventory.resource';
 
 type BillableItemResponse = {
   uuid: string;
@@ -20,11 +21,14 @@ type BillableItemResponse = {
   }>;
 };
 
-export const useBillableItem = (billableItemId: string, drugUuid?: string) => {
+export const useBillableItem = (billableItemId: string | undefined, drugUuid?: string, enabled = true) => {
   const customRepresentation = `v=custom:(uuid,name,concept:(uuid,display),servicePrices:(uuid,price,paymentMode:(uuid,name)))`;
-  const url = drugUuid
-    ? `${restBaseUrl}/cashier/billableService?${customRepresentation}&drugUuid=${drugUuid}`
-    : `${restBaseUrl}/cashier/billableService?${customRepresentation}`;
+  const url =
+    enabled && drugUuid
+      ? `${restBaseUrl}/cashier/billableService?${customRepresentation}&drugUuid=${drugUuid}`
+      : enabled && billableItemId
+      ? `${restBaseUrl}/cashier/billableService?${customRepresentation}`
+      : null;
   const { data, error, isLoading } = useSWRImmutable<{ data: { results: Array<BillableItemResponse> } }>(
     url,
     openmrsFetch,
@@ -34,36 +38,8 @@ export const useBillableItem = (billableItemId: string, drugUuid?: string) => {
     : data?.data?.results?.find((item) => item?.concept?.uuid === billableItemId);
 
   return {
-    billableItem: billableItem,
-    isLoading: isLoading,
-    error,
-  };
-};
-
-export const useSockItemInventory = (stockItemId: string) => {
-  const url = `/ws/rest/v1/stockmanagement/stockiteminventory?v=default&limit=10&totalCount=true&drugUuid=${stockItemId}`;
-  const { data, error, isLoading } = useSWR<{
-    data: { results: Array<{ quantityUoM: string; quantity: number; partyName: string }> };
-  }>(url, openmrsFetch);
-  return {
-    stockItem: (data?.data?.results as Array<any>) ?? [],
-    isLoading: isLoading,
-    error,
-  };
-};
-
-export const useStockItemQuantity = (drugUuid: string) => {
-  const url = `/ws/rest/v1/stockmanagement/stockiteminventory?v=default&limit=10&totalCount=true&drugUuid=${drugUuid}`;
-  const { data, error, isLoading } = useSWR<{
-    data: {
-      results: Array<{ quantityUoM: string; quantity: number; partyName: string; stockItemUuid: string }>;
-      total: number;
-    };
-  }>(url, openmrsFetch);
-  return {
-    stockItemQuantity: data?.data?.total ?? 0,
-    stockItemUuid: data?.data?.results[0]?.stockItemUuid ?? '',
-    isLoading: isLoading,
+    billableItem: enabled ? billableItem : undefined,
+    isLoading: enabled ? isLoading : false,
     error,
   };
 };

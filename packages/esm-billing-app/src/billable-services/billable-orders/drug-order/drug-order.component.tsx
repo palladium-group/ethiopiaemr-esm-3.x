@@ -1,63 +1,73 @@
 import React from 'react';
-import { Drug } from '@openmrs/esm-patient-common-lib';
-import { DosingUnit, MedicationFrequency, MedicationRoute, QuantityUnit } from '../../../types';
-import { useBillableItem, useSockItemInventory } from '../useBillableItem';
+import { type Drug } from '@openmrs/esm-patient-common-lib';
+import { useConfig } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
-import styles from './drug-order.scss';
+import { type BillingConfig } from '../../../config-schema';
 import { useCurrencyFormatting } from '../../../helpers/currency';
+import { usesExternalStockSource } from '../stock-inventory.resource';
+import { useBillableItem, useSockItemInventory } from '../useBillableItem';
+import styles from './drug-order.scss';
 
 type DrugOrderProps = {
-  order: {
-    drug: Drug;
-    unit: DosingUnit;
-    commonMedicationName: string;
-    dosage: number;
-    frequency: MedicationFrequency;
-    route: MedicationRoute;
-    quantityUnits: QuantityUnit;
-    patientInstructions: string;
-    asNeeded: boolean;
-    asNeededCondition: string;
-  };
+  drug: Drug;
 };
 
-const DrugOrder: React.FC<DrugOrderProps> = ({ order }) => {
+const DrugOrder: React.FC<DrugOrderProps> = ({ drug }) => {
   const { t } = useTranslation();
+  const config = useConfig<BillingConfig>();
   const { format: formatCurrency } = useCurrencyFormatting();
+  const showStock = config.showStockAvailability;
+  const showPrice = !usesExternalStockSource(config);
 
-  const { stockItem, isLoading: isLoadingInventory } = useSockItemInventory(order?.drug?.uuid);
-  const { billableItem, isLoading } = useBillableItem(order?.drug.concept.uuid, order?.drug.uuid);
-  if (isLoading || isLoadingInventory) {
+  const { stockItem, isLoading: isLoadingInventory } = useSockItemInventory(drug?.uuid);
+  const { billableItem, isLoading: isLoadingPrice } = useBillableItem(
+    drug?.concept?.uuid,
+    drug?.uuid,
+    showPrice && Boolean(drug?.uuid),
+  );
+
+  if (!drug?.uuid) {
     return null;
   }
+
+  const isLoading = (showStock && isLoadingInventory) || (showPrice && isLoadingPrice);
+  if (isLoading) {
+    return null;
+  }
+
+  if (!showStock && !showPrice) {
+    return null;
+  }
+
   return (
     <div className={styles.drugOrderContainer}>
-      {stockItem && stockItem.length > 0 ? (
-        <>
-          <div className={styles.bold}>{'In Stock'}</div>
-          {stockItem.map((item, index) => (
-            <div key={index} className={styles.itemContainer}>
-              <span>{item.partyName}</span>
-              <span>
-                {' '}
-                {Math.round(item.quantity)} {item.quantityUoM}(s){' '}
-              </span>
-            </div>
-          ))}
-        </>
-      ) : (
-        <div className={styles.red}>{'Drug Is Not Available  / Out of Stock'}</div>
-      )}
+      {showStock &&
+        (stockItem.length > 0 ? (
+          <>
+            <div className={styles.bold}>{t('inStock', 'In Stock')}</div>
+            {stockItem.map((item, index) => (
+              <div key={index} className={styles.itemContainer}>
+                <span>{item.partyName}</span>
+                <span>
+                  {Math.round(item.quantity)} {item.quantityUoM}(s)
+                </span>
+              </div>
+            ))}
+          </>
+        ) : (
+          <div className={styles.red}>{t('drugNotAvailable', 'Drug Is Not Available / Out of Stock')}</div>
+        ))}
 
-      <div>
-        {billableItem &&
-          billableItem?.servicePrices.map((item) => (
+      {showPrice && billableItem && (
+        <div>
+          {billableItem.servicePrices.map((item) => (
             <div key={item.uuid} className={styles.itemContainer}>
               <span className={styles.bold}>{item.paymentMode.name}</span>
               <span>{formatCurrency(item.price)}</span>
             </div>
           ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
