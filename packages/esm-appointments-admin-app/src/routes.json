@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0",
+    "appointments": ">=2.0.0"
+  },
+  "pages": [
+    {
+      "component": "appointmentServiceAdminHome",
+      "route": "appointment-service-admin",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "extensions": [
+    {
+      "name": "appointment-service-admin-nav-link",
+      "component": "appointmentServiceAdminNavLink",
+      "slot": "navbar-items-slot",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "workspaces": [
+    {
+      "name": "appointment-service-admin-workspace",
+      "component": "appointmentServiceAdminWorkspace",
+      "title": "Configure appointment service",
+      "type": "other-form",
+      "width": "extra-wide",
+      "canHide": true,
+      "canMaximize": true
+    }
+  ]
+}
