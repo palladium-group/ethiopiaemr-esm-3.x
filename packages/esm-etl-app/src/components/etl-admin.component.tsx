@@ -48,14 +48,13 @@ const EtlAdmin: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const busy = actionState !== 'idle';
-  const unmountRef = useRef<AbortController | null>(null);
+  const unmountRef = useRef<AbortController>(new AbortController());
   const mountedRef = useRef(true);
 
   useEffect(() => {
-    unmountRef.current = new AbortController();
     return () => {
       mountedRef.current = false;
-      unmountRef.current?.abort();
+      unmountRef.current.abort();
     };
   }, []);
 
@@ -63,7 +62,7 @@ const EtlAdmin: React.FC = () => {
     setActionState('syncing');
     setNotification(null);
     try {
-      const result = await triggerSync(unmountRef.current?.signal);
+      const result = await triggerSync(unmountRef.current.signal);
       if (!mountedRef.current) {
         return;
       }
@@ -96,7 +95,7 @@ const EtlAdmin: React.FC = () => {
     setActionState('recreating');
     setNotification(null);
     try {
-      const result = await recreateTables(unmountRef.current?.signal);
+      const result = await recreateTables(unmountRef.current.signal);
       if (!mountedRef.current) {
         return;
       }
@@ -135,10 +134,12 @@ const EtlAdmin: React.FC = () => {
     [syncStatus],
   );
 
-  // Derived overview metrics for the hero strip.
+  // Derived overview metrics for the hero strip. A table without a lastSync
+  // timestamp has simply never run; it is "pending", not "failed".
   const overview = useMemo(() => {
     const total = tableRows.length;
-    const failed = tableRows.filter((r) => r.info.syncStatus !== 'success').length;
+    const failed = tableRows.filter((r) => r.info.syncStatus === 'failed').length;
+    const pending = tableRows.filter((r) => !r.info.lastSync).length;
     const latest = tableRows.reduce<dayjs.Dayjs | null>((acc, r) => {
       const parsed = parseSyncTime(r.info.lastSync);
       if (!parsed) {
@@ -146,7 +147,7 @@ const EtlAdmin: React.FC = () => {
       }
       return !acc || parsed.isAfter(acc) ? parsed : acc;
     }, null);
-    return { total, failed, healthy: total > 0 && failed === 0, latest };
+    return { total, failed, pending, healthy: total > 0 && failed === 0, latest };
   }, [tableRows]);
 
   return (
@@ -177,9 +178,11 @@ const EtlAdmin: React.FC = () => {
               <span className={styles.metricValue}>
                 {overview.total === 0
                   ? t('noData', 'No data')
-                  : overview.healthy
-                  ? t('healthy', 'Healthy')
-                  : t('nFailed', '{{count}} failed', { count: overview.failed })}
+                  : overview.failed > 0
+                  ? t('nFailed', '{{count}} failed', { count: overview.failed })
+                  : overview.pending > 0
+                  ? t('nPending', '{{count}} pending', { count: overview.pending })
+                  : t('healthy', 'Healthy')}
               </span>
             </div>
           </Tile>

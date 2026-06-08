@@ -5,6 +5,7 @@
   "overallHealth": "Overall health",
   "healthy": "Healthy",
   "nFailed": "{{count}} failed",
+  "nPending": "{{count}} pending",
   "noData": "No data",
   "lastSync": "Last sync",
   "lastSyncColumn": "Last Sync",
