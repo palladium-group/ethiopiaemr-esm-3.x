@@ -1,8 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import utc from 'dayjs/plugin/utc';
 import {
   Button,
   DataTableSkeleton,
@@ -20,26 +19,18 @@ import {
   Tile,
 } from '@carbon/react';
 import { CheckmarkFilled, WarningAltFilled, Time, DataTable as DataTableIcon, Renew, Reset } from '@carbon/react/icons';
-import { recreateTables, triggerSync, useEtlSyncStatus, type EtlTableStatus } from '../api/etl.resource';
+import {
+  extractErrorMessage,
+  recreateTables,
+  triggerSync,
+  useEtlSyncStatus,
+  type EtlTableStatus,
+} from '../api/etl.resource';
+import { parseSyncTime } from '../utils/parse-sync-time';
 import RecreateConfirmModal from './recreate-confirm-modal.component';
 import styles from './etl-admin.component.scss';
 
 dayjs.extend(relativeTime);
-dayjs.extend(utc);
-
-/**
- * The backend returns last_sync as a naive MySQL DATETIME string in UTC
- * (the server runs in UTC; NOW() == UTC_TIMESTAMP()). Parse it explicitly as
- * UTC and convert to the viewer's local zone so relative times and tooltips
- * reflect local time rather than treating the string as already-local.
- */
-function parseSyncTime(value: string | null | undefined): dayjs.Dayjs | null {
-  if (!value) {
-    return null;
-  }
-  const parsed = dayjs.utc(value);
-  return parsed.isValid() ? parsed.local() : null;
-}
 
 type ActionState = 'idle' | 'syncing' | 'recreating';
 
@@ -57,12 +48,25 @@ const EtlAdmin: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const busy = actionState !== 'idle';
+  const unmountRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    unmountRef.current = new AbortController();
+    return () => {
+      mountedRef.current = false;
+      unmountRef.current?.abort();
+    };
+  }, []);
 
   const handleSync = useCallback(async () => {
     setActionState('syncing');
     setNotification(null);
     try {
-      const result = await triggerSync();
+      const result = await triggerSync(unmountRef.current?.signal);
+      if (!mountedRef.current) {
+        return;
+      }
       if (result.status === 'success') {
         setNotification({ kind: 'success', message: t('refreshSuccess', 'ETL tables refreshed successfully.') });
       } else {
@@ -72,13 +76,18 @@ const EtlAdmin: React.FC = () => {
         });
       }
     } catch (e) {
+      if (!mountedRef.current) {
+        return;
+      }
       setNotification({
         kind: 'error',
-        message: t('refreshError', 'Sync failed: {{message}}', { message: (e as Error).message }),
+        message: t('refreshError', 'Sync failed: {{message}}', { message: extractErrorMessage(e) }),
       });
     } finally {
-      setActionState('idle');
-      mutate();
+      if (mountedRef.current) {
+        setActionState('idle');
+        mutate();
+      }
     }
   }, [t, mutate]);
 
@@ -87,7 +96,10 @@ const EtlAdmin: React.FC = () => {
     setActionState('recreating');
     setNotification(null);
     try {
-      const result = await recreateTables();
+      const result = await recreateTables(unmountRef.current?.signal);
+      if (!mountedRef.current) {
+        return;
+      }
       if (result.status === 'success') {
         setNotification({
           kind: 'success',
@@ -100,13 +112,18 @@ const EtlAdmin: React.FC = () => {
         });
       }
     } catch (e) {
+      if (!mountedRef.current) {
+        return;
+      }
       setNotification({
         kind: 'error',
-        message: t('recreateError', 'Recreate failed: {{message}}', { message: (e as Error).message }),
+        message: t('recreateError', 'Recreate failed: {{message}}', { message: extractErrorMessage(e) }),
       });
     } finally {
-      setActionState('idle');
-      mutate();
+      if (mountedRef.current) {
+        setActionState('idle');
+        mutate();
+      }
     }
   }, [t, mutate]);
 

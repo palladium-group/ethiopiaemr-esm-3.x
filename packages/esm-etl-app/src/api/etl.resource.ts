@@ -1,9 +1,12 @@
 import useSWR from 'swr';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, type FetchResponse } from '@openmrs/esm-framework';
 
 const SYNC_STATUS_URL = '/ws/rest/v1/ethiopiaemretl/sync/status';
 const SYNC_URL = '/ws/rest/v1/ethiopiaemretl/sync';
 const RECREATE_URL = '/ws/rest/v1/ethiopiaemretl/recreate';
+
+// ETL operations can run for several minutes; abort after 10 minutes if no response.
+export const ETL_OPERATION_TIMEOUT_MS = 10 * 60 * 1000;
 
 export interface EtlTableStatus {
   syncStatus: string;
@@ -24,7 +27,7 @@ export interface EtlActionResponse {
 }
 
 export function useEtlSyncStatus() {
-  const { data, error, isLoading, mutate } = useSWR<{ data: EtlSyncStatusResponse }, Error>(
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<EtlSyncStatusResponse>, Error>(
     SYNC_STATUS_URL,
     openmrsFetch,
   );
@@ -36,19 +39,33 @@ export function useEtlSyncStatus() {
   };
 }
 
-export async function triggerSync(): Promise<EtlActionResponse> {
-  // ETL operations can run for several minutes; abort after 10 minutes if no response.
+function withTimeout(externalSignal?: AbortSignal): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(ETL_OPERATION_TIMEOUT_MS);
+  return externalSignal ? AbortSignal.any([externalSignal, timeoutSignal]) : timeoutSignal;
+}
+
+export async function triggerSync(signal?: AbortSignal): Promise<EtlActionResponse> {
   const response = await openmrsFetch<EtlActionResponse>(SYNC_URL, {
     method: 'POST',
-    signal: AbortSignal.timeout(10 * 60 * 1000),
+    signal: withTimeout(signal),
   });
   return response.data;
 }
 
-export async function recreateTables(): Promise<EtlActionResponse> {
+export async function recreateTables(signal?: AbortSignal): Promise<EtlActionResponse> {
   const response = await openmrsFetch<EtlActionResponse>(RECREATE_URL, {
     method: 'POST',
-    signal: AbortSignal.timeout(10 * 60 * 1000),
+    signal: withTimeout(signal),
   });
   return response.data;
+}
+
+/**
+ * Extracts a user-meaningful error message from an exception thrown by
+ * openmrsFetch. Falls back to the generic Error.message if the server did
+ * not return a structured body.
+ */
+export function extractErrorMessage(e: unknown): string {
+  const err = e as { responseBody?: { message?: string; error?: { message?: string } }; message?: string };
+  return err?.responseBody?.error?.message ?? err?.responseBody?.message ?? err?.message ?? 'Unknown error';
 }
