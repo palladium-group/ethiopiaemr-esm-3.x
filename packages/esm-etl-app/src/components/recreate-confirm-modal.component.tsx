@@ -21,7 +21,12 @@ const RecreateConfirmModal: React.FC<RecreateConfirmModalProps> = ({ open, onCon
       onRequestSubmit={onConfirm}
       onRequestClose={onClose}
       onSecondarySubmit={onClose}>
-      <p>{t('recreateWarningBody', 'This will DROP and rebuild all ETL flat tables, then fully repopulate them from scratch. Reports will be incomplete until it finishes.')}</p>
+      <p>
+        {t(
+          'recreateWarningBody',
+          'This will DROP and rebuild all ETL flat tables, then fully repopulate them from scratch. Reports will be incomplete until it finishes.',
+        )}
+      </p>
     </Modal>
   );
 };
