@@ -79,6 +79,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
   const isReturnedPrescriptionOrder = Boolean((currentOrder as ReturnedPrescriptionBasketItem)?.isReturnedPrescription);
   const isEditingExistingOrder =
     !isReturnedPrescriptionOrder && (currentOrder?.action === 'REVISE' || initialOrder != null);
+  const shouldSubmitToServer = !isReturnedPrescriptionOrder && currentOrder?.action === 'REVISE';
   const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
 
   const { drugCategoryConceptSets } = useConfig<ConfigObject>();
@@ -228,7 +229,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
     return (
       <DrugOrderForm
         initialOrderBasketItem={currentOrder}
-        onSave={isEditingExistingOrder ? submitDrugOrderToServer : saveDrugOrderToBasket}
+        onSave={shouldSubmitToServer ? submitDrugOrderToServer : saveDrugOrderToBasket}
         onCancel={isEditingExistingOrder ? closeWorkspace : () => setCurrentOrder(undefined)}
         patient={patient}
         visitContext={visitContext}

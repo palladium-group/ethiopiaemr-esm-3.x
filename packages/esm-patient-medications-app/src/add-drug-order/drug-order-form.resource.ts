@@ -44,7 +44,7 @@ export function drugOrderBasketItemToFormValue(item: DrugOrderBasketItem, startD
     durationUnit: item?.durationUnit,
     pillsDispensed: item?.pillsDispensed ?? null,
     quantityUnits: item?.quantityUnits,
-    numRefills: item?.numRefills ?? null,
+    numRefills: 0,
     indication: item?.indication,
     frequency: item?.frequency,
     startDate,
@@ -160,20 +160,7 @@ function useCreateMedicationOrderFormSchema() {
             message: t('selectQuantityUnitsErrorMessage', 'Quantity unit is required'),
           },
         ),
-      numRefills: z
-        .number()
-        .nullable()
-        .refine(
-          (value) => {
-            if (requireOutpatientQuantity && (typeof value !== 'number' || value < 0)) {
-              return false;
-            }
-            return true;
-          },
-          {
-            message: t('numRefillsErrorMessage', 'Number of refills is required'),
-          },
-        ),
+      numRefills: z.number().min(0).default(0),
     };
 
     const nonFreeTextDosageSchema = z.object({

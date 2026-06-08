@@ -84,9 +84,6 @@ type OrderWithDtpStatusReason = Order & {
 type MedicationDispenseSearchResponse = {
   entry?: Array<{
     resource?: fhir.MedicationDispense & {
-      prescription?: {
-        reference?: string;
-      };
       statusReasonCodeableConcept?: DtpStatusReason;
     };
   }>;
@@ -131,7 +128,7 @@ function buildDtpReasonByOrderUuidFromDispenseBundle(data?: MedicationDispenseSe
       return;
     }
 
-    const orderUuid = getOrderUuidFromPrescriptionReference(dispense.prescription?.reference);
+    const orderUuid = getOrderUuidFromPrescriptionReference(dispense.authorizingPrescription?.[0]?.reference);
     const dtpReason = getDtpReasonText(dispense.statusReasonCodeableConcept);
     if (orderUuid && dtpReason && !dtpReasonByOrderUuid.has(orderUuid)) {
       dtpReasonByOrderUuid.set(orderUuid, dtpReason);
