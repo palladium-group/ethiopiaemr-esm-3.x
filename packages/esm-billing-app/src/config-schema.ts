@@ -260,7 +260,7 @@ export const configSchema: ConfigSchema = {
   },
   stockInventoryUrl: {
     _type: Type.String,
-    _default: '${restBaseUrl}/ethiopiaemrcustommodule/stock/inventory?drugUuid=${drugUuid}&limit=10&totalCount=true',
+    _default: '',
     _description:
       'Optional REST URL for pharmacy stock inventory. When set, stock is fetched from this endpoint instead of the internal stockmanagement module, and drug prices are hidden in the drug order workspace. Supports ${restBaseUrl} and ${drugUuid} placeholders. The backend module is responsible for calling external systems.',
   },
