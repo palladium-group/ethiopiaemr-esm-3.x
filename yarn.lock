@@ -3679,6 +3679,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-etl-app@workspace:packages/esm-etl-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-etl-app@workspace:packages/esm-etl-app"
+  dependencies:
+    "@carbon/react": "npm:^1.83.0"
+  peerDependencies:
+    "@openmrs/esm-framework": 8.x
+    react: 18.x
+    react-i18next: 11.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-order-catalog-ethio-app@workspace:packages/esm-order-catalog-ethio-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-order-catalog-ethio-app@workspace:packages/esm-order-catalog-ethio-app"

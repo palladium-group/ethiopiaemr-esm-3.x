@@ -1,0 +1,70 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  padding: layout.$spacing-06;
+  max-width: 56rem;
+}
+
+.header {
+  margin-bottom: layout.$spacing-06;
+}
+
+.title {
+  @include type.type-style('heading-04');
+  color: colors.$blue-70;
+  margin: 0 0 layout.$spacing-03;
+}
+
+.description {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.actionsPanel {
+  padding: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+  background: colors.$gray-10;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-04;
+  margin-bottom: layout.$spacing-04;
+
+  // Remove bottom margin when no notification follows
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.notification {
+  margin-top: layout.$spacing-04;
+  max-width: 40rem;
+}
+
+.statusSection {
+  margin-top: layout.$spacing-06;
+}
+
+.sectionHeading {
+  @include type.type-style('heading-02');
+  color: colors.$blue-70;
+  margin: 0 0 layout.$spacing-04;
+}
+
+.empty {
+  @include type.type-style('body-01');
+  color: colors.$gray-50;
+  font-style: italic;
+  padding: layout.$spacing-04 0;
+}
+
+.scheduleNote {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  margin-top: layout.$spacing-05;
+}

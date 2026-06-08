@@ -1,0 +1,47 @@
+{
+  "name": "@palladium-ethiopia/esm-etl-app",
+  "version": "1.0.0",
+  "description": "EthiopiaEMR ETL administration app for OpenMRS 3 (sync, recreate, status)",
+  "keywords": [
+    "openmrs",
+    "ethiopiaemr",
+    "etl"
+  ],
+  "homepage": "https://github.com/palladium-group/ethiopiaemr-esm-3.x#readme",
+  "bugs": {
+    "url": "https://github.com/palladium-group/ethiopiaemr-esm-3.x/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palladium-group/ethiopiaemr-esm-3.x.git"
+  },
+  "license": "MPL-2.0",
+  "main": "src/index.ts",
+  "source": true,
+  "browser": "dist/esm-etl-app.js",
+  "scripts": {
+    "analyze": "rspack --mode=production --env analyze=true",
+    "build": "rspack --mode=production",
+    "lint": "cross-env eslint src --ext ts,tsx",
+    "serve": "rspack serve --mode=development",
+    "start": "openmrs develop",
+    "test": "cross-env TZ=UTC jest --config jest.config.js --verbose false --passWithNoTests --color",
+    "typescript": "tsc"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "dependencies": {
+    "@carbon/react": "^1.83.0"
+  },
+  "peerDependencies": {
+    "@openmrs/esm-framework": "8.x",
+    "react": "18.x",
+    "react-i18next": "11.x",
+    "react-router-dom": "6.x",
+    "swr": "2.x"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
