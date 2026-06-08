@@ -19,14 +19,7 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import {
-  CheckmarkFilled,
-  WarningAltFilled,
-  Time,
-  DataTable as DataTableIcon,
-  Renew,
-  Reset,
-} from '@carbon/react/icons';
+import { CheckmarkFilled, WarningAltFilled, Time, DataTable as DataTableIcon, Renew, Reset } from '@carbon/react/icons';
 import { recreateTables, triggerSync, useEtlSyncStatus, type EtlTableStatus } from '../api/etl.resource';
 import RecreateConfirmModal from './recreate-confirm-modal.component';
 import styles from './etl-admin.component.scss';
@@ -73,10 +66,16 @@ const EtlAdmin: React.FC = () => {
       if (result.status === 'success') {
         setNotification({ kind: 'success', message: t('refreshSuccess', 'ETL tables refreshed successfully.') });
       } else {
-        setNotification({ kind: 'error', message: t('refreshError', 'Sync failed: {{message}}', { message: result.message }) });
+        setNotification({
+          kind: 'error',
+          message: t('refreshError', 'Sync failed: {{message}}', { message: result.message }),
+        });
       }
     } catch (e) {
-      setNotification({ kind: 'error', message: t('refreshError', 'Sync failed: {{message}}', { message: (e as Error).message }) });
+      setNotification({
+        kind: 'error',
+        message: t('refreshError', 'Sync failed: {{message}}', { message: (e as Error).message }),
+      });
     } finally {
       setActionState('idle');
       mutate();
@@ -90,12 +89,21 @@ const EtlAdmin: React.FC = () => {
     try {
       const result = await recreateTables();
       if (result.status === 'success') {
-        setNotification({ kind: 'success', message: t('recreateSuccess', 'ETL tables recreated and repopulated successfully.') });
+        setNotification({
+          kind: 'success',
+          message: t('recreateSuccess', 'ETL tables recreated and repopulated successfully.'),
+        });
       } else {
-        setNotification({ kind: 'error', message: t('recreateError', 'Recreate failed: {{message}}', { message: result.message }) });
+        setNotification({
+          kind: 'error',
+          message: t('recreateError', 'Recreate failed: {{message}}', { message: result.message }),
+        });
       }
     } catch (e) {
-      setNotification({ kind: 'error', message: t('recreateError', 'Recreate failed: {{message}}', { message: (e as Error).message }) });
+      setNotification({
+        kind: 'error',
+        message: t('recreateError', 'Recreate failed: {{message}}', { message: (e as Error).message }),
+      });
     } finally {
       setActionState('idle');
       mutate();
@@ -129,7 +137,10 @@ const EtlAdmin: React.FC = () => {
       <header className={styles.header}>
         <h2 className={styles.title}>{t('etlAdministration', 'ETL Administration')}</h2>
         <p className={styles.description}>
-          {t('etlAdminDescription', 'Manually trigger an incremental ETL refresh or a full table rebuild. The ETL populates the flat reporting tables from raw OpenMRS data on a scheduled basis; use these controls to force an immediate update.')}
+          {t(
+            'etlAdminDescription',
+            'Manually trigger an incremental ETL refresh or a full table rebuild. The ETL populates the flat reporting tables from raw OpenMRS data on a scheduled basis; use these controls to force an immediate update.',
+          )}
         </p>
       </header>
 
@@ -150,8 +161,8 @@ const EtlAdmin: React.FC = () => {
                 {overview.total === 0
                   ? t('noData', 'No data')
                   : overview.healthy
-                    ? t('healthy', 'Healthy')
-                    : t('nFailed', '{{count}} failed', { count: overview.failed })}
+                  ? t('healthy', 'Healthy')
+                  : t('nFailed', '{{count}} failed', { count: overview.failed })}
               </span>
             </div>
           </Tile>
@@ -186,15 +197,19 @@ const EtlAdmin: React.FC = () => {
           <div className={styles.actionCardHeader}>
             <Renew size={20} className={styles.iconNeutral} />
             <h3 className={styles.actionCardTitle}>{t('refreshTables', 'Refresh Tables')}</h3>
-            <Tag type="blue" size="sm">{t('incremental', 'Incremental')}</Tag>
+            <Tag type="blue" size="sm">
+              {t('incremental', 'Incremental')}
+            </Tag>
           </div>
           <p className={styles.actionCardBody}>
             {t('refreshHelp', 'Quickly picks up new and changed records since the last sync. Safe to run any time.')}
           </p>
           <Button kind="primary" size="md" renderIcon={Renew} disabled={busy} onClick={handleSync}>
-            {actionState === 'syncing'
-              ? <InlineLoading description={t('refreshing', 'Refreshing…')} />
-              : t('runRefresh', 'Run Refresh')}
+            {actionState === 'syncing' ? (
+              <InlineLoading description={t('refreshing', 'Refreshing…')} />
+            ) : (
+              t('runRefresh', 'Run Refresh')
+            )}
           </Button>
         </Tile>
 
@@ -202,15 +217,27 @@ const EtlAdmin: React.FC = () => {
           <div className={styles.actionCardHeader}>
             <Reset size={20} className={styles.iconWarning} />
             <h3 className={styles.actionCardTitle}>{t('recreateTables', 'Recreate Tables')}</h3>
-            <Tag type="red" size="sm">{t('destructive', 'Destructive')}</Tag>
+            <Tag type="red" size="sm">
+              {t('destructive', 'Destructive')}
+            </Tag>
           </div>
           <p className={styles.actionCardBody}>
-            {t('recreateHelp', 'Drops and rebuilds every flat table, then fully repopulates from scratch. Reports are incomplete until it finishes.')}
+            {t(
+              'recreateHelp',
+              'Drops and rebuilds every flat table, then fully repopulates from scratch. Reports are incomplete until it finishes.',
+            )}
           </p>
-          <Button kind="danger--tertiary" size="md" renderIcon={Reset} disabled={busy} onClick={() => setShowConfirmModal(true)}>
-            {actionState === 'recreating'
-              ? <InlineLoading description={t('recreating', 'Recreating…')} />
-              : t('recreate', 'Recreate')}
+          <Button
+            kind="danger--tertiary"
+            size="md"
+            renderIcon={Reset}
+            disabled={busy}
+            onClick={() => setShowConfirmModal(true)}>
+            {actionState === 'recreating' ? (
+              <InlineLoading description={t('recreating', 'Recreating…')} />
+            ) : (
+              t('recreate', 'Recreate')
+            )}
           </Button>
         </Tile>
       </section>
@@ -285,9 +312,7 @@ const EtlAdmin: React.FC = () => {
                           {info.syncStatus}
                         </Tag>
                       </TableCell>
-                      <TableCell>
-                        {info.durationMs != null ? `${info.durationMs.toLocaleString()} ms` : '—'}
-                      </TableCell>
+                      <TableCell>{info.durationMs != null ? `${info.durationMs.toLocaleString()} ms` : '—'}</TableCell>
                       <TableCell>
                         {info.recordsProcessed != null ? info.recordsProcessed.toLocaleString() : '—'}
                       </TableCell>
@@ -300,7 +325,10 @@ const EtlAdmin: React.FC = () => {
         )}
 
         <p className={styles.scheduleNote}>
-          {t('syncScheduleNote', 'The ETL also runs automatically on a scheduled interval configured in Administration → Manage Scheduler.')}
+          {t(
+            'syncScheduleNote',
+            'The ETL also runs automatically on a scheduled interval configured in Administration → Manage Scheduler.',
+          )}
         </p>
       </section>
 
