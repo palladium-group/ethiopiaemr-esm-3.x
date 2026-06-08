@@ -123,11 +123,11 @@ const EtlAdmin: React.FC = () => {
     const total = tableRows.length;
     const failed = tableRows.filter((r) => r.info.syncStatus !== 'success').length;
     const latest = tableRows.reduce<dayjs.Dayjs | null>((acc, r) => {
-      const t = parseSyncTime(r.info.lastSync);
-      if (!t) {
+      const parsed = parseSyncTime(r.info.lastSync);
+      if (!parsed) {
         return acc;
       }
-      return !acc || t.isAfter(acc) ? t : acc;
+      return !acc || parsed.isAfter(acc) ? parsed : acc;
     }, null);
     return { total, failed, healthy: total > 0 && failed === 0, latest };
   }, [tableRows]);
@@ -281,7 +281,7 @@ const EtlAdmin: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableHeader>{t('tableName', 'Table')}</TableHeader>
-                  <TableHeader>{t('lastSync', 'Last Sync')}</TableHeader>
+                  <TableHeader>{t('lastSyncColumn', 'Last Sync')}</TableHeader>
                   <TableHeader>{t('status', 'Status')}</TableHeader>
                   <TableHeader>{t('duration', 'Duration')}</TableHeader>
                   <TableHeader>{t('records', 'Records')}</TableHeader>
@@ -290,22 +290,20 @@ const EtlAdmin: React.FC = () => {
               <TableBody>
                 {tableRows.map(({ id, tableName, info }) => {
                   const ok = info.syncStatus === 'success';
+                  const synced = parseSyncTime(info.lastSync);
                   return (
                     <TableRow key={id}>
                       <TableCell>
                         <span className={styles.tableNameCell}>{tableName}</span>
                       </TableCell>
                       <TableCell>
-                        {(() => {
-                          const synced = parseSyncTime(info.lastSync);
-                          return synced ? (
-                            <DefinitionTooltip definition={synced.format('DD MMM YYYY, HH:mm:ss')} openOnHover>
-                              <span className={styles.relativeTime}>{synced.fromNow()}</span>
-                            </DefinitionTooltip>
-                          ) : (
-                            '—'
-                          );
-                        })()}
+                        {synced ? (
+                          <DefinitionTooltip definition={synced.format('DD MMM YYYY, HH:mm:ss')} openOnHover>
+                            <span className={styles.relativeTime}>{synced.fromNow()}</span>
+                          </DefinitionTooltip>
+                        ) : (
+                          '—'
+                        )}
                       </TableCell>
                       <TableCell>
                         <Tag type={ok ? 'green' : 'red'} size="sm" renderIcon={ok ? CheckmarkFilled : WarningAltFilled}>

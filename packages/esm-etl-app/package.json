@@ -31,10 +31,8 @@
   "browserslist": [
     "extends browserslist-config-openmrs"
   ],
-  "dependencies": {
-    "@carbon/react": "^1.83.0"
-  },
   "peerDependencies": {
+    "@carbon/react": "^1.x",
     "@openmrs/esm-framework": "8.x",
     "dayjs": "1.x",
     "react": "18.x",

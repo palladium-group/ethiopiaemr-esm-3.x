@@ -2,7 +2,7 @@
 
 .container {
   background-color: colors.$white-0;
-  min-height: calc(100vh - 3rem);
+  min-height: calc(100vh - var(--omrs-appbar-height, 3rem));
 }
 
 :global(.omrs-breakpoint-gt-tablet) .container {
