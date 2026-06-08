@@ -3686,6 +3686,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
   peerDependencies:
     "@openmrs/esm-framework": 8.x
+    dayjs: 1.x
     react: 18.x
     react-i18next: 11.x
     react-router-dom: 6.x
