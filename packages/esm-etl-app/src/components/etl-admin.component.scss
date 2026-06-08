@@ -3,17 +3,18 @@
 @use '@carbon/colors';
 
 .container {
-  padding: layout.$spacing-06;
-  max-width: 56rem;
+  padding: layout.$spacing-06 layout.$spacing-07;
+  max-width: 75rem;
 }
 
+/* ── Header ───────────────────────────────────────────────── */
 .header {
   margin-bottom: layout.$spacing-06;
 }
 
 .title {
   @include type.type-style('heading-04');
-  color: colors.$blue-70;
+  color: colors.$gray-100;
   margin: 0 0 layout.$spacing-03;
 }
 
@@ -21,50 +22,146 @@
   @include type.type-style('body-01');
   color: colors.$gray-70;
   margin: 0;
+  max-width: 50rem;
 }
 
-.actionsPanel {
-  padding: layout.$spacing-05;
+/* ── Hero status strip ────────────────────────────────────── */
+.heroStrip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: layout.$spacing-05;
   margin-bottom: layout.$spacing-06;
-  background: colors.$gray-10;
 }
 
-.actions {
+.metricTile {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05 layout.$spacing-06;
+  min-height: 5rem;
+}
+
+.metricIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metricBody {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.metricLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.32px;
+}
+
+.metricValue {
+  @include type.type-style('heading-03');
+  color: colors.$gray-100;
+}
+
+/* ── Action cards ─────────────────────────────────────────── */
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+}
+
+.actionCard {
+  display: flex;
+  flex-direction: column;
   gap: layout.$spacing-04;
-  margin-bottom: layout.$spacing-04;
-
-  // Remove bottom margin when no notification follows
-  &:last-child {
-    margin-bottom: 0;
-  }
+  padding: layout.$spacing-06;
+  border-left: 3px solid colors.$blue-60;
 }
 
-.notification {
-  margin-top: layout.$spacing-04;
-  max-width: 40rem;
+.actionCardDanger {
+  border-left-color: colors.$red-50;
 }
 
-.statusSection {
-  margin-top: layout.$spacing-06;
+.actionCardHeader {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
 }
 
-.sectionHeading {
+.actionCardTitle {
   @include type.type-style('heading-02');
-  color: colors.$blue-70;
-  margin: 0 0 layout.$spacing-04;
+  color: colors.$gray-100;
+  margin: 0;
+  flex: 1;
+}
+
+.actionCardBody {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+  flex: 1;
+}
+
+/* ── Notification ─────────────────────────────────────────── */
+.notification {
+  margin-bottom: layout.$spacing-06;
+  max-width: 100%;
+}
+
+/* ── Status table ─────────────────────────────────────────── */
+.statusSection {
+  margin-top: layout.$spacing-03;
+}
+
+.tableContainer {
+  background: colors.$white-0;
+}
+
+.tableNameCell {
+  font-family: 'IBM Plex Mono', monospace;
+  @include type.type-style('code-01');
+  color: colors.$gray-100;
+}
+
+.relativeTime {
+  color: colors.$gray-100;
+  cursor: default;
+}
+
+.emptyTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-09;
+  text-align: center;
 }
 
 .empty {
   @include type.type-style('body-01');
-  color: colors.$gray-50;
-  font-style: italic;
-  padding: layout.$spacing-04 0;
+  color: colors.$gray-60;
+  margin: 0;
 }
 
 .scheduleNote {
   @include type.type-style('helper-text-01');
   color: colors.$gray-60;
   margin-top: layout.$spacing-05;
+}
+
+/* ── Icon colors ──────────────────────────────────────────── */
+.iconHealthy {
+  fill: colors.$green-50;
+}
+
+.iconWarning {
+  fill: colors.$red-50;
+}
+
+.iconNeutral {
+  fill: colors.$gray-60;
 }
