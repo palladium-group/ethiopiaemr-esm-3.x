@@ -9,7 +9,7 @@ export type StockInventoryItem = {
   stockItemUuid?: string;
 };
 
-export type StockDisplayState = 'loading' | 'in_stock' | 'out_of_stock' | 'not_mapped' | 'unavailable';
+export type StockDisplayState = 'loading' | 'in_stock' | 'out_of_stock' | 'not_mapped' | 'unavailable' | 'hidden';
 
 export const STOCK_INVENTORY_ERROR_CODE = {
   DRUG_NOT_MAPPED: 'DRUG_NOT_MAPPED',
@@ -50,7 +50,7 @@ export function resolveStockDisplayState(options: {
   const { isLoading, hasUrl, stockItem, error, usesExternal } = options;
 
   if (!hasUrl) {
-    return 'out_of_stock';
+    return 'hidden';
   }
 
   if (isLoading) {
@@ -100,7 +100,7 @@ function useStockInventoryConfig() {
   return useConfig<BillingConfig>();
 }
 
-export const useSockItemInventory = (drugUuid: string | undefined) => {
+export const useStockItemInventory = (drugUuid: string | undefined) => {
   const config = useStockInventoryConfig();
   const url = buildStockInventoryUrl(drugUuid, config, { forDisplay: true });
   const usesExternal = usesExternalStockSource(config);

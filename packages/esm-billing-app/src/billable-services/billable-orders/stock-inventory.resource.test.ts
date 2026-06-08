@@ -77,6 +77,18 @@ describe('getStockInventoryErrorCode', () => {
 describe('resolveStockDisplayState', () => {
   const stockItem = [{ partyName: 'Pharmacy', quantity: 10, quantityUoM: 'Tablet' }];
 
+  it('returns hidden when stock is not fetched', () => {
+    expect(
+      resolveStockDisplayState({
+        isLoading: false,
+        hasUrl: false,
+        stockItem: [],
+        error: undefined,
+        usesExternal: false,
+      }),
+    ).toBe('hidden');
+  });
+
   it('returns loading while fetching', () => {
     expect(
       resolveStockDisplayState({

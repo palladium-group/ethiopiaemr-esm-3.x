@@ -2,7 +2,7 @@ import useSWRImmutable from 'swr/immutable';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import first from 'lodash-es/first';
 
-export { useSockItemInventory, useStockItemQuantity } from './stock-inventory.resource';
+export { useStockItemInventory, useStockItemQuantity } from './stock-inventory.resource';
 
 type BillableItemResponse = {
   uuid: string;
