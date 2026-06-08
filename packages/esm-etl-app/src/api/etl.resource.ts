@@ -36,17 +36,11 @@ export function useEtlSyncStatus() {
   };
 }
 
-// ETL operations can run for several minutes; abort after 10 minutes if no response.
-const ETL_TIMEOUT_MS = 10 * 60 * 1000;
-
-function withTimeout(ms: number): AbortSignal {
-  return AbortSignal.timeout(ms);
-}
-
 export async function triggerSync(): Promise<EtlActionResponse> {
+  // ETL operations can run for several minutes; abort after 10 minutes if no response.
   const response = await openmrsFetch<EtlActionResponse>(SYNC_URL, {
     method: 'POST',
-    signal: withTimeout(ETL_TIMEOUT_MS),
+    signal: AbortSignal.timeout(10 * 60 * 1000),
   });
   return response.data;
 }
@@ -54,7 +48,7 @@ export async function triggerSync(): Promise<EtlActionResponse> {
 export async function recreateTables(): Promise<EtlActionResponse> {
   const response = await openmrsFetch<EtlActionResponse>(RECREATE_URL, {
     method: 'POST',
-    signal: withTimeout(ETL_TIMEOUT_MS),
+    signal: AbortSignal.timeout(10 * 60 * 1000),
   });
   return response.data;
 }

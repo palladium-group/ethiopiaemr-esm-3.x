@@ -3682,9 +3682,8 @@ __metadata:
 "@palladium-ethiopia/esm-etl-app@workspace:packages/esm-etl-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-etl-app@workspace:packages/esm-etl-app"
-  dependencies:
-    "@carbon/react": "npm:^1.83.0"
   peerDependencies:
+    "@carbon/react": ^1.x
     "@openmrs/esm-framework": 8.x
     dayjs: 1.x
     react: 18.x
