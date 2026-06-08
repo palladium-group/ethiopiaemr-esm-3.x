@@ -19,7 +19,7 @@ const DrugOrder: React.FC<DrugOrderProps> = ({ drug }) => {
   const showStock = config.showStockAvailability;
   const showPrice = !usesExternalStockSource(config);
 
-  const { stockItem, isLoading: isLoadingInventory } = useSockItemInventory(drug?.uuid);
+  const { stockItem, isLoading: isLoadingInventory, stockDisplayState } = useSockItemInventory(drug?.uuid);
   const { billableItem, isLoading: isLoadingPrice } = useBillableItem(
     drug?.concept?.uuid,
     drug?.uuid,
@@ -41,22 +41,31 @@ const DrugOrder: React.FC<DrugOrderProps> = ({ drug }) => {
 
   return (
     <div className={styles.drugOrderContainer}>
-      {showStock &&
-        (stockItem.length > 0 ? (
-          <>
-            <div className={styles.bold}>{t('inStock', 'In Stock')}</div>
-            {stockItem.map((item, index) => (
-              <div key={index} className={styles.itemContainer}>
-                <span>{item.partyName}</span>
-                <span>
-                  {Math.round(item.quantity)} {item.quantityUoM}(s)
-                </span>
-              </div>
-            ))}
-          </>
-        ) : (
-          <div className={styles.red}>{t('drugNotAvailable', 'Drug Is Not Available / Out of Stock')}</div>
-        ))}
+      {showStock && stockDisplayState === 'in_stock' && (
+        <>
+          <div className={styles.bold}>{t('inStock', 'In Stock')}</div>
+          {stockItem.map((item, index) => (
+            <div key={index} className={styles.itemContainer}>
+              <span>{item.partyName}</span>
+              <span>
+                {Math.round(item.quantity)} {item.quantityUoM}(s)
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+
+      {showStock && stockDisplayState === 'out_of_stock' && (
+        <div className={styles.red}>{t('drugNotAvailable', 'Drug Is Not Available / Out of Stock')}</div>
+      )}
+
+      {showStock && stockDisplayState === 'not_mapped' && (
+        <div className={styles.stockWarning}>{t('drugNotInPharmacyCatalog', 'Not in pharmacy catalog')}</div>
+      )}
+
+      {showStock && stockDisplayState === 'unavailable' && (
+        <div className={styles.stockWarning}>{t('stockUnavailable', 'Stock unavailable')}</div>
+      )}
 
       {showPrice && billableItem && (
         <div>

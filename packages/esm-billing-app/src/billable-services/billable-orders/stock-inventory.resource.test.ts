@@ -1,4 +1,10 @@
-import { buildStockInventoryUrl, usesExternalStockSource } from './stock-inventory.resource';
+import {
+  buildStockInventoryUrl,
+  getStockInventoryErrorCode,
+  resolveStockDisplayState,
+  STOCK_INVENTORY_ERROR_CODE,
+  usesExternalStockSource,
+} from './stock-inventory.resource';
 
 jest.mock('@openmrs/esm-framework', () => ({
   restBaseUrl: '/ws/rest/v1',
@@ -51,5 +57,107 @@ describe('usesExternalStockSource', () => {
 
   it('returns false when stockInventoryUrl is empty', () => {
     expect(usesExternalStockSource({ stockInventoryUrl: '' })).toBe(false);
+  });
+});
+
+describe('getStockInventoryErrorCode', () => {
+  it('returns errorCode from openmrsFetch response body', () => {
+    expect(
+      getStockInventoryErrorCode({
+        responseBody: { errorCode: STOCK_INVENTORY_ERROR_CODE.DRUG_NOT_MAPPED },
+      }),
+    ).toBe(STOCK_INVENTORY_ERROR_CODE.DRUG_NOT_MAPPED);
+  });
+
+  it('returns undefined when error is missing', () => {
+    expect(getStockInventoryErrorCode(undefined)).toBeUndefined();
+  });
+});
+
+describe('resolveStockDisplayState', () => {
+  const stockItem = [{ partyName: 'Pharmacy', quantity: 10, quantityUoM: 'Tablet' }];
+
+  it('returns loading while fetching', () => {
+    expect(
+      resolveStockDisplayState({
+        isLoading: true,
+        hasUrl: true,
+        stockItem: [],
+        error: undefined,
+        usesExternal: true,
+      }),
+    ).toBe('loading');
+  });
+
+  it('returns in_stock when items are present', () => {
+    expect(
+      resolveStockDisplayState({
+        isLoading: false,
+        hasUrl: true,
+        stockItem,
+        error: undefined,
+        usesExternal: true,
+      }),
+    ).toBe('in_stock');
+  });
+
+  it('returns out_of_stock when external fetch succeeds with no items', () => {
+    expect(
+      resolveStockDisplayState({
+        isLoading: false,
+        hasUrl: true,
+        stockItem: [],
+        error: undefined,
+        usesExternal: true,
+      }),
+    ).toBe('out_of_stock');
+  });
+
+  it('returns not_mapped for DRUG_NOT_MAPPED errors on external stock', () => {
+    expect(
+      resolveStockDisplayState({
+        isLoading: false,
+        hasUrl: true,
+        stockItem: [],
+        error: { responseBody: { errorCode: STOCK_INVENTORY_ERROR_CODE.DRUG_NOT_MAPPED } },
+        usesExternal: true,
+      }),
+    ).toBe('not_mapped');
+  });
+
+  it('returns unavailable for upstream errors on external stock', () => {
+    expect(
+      resolveStockDisplayState({
+        isLoading: false,
+        hasUrl: true,
+        stockItem: [],
+        error: { responseBody: { errorCode: STOCK_INVENTORY_ERROR_CODE.STOCK_UPSTREAM_ERROR } },
+        usesExternal: true,
+      }),
+    ).toBe('unavailable');
+  });
+
+  it('returns unavailable for other external fetch errors', () => {
+    expect(
+      resolveStockDisplayState({
+        isLoading: false,
+        hasUrl: true,
+        stockItem: [],
+        error: { responseBody: { errorCode: 'STOCK_ENDPOINT_NOT_CONFIGURED' } },
+        usesExternal: true,
+      }),
+    ).toBe('unavailable');
+  });
+
+  it('returns out_of_stock for internal stock when fetch fails with empty items', () => {
+    expect(
+      resolveStockDisplayState({
+        isLoading: false,
+        hasUrl: true,
+        stockItem: [],
+        error: new Error('network'),
+        usesExternal: false,
+      }),
+    ).toBe('out_of_stock');
   });
 });

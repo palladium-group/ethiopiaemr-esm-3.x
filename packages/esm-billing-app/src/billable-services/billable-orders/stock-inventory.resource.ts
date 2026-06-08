@@ -9,6 +9,13 @@ export type StockInventoryItem = {
   stockItemUuid?: string;
 };
 
+export type StockDisplayState = 'loading' | 'in_stock' | 'out_of_stock' | 'not_mapped' | 'unavailable';
+
+export const STOCK_INVENTORY_ERROR_CODE = {
+  DRUG_NOT_MAPPED: 'DRUG_NOT_MAPPED',
+  STOCK_UPSTREAM_ERROR: 'STOCK_UPSTREAM_ERROR',
+} as const;
+
 type StockInventoryResponse = {
   data: {
     results: Array<StockInventoryItem>;
@@ -19,6 +26,50 @@ type StockInventoryResponse = {
 type StockInventoryUrlOptions = {
   forDisplay?: boolean;
 };
+
+type StockInventoryErrorBody = {
+  errorCode?: string;
+};
+
+export function getStockInventoryErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const responseBody = (error as { responseBody?: StockInventoryErrorBody }).responseBody;
+  return responseBody?.errorCode;
+}
+
+export function resolveStockDisplayState(options: {
+  isLoading: boolean;
+  hasUrl: boolean;
+  stockItem: Array<StockInventoryItem>;
+  error: unknown;
+  usesExternal: boolean;
+}): StockDisplayState {
+  const { isLoading, hasUrl, stockItem, error, usesExternal } = options;
+
+  if (!hasUrl) {
+    return 'out_of_stock';
+  }
+
+  if (isLoading) {
+    return 'loading';
+  }
+
+  if (usesExternal && error) {
+    if (getStockInventoryErrorCode(error) === STOCK_INVENTORY_ERROR_CODE.DRUG_NOT_MAPPED) {
+      return 'not_mapped';
+    }
+    return 'unavailable';
+  }
+
+  if (stockItem.length > 0) {
+    return 'in_stock';
+  }
+
+  return 'out_of_stock';
+}
 
 export function buildStockInventoryUrl(
   drugUuid: string | undefined,
@@ -52,11 +103,22 @@ function useStockInventoryConfig() {
 export const useSockItemInventory = (drugUuid: string | undefined) => {
   const config = useStockInventoryConfig();
   const url = buildStockInventoryUrl(drugUuid, config, { forDisplay: true });
+  const usesExternal = usesExternalStockSource(config);
   const { data, error, isLoading } = useSWR<StockInventoryResponse>(url, openmrsFetch);
+  const stockItem = url && !error ? data?.data?.results ?? [] : [];
+
+  const stockDisplayState = resolveStockDisplayState({
+    isLoading: Boolean(url && isLoading),
+    hasUrl: Boolean(url),
+    stockItem,
+    error,
+    usesExternal,
+  });
 
   return {
-    stockItem: url ? data?.data?.results ?? [] : [],
+    stockItem,
     isLoading: url ? isLoading : false,
+    stockDisplayState,
     error,
   };
 };
