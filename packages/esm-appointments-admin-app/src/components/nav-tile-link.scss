@@ -1,0 +1,29 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.navLinkItem {
+  border: none;
+  display: flex;
+  flex-direction: column;
+  min-height: layout.$spacing-12;
+  min-width: 8.5rem;
+  max-width: 8.5rem;
+  padding: 0 layout.$spacing-02;
+  align-items: center;
+  height: 7rem;
+  justify-content: center;
+  background-color: colors.$cool-gray-10;
+  cursor: pointer;
+  row-gap: layout.$spacing-05;
+  position: relative;
+
+  & > span {
+    @include type.type-style('body-01');
+    text-align: center;
+  }
+
+  &:hover {
+    background-color: colors.$cool-gray-20;
+  }
+}

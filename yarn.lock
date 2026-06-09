@@ -3623,6 +3623,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-appointments-admin-app@workspace:packages/esm-appointments-admin-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-appointments-admin-app@workspace:packages/esm-appointments-admin-app"
+  peerDependencies:
+    "@carbon/react": ^1.83.0
+    "@openmrs/esm-framework": 8.x
+    dayjs: 1.x
+    react: 18.x
+    react-hook-form: 7.x
+    react-i18next: 11.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-billing-app@workspace:packages/esm-billing-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-billing-app@workspace:packages/esm-billing-app"

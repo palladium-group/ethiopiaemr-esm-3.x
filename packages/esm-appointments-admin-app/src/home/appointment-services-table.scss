@@ -1,0 +1,15 @@
+@use '@carbon/layout';
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-05;
+}
+
+.tableContainer {
+  block-size: 100%;
+}
+
+.configureButton {
+  max-inline-size: fit-content;
+}

@@ -1,0 +1,81 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+}
+
+.formContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: layout.$spacing-05;
+}
+
+.serviceName {
+  @include type.type-style('heading-03');
+  margin-block-end: layout.$spacing-05;
+}
+
+.sectionTitle {
+  @include type.type-style('heading-compact-01');
+  margin-block: layout.$spacing-05 layout.$spacing-03;
+}
+
+.daySection {
+  border-block-end: 1px solid var(--cds-border-subtle);
+  margin-block-end: layout.$spacing-05;
+  padding-block-end: layout.$spacing-05;
+}
+
+.dayHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-block-end: layout.$spacing-03;
+}
+
+.dayActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+}
+
+.dayTitle {
+  @include type.type-style('heading-compact-01');
+}
+
+.dayTotal {
+  @include type.type-style('helper-text-01');
+  color: var(--cds-text-secondary);
+  margin-block-start: layout.$spacing-03;
+}
+
+.blockRow {
+  align-items: flex-end;
+  display: grid;
+  gap: layout.$spacing-03;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  margin-block-end: layout.$spacing-03;
+}
+
+.emptyDay {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+  margin-block-end: layout.$spacing-03;
+}
+
+.buttonSet {
+  padding: layout.$spacing-05;
+}
+
+.buttonSetTablet {
+  padding-block-end: layout.$spacing-09;
+}
+
+.inlineLoading {
+  align-items: center;
+  display: flex;
+  gap: layout.$spacing-03;
+}
