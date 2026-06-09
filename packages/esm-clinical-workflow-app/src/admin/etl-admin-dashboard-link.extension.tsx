@@ -14,7 +14,7 @@ const EtlAdminDashboardLink: React.FC<NavLinkProps> = ({ hideOverlay }) => {
       hideOverlay={hideOverlay}
       icon={<Renew size={24} />}
       label={t('etlAdministration', 'ETL Administration')}
-      to={`${window.openmrsBase}/ethiopiaemretl/etl/sync.page`}
+      to={`${window.getOpenmrsSpaBase()}etl-admin`}
     />
   );
 };

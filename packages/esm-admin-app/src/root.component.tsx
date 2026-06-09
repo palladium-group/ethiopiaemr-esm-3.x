@@ -4,7 +4,6 @@ import { setLeftNav, unsetLeftNav, WorkspaceContainer } from '@openmrs/esm-frame
 import styles from './root.scss';
 import LeftPanel from './components/side-menu/left-pannel.component';
 import UserManagentLandingPage from './components/users/manage-users/manage-user.component';
-import EtlAdminDashboard from './components/dashboard/etl-dashboard.component';
 import FacilitySetup from './components/facility-setup/facility-setup.component';
 import HomeComponent from './components/locations/home/home-locations.component';
 
@@ -27,7 +26,6 @@ const Root: React.FC = () => {
         <Routes>
           <Route path="/" element={<UserManagentLandingPage />} />
           <Route path="/user-management" element={<UserManagentLandingPage />} />
-          <Route path="/etl-administration" element={<EtlAdminDashboard />} />
           <Route path="/facility-setup" element={<FacilitySetup />} />
           <Route path="/locations" element={<HomeComponent />} />
         </Routes>

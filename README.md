@@ -9,6 +9,17 @@ This repository contains frontend modules for the EthiopiaEMR 3.x. These modules
 - [Billing App](packages/esm-billing-app/) - Billing and payment management functionality
 - [Patient Notes App](packages/esm-patient-notes-app/) - Patient notes microfrontend providing a tabular overview of visit notes and forms for recording new visit notes
 - [Admin App](packages/esm-admin-app/) - Administrative functionality for user and provider management
+- [Reports App](packages/esm-reports-app/) - O3 SPA that surfaces the EthiopiaEMR reporting suite with a left-nav browser, dynamic parameter forms, on-screen results tables, and report design downloads
+- [ETL App](packages/esm-etl-app/) - O3 SPA for ETL administration, replacing the legacy GSP page with health-status metrics, incremental refresh, and a guarded destructive recreate action
+
+## Package Documentation
+
+Detailed documentation for each package — including API dependencies, configuration options, features, and development instructions — lives alongside the source:
+
+| Package | README |
+|---------|--------|
+| Reports App | [packages/esm-reports-app/README.md](packages/esm-reports-app/README.md) |
+| ETL App | [packages/esm-etl-app/README.md](packages/esm-etl-app/README.md) |
 
 ## Setup
 
@@ -60,6 +71,8 @@ Available modules to add:
 - `packages/esm-billing-app`
 - `packages/esm-patient-notes-app`
 - `packages/esm-admin-app`
+- `packages/esm-reports-app`
+- `packages/esm-etl-app`
 
 ## Troubleshooting
 

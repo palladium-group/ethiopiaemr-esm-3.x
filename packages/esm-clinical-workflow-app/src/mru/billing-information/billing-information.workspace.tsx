@@ -60,6 +60,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
     control,
     handleSubmit,
     watch,
+    getValues,
     setValue,
     formState: { errors, isDirty },
   } = useBillingForm(t, billingTypes, isEditMode);
@@ -116,6 +117,8 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   const { selectedIndex, handleContentSwitcherChange } = useBillingFormHandlers({
     billingTypeUuid,
     billingTypes,
+    visitUuid: activeVisit?.uuid,
+    getValues,
     setValue,
   });
 
@@ -179,10 +182,12 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
           {/* Credit sub-type selection */}
           {isCreditType && (
             <CreditSubTypeSelection
+              key={activeVisit?.uuid ?? 'no-visit'}
               control={control}
               errors={errors}
               t={t}
               creditSubType={creditSubType}
+              getValues={getValues}
               setValue={setValue}
             />
           )}
