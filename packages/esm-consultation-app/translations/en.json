@@ -9,6 +9,7 @@
   "consultationInbox": "Consultation inbox",
   "consultationNotFound": "Consultation not found.",
   "consultationPrivilegeRequired": "You do not have permission to perform this consultation action.",
+  "consultationProviderSyncFailed": "The consultation was saved, but the consulted provider could not be recorded. Please try again.",
   "consultationRequest": "Consultation request",
   "consultationResponse": "Consultation response",
   "consultations": "consultations",

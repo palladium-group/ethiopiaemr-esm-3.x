@@ -84,11 +84,10 @@ async function applyEncounterProviderSyncAction(
   action: EncounterProviderSyncAction,
 ): Promise<void> {
   if (action.type === 'create') {
-    await openmrsFetch(`${restBaseUrl}/encounterprovider`, {
+    await openmrsFetch(`${restBaseUrl}/encounter/${encounterUuid}/encounterprovider`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: {
-        encounter: encounterUuid,
         provider: action.providerUuid,
         encounterRole: action.encounterRoleUuid,
       },
@@ -96,7 +95,7 @@ async function applyEncounterProviderSyncAction(
     return;
   }
 
-  await openmrsFetch(`${restBaseUrl}/encounterprovider/${action.encounterProviderUuid}`, {
+  await openmrsFetch(`${restBaseUrl}/encounter/${encounterUuid}/encounterprovider/${action.encounterProviderUuid}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: {
