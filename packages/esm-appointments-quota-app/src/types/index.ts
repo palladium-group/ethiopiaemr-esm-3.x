@@ -45,3 +45,22 @@ export interface AppointmentSummaryResponse {
   appointmentService: { uuid: string; name?: string };
   appointmentCountMap: Record<string, AppointmentSummaryDayCount>;
 }
+
+export interface AppointmentQuotaLaunchProps {
+  serviceUuid?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  /** True when the panel was opened from a recurring appointment booking form. */
+  isRecurring?: boolean;
+}
+
+/** Minimal shape of community appointments-form-workspace props used for prefill. */
+export interface AppointmentsFormWorkspaceProps {
+  patientUuid?: string;
+  appointment?: {
+    service?: { uuid?: string };
+    startDateTime?: number | null;
+    endDateTime?: number | null;
+  };
+}

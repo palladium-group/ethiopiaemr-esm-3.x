@@ -4,5 +4,22 @@
     "webservices.rest": ">=2.2.0",
     "appointments": ">=2.0.0"
   },
-  "extensions": []
+  "extensions": [
+    {
+      "name": "appointments-quota-check-availability-button",
+      "component": "checkAvailabilityButton",
+      "slot": "appointments-metrics-slot",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "appointments-quota-booking-form-bootstrap",
+      "component": "quotaBookingFormBootstrap",
+      "slot": "patient-header-slot",
+      "order": 0,
+      "online": true,
+      "offline": false
+    }
+  ]
 }

@@ -20,10 +20,17 @@ export const configSchema = {
     _description:
       'Appointment statuses that count toward capacity (informational; backend load APIs define actual counts).',
   },
+  autoOpenOnBookingForm: {
+    _type: Type.Boolean,
+    _default: true,
+    _description:
+      'Automatically show the capacity overlay beside the community appointment booking form when the form opens, and keep it in sync as fields change.',
+  },
 };
 
 export interface ConfigObject {
   enabled: boolean;
   warnThresholdPercent: number;
   countStatuses: Array<string>;
+  autoOpenOnBookingForm: boolean;
 }

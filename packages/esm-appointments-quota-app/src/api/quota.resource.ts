@@ -1,13 +1,18 @@
 import dayjs from 'dayjs';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
-import { appointmentServiceListUrl, appointmentServiceLoadUrl, appointmentSummaryUrl } from '../constants';
+import {
+  appointmentServiceListUrl,
+  appointmentServiceLoadUrl,
+  appointmentSummaryUrl,
+  omrsDateFormat,
+} from '../constants';
 import type { AppointmentService, AppointmentSummaryResponse } from '../types';
 import { formatDateKey } from '../quota/quota.helper';
 
 export const appointmentServicesFullSwrKey = 'appointment-services-full';
 
-function parseAppointmentServicesResponse(data: unknown): Array<AppointmentService> {
+export function parseAppointmentServicesResponse(data: unknown): Array<AppointmentService> {
   if (Array.isArray(data)) {
     return data;
   }
@@ -17,6 +22,23 @@ function parseAppointmentServicesResponse(data: unknown): Array<AppointmentServi
   }
 
   return [];
+}
+
+export function parseAppointmentSummariesResponse(data: unknown): Array<AppointmentSummaryResponse> {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (data && typeof data === 'object' && 'results' in data && Array.isArray((data as { results: unknown }).results)) {
+    return (data as { results: Array<AppointmentSummaryResponse> }).results;
+  }
+
+  return [];
+}
+
+export async function fetchAppointmentServicesFull(): Promise<Array<AppointmentService>> {
+  const response = await openmrsFetch<{ data: unknown }>(appointmentServiceListUrl);
+  return parseAppointmentServicesResponse(response?.data);
 }
 
 export function useAppointmentServicesFull() {
@@ -35,7 +57,14 @@ export function useAppointmentServicesFull() {
 }
 
 export function getAppointmentSummaryUrl(startDate: string, endDate: string): string {
-  return `${restBaseUrl}${appointmentSummaryUrl}?startDate=${startDate}&endDate=${endDate}`;
+  const startDateTime = dayjs(startDate).startOf('day').format(omrsDateFormat);
+  const endDateTime = dayjs(endDate).endOf('day').format(omrsDateFormat);
+  const params = new URLSearchParams({
+    startDate: startDateTime,
+    endDate: endDateTime,
+  });
+
+  return `${restBaseUrl}${appointmentSummaryUrl}?${params.toString()}`;
 }
 
 export function getServiceDayBookedCount(
@@ -43,8 +72,12 @@ export function getServiceDayBookedCount(
   serviceUuid: string,
   date: Date,
 ): number {
+  if (!Array.isArray(summaries)) {
+    return 0;
+  }
+
   const dateKey = formatDateKey(date);
-  const serviceSummary = summaries?.find((summary) => summary.appointmentService.uuid === serviceUuid);
+  const serviceSummary = summaries.find((summary) => summary.appointmentService.uuid === serviceUuid);
   return serviceSummary?.appointmentCountMap?.[dateKey]?.allAppointmentsCount ?? 0;
 }
 
@@ -52,13 +85,10 @@ export function useAppointmentSummaryForDate(date: Date | null) {
   const dateKey = date ? formatDateKey(date) : null;
   const url = dateKey ? getAppointmentSummaryUrl(dateKey, dateKey) : null;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: Array<AppointmentSummaryResponse> }>(
-    url,
-    () => openmrsFetch(url!),
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: unknown }>(url, () => openmrsFetch(url!));
 
   return {
-    summaries: data?.data ?? [],
+    summaries: parseAppointmentSummariesResponse(data?.data),
     error,
     isLoading,
     isValidating,
@@ -92,7 +122,7 @@ export function buildBlockDateTime(date: Date, time: string): string {
   const [hours, mins] = minutes.split(':');
   const combined = dayjs(date).hour(Number(hours)).minute(Number(mins)).second(0).millisecond(0);
 
-  return combined.format();
+  return combined.format(omrsDateFormat);
 }
 
 export function useServiceBlockLoad(
