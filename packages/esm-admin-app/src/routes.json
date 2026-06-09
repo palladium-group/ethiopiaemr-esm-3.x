@@ -75,10 +75,6 @@
   ],
   "modals": [
     {
-      "component": "operationConfirmationModal",
-      "name": "operation-confirmation-modal"
-    },
-    {
       "component": "hwrConfirmationModal",
       "name": "hwr-confirmation-modal"
     },

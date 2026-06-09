@@ -79,8 +79,10 @@ const EtlAdmin: React.FC = () => {
         message: t('refreshError', 'Sync failed: {{message}}', { message: extractErrorMessage(e) }),
       });
     } finally {
-      setActionState('idle');
-      mutate();
+      if (!unmountRef.current.signal.aborted) {
+        setActionState('idle');
+        mutate();
+      }
     }
   }, [t, mutate]);
 
@@ -110,8 +112,10 @@ const EtlAdmin: React.FC = () => {
         message: t('recreateError', 'Recreate failed: {{message}}', { message: extractErrorMessage(e) }),
       });
     } finally {
-      setActionState('idle');
-      mutate();
+      if (!unmountRef.current.signal.aborted) {
+        setActionState('idle');
+        mutate();
+      }
     }
   }, [t, mutate]);
 
@@ -136,7 +140,7 @@ const EtlAdmin: React.FC = () => {
       }
       return !acc || parsed.isAfter(acc) ? parsed : acc;
     }, null);
-    return { total, failed, pending, healthy: total > 0 && failed === 0, latest };
+    return { total, failed, pending, healthy: total > 0 && failed === 0 && pending === 0, latest };
   }, [tableRows]);
 
   return (
@@ -158,8 +162,10 @@ const EtlAdmin: React.FC = () => {
             <div className={styles.metricIcon}>
               {overview.healthy ? (
                 <CheckmarkFilled size={24} className={styles.iconHealthy} />
-              ) : (
+              ) : overview.failed > 0 ? (
                 <WarningAltFilled size={24} className={styles.iconWarning} />
+              ) : (
+                <Time size={24} className={styles.iconNeutral} />
               )}
             </div>
             <div className={styles.metricBody}>
@@ -290,7 +296,7 @@ const EtlAdmin: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableHeader>{t('tableName', 'Table')}</TableHeader>
-                  <TableHeader>{t('lastSyncColumn', 'Last sync')}</TableHeader>
+                  <TableHeader>{t('lastSync', 'Last sync')}</TableHeader>
                   <TableHeader>{t('status', 'Status')}</TableHeader>
                   <TableHeader>{t('duration', 'Duration')}</TableHeader>
                   <TableHeader>{t('records', 'Records')}</TableHeader>
@@ -331,12 +337,14 @@ const EtlAdmin: React.FC = () => {
           </TableContainer>
         )}
 
-        <p className={styles.scheduleNote}>
-          {t(
-            'syncScheduleNote',
-            'The ETL also runs automatically on a scheduled interval configured in Administration → Manage Scheduler.',
-          )}
-        </p>
+        {!isLoading && !error && (
+          <p className={styles.scheduleNote}>
+            {t(
+              'syncScheduleNote',
+              'The ETL also runs automatically on a scheduled interval configured in Administration → Manage Scheduler.',
+            )}
+          </p>
+        )}
       </section>
 
       <RecreateConfirmModal

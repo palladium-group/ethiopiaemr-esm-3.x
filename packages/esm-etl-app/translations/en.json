@@ -8,7 +8,6 @@
   "nPending": "{{count}} pending",
   "noData": "No data",
   "lastSync": "Last sync",
-  "lastSyncColumn": "Last sync",
   "never": "Never",
   "tablesTracked": "Tables tracked",
   "actions": "Actions",

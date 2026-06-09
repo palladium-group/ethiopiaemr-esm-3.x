@@ -51,14 +51,18 @@ function withTimeout(externalSignal?: AbortSignal): AbortSignal {
     return AbortSignal.any([externalSignal, timeoutSignal]);
   }
   const controller = new AbortController();
-  const abort = () => controller.abort();
-  [externalSignal, timeoutSignal].forEach((s) => {
+  const signals = [externalSignal, timeoutSignal];
+  const abort = () => {
+    signals.forEach((s) => s.removeEventListener('abort', abort));
+    controller.abort();
+  };
+  for (const s of signals) {
     if (s.aborted) {
       abort();
-    } else {
-      s.addEventListener('abort', abort, { once: true });
+      break;
     }
-  });
+    s.addEventListener('abort', abort, { once: true });
+  }
   return controller.signal;
 }
 
