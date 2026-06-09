@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "ethiopiaemretl": ">=1.0.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "etl-admin",
+      "online": true
+    }
+  ]
+}

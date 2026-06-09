@@ -7,6 +7,10 @@
         "allOrderablesConceptUuid": "a1b2c3d4-e5f6-4789-a012-3456789abcde"
     },
     "@palladium-ethiopia/esm-consultation-app": {},
+    "@palladium-ethiopia/esm-billing-app": {
+      "showStockAvailability": true,
+      "stockInventoryUrl": "${restBaseUrl}/ethiopiaemrcustommodule/stock/inventory?drugUuid=${drugUuid}&limit=10&totalCount=true"
+    },
     "@palladium-ethiopia/esm-clinical-workflow-app": {
         "triageVariants": {
           "central": {
@@ -56,15 +60,6 @@
       "patient-chart-encounters-dashboard-slot": {
         "remove": [
           "past-visits-detail-overview"
-        ]
-      }
-    }
-  },
-  "@openmrs/esm-patient-orders-app": {
-    "extensionSlots": {
-      "order-basket-slot": {
-        "remove": [
-          "drug-order-panel"
         ]
       }
     }
