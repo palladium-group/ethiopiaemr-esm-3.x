@@ -2,10 +2,6 @@
     "@palladium-ethiopia/esm-appointments-admin-app": {
         "appointmentServiceAdminPrivilege": "app:appointments:manageServiceAvailability"
     },
-    "@palladium-ethiopia/esm-appointments-quota-app": {
-        "enabled": true,
-        "warnThresholdPercent": 80
-    },
     "@palladium-ethiopia/esm-order-catalog-ethio-app": {
         "orderCatalogEnabled": true,
         "allOrderablesConceptUuid": "a1b2c3d4-e5f6-4789-a012-3456789abcde"
