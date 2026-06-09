@@ -25,6 +25,7 @@
   "refreshError": "Sync failed: {{message}}",
   "recreateSuccess": "ETL tables recreated and repopulated successfully.",
   "recreateError": "Recreate failed: {{message}}",
+  "unknownError": "Unknown error",
   "recreateWarningTitle": "Warning: Destructive Operation",
   "recreateWarningBody": "This will DROP and rebuild all ETL flat tables, then fully repopulate them from scratch. Reports will be incomplete until it finishes.",
   "confirmRecreate": "Yes, Recreate Tables",

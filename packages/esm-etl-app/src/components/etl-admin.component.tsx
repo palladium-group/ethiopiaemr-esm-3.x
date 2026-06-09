@@ -40,6 +40,18 @@ interface TableRowData {
   info: EtlTableStatus;
 }
 
+// Maps a per-table sync status to a Carbon Tag colour and icon. A table that
+// has never run (no lastSync) is "pending" — neutral, not a red failure.
+function statusPresentation(info: EtlTableStatus): { type: 'green' | 'red' | 'gray'; icon: typeof CheckmarkFilled } {
+  if (info.syncStatus === 'success') {
+    return { type: 'green', icon: CheckmarkFilled };
+  }
+  if (info.syncStatus === 'failed') {
+    return { type: 'red', icon: WarningAltFilled };
+  }
+  return { type: 'gray', icon: Time };
+}
+
 const EtlAdmin: React.FC = () => {
   const { t } = useTranslation();
   const [actionState, setActionState] = useState<ActionState>('idle');
@@ -57,6 +69,8 @@ const EtlAdmin: React.FC = () => {
 
   const { syncStatus, isLoading, error, mutate } = useEtlSyncStatus(busy ? 0 : 30_000);
 
+  const unknownError = t('unknownError', 'Unknown error');
+
   const handleSync = useCallback(async () => {
     setActionState('syncing');
     setNotification(null);
@@ -67,7 +81,7 @@ const EtlAdmin: React.FC = () => {
       } else {
         setNotification({
           kind: 'error',
-          message: t('refreshError', 'Sync failed: {{message}}', { message: result.message }),
+          message: t('refreshError', 'Sync failed: {{message}}', { message: result.message ?? unknownError }),
         });
       }
     } catch (e) {
@@ -76,7 +90,7 @@ const EtlAdmin: React.FC = () => {
       }
       setNotification({
         kind: 'error',
-        message: t('refreshError', 'Sync failed: {{message}}', { message: extractErrorMessage(e) }),
+        message: t('refreshError', 'Sync failed: {{message}}', { message: extractErrorMessage(e) ?? unknownError }),
       });
     } finally {
       if (!unmountRef.current.signal.aborted) {
@@ -84,7 +98,7 @@ const EtlAdmin: React.FC = () => {
         mutate();
       }
     }
-  }, [t, mutate]);
+  }, [t, mutate, unknownError]);
 
   const handleRecreateConfirmed = useCallback(async () => {
     setShowConfirmModal(false);
@@ -100,7 +114,7 @@ const EtlAdmin: React.FC = () => {
       } else {
         setNotification({
           kind: 'error',
-          message: t('recreateError', 'Recreate failed: {{message}}', { message: result.message }),
+          message: t('recreateError', 'Recreate failed: {{message}}', { message: result.message ?? unknownError }),
         });
       }
     } catch (e) {
@@ -109,7 +123,9 @@ const EtlAdmin: React.FC = () => {
       }
       setNotification({
         kind: 'error',
-        message: t('recreateError', 'Recreate failed: {{message}}', { message: extractErrorMessage(e) }),
+        message: t('recreateError', 'Recreate failed: {{message}}', {
+          message: extractErrorMessage(e) ?? unknownError,
+        }),
       });
     } finally {
       if (!unmountRef.current.signal.aborted) {
@@ -117,7 +133,7 @@ const EtlAdmin: React.FC = () => {
         mutate();
       }
     }
-  }, [t, mutate]);
+  }, [t, mutate, unknownError]);
 
   const tableRows: Array<TableRowData> = useMemo(
     () =>
@@ -304,7 +320,7 @@ const EtlAdmin: React.FC = () => {
               </TableHead>
               <TableBody>
                 {tableRows.map(({ id, tableName, info }) => {
-                  const ok = info.syncStatus === 'success';
+                  const { type: statusType, icon: StatusIcon } = statusPresentation(info);
                   const synced = parseSyncTime(info.lastSync);
                   return (
                     <TableRow key={id}>
@@ -321,7 +337,7 @@ const EtlAdmin: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Tag type={ok ? 'green' : 'red'} size="sm" renderIcon={ok ? CheckmarkFilled : WarningAltFilled}>
+                        <Tag type={statusType} size="sm" renderIcon={StatusIcon}>
                           {info.syncStatus}
                         </Tag>
                       </TableCell>

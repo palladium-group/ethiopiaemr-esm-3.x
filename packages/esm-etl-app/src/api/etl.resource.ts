@@ -84,12 +84,13 @@ export async function recreateTables(signal?: AbortSignal): Promise<EtlActionRes
 
 /**
  * Extracts a user-meaningful error message from an exception thrown by
- * openmrsFetch. Falls back to the generic Error.message if the server did
- * not return a structured body.
+ * openmrsFetch, or null if the server did not return a structured body and
+ * the error carries no message. Callers supply a translated fallback for the
+ * null case so all user-facing strings stay in the i18n layer.
  */
-export function extractErrorMessage(e: unknown): string {
+export function extractErrorMessage(e: unknown): string | null {
   if (typeof e !== 'object' || e === null) {
-    return 'Unknown error';
+    return null;
   }
   const obj = e as Record<string, unknown>;
   const body = obj['responseBody'];
@@ -106,5 +107,5 @@ export function extractErrorMessage(e: unknown): string {
   if (typeof obj['message'] === 'string') {
     return obj['message'];
   }
-  return 'Unknown error';
+  return null;
 }
