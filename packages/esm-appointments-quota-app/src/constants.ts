@@ -10,6 +10,12 @@ export const appointmentSummaryUrl = '/appointment/appointmentSummary';
 /** Bahmni appointments REST date format (matches community esm-appointments-app). */
 export const omrsDateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 
+/**
+ * Bahmni {@link appointmentServiceLoadUrl} expects UTC instants without a timezone suffix.
+ * {@code DateUtil.convertToLocalDateFromUTC} parses this pattern as UTC.
+ */
+export const bahmniUtcDateTimeFormat = 'YYYY-MM-DDTHH:mm:ss.SSS';
+
 /** Matches Java DayOfWeek order used by Bahmni (Date.getDay(): 0 = Sunday). */
 export const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
 
