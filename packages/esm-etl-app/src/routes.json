@@ -6,7 +6,8 @@
   "pages": [
     {
       "component": "root",
-      "route": "etl-admin"
+      "route": "etl-admin",
+      "online": true
     }
   ]
 }

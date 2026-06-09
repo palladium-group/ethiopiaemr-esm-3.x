@@ -42,30 +42,26 @@ interface TableRowData {
 
 const EtlAdmin: React.FC = () => {
   const { t } = useTranslation();
-  const { syncStatus, isLoading, error, mutate } = useEtlSyncStatus();
   const [actionState, setActionState] = useState<ActionState>('idle');
   const [notification, setNotification] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const busy = actionState !== 'idle';
   const unmountRef = useRef<AbortController>(new AbortController());
-  const mountedRef = useRef(true);
 
   useEffect(() => {
     return () => {
-      mountedRef.current = false;
       unmountRef.current.abort();
     };
   }, []);
+
+  const { syncStatus, isLoading, error, mutate } = useEtlSyncStatus(busy ? 0 : 30_000);
 
   const handleSync = useCallback(async () => {
     setActionState('syncing');
     setNotification(null);
     try {
       const result = await triggerSync(unmountRef.current.signal);
-      if (!mountedRef.current) {
-        return;
-      }
       if (result.status === 'success') {
         setNotification({ kind: 'success', message: t('refreshSuccess', 'ETL tables refreshed successfully.') });
       } else {
@@ -75,7 +71,7 @@ const EtlAdmin: React.FC = () => {
         });
       }
     } catch (e) {
-      if (!mountedRef.current) {
+      if (e instanceof Error && e.name === 'AbortError') {
         return;
       }
       setNotification({
@@ -83,10 +79,8 @@ const EtlAdmin: React.FC = () => {
         message: t('refreshError', 'Sync failed: {{message}}', { message: extractErrorMessage(e) }),
       });
     } finally {
-      if (mountedRef.current) {
-        setActionState('idle');
-        mutate();
-      }
+      setActionState('idle');
+      mutate();
     }
   }, [t, mutate]);
 
@@ -96,9 +90,6 @@ const EtlAdmin: React.FC = () => {
     setNotification(null);
     try {
       const result = await recreateTables(unmountRef.current.signal);
-      if (!mountedRef.current) {
-        return;
-      }
       if (result.status === 'success') {
         setNotification({
           kind: 'success',
@@ -111,7 +102,7 @@ const EtlAdmin: React.FC = () => {
         });
       }
     } catch (e) {
-      if (!mountedRef.current) {
+      if (e instanceof Error && e.name === 'AbortError') {
         return;
       }
       setNotification({
@@ -119,10 +110,8 @@ const EtlAdmin: React.FC = () => {
         message: t('recreateError', 'Recreate failed: {{message}}', { message: extractErrorMessage(e) }),
       });
     } finally {
-      if (mountedRef.current) {
-        setActionState('idle');
-        mutate();
-      }
+      setActionState('idle');
+      mutate();
     }
   }, [t, mutate]);
 
@@ -301,7 +290,7 @@ const EtlAdmin: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableHeader>{t('tableName', 'Table')}</TableHeader>
-                  <TableHeader>{t('lastSyncColumn', 'Last Sync')}</TableHeader>
+                  <TableHeader>{t('lastSyncColumn', 'Last sync')}</TableHeader>
                   <TableHeader>{t('status', 'Status')}</TableHeader>
                   <TableHeader>{t('duration', 'Duration')}</TableHeader>
                   <TableHeader>{t('records', 'Records')}</TableHeader>

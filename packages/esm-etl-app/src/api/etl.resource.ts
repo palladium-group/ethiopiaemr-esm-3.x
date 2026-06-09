@@ -26,10 +26,11 @@ export interface EtlActionResponse {
   durationMs?: number;
 }
 
-export function useEtlSyncStatus() {
+export function useEtlSyncStatus(refreshInterval = 30_000) {
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<EtlSyncStatusResponse>, Error>(
     SYNC_STATUS_URL,
     openmrsFetch,
+    { refreshInterval },
   );
   return {
     syncStatus: data?.data ?? null,
@@ -41,7 +42,24 @@ export function useEtlSyncStatus() {
 
 function withTimeout(externalSignal?: AbortSignal): AbortSignal {
   const timeoutSignal = AbortSignal.timeout(ETL_OPERATION_TIMEOUT_MS);
-  return externalSignal ? AbortSignal.any([externalSignal, timeoutSignal]) : timeoutSignal;
+  if (!externalSignal) {
+    return timeoutSignal;
+  }
+  // AbortSignal.any is available in Chrome 116+, Firefox 124+, Safari 17.4+.
+  // Fall back to a manual composite controller for older targets.
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([externalSignal, timeoutSignal]);
+  }
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  [externalSignal, timeoutSignal].forEach((s) => {
+    if (s.aborted) {
+      abort();
+    } else {
+      s.addEventListener('abort', abort, { once: true });
+    }
+  });
+  return controller.signal;
 }
 
 export async function triggerSync(signal?: AbortSignal): Promise<EtlActionResponse> {
@@ -66,6 +84,23 @@ export async function recreateTables(signal?: AbortSignal): Promise<EtlActionRes
  * not return a structured body.
  */
 export function extractErrorMessage(e: unknown): string {
-  const err = e as { responseBody?: { message?: string; error?: { message?: string } }; message?: string };
-  return err?.responseBody?.error?.message ?? err?.responseBody?.message ?? err?.message ?? 'Unknown error';
+  if (typeof e !== 'object' || e === null) {
+    return 'Unknown error';
+  }
+  const obj = e as Record<string, unknown>;
+  const body = obj['responseBody'];
+  if (typeof body === 'object' && body !== null) {
+    const b = body as Record<string, unknown>;
+    const errMsg = (b['error'] as Record<string, unknown> | undefined)?.['message'];
+    if (typeof errMsg === 'string') {
+      return errMsg;
+    }
+    if (typeof b['message'] === 'string') {
+      return b['message'];
+    }
+  }
+  if (typeof obj['message'] === 'string') {
+    return obj['message'];
+  }
+  return 'Unknown error';
 }
