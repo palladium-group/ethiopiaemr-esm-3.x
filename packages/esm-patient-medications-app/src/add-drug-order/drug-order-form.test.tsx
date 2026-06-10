@@ -2,42 +2,48 @@ import React from 'react';
 import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor } from '@testing-library/react';
 import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
-import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
+import { type DrugOrderBasketItem, type OrderTemplate } from '@openmrs/esm-patient-common-lib';
 import { mockPatient } from 'tools';
 import { mockDrugSearchResultApiData, mockSessionDataResponse } from '__mocks__';
 import { configSchema, type ConfigObject } from '../config-schema';
 import { useRequireOutpatientQuantity } from '../api/api';
+import { useOrderConfig } from '../api/order-config';
 import { getTemplateOrderBasketItem } from './drug-search/drug-search.resource';
 import DrugOrderForm from './drug-order-form.component';
 
 const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
 const mockUseSession = jest.mocked(useSession);
+const mockUseOrderConfig = jest.mocked(useOrderConfig);
+
+const defaultOrderConfig = {
+  orderConfigObject: {
+    drugRoutes: [{ valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' }],
+    drugDosingUnits: [{ valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' }],
+    drugDispensingUnits: [
+      { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+      { valueCoded: '162376AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Application' },
+    ],
+    durationUnits: [
+      { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+      { valueCoded: '1073AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Weeks' },
+    ],
+    orderFrequencies: [
+      { valueCoded: 'once-daily-uuid', value: 'Once daily', frequencyPerDay: 1.0, names: ['OD', 'Once daily'] },
+      { valueCoded: 'twice-daily-uuid', value: 'Twice daily', frequencyPerDay: 2.0, names: ['BD', 'Twice daily'] },
+    ],
+  },
+  isLoading: false,
+  error: null,
+};
 
 mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as ConfigObject);
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
 jest.mock('../api/order-config', () => ({
-  useOrderConfig: jest.fn().mockReturnValue({
-    orderConfigObject: {
-      drugRoutes: [{ valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' }],
-      drugDosingUnits: [{ valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' }],
-      drugDispensingUnits: [
-        { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
-        { valueCoded: '162376AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Application' },
-      ],
-      durationUnits: [
-        { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
-        { valueCoded: '1073AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Weeks' },
-      ],
-      orderFrequencies: [
-        { valueCoded: 'once-daily-uuid', value: 'Once daily', frequencyPerDay: 1.0, names: ['OD', 'Once daily'] },
-        { valueCoded: 'twice-daily-uuid', value: 'Twice daily', frequencyPerDay: 2.0, names: ['BD', 'Twice daily'] },
-      ],
-    },
-    isLoading: false,
-    error: null,
-  }),
+  useOrderConfig: jest.fn(),
 }));
+
+mockUseOrderConfig.mockReturnValue(defaultOrderConfig);
 
 jest.mock('../api/api', () => ({
   ...jest.requireActual('../api/api'),
@@ -130,6 +136,100 @@ describe('DrugOrderForm - dose unit defaults', () => {
     await waitFor(() => {
       expect(screen.getByRole('combobox', { name: /quantity unit/i })).toHaveValue('');
     });
+  });
+});
+
+describe('DrugOrderForm - template-constrained dose units', () => {
+  const expandedOrderConfig = {
+    orderConfigObject: {
+      ...defaultOrderConfig.orderConfigObject,
+      drugDosingUnits: [
+        { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+        { valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'mg' },
+        { valueCoded: 'mL-uuid', value: 'mL' },
+      ],
+    },
+    isLoading: false,
+    error: null,
+  };
+
+  const baseTemplateDosingInstructions = {
+    dose: [{ value: 1, default: true }],
+    units: [],
+    route: [{ value: 'oral', valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+    frequency: [{ value: 'once daily', valueCoded: 'once-daily-uuid', default: true }],
+  };
+
+  const templateWithUnits = {
+    type: 'https://schema.openmrs.org/order/template/drug/simple/v1',
+    dosingType: 'org.openmrs.SimpleDosingInstructions',
+    dosingInstructions: {
+      ...baseTemplateDosingInstructions,
+      unit: [
+        { value: 'tab', valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true },
+        { value: 'mg', valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+      ],
+    },
+  } as OrderTemplate;
+
+  const templateWithoutUnits: OrderTemplate = {
+    type: 'https://schema.openmrs.org/order/template/drug/simple/v1',
+    dosingType: 'org.openmrs.SimpleDosingInstructions',
+    dosingInstructions: baseTemplateDosingInstructions,
+  };
+
+  beforeEach(() => {
+    mockUseOrderConfig.mockReturnValue(expandedOrderConfig);
+  });
+
+  afterEach(() => {
+    mockUseOrderConfig.mockReturnValue(defaultOrderConfig);
+  });
+
+  it('shows only template-defined dose units when the order has a template unit list', async () => {
+    const user = userEvent.setup();
+
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        template: templateWithUnits,
+        unit: { value: 'tab', valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+      }),
+    );
+
+    await user.click(screen.getByRole('combobox', { name: /dose unit/i }));
+
+    expect(screen.getByText('tab')).toBeInTheDocument();
+    expect(screen.getByText('mg')).toBeInTheDocument();
+    expect(screen.queryByText('mL')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tablet')).not.toBeInTheDocument();
+  });
+
+  it('shows all configured dose units when the order has no template', async () => {
+    const user = userEvent.setup();
+
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await user.click(screen.getByRole('combobox', { name: /dose unit/i }));
+
+    expect(screen.getByText('Tablet')).toBeInTheDocument();
+    expect(screen.getByText('mg')).toBeInTheDocument();
+    expect(screen.getByText('mL')).toBeInTheDocument();
+  });
+
+  it('shows all configured dose units when the template has no unit list', async () => {
+    const user = userEvent.setup();
+
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        template: templateWithoutUnits,
+      }),
+    );
+
+    await user.click(screen.getByRole('combobox', { name: /dose unit/i }));
+
+    expect(screen.getByText('Tablet')).toBeInTheDocument();
+    expect(screen.getByText('mg')).toBeInTheDocument();
+    expect(screen.getByText('mL')).toBeInTheDocument();
   });
 });
 

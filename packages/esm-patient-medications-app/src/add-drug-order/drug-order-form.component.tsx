@@ -441,19 +441,28 @@ export function DrugOrderForm({
     [getValues, handleFormSubmission, handleFormSubmissionError, handleSubmit, setValue],
   );
 
+  const templateDosingUnits = useMemo(() => {
+    const dosingInstructions = initialOrderBasketItem?.template?.dosingInstructions;
+    const units = (dosingInstructions as { unit?: Array<DosingUnit> } | undefined)?.unit ?? dosingInstructions?.units;
+    return units?.length ? units : null;
+  }, [initialOrderBasketItem?.template]);
+
   const drugDosingUnits: Array<DosingUnit> = useMemo(
-    () => orderConfigObject?.drugDosingUnits ?? [],
-    [orderConfigObject?.drugDosingUnits],
+    () => templateDosingUnits ?? orderConfigObject?.drugDosingUnits ?? [],
+    [templateDosingUnits, orderConfigObject?.drugDosingUnits],
   );
 
   useEffect(() => {
-    if (!orderConfigObject?.drugDosingUnits || !watchedUnit?.valueCoded) {
+    if (!watchedUnit?.valueCoded) {
       return;
     }
 
-    // Units set by an order template are trusted as-is; only validate units that weren't
-    // pre-configured via a template (e.g. units carried over from a revised/renewed order).
-    if (initialOrderBasketItem?.template) {
+    // Template-defined units are already constrained by the combobox items list.
+    if (templateDosingUnits?.length) {
+      return;
+    }
+
+    if (!orderConfigObject?.drugDosingUnits) {
       return;
     }
 
@@ -461,7 +470,7 @@ export function DrugOrderForm({
     if (!isValidDoseUnit) {
       setValue('unit', null, { shouldValidate: false });
     }
-  }, [drugDosingUnits, initialOrderBasketItem?.template, orderConfigObject, setValue, watchedUnit?.valueCoded]);
+  }, [drugDosingUnits, orderConfigObject?.drugDosingUnits, setValue, templateDosingUnits, watchedUnit?.valueCoded]);
 
   const drugRoutes: Array<MedicationRoute> = useMemo(() => orderConfigObject?.drugRoutes ?? [], [orderConfigObject]);
 
