@@ -3,6 +3,7 @@ import useSWRImmutable from 'swr/immutable';
 import { type FetchResponse, openmrsFetch, restBaseUrl, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
 import {
   type Drug,
+  type DosingUnit,
   type DrugOrderBasketItem,
   type DrugOrderTemplate,
   type OrderTemplate,
@@ -249,6 +250,22 @@ export function getDefault(template: OrderTemplate, prop: string) {
   return template.dosingInstructions[prop]?.find((x) => x.default) || template.dosingInstructions[prop]?.[0];
 }
 
+export function getTemplateDoseUnits(
+  dosingInstructions?: OrderTemplate['dosingInstructions'],
+): DosingUnit[] | undefined {
+  if (!dosingInstructions) {
+    return undefined;
+  }
+  const instructions = dosingInstructions as OrderTemplate['dosingInstructions'] & { unit?: DosingUnit[] };
+  const units = instructions.unit ?? instructions.units;
+  return units?.length ? units : undefined;
+}
+
+export function getDefaultDoseUnit(template: OrderTemplate): DosingUnit | undefined {
+  const units = getTemplateDoseUnits(template.dosingInstructions);
+  return units?.find((x) => x.default) ?? units?.[0];
+}
+
 export function getTemplateOrderBasketItem(
   drug: DrugSearchResult,
   visit: Visit,
@@ -260,7 +277,7 @@ export function getTemplateOrderBasketItem(
 ): DrugOrderBasketItem {
   if (template) {
     const defaultUnit =
-      getDefault(template.template, 'unit') ??
+      getDefaultDoseUnit(template.template) ??
       (drug?.dosageForm ? { value: drug?.dosageForm?.display, valueCoded: drug?.dosageForm?.uuid } : null);
 
     return {

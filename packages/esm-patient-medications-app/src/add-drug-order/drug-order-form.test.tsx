@@ -137,6 +137,61 @@ describe('DrugOrderForm - dose unit defaults', () => {
       expect(screen.getByRole('combobox', { name: /quantity unit/i })).toHaveValue('');
     });
   });
+
+  it('clears quantity unit when template has no quantity guidance and unit is invalid', async () => {
+    const invalidQuantityUnit = {
+      value: 'Solution (Ear Drop)',
+      valueCoded: 'solution-ear-drop-uuid',
+    };
+    const templateWithoutQuantityGuidance: OrderTemplate = {
+      type: 'https://schema.openmrs.org/order/template/drug/simple/v1',
+      dosingType: 'org.openmrs.SimpleDosingInstructions',
+      dosingInstructions: {
+        dose: [{ value: 1, default: true }],
+        units: [],
+        route: [{ value: 'oral', valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+        frequency: [{ value: 'once daily', valueCoded: 'once-daily-uuid', default: true }],
+      },
+    };
+
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        template: templateWithoutQuantityGuidance,
+        quantityUnits: invalidQuantityUnit,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /quantity unit/i })).toHaveValue('');
+    });
+  });
+
+  it('keeps template-derived quantity unit when it matches the template dose unit', async () => {
+    const mgUnit = { value: 'mg', valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' };
+    const templateWithDoseUnits = {
+      type: 'https://schema.openmrs.org/order/template/drug/simple/v1',
+      dosingType: 'org.openmrs.SimpleDosingInstructions',
+      dosingInstructions: {
+        dose: [{ value: 500, default: true }],
+        units: [],
+        unit: [{ value: 'mg', valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+        route: [{ value: 'oral', valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+        frequency: [{ value: 'once daily', valueCoded: 'once-daily-uuid', default: true }],
+      },
+    } as OrderTemplate;
+
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        template: templateWithDoseUnits,
+        unit: mgUnit,
+        quantityUnits: mgUnit,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /quantity unit/i })).toHaveValue('mg');
+    });
+  });
 });
 
 describe('DrugOrderForm - template-constrained dose units', () => {
