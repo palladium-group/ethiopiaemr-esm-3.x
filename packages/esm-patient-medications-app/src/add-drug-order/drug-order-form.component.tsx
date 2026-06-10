@@ -451,11 +451,17 @@ export function DrugOrderForm({
       return;
     }
 
+    // Units set by an order template are trusted as-is; only validate units that weren't
+    // pre-configured via a template (e.g. units carried over from a revised/renewed order).
+    if (initialOrderBasketItem?.template) {
+      return;
+    }
+
     const isValidDoseUnit = drugDosingUnits.some((dosingUnit) => dosingUnit.valueCoded === watchedUnit.valueCoded);
     if (!isValidDoseUnit) {
       setValue('unit', null, { shouldValidate: false });
     }
-  }, [drugDosingUnits, orderConfigObject, setValue, watchedUnit?.valueCoded]);
+  }, [drugDosingUnits, initialOrderBasketItem?.template, orderConfigObject, setValue, watchedUnit?.valueCoded]);
 
   const drugRoutes: Array<MedicationRoute> = useMemo(() => orderConfigObject?.drugRoutes ?? [], [orderConfigObject]);
 
@@ -475,13 +481,25 @@ export function DrugOrderForm({
       return;
     }
 
+    // Units set by an order template are trusted as-is; only validate units that weren't
+    // pre-configured via a template (e.g. units carried over from a revised/renewed order).
+    if (initialOrderBasketItem?.template) {
+      return;
+    }
+
     const isValidQuantityUnit = drugDispensingUnits.some(
       (dispensingUnit) => dispensingUnit.valueCoded === watchedQuantityUnits.valueCoded,
     );
     if (!isValidQuantityUnit) {
       setValue('quantityUnits', null, { shouldValidate: false });
     }
-  }, [drugDispensingUnits, orderConfigObject, setValue, watchedQuantityUnits?.valueCoded]);
+  }, [
+    drugDispensingUnits,
+    initialOrderBasketItem?.template,
+    orderConfigObject,
+    setValue,
+    watchedQuantityUnits?.valueCoded,
+  ]);
 
   const durationUnits: Array<DurationUnit> = useMemo(
     () =>
