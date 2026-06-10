@@ -24,7 +24,7 @@ const QueueTableTransferColumn: React.FC<QueueTableTransferColumnProps> = ({ que
   }
 
   if (!transferData) {
-    return <Tag type="gray">Not Linkage</Tag>;
+    return <Tag type="gray">Not Linked</Tag>;
   }
 
   const handleViewTransfer = () => {
