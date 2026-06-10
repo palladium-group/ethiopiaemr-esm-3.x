@@ -13,11 +13,7 @@ interface QueueTableTransferColumnProps {
  * and allows viewing transfer details in a modal
  */
 const QueueTableTransferColumn: React.FC<QueueTableTransferColumnProps> = ({ queueEntry }) => {
-  const { transferData, isLoading } = useTransferData(
-    queueEntry.visit?.uuid,
-    queueEntry.patient?.uuid,
-    queueEntry.queue?.location?.display || '',
-  );
+  const { transferData, isLoading } = useTransferData(queueEntry.visit?.uuid, queueEntry.patient?.uuid);
 
   if (isLoading) {
     return <span>...</span>;
