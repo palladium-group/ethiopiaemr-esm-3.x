@@ -12,9 +12,9 @@ export interface TransferData {
   note: string;
 }
 
-export function useTransferData(visitUuid: string, patientUuid: string, transferLocation: string) {
+export function useTransferData(visitUuid: string, patientUuid: string) {
   const config = useConfig<ClinicalWorkflowConfig>();
-  const { transferEncounterTypeUuid, transferNoteConceptUuid } = config;
+  const { transferEncounterTypeUuid, transferNoteConceptUuid, transferDestinationLocationConceptUuid } = config;
   const url = visitUuid
     ? `${restBaseUrl}/encounter?patient=${patientUuid}&visit=${visitUuid}&encounterType=${transferEncounterTypeUuid}&v=custom:(uuid,encounterDatetime,location:(uuid,display),obs:(uuid,concept:(uuid,display),value,obsDatetime))`
     : null;
@@ -31,8 +31,8 @@ export function useTransferData(visitUuid: string, patientUuid: string, transfer
     );
     const transferEncounter = sortedResults[0];
 
-    return parseTransferEncounter(transferEncounter, transferNoteConceptUuid, transferLocation);
-  }, [data, transferNoteConceptUuid, transferLocation]);
+    return parseTransferEncounter(transferEncounter, transferNoteConceptUuid, transferDestinationLocationConceptUuid);
+  }, [data, transferNoteConceptUuid, transferDestinationLocationConceptUuid]);
 
   return {
     transferData,
@@ -44,7 +44,7 @@ export function useTransferData(visitUuid: string, patientUuid: string, transfer
 function parseTransferEncounter(
   encounter: Encounter,
   transferNoteConceptUuid: string,
-  transferLocation: string,
+  transferDestinationLocationConceptUuid: string,
 ): TransferData {
   const obs = encounter.obs || [];
 
@@ -53,7 +53,7 @@ function parseTransferEncounter(
     encounterDatetime: encounter.encounterDatetime,
     transferDate: encounter.encounterDatetime,
     fromLocation: encounter.location?.display || 'Not specified',
-    toLocation: transferLocation || 'Not specified',
+    toLocation: findObsValue(obs, transferDestinationLocationConceptUuid) || 'Not specified',
     note: findObsValue(obs, transferNoteConceptUuid) || 'Not specified',
   };
 }

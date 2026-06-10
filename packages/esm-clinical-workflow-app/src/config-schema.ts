@@ -277,6 +277,12 @@ export const configSchema = {
     _description: 'UUID of the Transfer Note concept',
     _default: 'f4162fe3-f7e3-4062-9bb3-aa1a4b1044a5',
   },
+  transferDestinationLocationConceptUuid: {
+    _type: Type.UUID,
+    _description:
+      'UUID of the destination location concept on the patient transfer form (must match the ui-select-extended field concept)',
+    _default: 'e7fafac8-1490-4370-b47e-1c6baeae9cf7',
+  },
   recentDiagnosesCount: {
     _type: Type.Number,
     _default: 5,
@@ -347,6 +353,7 @@ export type ClinicalWorkflowConfig = {
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;
+  transferDestinationLocationConceptUuid: string;
   recentDiagnosesCount: number;
 };
 
@@ -400,6 +407,7 @@ export interface ChartConfig {
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;
+  transferDestinationLocationConceptUuid: string;
 }
 
 export interface ImmunizationRegisterConfig {
