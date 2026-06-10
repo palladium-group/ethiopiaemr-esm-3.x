@@ -132,14 +132,20 @@
       "component": "etlAdminDashboardLink",
       "slot": "navbar-items-slot",
       "online": true,
-      "offline": false
+      "offline": false,
+      "meta": {
+        "search": ["etl", "ETL Administration"]
+      }
     },
     {
       "name": "ethiopiaemr-reports-dashboard-link",
       "component": "reportsDashboardLink",
       "slot": "navbar-items-slot",
       "online": true,
-      "offline": false
+      "offline": false,
+      "meta": {
+        "search": ["reports", "Reports"]
+      }
     },
     {
       "name": "recent-diagnoses-widget",
