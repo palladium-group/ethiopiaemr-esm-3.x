@@ -2,8 +2,9 @@ import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import { openmrsFetch } from '@openmrs/esm-framework';
+import { type DrugOrderTemplate, type OrderTemplate } from '@openmrs/esm-patient-common-lib';
 import { mockDrugSearchResultApiData } from '__mocks__';
-import { useConceptSets, useConceptTree, useDrugsByConcepts } from './drug-search.resource';
+import { getTemplateOrderBasketItem, useConceptSets, useConceptTree, useDrugsByConcepts } from './drug-search.resource';
 
 const mockOpenmrsFetch = openmrsFetch as jest.Mock;
 
@@ -168,5 +169,136 @@ describe('useDrugsByConcepts', () => {
 
     expect(result.current.drugs).toHaveLength(51);
     expect(result.current.errors).toEqual([]);
+  });
+});
+
+describe('getTemplateOrderBasketItem', () => {
+  const tabletDosageForm = {
+    display: 'Tablet',
+    uuid: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  };
+
+  const drugWithTabletDosageForm = {
+    ...mockDrugSearchResultApiData[0],
+    dosageForm: tabletDosageForm,
+  };
+
+  const baseOrderTemplate: OrderTemplate = {
+    type: 'https://schema.openmrs.org/order/template/drug/simple/v1',
+    dosingType: 'org.openmrs.SimpleDosingInstructions',
+    dosingInstructions: {
+      dose: [{ value: 1, default: true }],
+      units: [],
+      route: [{ value: 'oral', valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+      frequency: [{ value: 'once daily', valueCoded: 'once-daily-uuid', default: true }],
+    },
+  };
+
+  function createDrugOrderTemplate(template: OrderTemplate): DrugOrderTemplate {
+    return {
+      uuid: 'template-uuid',
+      name: 'Test template',
+      drug: drugWithTabletDosageForm,
+      template,
+    };
+  }
+
+  it('uses default from units (plural) when unit (singular) is absent', () => {
+    const template = createDrugOrderTemplate({
+      ...baseOrderTemplate,
+      dosingInstructions: {
+        ...baseOrderTemplate.dosingInstructions,
+        units: [{ value: 'mg', valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+      },
+    });
+
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null, undefined, template);
+
+    expect(result.unit).toEqual({
+      value: 'mg',
+      valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      default: true,
+    });
+  });
+
+  it('uses template unit instead of drug dosage form when template defines unit', () => {
+    const template = createDrugOrderTemplate({
+      ...baseOrderTemplate,
+      dosingInstructions: {
+        ...baseOrderTemplate.dosingInstructions,
+        unit: [{ value: 'mg', valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+      },
+    } as OrderTemplate);
+
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null, undefined, template);
+
+    expect(result.unit).toEqual({
+      value: 'mg',
+      valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      default: true,
+    });
+  });
+
+  it('falls back to drug dosage form when template has no unit list', () => {
+    const template = createDrugOrderTemplate(baseOrderTemplate);
+
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null, undefined, template);
+
+    expect(result.unit).toEqual({
+      value: tabletDosageForm.display,
+      valueCoded: tabletDosageForm.uuid,
+    });
+  });
+
+  it('copies default dose unit to quantityUnits when template omits quantityUnits', () => {
+    const template = createDrugOrderTemplate({
+      ...baseOrderTemplate,
+      dosingInstructions: {
+        ...baseOrderTemplate.dosingInstructions,
+        unit: [{ value: 'mg', valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+      },
+    } as OrderTemplate);
+
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null, undefined, template);
+
+    expect(result.quantityUnits).toEqual(result.unit);
+    expect(result.quantityUnits).toEqual({
+      value: 'mg',
+      valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      default: true,
+    });
+  });
+
+  it('uses template quantityUnits when template defines them', () => {
+    const template = createDrugOrderTemplate({
+      ...baseOrderTemplate,
+      dosingInstructions: {
+        ...baseOrderTemplate.dosingInstructions,
+        unit: [{ value: 'mg', valueCoded: '161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+        quantityUnits: [{ value: 'tab', valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true }],
+      },
+    } as OrderTemplate);
+
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null, undefined, template);
+
+    expect(result.unit?.valueCoded).toBe('161553AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+    expect(result.quantityUnits).toEqual({
+      value: 'tab',
+      valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      default: true,
+    });
+  });
+
+  it('uses dosage form for unit and quantityUnits when no template is provided', () => {
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null);
+
+    expect(result.unit).toEqual({
+      value: tabletDosageForm.display,
+      valueCoded: tabletDosageForm.uuid,
+    });
+    expect(result.quantityUnits).toEqual({
+      value: tabletDosageForm.display,
+      valueCoded: tabletDosageForm.uuid,
+    });
   });
 });

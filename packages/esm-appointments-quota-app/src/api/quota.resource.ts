@@ -1,14 +1,18 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import {
   appointmentServiceListUrl,
   appointmentServiceLoadUrl,
   appointmentSummaryUrl,
+  bahmniUtcDateTimeFormat,
   omrsDateFormat,
 } from '../constants';
-import type { AppointmentService, AppointmentSummaryResponse } from '../types';
 import { formatDateKey } from '../quota/quota.helper';
+import type { AppointmentService, AppointmentSummaryResponse } from '../types';
+
+dayjs.extend(utc);
 
 export const appointmentServicesFullSwrKey = 'appointment-services-full';
 
@@ -106,23 +110,38 @@ export function getServiceLoadUrl(serviceUuid: string, startDateTime: string, en
   return `${restBaseUrl}${appointmentServiceLoadUrl}?${params.toString()}`;
 }
 
+export function parseServiceBlockLoad(data: unknown): number {
+  if (typeof data === 'number' && !Number.isNaN(data)) {
+    return data;
+  }
+
+  if (typeof data === 'string' && data.trim() !== '' && !Number.isNaN(Number(data))) {
+    return Number(data);
+  }
+
+  return 0;
+}
+
 export async function fetchServiceBlockLoad(
   serviceUuid: string,
   startDateTime: string,
   endDateTime: string,
 ): Promise<number> {
   const response = await openmrsFetch<number>(getServiceLoadUrl(serviceUuid, startDateTime, endDateTime));
-  const load = response?.data;
 
-  return typeof load === 'number' ? load : 0;
+  return parseServiceBlockLoad(response?.data);
 }
 
+/**
+ * Builds a UTC datetime string for Bahmni block load queries.
+ * Block times from weekly availability are local wall-clock; the load API parses UTC without offset.
+ */
 export function buildBlockDateTime(date: Date, time: string): string {
   const minutes = time.trim().substring(0, 5);
   const [hours, mins] = minutes.split(':');
   const combined = dayjs(date).hour(Number(hours)).minute(Number(mins)).second(0).millisecond(0);
 
-  return combined.format(omrsDateFormat);
+  return combined.utc().format(bahmniUtcDateTimeFormat);
 }
 
 export function useServiceBlockLoad(

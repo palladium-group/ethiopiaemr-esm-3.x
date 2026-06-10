@@ -84,6 +84,7 @@ import {
 } from './complex-dosing.utils';
 import { InputWrapper } from './complex-dosing-form.utils';
 import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from './drug-order-form.resource';
+import { getTemplateDoseUnits } from './drug-search/drug-search.resource';
 import { TaperingDoseForm } from './tapering-dose-form.component';
 import taperingStyles from './tapering-dose-form.scss';
 import { VariableDoseForm } from './variable-dose-form.component';
@@ -441,13 +442,32 @@ export function DrugOrderForm({
     [getValues, handleFormSubmission, handleFormSubmissionError, handleSubmit, setValue],
   );
 
+  const templateDosingUnits = useMemo(
+    () => getTemplateDoseUnits(initialOrderBasketItem?.template?.dosingInstructions) ?? null,
+    [initialOrderBasketItem?.template],
+  );
+
+  const templateQuantityUnits = useMemo(() => {
+    const quantityUnits = initialOrderBasketItem?.template?.dosingInstructions?.quantityUnits;
+    return quantityUnits?.length ? quantityUnits : null;
+  }, [initialOrderBasketItem?.template]);
+
   const drugDosingUnits: Array<DosingUnit> = useMemo(
-    () => orderConfigObject?.drugDosingUnits ?? [],
-    [orderConfigObject?.drugDosingUnits],
+    () => templateDosingUnits ?? orderConfigObject?.drugDosingUnits ?? [],
+    [templateDosingUnits, orderConfigObject?.drugDosingUnits],
   );
 
   useEffect(() => {
-    if (!orderConfigObject?.drugDosingUnits || !watchedUnit?.valueCoded) {
+    if (!watchedUnit?.valueCoded) {
+      return;
+    }
+
+    // Template-defined units are already constrained by the combobox items list.
+    if (templateDosingUnits?.length) {
+      return;
+    }
+
+    if (!orderConfigObject?.drugDosingUnits) {
       return;
     }
 
@@ -455,7 +475,7 @@ export function DrugOrderForm({
     if (!isValidDoseUnit) {
       setValue('unit', null, { shouldValidate: false });
     }
-  }, [drugDosingUnits, orderConfigObject, setValue, watchedUnit?.valueCoded]);
+  }, [drugDosingUnits, orderConfigObject?.drugDosingUnits, setValue, templateDosingUnits, watchedUnit?.valueCoded]);
 
   const drugRoutes: Array<MedicationRoute> = useMemo(() => orderConfigObject?.drugRoutes ?? [], [orderConfigObject]);
 
@@ -471,7 +491,19 @@ export function DrugOrderForm({
   );
 
   useEffect(() => {
-    if (!orderConfigObject?.drugDispensingUnits || !watchedQuantityUnits?.valueCoded) {
+    if (!watchedQuantityUnits?.valueCoded) {
+      return;
+    }
+
+    if (templateQuantityUnits?.length) {
+      return;
+    }
+
+    if (templateDosingUnits?.length && watchedQuantityUnits.valueCoded === watchedUnit?.valueCoded) {
+      return;
+    }
+
+    if (!orderConfigObject?.drugDispensingUnits) {
       return;
     }
 
@@ -481,7 +513,15 @@ export function DrugOrderForm({
     if (!isValidQuantityUnit) {
       setValue('quantityUnits', null, { shouldValidate: false });
     }
-  }, [drugDispensingUnits, orderConfigObject, setValue, watchedQuantityUnits?.valueCoded]);
+  }, [
+    drugDispensingUnits,
+    orderConfigObject?.drugDispensingUnits,
+    setValue,
+    templateDosingUnits,
+    templateQuantityUnits,
+    watchedQuantityUnits?.valueCoded,
+    watchedUnit?.valueCoded,
+  ]);
 
   const durationUnits: Array<DurationUnit> = useMemo(
     () =>
