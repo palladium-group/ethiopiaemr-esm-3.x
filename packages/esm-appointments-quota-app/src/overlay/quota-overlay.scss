@@ -1,0 +1,125 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+// The right-side workspace panel (narrow) is ~26.25rem wide and the action menu
+// rail adds ~3rem. Offset the overlay just to the left of that, with a small gap.
+$workspaceWidth: 26.25rem;
+$actionRailWidth: 3rem;
+$gap: 1rem;
+$topOffset: 3rem; // OpenMRS top navigation height
+
+.overlay {
+  position: fixed;
+  inset-block-start: calc(#{$topOffset} + #{layout.$spacing-03});
+  inset-inline-end: calc(#{$workspaceWidth} + #{$actionRailWidth} + #{$gap});
+  inline-size: 22rem;
+  max-block-size: calc(100vh - #{$topOffset} - #{layout.$spacing-07});
+  z-index: 7000;
+  display: flex;
+  flex-direction: column;
+  background: var(--cds-layer, #ffffff);
+  border: 1px solid var(--cds-border-subtle, #e0e0e0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: layout.$spacing-05;
+  padding-block: layout.$spacing-03;
+  background: var(--cds-layer-accent, #e0e0e0);
+  border-block-end: 1px solid var(--cds-border-subtle, #e0e0e0);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  @include type.type-style('heading-compact-01');
+}
+
+.panelBody {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  overflow-y: auto;
+  padding: layout.$spacing-05;
+}
+
+.formSection {
+  margin-block-end: layout.$spacing-05;
+}
+
+.resultsSection {
+  margin-block-start: layout.$spacing-05;
+}
+
+.sectionTitle {
+  @include type.type-style('heading-compact-01');
+  margin-block-end: layout.$spacing-03;
+}
+
+.limitRow {
+  border: 1px solid var(--cds-border-subtle);
+  margin-block-end: layout.$spacing-03;
+  padding: layout.$spacing-04;
+}
+
+.limitHeader {
+  @include type.type-style('heading-compact-01');
+  margin-block-end: layout.$spacing-02;
+}
+
+.limitMeta {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+}
+
+.levelOk {
+  border-inline-start: 4px solid var(--cds-support-success);
+}
+
+.levelWarn {
+  border-inline-start: 4px solid var(--cds-support-warning);
+}
+
+.levelFull {
+  border-inline-start: 4px solid var(--cds-support-error);
+}
+
+.levelNone {
+  border-inline-start: 4px solid var(--cds-border-subtle);
+}
+
+// Tablet / small screens: dock to the bottom-left, full-ish width.
+:global(.omrs-breakpoint-lt-large) {
+  .overlay {
+    inset-inline: layout.$spacing-05 auto;
+    inset-block-end: layout.$spacing-05;
+    inset-block-start: auto;
+    inline-size: min(22rem, calc(100vw - #{layout.$spacing-07}));
+    max-block-size: 60vh;
+  }
+}
+
+// Metrics-slot "Check availability" tile (manual open).
+.metricsButton {
+  block-size: 100%;
+  inline-size: 100%;
+  min-block-size: 6rem;
+  text-align: start;
+}
+
+.metricsButtonLabel {
+  @include type.type-style('heading-compact-01');
+  margin-block-start: layout.$spacing-03;
+}
+
+.metricsButtonHint {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+  margin-block-start: layout.$spacing-02;
+}

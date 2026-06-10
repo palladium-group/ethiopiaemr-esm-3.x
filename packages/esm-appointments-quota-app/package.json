@@ -1,0 +1,52 @@
+{
+  "name": "@palladium-ethiopia/esm-appointments-quota-app",
+  "version": "1.0.0",
+  "description": "Appointment capacity quota awareness for EthiopiaEMR",
+  "keywords": [
+    "openmrs",
+    "ethiopiaemr",
+    "appointments",
+    "quota"
+  ],
+  "homepage": "https://github.com/palladium-group/ethiopiaemr-esm-3.x#readme",
+  "bugs": {
+    "url": "https://github.com/palladium-group/ethiopiaemr-esm-3.x/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palladium-group/ethiopiaemr-esm-3.x.git"
+  },
+  "license": "MPL-2.0",
+  "main": "src/index.ts",
+  "source": true,
+  "browser": "dist/ethiopia-esm-appointments-quota-app.js",
+  "scripts": {
+    "analyze": "rspack --mode=production --env analyze=true",
+    "build": "rspack --mode=production",
+    "coverage": "yarn test --coverage",
+    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.extension.tsx' 'src/index.ts' --config ../../tools/i18next-parser.config.js",
+    "lint": "cross-env eslint src --ext ts,tsx",
+    "serve": "rspack serve --mode=development",
+    "start": "openmrs develop",
+    "test": "cross-env TZ=UTC jest --config jest.config.js --verbose false --passWithNoTests --color",
+    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
+    "typescript": "tsc"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "peerDependencies": {
+    "@carbon/react": "^1.83.0",
+    "@openmrs/esm-framework": "8.x",
+    "classnames": "2.x",
+    "dayjs": "1.x",
+    "react": "18.x",
+    "react-dom": "18.x",
+    "react-i18next": "11.x",
+    "single-spa": ">=5.9.0",
+    "swr": "2.x"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

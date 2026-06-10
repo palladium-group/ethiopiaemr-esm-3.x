@@ -3638,6 +3638,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-appointments-quota-app@workspace:packages/esm-appointments-quota-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-appointments-quota-app@workspace:packages/esm-appointments-quota-app"
+  peerDependencies:
+    "@carbon/react": ^1.83.0
+    "@openmrs/esm-framework": 8.x
+    classnames: 2.x
+    dayjs: 1.x
+    react: 18.x
+    react-dom: 18.x
+    react-i18next: 11.x
+    single-spa: ">=5.9.0"
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-billing-app@workspace:packages/esm-billing-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-billing-app@workspace:packages/esm-billing-app"
