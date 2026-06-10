@@ -113,27 +113,40 @@ export async function launchConsultationFormEntry({
     throw new Error(t('consultationVisitRequired', 'An active visit is required to open the consultation form.'));
   }
 
-  const handlePostResponse = (savedEncounter: Encounter) => {
+  const handlePostResponse = async (savedEncounter: Encounter) => {
     if (savedEncounter.uuid && currentProviderUuid) {
-      syncConsultationEncounterProviders({
-        encounterUuid: savedEncounter.uuid,
-        currentProviderUuid,
-        mode: encounterUuid ? 'respond' : 'create',
-        requestingProviderUuid: encounterUuid ? requestingProviderUuid : undefined,
-      }).catch((syncError) => {
+      try {
+        await syncConsultationEncounterProviders({
+          encounterUuid: savedEncounter.uuid,
+          currentProviderUuid,
+          mode: encounterUuid ? 'respond' : 'create',
+          requestingProviderUuid: encounterUuid ? requestingProviderUuid : undefined,
+        });
+      } catch (syncError) {
         console.error('Failed to sync consultation encounter provider roles:', syncError);
-      });
+        showSnackbar({
+          title: t('error', 'Error'),
+          kind: 'error',
+          subtitle: t(
+            'consultationProviderSyncFailed',
+            'The consultation was saved, but the consulted provider could not be recorded. Please try again.',
+          ),
+          isLowContrast: true,
+        });
+      }
     }
 
     invalidateVisitAndEncounterData(globalMutate, patientUuid);
-    Promise.all([revalidateConsultationsInbox(globalMutate), revalidatePatientConsultations(globalMutate, patientUuid)])
-      .then(() => {
-        onConsultationSaved?.();
-      })
-      .catch((revalidationError) => {
-        console.error('Error revalidating consultation data:', revalidationError);
-        onConsultationSaved?.();
-      });
+    try {
+      await Promise.all([
+        revalidateConsultationsInbox(globalMutate),
+        revalidatePatientConsultations(globalMutate, patientUuid),
+      ]);
+    } catch (revalidationError) {
+      console.error('Error revalidating consultation data:', revalidationError);
+    } finally {
+      onConsultationSaved?.();
+    }
 
     const validation = validateSavedConsultationEncounter(
       savedEncounter,
