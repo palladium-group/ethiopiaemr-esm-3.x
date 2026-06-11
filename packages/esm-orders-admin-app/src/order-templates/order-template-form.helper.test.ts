@@ -32,7 +32,7 @@ describe('order-template-form.helper', () => {
       description: 'Standard dose',
       concept: 'concept-uuid',
       drug: 'drug-uuid',
-      template: {
+      template: JSON.stringify({
         type: 'https://schema.openmrs.org/order/template/drug/simple/v1',
         dosingType: 'org.openmrs.SimpleDosingInstructions',
         dosingInstructions: {
@@ -46,7 +46,7 @@ describe('order-template-form.helper', () => {
           asNeeded: true,
           asNeededCondition: 'pain',
         },
-      },
+      }),
     });
   });
 
@@ -67,7 +67,7 @@ describe('order-template-form.helper', () => {
       asNeededCondition: '',
     });
 
-    expect(payload.template.dosingInstructions).toEqual({
+    expect(JSON.parse(payload.template).dosingInstructions).toEqual({
       dose: [],
       units: [{ value: 'mg', valueCoded: 'unit-uuid', default: true }],
       route: [],

@@ -150,7 +150,7 @@ export function mapFormValuesToSavePayload(
     description: values.description.trim(),
     concept: values.conceptUuid,
     drug: values.drugUuid,
-    template,
+    template: JSON.stringify(template),
   };
 }
 

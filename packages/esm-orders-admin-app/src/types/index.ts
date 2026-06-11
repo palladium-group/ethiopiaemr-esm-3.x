@@ -63,5 +63,5 @@ export interface OrderTemplateSavePayload {
   description: string;
   concept: string;
   drug: string;
-  template: OrderTemplate;
+  template: string;
 }
