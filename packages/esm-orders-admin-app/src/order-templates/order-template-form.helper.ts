@@ -1,6 +1,11 @@
 import { type OrderTemplate } from '@openmrs/esm-patient-common-lib';
 import { DRUG_ORDER_TEMPLATE_SCHEMA } from '../constants';
-import type { OrderTemplateFormValues, OrderTemplateListItem, OrderTemplateSavePayload } from '../types';
+import type {
+  DoseUnitFormValue,
+  OrderTemplateFormValues,
+  OrderTemplateListItem,
+  OrderTemplateSavePayload,
+} from '../types';
 
 function getDefaultOption<T extends { value: unknown; default?: boolean }>(options?: Array<T>) {
   return options?.find((option) => option.default) ?? options?.[0];
@@ -31,6 +36,42 @@ function parseTemplateJson(template: OrderTemplateListItem['template']): OrderTe
   return template;
 }
 
+type TemplateDoseUnit = {
+  value: string;
+  valueCoded?: string;
+  default?: boolean;
+};
+
+export function normalizeDoseUnits(units: Array<DoseUnitFormValue>): Array<DoseUnitFormValue> {
+  if (units.length === 0) {
+    return [];
+  }
+
+  const defaultIndex = units.findIndex((unit) => unit.isDefault);
+  const resolvedDefaultIndex = defaultIndex >= 0 ? defaultIndex : 0;
+
+  return units.map((unit, index) => ({
+    ...unit,
+    isDefault: index === resolvedDefaultIndex,
+  }));
+}
+
+function mapTemplateUnitsToFormUnits(units?: Array<TemplateDoseUnit>): Array<DoseUnitFormValue> {
+  if (!units?.length) {
+    return [];
+  }
+
+  return normalizeDoseUnits(
+    units
+      .filter((unit) => Boolean(unit.valueCoded))
+      .map((unit) => ({
+        uuid: unit.valueCoded ?? '',
+        display: String(unit.value ?? ''),
+        isDefault: Boolean(unit.default),
+      })),
+  );
+}
+
 export const emptyOrderTemplateFormValues: OrderTemplateFormValues = {
   name: '',
   description: '',
@@ -38,8 +79,7 @@ export const emptyOrderTemplateFormValues: OrderTemplateFormValues = {
   drugDisplay: '',
   conceptUuid: '',
   dose: null,
-  unitUuid: '',
-  unitDisplay: '',
+  doseUnits: [],
   routeUuid: '',
   routeDisplay: '',
   frequencyUuid: '',
@@ -52,14 +92,14 @@ export function mapOrderTemplateToFormValues(orderTemplate: OrderTemplateListIte
   const parsedTemplate = parseTemplateJson(orderTemplate.template);
   const dosingInstructions = parsedTemplate?.dosingInstructions as
     | (OrderTemplate['dosingInstructions'] & {
-        unit?: Array<{ value: string; valueCoded?: string; default?: boolean }>;
-        units?: Array<{ value: string; valueCoded?: string; default?: boolean }>;
+        unit?: Array<TemplateDoseUnit>;
+        units?: Array<TemplateDoseUnit>;
       })
     | undefined;
   const dose = getDefaultOption(dosingInstructions?.dose);
-  const unit = getDefaultOption(dosingInstructions?.unit) ?? getDefaultOption(dosingInstructions?.units);
   const route = getDefaultOption(dosingInstructions?.route);
   const frequency = getDefaultOption(dosingInstructions?.frequency);
+  const doseUnits = mapTemplateUnitsToFormUnits(dosingInstructions?.units ?? dosingInstructions?.unit);
 
   return {
     name: orderTemplate.name ?? '',
@@ -68,8 +108,7 @@ export function mapOrderTemplateToFormValues(orderTemplate: OrderTemplateListIte
     drugDisplay: orderTemplate.drug?.display ?? orderTemplate.drug?.name ?? '',
     conceptUuid: orderTemplate.concept?.uuid ?? orderTemplate.drug?.concept?.uuid ?? '',
     dose: toFormDose(dose?.value),
-    unitUuid: (unit as { valueCoded?: string } | undefined)?.valueCoded ?? '',
-    unitDisplay: String(unit?.value ?? ''),
+    doseUnits,
     routeUuid: (route as { valueCoded?: string } | undefined)?.valueCoded ?? '',
     routeDisplay: String(route?.value ?? ''),
     frequencyUuid: (frequency as { valueCoded?: string } | undefined)?.valueCoded ?? '',
@@ -84,13 +123,18 @@ export function mapFormValuesToSavePayload(
   existingUuid?: string,
 ): OrderTemplateSavePayload {
   const doseValue = values.dose;
+  const doseUnits = normalizeDoseUnits(values.doseUnits);
 
   const template: OrderTemplate = {
     type: DRUG_ORDER_TEMPLATE_SCHEMA,
     dosingType: 'org.openmrs.SimpleDosingInstructions',
     dosingInstructions: {
       dose: doseValue != null && !Number.isNaN(doseValue) ? [{ value: doseValue, default: true }] : [],
-      units: values.unitUuid ? [{ value: values.unitDisplay, valueCoded: values.unitUuid, default: true }] : [],
+      units: doseUnits.map((unit) => ({
+        value: unit.display,
+        valueCoded: unit.uuid,
+        default: unit.isDefault,
+      })),
       route: values.routeUuid ? [{ value: values.routeDisplay, valueCoded: values.routeUuid, default: true }] : [],
       frequency: values.frequencyUuid
         ? [{ value: values.frequencyDisplay, valueCoded: values.frequencyUuid, default: true }]

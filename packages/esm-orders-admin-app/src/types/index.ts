@@ -25,6 +25,12 @@ export interface OrderTemplateListItem {
   template?: string | OrderTemplate;
 }
 
+export interface DoseUnitFormValue {
+  uuid: string;
+  display: string;
+  isDefault: boolean;
+}
+
 export interface OrderTemplateFormValues {
   name: string;
   description: string;
@@ -32,8 +38,7 @@ export interface OrderTemplateFormValues {
   drugDisplay: string;
   conceptUuid: string;
   dose: number | null;
-  unitUuid: string;
-  unitDisplay: string;
+  doseUnits: Array<DoseUnitFormValue>;
   routeUuid: string;
   routeDisplay: string;
   frequencyUuid: string;

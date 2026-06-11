@@ -17,6 +17,7 @@ import { type DefaultWorkspaceProps, ResponsiveWrapper, showSnackbar, useLayoutT
 import { useDrugSearch } from '../api/drug-search.resource';
 import { useOrderConfigOptions } from '../api/order-config.resource';
 import { revalidateOrderTemplates, saveOrderTemplate } from '../api/order-template.resource';
+import DoseUnitsField from '../order-templates/dose-units-field.component';
 import {
   emptyOrderTemplateFormValues,
   getErrorMessage,
@@ -228,31 +229,20 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
         />
 
         <Controller
-          name="unitUuid"
+          name="doseUnits"
           control={control}
-          rules={{ required: t('unitRequired', 'Select a dose unit for this template.') }}
-          render={({ field }) => (
-            <ComboBox
-              id="order-template-unit"
-              titleText={t('doseUnit', 'Dose unit')}
-              required
-              invalid={Boolean(errors.unitUuid)}
-              invalidText={errors.unitUuid?.message}
-              items={drugDosingUnits.map((unit) => ({ id: unit.uuid, text: unit.display }))}
-              itemToString={(item) => item?.text ?? ''}
-              selectedItem={
-                field.value
-                  ? {
-                      id: field.value,
-                      text: watch('unitDisplay'),
-                    }
-                  : null
-              }
-              onChange={({ selectedItem }) => {
-                field.onChange(selectedItem?.id ?? '');
-                setValue('unitDisplay', selectedItem?.text ?? '', { shouldDirty: true });
-              }}
-              disabled={isLoadingOrderConfig}
+          rules={{
+            validate: (units) =>
+              units?.length > 0 || t('unitRequired', 'Add at least one dose unit for this template.'),
+          }}
+          render={() => (
+            <DoseUnitsField
+              control={control}
+              setValue={setValue}
+              drugDosingUnits={drugDosingUnits}
+              isLoadingUnits={isLoadingOrderConfig}
+              invalid={Boolean(errors.doseUnits)}
+              invalidText={errors.doseUnits?.message}
             />
           )}
         />

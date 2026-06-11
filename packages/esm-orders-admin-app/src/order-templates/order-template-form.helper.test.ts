@@ -1,4 +1,8 @@
-import { mapFormValuesToSavePayload, mapOrderTemplateToFormValues } from './order-template-form.helper';
+import {
+  mapFormValuesToSavePayload,
+  mapOrderTemplateToFormValues,
+  normalizeDoseUnits,
+} from './order-template-form.helper';
 import type { OrderTemplateListItem } from '../types';
 
 describe('order-template-form.helper', () => {
@@ -10,8 +14,10 @@ describe('order-template-form.helper', () => {
       drugDisplay: 'Paracetamol 500 mg tablet',
       conceptUuid: 'concept-uuid',
       dose: 500,
-      unitUuid: 'unit-uuid',
-      unitDisplay: 'mg',
+      doseUnits: [
+        { uuid: 'unit-uuid', display: 'mg', isDefault: true },
+        { uuid: 'tablet-uuid', display: 'tab', isDefault: false },
+      ],
       routeUuid: 'route-uuid',
       routeDisplay: 'Oral',
       frequencyUuid: 'frequency-uuid',
@@ -31,7 +37,10 @@ describe('order-template-form.helper', () => {
         dosingType: 'org.openmrs.SimpleDosingInstructions',
         dosingInstructions: {
           dose: [{ value: 500, default: true }],
-          units: [{ value: 'mg', valueCoded: 'unit-uuid', default: true }],
+          units: [
+            { value: 'mg', valueCoded: 'unit-uuid', default: true },
+            { value: 'tab', valueCoded: 'tablet-uuid', default: false },
+          ],
           route: [{ value: 'Oral', valueCoded: 'route-uuid', default: true }],
           frequency: [{ value: 'Once daily', valueCoded: 'frequency-uuid', default: true }],
           asNeeded: true,
@@ -49,8 +58,7 @@ describe('order-template-form.helper', () => {
       drugDisplay: 'Paracetamol 500 mg tablet',
       conceptUuid: 'concept-uuid',
       dose: null,
-      unitUuid: 'unit-uuid',
-      unitDisplay: 'mg',
+      doseUnits: [{ uuid: 'unit-uuid', display: 'mg', isDefault: true }],
       routeUuid: '',
       routeDisplay: '',
       frequencyUuid: '',
@@ -69,7 +77,7 @@ describe('order-template-form.helper', () => {
     });
   });
 
-  it('maps saved order template to form values', () => {
+  it('maps saved order template with multiple units to form values', () => {
     const orderTemplate: OrderTemplateListItem = {
       uuid: 'template-uuid',
       name: 'Paracetamol 500mg',
@@ -88,7 +96,10 @@ describe('order-template-form.helper', () => {
         dosingType: 'org.openmrs.SimpleDosingInstructions',
         dosingInstructions: {
           dose: [{ value: 500, default: true }],
-          units: [{ value: 'mg', valueCoded: 'unit-uuid', default: true }],
+          units: [
+            { value: 'mg', valueCoded: 'unit-uuid', default: true },
+            { value: 'tab', valueCoded: 'tablet-uuid', default: false },
+          ],
           route: [{ value: 'Oral', valueCoded: 'route-uuid', default: true }],
           frequency: [{ value: 'Once daily', valueCoded: 'frequency-uuid', default: true }],
           asNeeded: false,
@@ -103,8 +114,10 @@ describe('order-template-form.helper', () => {
       drugDisplay: 'Paracetamol 500 mg tablet',
       conceptUuid: 'concept-uuid',
       dose: 500,
-      unitUuid: 'unit-uuid',
-      unitDisplay: 'mg',
+      doseUnits: [
+        { uuid: 'unit-uuid', display: 'mg', isDefault: true },
+        { uuid: 'tablet-uuid', display: 'tab', isDefault: false },
+      ],
       routeUuid: 'route-uuid',
       routeDisplay: 'Oral',
       frequencyUuid: 'frequency-uuid',
@@ -112,5 +125,17 @@ describe('order-template-form.helper', () => {
       asNeeded: false,
       asNeededCondition: '',
     });
+  });
+
+  it('ensures exactly one default dose unit', () => {
+    expect(
+      normalizeDoseUnits([
+        { uuid: 'a', display: 'mg', isDefault: false },
+        { uuid: 'b', display: 'tab', isDefault: false },
+      ]),
+    ).toEqual([
+      { uuid: 'a', display: 'mg', isDefault: true },
+      { uuid: 'b', display: 'tab', isDefault: false },
+    ]);
   });
 });
