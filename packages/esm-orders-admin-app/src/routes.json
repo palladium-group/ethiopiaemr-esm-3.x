@@ -30,6 +30,15 @@
       "width": "extra-wide",
       "canHide": true,
       "canMaximize": true
+    },
+    {
+      "name": "order-set-admin-workspace",
+      "component": "orderSetAdminWorkspace",
+      "title": "Order set",
+      "type": "other-form",
+      "width": "extra-wide",
+      "canHide": true,
+      "canMaximize": true
     }
   ]
 }

@@ -12,10 +12,10 @@ interface OrdersAdminNavLinkProps {
 
 const OrdersAdminNavLink: React.FC<OrdersAdminNavLinkProps> = ({ hideOverlay }) => {
   const { t } = useTranslation();
-  const { manageOrderTemplatesPrivilege } = useConfig<ConfigObject>();
+  const { manageOrderTemplatesPrivilege, manageOrderSetsPrivilege } = useConfig<ConfigObject>();
 
   return (
-    <UserHasAccess privilege={manageOrderTemplatesPrivilege}>
+    <UserHasAccess privilege={[manageOrderTemplatesPrivilege, manageOrderSetsPrivilege]}>
       <NavTileLink
         hideOverlay={hideOverlay}
         icon={<Medication size={24} />}

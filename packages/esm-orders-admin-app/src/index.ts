@@ -3,6 +3,7 @@ import { configSchema } from './config-schema';
 import { moduleName } from './constants';
 
 import OrdersAdminNavLink from './extensions/orders-admin-nav-link.extension';
+import OrderSetAdminWorkspace from './workspace/order-set-admin.workspace';
 import OrderTemplateAdminWorkspace from './workspace/order-template-admin.workspace';
 
 const options = {
@@ -25,5 +26,10 @@ export const ordersAdminNavLink = getSyncLifecycle(OrdersAdminNavLink, {
 
 export const orderTemplateAdminWorkspace = getSyncLifecycle(OrderTemplateAdminWorkspace, {
   featureName: 'order-template-admin-workspace',
+  moduleName,
+});
+
+export const orderSetAdminWorkspace = getSyncLifecycle(OrderSetAdminWorkspace, {
+  featureName: 'order-set-admin-workspace',
   moduleName,
 });

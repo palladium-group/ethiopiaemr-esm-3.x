@@ -1,0 +1,50 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.label {
+  @include type.type-style('label-01');
+
+  color: var(--cds-text-secondary, #525252);
+}
+
+.required {
+  color: colors.$red-60;
+}
+
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.memberRow {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-04;
+  border: 1px solid var(--cds-border-subtle-01, #e0e0e0);
+}
+
+.memberHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+}
+
+.memberTitle {
+  @include type.type-style('heading-compact-01');
+}
+
+.invalidText {
+  @include type.type-style('label-01');
+
+  color: colors.$red-60;
+}

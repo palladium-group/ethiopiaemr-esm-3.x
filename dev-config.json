@@ -3,7 +3,8 @@
         "appointmentServiceAdminPrivilege": "app:appointments:manageServiceAvailability"
     },
     "@palladium-ethiopia/esm-orders-admin-app": {
-        "manageOrderTemplatesPrivilege": "Manage OrderTemplates"
+        "manageOrderTemplatesPrivilege": "Manage OrderTemplates",
+        "manageOrderSetsPrivilege": "Manage Order Sets"
     },
     "@palladium-ethiopia/esm-order-catalog-ethio-app": {
         "orderCatalogEnabled": true,

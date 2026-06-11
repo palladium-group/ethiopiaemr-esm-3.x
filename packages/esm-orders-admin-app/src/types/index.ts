@@ -1,4 +1,5 @@
 import { type OrderTemplate } from '@openmrs/esm-patient-common-lib';
+import type { OrderSetOperator } from '../constants';
 
 export interface DrugReference {
   uuid: string;
@@ -64,4 +65,58 @@ export interface OrderTemplateSavePayload {
   concept: string;
   drug: string;
   template: string;
+}
+
+export interface OrderSetMemberListItem {
+  uuid: string;
+  display?: string;
+  retired: boolean;
+  concept?: ConceptReference;
+  orderType?: {
+    uuid: string;
+    display: string;
+  };
+  orderTemplate?: string;
+  orderTemplateType?: string;
+}
+
+export interface OrderSetListItem {
+  uuid: string;
+  name: string;
+  description?: string;
+  retired: boolean;
+  operator: OrderSetOperator;
+  orderSetMembers?: Array<OrderSetMemberListItem>;
+}
+
+export interface OrderSetMemberFormValues {
+  uuid?: string;
+  drugUuid: string;
+  drugDisplay: string;
+  conceptUuid: string;
+  linkedTemplateUuid: string;
+  retired?: boolean;
+}
+
+export interface OrderSetFormValues {
+  name: string;
+  description: string;
+  operator: OrderSetOperator;
+  members: Array<OrderSetMemberFormValues>;
+}
+
+export interface OrderSetMemberSavePayload {
+  uuid?: string;
+  concept?: string;
+  orderType?: string;
+  orderTemplate?: string;
+  retired?: boolean;
+}
+
+export interface OrderSetSavePayload {
+  uuid?: string;
+  name: string;
+  description: string;
+  operator: OrderSetOperator;
+  orderSetMembers: Array<OrderSetMemberSavePayload>;
 }
