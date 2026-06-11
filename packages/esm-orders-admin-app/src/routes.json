@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0",
+    "ordertemplates": ">=1.0.2"
+  },
+  "pages": [
+    {
+      "component": "ordersAdminHome",
+      "route": "orders-admin",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "extensions": [
+    {
+      "name": "orders-admin-nav-link",
+      "component": "ordersAdminNavLink",
+      "slot": "admin-left-panel-slot",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "workspaces": [
+    {
+      "name": "order-template-admin-workspace",
+      "component": "orderTemplateAdminWorkspace",
+      "title": "Drug order template",
+      "type": "other-form",
+      "width": "extra-wide",
+      "canHide": true,
+      "canMaximize": true
+    }
+  ]
+}

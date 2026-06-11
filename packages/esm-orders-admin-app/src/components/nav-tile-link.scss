@@ -1,0 +1,22 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.navLinkItem {
+  @include type.type-style('body-compact-01');
+
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  border: none;
+  background: transparent;
+  color: colors.$gray-100;
+  cursor: pointer;
+  gap: layout.$spacing-04;
+  text-align: left;
+
+  &:hover {
+    background-color: colors.$gray-10;
+  }
+}

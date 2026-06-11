@@ -3743,6 +3743,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-orders-admin-app@workspace:packages/esm-orders-admin-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-orders-admin-app@workspace:packages/esm-orders-admin-app"
+  peerDependencies:
+    "@carbon/react": ^1.83.0
+    "@openmrs/esm-framework": 8.x
+    "@openmrs/esm-patient-common-lib": 12.x
+    react: 18.x
+    react-hook-form: 7.x
+    react-i18next: 11.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-patient-medications-app@workspace:packages/esm-patient-medications-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-patient-medications-app@workspace:packages/esm-patient-medications-app"
