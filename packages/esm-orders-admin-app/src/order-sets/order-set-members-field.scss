@@ -43,6 +43,21 @@
   @include type.type-style('heading-compact-01');
 }
 
+.dosingSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  margin-top: layout.$spacing-03;
+  padding-top: layout.$spacing-04;
+  border-top: 1px solid var(--cds-border-subtle-01, #e0e0e0);
+}
+
+.dosingLegend {
+  @include type.type-style('label-01');
+
+  color: var(--cds-text-secondary, #525252);
+}
+
 .invalidText {
   @include type.type-style('label-01');
 

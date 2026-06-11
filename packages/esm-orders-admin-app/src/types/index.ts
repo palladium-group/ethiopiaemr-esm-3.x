@@ -94,7 +94,14 @@ export interface OrderSetMemberFormValues {
   drugUuid: string;
   drugDisplay: string;
   conceptUuid: string;
-  linkedTemplateUuid: string;
+  dose: number | null;
+  doseUnits: Array<DoseUnitFormValue>;
+  routeUuid: string;
+  routeDisplay: string;
+  frequencyUuid: string;
+  frequencyDisplay: string;
+  asNeeded: boolean;
+  asNeededCondition: string;
   retired?: boolean;
 }
 

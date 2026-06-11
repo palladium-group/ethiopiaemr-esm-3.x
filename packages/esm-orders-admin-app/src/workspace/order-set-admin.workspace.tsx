@@ -4,7 +4,6 @@ import { Button, ButtonSet, ComboBox, Form, InlineLoading, Stack, TextArea, Text
 import { Controller, useForm } from 'react-hook-form';
 import { type DefaultWorkspaceProps, ResponsiveWrapper, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { useDrugOrderType } from '../api/order-type.resource';
-import { useOrderTemplates } from '../api/order-template.resource';
 import { revalidateOrderSets, saveOrderSet } from '../api/order-set.resource';
 import { orderSetOperators } from '../constants';
 import OrderSetMembersField from '../order-sets/order-set-members-field.component';
@@ -29,19 +28,19 @@ const OrderSetAdminWorkspace: React.FC<OrderSetAdminWorkspaceProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { orderTemplates } = useOrderTemplates(true);
   const { drugOrderType, isLoading: isLoadingOrderType } = useDrugOrderType();
   const [retiredMemberUuids, setRetiredMemberUuids] = useState<Array<string>>([]);
 
   const defaultValues = useMemo(
-    () => (orderSet ? mapOrderSetToFormValues(orderSet, orderTemplates) : emptyOrderSetFormValues),
-    [orderSet, orderTemplates],
+    () => (orderSet ? mapOrderSetToFormValues(orderSet) : emptyOrderSetFormValues),
+    [orderSet],
   );
 
   const {
     control,
     handleSubmit,
     reset,
+    setValue,
     watch,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<OrderSetFormValues>({
@@ -53,9 +52,9 @@ const OrderSetAdminWorkspace: React.FC<OrderSetAdminWorkspaceProps> = ({
   const selectedOperator = watch('operator');
 
   useEffect(() => {
-    reset(orderSet ? mapOrderSetToFormValues(orderSet, orderTemplates) : emptyOrderSetFormValues);
+    reset(orderSet ? mapOrderSetToFormValues(orderSet) : emptyOrderSetFormValues);
     setRetiredMemberUuids([]);
-  }, [orderSet, orderTemplates, reset]);
+  }, [orderSet, reset]);
 
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
@@ -82,9 +81,7 @@ const OrderSetAdminWorkspace: React.FC<OrderSetAdminWorkspaceProps> = ({
     }
 
     try {
-      await saveOrderSet(
-        mapFormValuesToSavePayload(values, drugOrderType.uuid, orderTemplates, orderSet?.uuid, retiredMemberUuids),
-      );
+      await saveOrderSet(mapFormValuesToSavePayload(values, drugOrderType.uuid, orderSet?.uuid, retiredMemberUuids));
       await revalidateOrderSets();
       showSnackbar({
         title: t('success', 'Success'),
@@ -177,6 +174,7 @@ const OrderSetAdminWorkspace: React.FC<OrderSetAdminWorkspaceProps> = ({
           render={() => (
             <OrderSetMembersField
               control={control}
+              setValue={setValue}
               onRetireMember={(memberUuid) =>
                 setRetiredMemberUuids((current) => (current.includes(memberUuid) ? current : [...current, memberUuid]))
               }
