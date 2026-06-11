@@ -6,6 +6,15 @@ function getDefaultOption<T extends { value: unknown; default?: boolean }>(optio
   return options?.find((option) => option.default) ?? options?.[0];
 }
 
+function toFormDose(value: unknown): number | null {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
 function parseTemplateJson(template: OrderTemplateListItem['template']): OrderTemplate | undefined {
   if (!template) {
     return undefined;
@@ -28,7 +37,7 @@ export const emptyOrderTemplateFormValues: OrderTemplateFormValues = {
   drugUuid: '',
   drugDisplay: '',
   conceptUuid: '',
-  dose: '',
+  dose: null,
   unitUuid: '',
   unitDisplay: '',
   routeUuid: '',
@@ -58,7 +67,7 @@ export function mapOrderTemplateToFormValues(orderTemplate: OrderTemplateListIte
     drugUuid: orderTemplate.drug?.uuid ?? '',
     drugDisplay: orderTemplate.drug?.display ?? orderTemplate.drug?.name ?? '',
     conceptUuid: orderTemplate.concept?.uuid ?? orderTemplate.drug?.concept?.uuid ?? '',
-    dose: typeof dose?.value === 'number' ? dose.value : '',
+    dose: toFormDose(dose?.value),
     unitUuid: (unit as { valueCoded?: string } | undefined)?.valueCoded ?? '',
     unitDisplay: String(unit?.value ?? ''),
     routeUuid: (route as { valueCoded?: string } | undefined)?.valueCoded ?? '',
@@ -74,7 +83,7 @@ export function mapFormValuesToSavePayload(
   values: OrderTemplateFormValues,
   existingUuid?: string,
 ): OrderTemplateSavePayload {
-  const doseValue = values.dose === '' ? null : Number(values.dose);
+  const doseValue = values.dose;
 
   const template: OrderTemplate = {
     type: DRUG_ORDER_TEMPLATE_SCHEMA,

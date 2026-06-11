@@ -53,9 +53,11 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
     reset,
     setValue,
     watch,
-    formState: { isDirty, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<OrderTemplateFormValues>({
     defaultValues,
+    mode: 'onSubmit',
+    shouldFocusError: false,
   });
 
   const asNeeded = watch('asNeeded');
@@ -153,12 +155,16 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
         <Controller
           name="name"
           control={control}
-          rules={{ required: true }}
+          rules={{ required: t('nameRequired', 'Template name is required.') }}
           render={({ field }) => (
             <TextInput
               id="order-template-name"
               labelText={t('templateName', 'Template name')}
               placeholder={t('templateNamePlaceholder', 'e.g. Amlodipine 5mg once daily')}
+              required
+              autoFocus
+              invalid={Boolean(errors.name)}
+              invalidText={errors.name?.message}
               {...field}
             />
           )}
@@ -167,11 +173,15 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
         <Controller
           name="description"
           control={control}
+          rules={{ required: t('descriptionRequired', 'Description is required.') }}
           render={({ field }) => (
             <TextArea
               id="order-template-description"
               labelText={t('description', 'Description')}
-              placeholder={t('templateDescriptionPlaceholder', 'Optional description for administrators')}
+              placeholder={t('templateDescriptionPlaceholder', 'Describe when to use this template')}
+              required
+              invalid={Boolean(errors.description)}
+              invalidText={errors.description?.message}
               rows={3}
               {...field}
             />
@@ -181,6 +191,7 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
         <ComboBox
           id="order-template-drug"
           titleText={t('drug', 'Drug')}
+          required
           placeholder={t('searchDrugPlaceholder', 'Search for a drug (min. 2 characters)')}
           items={drugItems}
           itemToString={(item) => item?.text ?? ''}
@@ -202,9 +213,16 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
             <NumberInput
               id="order-template-dose"
               label={t('dose', 'Dose')}
-              min={0}
-              value={field.value === '' ? '' : field.value}
-              onChange={(_, { value }) => field.onChange(value === '' ? '' : Number(value))}
+              helperText={t('optionalField', 'Optional')}
+              allowEmpty
+              value={field.value ?? ''}
+              onChange={(_, { value }) => {
+                if (value === '' || value === undefined) {
+                  field.onChange(null);
+                  return;
+                }
+                field.onChange(Number(value));
+              }}
             />
           )}
         />
@@ -212,10 +230,14 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
         <Controller
           name="unitUuid"
           control={control}
+          rules={{ required: t('unitRequired', 'Select a dose unit for this template.') }}
           render={({ field }) => (
             <ComboBox
               id="order-template-unit"
               titleText={t('doseUnit', 'Dose unit')}
+              required
+              invalid={Boolean(errors.unitUuid)}
+              invalidText={errors.unitUuid?.message}
               items={drugDosingUnits.map((unit) => ({ id: unit.uuid, text: unit.display }))}
               itemToString={(item) => item?.text ?? ''}
               selectedItem={
@@ -242,6 +264,7 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
             <ComboBox
               id="order-template-route"
               titleText={t('route', 'Route')}
+              helperText={t('optionalField', 'Optional')}
               items={drugRoutes.map((route) => ({ id: route.uuid, text: route.display }))}
               itemToString={(item) => item?.text ?? ''}
               selectedItem={
@@ -268,6 +291,7 @@ const OrderTemplateAdminWorkspace: React.FC<OrderTemplateAdminWorkspaceProps> = 
             <ComboBox
               id="order-template-frequency"
               titleText={t('frequency', 'Frequency')}
+              helperText={t('optionalField', 'Optional')}
               items={orderFrequencies.map((frequency) => ({ id: frequency.uuid, text: frequency.display }))}
               itemToString={(item) => item?.text ?? ''}
               selectedItem={

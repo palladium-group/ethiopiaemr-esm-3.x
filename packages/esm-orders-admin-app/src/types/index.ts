@@ -31,7 +31,7 @@ export interface OrderTemplateFormValues {
   drugUuid: string;
   drugDisplay: string;
   conceptUuid: string;
-  dose: number | '';
+  dose: number | null;
   unitUuid: string;
   unitDisplay: string;
   routeUuid: string;

@@ -41,6 +41,34 @@ describe('order-template-form.helper', () => {
     });
   });
 
+  it('maps minimal required fields to payload with empty optional dosing values', () => {
+    const payload = mapFormValuesToSavePayload({
+      name: 'Paracetamol template',
+      description: 'For mild pain',
+      drugUuid: 'drug-uuid',
+      drugDisplay: 'Paracetamol 500 mg tablet',
+      conceptUuid: 'concept-uuid',
+      dose: null,
+      unitUuid: 'unit-uuid',
+      unitDisplay: 'mg',
+      routeUuid: '',
+      routeDisplay: '',
+      frequencyUuid: '',
+      frequencyDisplay: '',
+      asNeeded: false,
+      asNeededCondition: '',
+    });
+
+    expect(payload.template.dosingInstructions).toEqual({
+      dose: [],
+      units: [{ value: 'mg', valueCoded: 'unit-uuid', default: true }],
+      route: [],
+      frequency: [],
+      asNeeded: false,
+      asNeededCondition: undefined,
+    });
+  });
+
   it('maps saved order template to form values', () => {
     const orderTemplate: OrderTemplateListItem = {
       uuid: 'template-uuid',
