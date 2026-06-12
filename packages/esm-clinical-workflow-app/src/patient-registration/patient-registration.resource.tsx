@@ -40,6 +40,60 @@ export interface HealthIdPatient {
   success: boolean;
 }
 
+type PatientIdentifierSearchResult = {
+  uuid: string;
+  identifiers?: Array<{
+    identifier: string;
+    voided?: boolean;
+    identifierType?: { uuid: string };
+  }>;
+};
+
+export async function patientMrnIdentifierInUse(mrn: string, identifierTypeUuid: string): Promise<boolean> {
+  const trimmedMrn = mrn?.trim();
+  const trimmedTypeUuid = identifierTypeUuid?.trim();
+  if (!trimmedMrn || !trimmedTypeUuid) {
+    return false;
+  }
+
+  try {
+    const url = `${restBaseUrl}/patient?identifier=${encodeURIComponent(
+      trimmedMrn,
+    )}&v=custom:(uuid,identifiers:(identifier,voided,identifierType:(uuid)))`;
+    const response = await openmrsFetch<{ results?: PatientIdentifierSearchResult[] }>(url);
+    const results = response?.data?.results ?? [];
+
+    return results.some((patient) =>
+      patient.identifiers?.some(
+        (patientIdentifier) =>
+          !patientIdentifier.voided &&
+          patientIdentifier.identifier === trimmedMrn &&
+          patientIdentifier.identifierType?.uuid === trimmedTypeUuid,
+      ),
+    );
+  } catch (error) {
+    // Don't silently pass on network errors: upstream should decide how to proceed.
+    // eslint-disable-next-line no-console
+    console.error('[MRN duplicate check] Failed:', error);
+    throw error;
+  }
+}
+
+export async function patientIdentifierTypeExists(identifierTypeUuid: string): Promise<boolean> {
+  const trimmedUuid = identifierTypeUuid?.trim();
+  if (!trimmedUuid) {
+    return false;
+  }
+  try {
+    const response = await openmrsFetch<{ uuid?: string }>(`${restBaseUrl}/patientidentifiertype/${trimmedUuid}`);
+    return !!response?.data?.uuid;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('[MRN identifier type check] Failed:', error);
+    throw error;
+  }
+}
+
 export async function fetchPatientByHealthId(healthId: string, lookupUrl: string): Promise<HealthIdPatient> {
   const url = new URL(lookupUrl, window.location.origin);
   url.searchParams.set('healthId', healthId);
@@ -220,6 +274,7 @@ export const buildPatientRegistrationPayload = (
   disabilityStatusAttributeTypeUuid?: string,
   healthId?: string,
   healthIdIdentifierTypeUuid?: string,
+  mrnIdentifierTypeUuid?: string,
   addresses?: any[],
   bloodType?: string,
   bloodTypeAttributeTypeUuid?: string,
@@ -227,6 +282,7 @@ export const buildPatientRegistrationPayload = (
   phoneAttributeTypeUuid?: string,
   email?: string,
   emailAttributeTypeUuid?: string,
+  persistMrnIdentifier = false,
 ) => {
   const { formattedBirthDate, birthdateEstimated } = calculateBirthdate(formData);
 
@@ -278,6 +334,16 @@ export const buildPatientRegistrationPayload = (
     identifiers.push({
       identifier: healthId,
       identifierType: healthIdIdentifierTypeUuid,
+      location: locationUuid,
+      preferred: false,
+    });
+  }
+
+  const trimmedMrn = (formData.mrnNumber ?? '').trim();
+  if (persistMrnIdentifier && trimmedMrn && mrnIdentifierTypeUuid && mrnIdentifierTypeUuid.trim() !== '') {
+    identifiers.push({
+      identifier: trimmedMrn,
+      identifierType: mrnIdentifierTypeUuid.trim(),
       location: locationUuid,
       preferred: false,
     });

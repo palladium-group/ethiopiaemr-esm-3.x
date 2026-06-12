@@ -2,6 +2,9 @@ import { Type, validator } from '@openmrs/esm-framework';
 import notesConfigSchema, { type VisitNoteConfigObject } from './patient-notes/visit-note-config-schema';
 import { Permissions } from './permission/permissions.constants';
 
+/** Default for `mrnNumberLength`. Runtime code should use `useConfig<ClinicalWorkflowConfig>().mrnNumberLength`. */
+export const DEFAULT_MRN_NUMBER_LENGTH = 6;
+
 export const configSchema = {
   enforceTriagePrivileges: {
     _type: Type.Boolean,
@@ -164,6 +167,19 @@ export const configSchema = {
     _description:
       'Patient identifier type UUID used to store the Health ID in OpenMRS. Required to persist the health ID alongside the default OpenMRS identifier.',
     _default: 'cce42242-9e55-40a6-8739-1e6be1369bbe',
+  },
+  mrnNumberLength: {
+    _type: Type.Number,
+    _description:
+      'Required digit length for the optional MRN field on triage patient registration. When provided, the value must be numeric and exactly this many digits.',
+    _default: DEFAULT_MRN_NUMBER_LENGTH,
+    _validators: [validator((v) => Number.isInteger(v) && v > 0, 'Must be a positive integer.')],
+  },
+  mrnIdentifierTypeUuid: {
+    _type: Type.String,
+    _description:
+      'Patient identifier type UUID used to persist the optional MRN on patient registration. When empty, the MRN is validated in the form but not saved as an identifier. The identifier type metadata should set uniqueness behavior to UNIQUE (see mrn_number.csv).',
+    _default: '',
   },
   bloodTypeAttributeTypeUuid: {
     _type: Type.String,
@@ -339,6 +355,8 @@ export type ClinicalWorkflowConfig = {
   disabilityStatusAttributeTypeUuid: string;
   healthIdLookupUrl: string;
   healthIdIdentifierTypeUuid: string;
+  mrnNumberLength: number;
+  mrnIdentifierTypeUuid: string;
   bloodTypeAttributeTypeUuid: string;
   phoneAttributeTypeUuid: string;
   emailAttributeTypeUuid: string;
