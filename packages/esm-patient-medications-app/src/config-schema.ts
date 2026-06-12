@@ -62,6 +62,11 @@ export const configSchema = {
       _type: Type.String,
     },
   },
+  enableOrderSets: {
+    _type: Type.Boolean,
+    _description: 'Whether to include order sets in the drug order search results.',
+    _default: true,
+  },
   dtpResponse: {
     questionConceptUuid: {
       _type: Type.ConceptUuid,
@@ -111,6 +116,7 @@ export interface ConfigObject {
   requireIndication: boolean;
   durationUnitsDaysMap: Record<string, number>;
   drugCategoryConceptSets: Array<string>;
+  enableOrderSets: boolean;
   dtpResponse: {
     questionConceptUuid: string;
     acceptedConceptUuid: string;
