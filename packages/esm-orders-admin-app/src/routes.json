@@ -16,9 +16,12 @@
     {
       "name": "orders-admin-nav-link",
       "component": "ordersAdminNavLink",
-      "slot": "admin-left-panel-slot",
+      "slot": "navbar-items-slot",
       "online": true,
-      "offline": false
+      "offline": false,
+      "meta": {
+        "search": ["orders", "Orders administration", "order templates", "order sets"]
+      }
     }
   ],
   "workspaces": [

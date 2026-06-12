@@ -3,20 +3,27 @@
 @use '@carbon/type';
 
 .navLinkItem {
-  @include type.type-style('body-compact-01');
-
-  display: flex;
-  width: 100%;
-  align-items: center;
-  padding: layout.$spacing-04 layout.$spacing-05;
   border: none;
-  background: transparent;
-  color: colors.$gray-100;
+  display: flex;
+  flex-direction: column;
+  min-height: layout.$spacing-12;
+  min-width: 8.5rem;
+  max-width: 8.5rem;
+  padding: 0 layout.$spacing-02;
+  align-items: center;
+  height: 7rem;
+  justify-content: center;
+  background-color: colors.$cool-gray-10;
   cursor: pointer;
-  gap: layout.$spacing-04;
-  text-align: left;
+  row-gap: layout.$spacing-05;
+  position: relative;
+
+  & > span {
+    @include type.type-style('body-01');
+    text-align: center;
+  }
 
   &:hover {
-    background-color: colors.$gray-10;
+    background-color: colors.$cool-gray-20;
   }
 }
