@@ -1,9 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Medication } from '@carbon/react/icons';
-import { useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import NavTileLink from '../components/nav-tile-link.component';
-import type { ConfigObject } from '../config-schema';
 import { ordersAdminBasePath } from '../constants';
 
 interface OrdersAdminNavLinkProps {
@@ -12,16 +10,6 @@ interface OrdersAdminNavLinkProps {
 
 const OrdersAdminNavLink: React.FC<OrdersAdminNavLinkProps> = ({ hideOverlay }) => {
   const { t } = useTranslation();
-  const session = useSession();
-  const { manageOrderTemplatesPrivilege, manageOrderSetsPrivilege } = useConfig<ConfigObject>();
-
-  const canAccessOrdersAdmin =
-    userHasAccess(manageOrderTemplatesPrivilege, session?.user) ||
-    userHasAccess(manageOrderSetsPrivilege, session?.user);
-
-  if (!canAccessOrdersAdmin) {
-    return null;
-  }
 
   return (
     <NavTileLink
