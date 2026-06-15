@@ -54,6 +54,15 @@ export const configSchema = {
         order: 3,
         privilege: Permissions.ViewGynecologicalTriageDashboard,
       },
+      {
+        id: 'psychiatry',
+        formUuid: 'fe0f8f4c-98ae-46a6-a882-66e61ef4b500',
+        name: 'Psychiatry Triage',
+        displayName: 'Psychiatry Triage',
+        enabled: true,
+        order: 4,
+        privilege: Permissions.ViewPsychiatryTriageDashboard,
+      },
     ],
     _elements: {
       id: {
