@@ -1,0 +1,17 @@
+@use '@carbon/layout';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+  padding: layout.$spacing-05;
+}
+
+.buttonSet {
+  margin-top: layout.$spacing-06;
+}
+
+.operatorHelper {
+  margin-top: layout.$spacing-03;
+  color: var(--cds-text-secondary, #525252);
+}

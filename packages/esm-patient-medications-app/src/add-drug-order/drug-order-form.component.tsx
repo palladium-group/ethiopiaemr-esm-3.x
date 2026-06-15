@@ -740,6 +740,18 @@ export function DrugOrderForm({
     return orderConfigObject?.orderFrequencies ?? [];
   }, [orderConfigObject]);
 
+  useEffect(() => {
+    const currentFrequency = getValues('frequency');
+    if (!currentFrequency?.valueCoded || currentFrequency.frequencyPerDay != null) {
+      return;
+    }
+
+    const matchedFrequency = orderFrequencies.find((frequency) => frequency.valueCoded === currentFrequency.valueCoded);
+    if (matchedFrequency) {
+      setValue('frequency', matchedFrequency, { shouldValidate: true });
+    }
+  }, [orderFrequencies, getValues, setValue]);
+
   const filterItemsByName = useCallback((menu) => {
     return menu?.item?.value?.toLowerCase().includes(menu?.inputValue?.toLowerCase());
   }, []);

@@ -289,6 +289,30 @@ describe('DrugOrderForm - template-constrained dose units', () => {
 });
 
 describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
+  it('auto-calculates quantity when duration is set for template-derived frequency without frequencyPerDay', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        dosage: 1,
+        unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+        frequency: {
+          valueCoded: 'once-daily-uuid',
+          value: 'Once daily',
+        },
+        durationUnit: { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' },
+      }),
+    );
+
+    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+    await user.clear(durationInput);
+    await user.type(durationInput, '7');
+
+    await waitFor(() => {
+      expect(screen.getByRole('spinbutton', { name: /quantity to dispense/i })).toHaveValue(7);
+    });
+    expect(screen.getByText(/auto-calculated/i)).toBeInTheDocument();
+  });
+
   it('auto-calculates quantity when dose, frequency, and duration are filled', async () => {
     const user = userEvent.setup();
     renderDrugOrderForm(createNewOrderBasketItem());

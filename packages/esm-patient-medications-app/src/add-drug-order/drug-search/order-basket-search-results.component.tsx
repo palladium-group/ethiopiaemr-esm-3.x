@@ -1,8 +1,8 @@
-import React, { type ComponentProps, useCallback, useMemo } from 'react';
+import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
-import { Button, ButtonSkeleton, SkeletonText, Tile } from '@carbon/react';
-import { ShoppingCartArrowUp } from '@carbon/react/icons';
+import { Button, ButtonSkeleton, SkeletonText, Tag, Tile } from '@carbon/react';
+import { ArrowRight, ShoppingCartArrowUp } from '@carbon/react/icons';
 import { type DrugOrderBasketItem, useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import {
   ArrowRightIcon,
@@ -23,6 +23,8 @@ import {
   useDrugSearch,
   useDrugTemplate,
 } from './drug-search.resource';
+import OrderSetReview from './order-set-review.component';
+import { type OrderSetSearchResult, useOrderSetSearch } from './order-set.resource';
 import styles from './order-basket-search-results.scss';
 
 export interface OrderBasketSearchResultsProps {
@@ -42,6 +44,11 @@ interface DrugSearchResultItemProps {
   closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
 }
 
+interface OrderSetSearchResultItemProps {
+  orderSet: OrderSetSearchResult;
+  onReview: (orderSet: OrderSetSearchResult) => void;
+}
+
 export default function OrderBasketSearchResults({
   searchTerm,
   openOrderForm,
@@ -52,11 +59,34 @@ export default function OrderBasketSearchResults({
 }: OrderBasketSearchResultsProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { drugs, isLoading, error } = useDrugSearch(searchTerm);
+  const { enableOrderSets } = useConfig<ConfigObject>();
+  const [selectedOrderSet, setSelectedOrderSet] = useState<OrderSetSearchResult | null>(null);
+  const { drugs, isLoading: isLoadingDrugs, error: drugSearchError } = useDrugSearch(searchTerm);
+  const {
+    orderSets,
+    isLoading: isLoadingOrderSets,
+    error: orderSetSearchError,
+  } = useOrderSetSearch(searchTerm, enableOrderSets);
 
   if (!searchTerm) {
     return <div className={styles.container}></div>;
   }
+
+  if (selectedOrderSet) {
+    return (
+      <OrderSetReview
+        orderSetSummary={selectedOrderSet}
+        patient={patient}
+        visit={visit}
+        closeWorkspace={closeWorkspace}
+        onBack={() => setSelectedOrderSet(null)}
+      />
+    );
+  }
+
+  const isLoading = isLoadingDrugs || (enableOrderSets && isLoadingOrderSets);
+  const error = drugSearchError ?? (enableOrderSets ? orderSetSearchError : undefined);
+  const totalResults = (drugs?.length ?? 0) + (enableOrderSets ? orderSets.length : 0);
 
   if (isLoading) {
     return <DrugSearchSkeleton />;
@@ -79,7 +109,7 @@ export default function OrderBasketSearchResults({
     );
   }
 
-  if (drugs?.length === 0) {
+  if (totalResults === 0) {
     return (
       <Tile className={styles.emptyState}>
         <div>
@@ -105,7 +135,7 @@ export default function OrderBasketSearchResults({
       <div className={styles.orderBasketSearchResultsHeader}>
         <span className={styles.searchResultsCount}>
           {t('searchResultsMatchesForTerm', '{{count}} results for "{{searchTerm}}"', {
-            count: drugs?.length,
+            count: totalResults,
             searchTerm,
           })}
         </span>
@@ -114,20 +144,73 @@ export default function OrderBasketSearchResults({
         </Button>
       </div>
       <div className={styles.resultsContainer}>
-        {drugs?.map((drug) => (
-          <DrugSearchResultItem
-            key={drug.uuid}
-            patient={patient}
-            drug={drug}
-            openOrderForm={openOrderForm}
-            visit={visit}
-            closeWorkspace={closeWorkspace}
-          />
-        ))}
+        {enableOrderSets && orderSets.length > 0 ? (
+          <div className={styles.resultSection}>
+            <span className={styles.sectionLabel}>{t('orderSets', 'Order sets')}</span>
+            {orderSets.map((orderSet) => (
+              <OrderSetSearchResultItem key={orderSet.uuid} orderSet={orderSet} onReview={setSelectedOrderSet} />
+            ))}
+          </div>
+        ) : null}
+        {drugs?.length ? (
+          <div className={styles.resultSection}>
+            {enableOrderSets && orderSets.length > 0 ? (
+              <span className={styles.sectionLabel}>{t('drugs', 'Drugs')}</span>
+            ) : null}
+            {drugs.map((drug) => (
+              <DrugSearchResultItem
+                key={drug.uuid}
+                patient={patient}
+                drug={drug}
+                openOrderForm={openOrderForm}
+                visit={visit}
+                closeWorkspace={closeWorkspace}
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
+
+const OrderSetSearchResultItem: React.FC<OrderSetSearchResultItemProps> = ({ orderSet, onReview }) => {
+  const { t } = useTranslation();
+  const isTablet = useLayoutType() === 'tablet';
+  const memberCount = orderSet.orderSetMembers?.filter((member) => !member.retired).length ?? 0;
+
+  return (
+    <Tile
+      role="listitem"
+      className={classNames(styles.searchResultTile, {
+        [styles.tabletSearchResultTile]: isTablet,
+      })}>
+      <div className={classNames(styles.searchResultTileContent, styles.text02)}>
+        <div className={styles.drugNameRow}>
+          <p className={styles.drugNameText}>
+            <Tag type="blue" size="sm">
+              {t('orderSet', 'Order set')}
+            </Tag>
+            <span className={styles.productiveHeading01}>{orderSet.name}</span>
+          </p>
+        </div>
+        {orderSet.description ? <p className={styles.orderSetDescription}>{orderSet.description}</p> : null}
+        <p className={styles.label01}>
+          {t('orderSetMemberCount', '{{count}} drugs', { count: memberCount })}
+          {orderSet.operator ? <> &mdash; {orderSet.operator}</> : null}
+        </p>
+      </div>
+      <div className={styles.searchResultActions}>
+        <Button
+          kind="ghost"
+          renderIcon={(props: ComponentProps<typeof ArrowRight>) => <ArrowRight size={16} {...props} />}
+          onClick={() => onReview(orderSet)}>
+          {t('reviewOrderSet', 'Review')}
+        </Button>
+      </div>
+    </Tile>
+  );
+};
 
 export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
   patient,
@@ -148,8 +231,6 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
     () => orders?.some((order) => ordersEqual(order, getTemplateOrderBasketItem(drug, visit))),
     [orders, drug, visit],
   );
-  // TODO: use the backend instead of this to determine whether the drug formulation can be ordered
-  // See: https://openmrs.atlassian.net/browse/RESTWS-1003
   const drugAlreadyPrescribed = useMemo(
     () => activeOrders?.some((order) => order?.drug?.uuid === drug?.uuid),
     [activeOrders, drug?.uuid],
@@ -168,7 +249,6 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
 
   const addToBasket = useCallback(
     (searchResult: DrugOrderBasketItem) => {
-      // Directly adding the order to basket should be marked as incomplete
       searchResult.isOrderIncomplete = true;
       setOrders([...orders, searchResult]);
       closeWorkspace();

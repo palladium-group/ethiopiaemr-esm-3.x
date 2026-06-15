@@ -1,0 +1,23 @@
+@use '@carbon/layout';
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+}
+
+.tableContainer {
+  margin-top: layout.$spacing-03;
+}
+
+.actions {
+  display: flex;
+  gap: layout.$spacing-03;
+}

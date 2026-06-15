@@ -1,0 +1,23 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+
+.container {
+  background-color: colors.$white-0;
+}
+
+:global(.omrs-breakpoint-gt-tablet) .container {
+  margin-left: var(--omrs-sidenav-width);
+}
+
+.dashboard {
+  padding: layout.$spacing-05;
+}
+
+.description {
+  margin-bottom: layout.$spacing-05;
+  max-width: 48rem;
+}
+
+.tabPanel {
+  margin-top: layout.$spacing-05;
+}
