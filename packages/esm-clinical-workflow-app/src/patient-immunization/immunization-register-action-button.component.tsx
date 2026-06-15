@@ -12,7 +12,7 @@ interface ImmunizationRegisterActionButtonProps {
 
 const ImmunizationRegisterActionButton: React.FC<ImmunizationRegisterActionButtonProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const { formName, formUuid } = useConfig<ImmunizationRegisterConfig>();
+  const { immunizationFormName, immunizationFormUuid } = useConfig<ImmunizationRegisterConfig>();
 
   const { visitContext, patient } = usePatientChartStore(patientUuid);
 
@@ -23,8 +23,8 @@ const ImmunizationRegisterActionButton: React.FC<ImmunizationRegisterActionButto
 
   const launchImmunizationRegistrationFormNoParams = useCallback(() => {
     const workspaceProps = {
-      workspaceTitle: formName,
-      form: { uuid: formUuid },
+      workspaceTitle: immunizationFormName,
+      form: { uuid: immunizationFormUuid },
       encounterUuid: '',
     };
 
@@ -35,7 +35,14 @@ const ImmunizationRegisterActionButton: React.FC<ImmunizationRegisterActionButto
     };
 
     launchImmunizationRegistrationForm(workspaceProps, {}, groupProps);
-  }, [formName, formUuid, launchImmunizationRegistrationForm, visitContext, patient, patientUuid]);
+  }, [
+    immunizationFormName,
+    immunizationFormUuid,
+    launchImmunizationRegistrationForm,
+    visitContext,
+    patient,
+    patientUuid,
+  ]);
 
   const session = useSession();
 
