@@ -30,9 +30,7 @@ const ReportRunner: React.FC = () => {
   const [status, setStatus] = useState<{ text: string; kind: 'success' | 'error' } | null>(null);
   const downloadAbortRef = useRef<AbortController | null>(null);
 
-  // Abort any in-flight download poll when the component unmounts or the report
-  // changes. (Report-to-report navigation remounts this component via a keyed
-  // route in Root, so local state starts fresh and cannot bleed across reports.)
+  // Abort any in-flight download poll when the component unmounts or the report changes.
   useEffect(() => {
     return () => {
       downloadAbortRef.current?.abort();

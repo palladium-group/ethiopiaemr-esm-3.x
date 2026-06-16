@@ -5,13 +5,7 @@ import InfoLanding from './report/info-landing.component';
 import ReportRunner from './report/report-runner.component';
 import styles from './root.scss';
 
-/**
- * Remount ReportRunner whenever the selected report changes by giving it a
- * key tied to the route param. Without this, React Router reuses the single
- * <ReportRunner> instance across report navigations, so its local state
- * (the previously-run results) bleeds into the next report until it is re-run.
- * A changing key forces a fresh instance with reset state.
- */
+// Force a fresh ReportRunner (reset local state) on every report navigation.
 const ReportRunnerWithKey: React.FC = () => {
   const { reportUuid } = useParams<{ reportUuid: string }>();
   return <ReportRunner key={reportUuid} />;
