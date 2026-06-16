@@ -65,7 +65,7 @@ export const configSchema = {
     _type: Type.Array,
     _elements: { _type: Type.String },
     _description: 'Dataset names that feed an Excel template only and should be hidden from the on-screen table.',
-    _default: ['immRegisterExcel'],
+    _default: ['immRegisterExcel', 'ancRegisterExcel'],
   },
 };
 
