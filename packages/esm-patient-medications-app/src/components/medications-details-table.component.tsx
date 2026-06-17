@@ -89,18 +89,43 @@ type MedicationDispenseSearchResponse = {
   }>;
 };
 
-function isReturnedMedicationOrder(order: Order) {
-  const fulfillerStatus = (order as Order & { fulfillerStatus?: string | null }).fulfillerStatus;
-  return fulfillerStatus?.toUpperCase() === 'DECLINED';
+function getFulfillerStatus(order: Order) {
+  return (order as Order & { fulfillerStatus?: string | null }).fulfillerStatus?.toUpperCase() ?? null;
 }
 
-function getDtpReasonText(statusReason?: DtpStatusReason) {
+/**
+ * A returned prescription is defined purely by fulfiller status: the pharmacy (through the Dagu
+ * mediator) sets EXCEPTION on the drug order when it returns a prescription to the physician for
+ * revision and resend. It is intentionally NOT derived from the status reason, which is a dynamic,
+ * free-text/coded value used only for display.
+ */
+function isReturnedMedicationOrder(order: Order) {
+  return getFulfillerStatus(order) === 'EXCEPTION';
+}
+
+/**
+ * An encounter group is a returned prescription only when it contains at least one order and ALL of
+ * its orders carry the EXCEPTION fulfiller status. The mediator updates every order of an encounter
+ * when the whole prescription is returned, so a partially-EXCEPTION group is not treated as returned.
+ */
+function isReturnedEncounterGroup(encounterMedications: Array<Order>) {
+  return encounterMedications.length > 0 && encounterMedications.every(isReturnedMedicationOrder);
+}
+
+/**
+ * Orders for which a pharmacy status reason is needed for per-order display (terminal DECLINED outcomes).
+ */
+function orderNeedsStatusReason(order: Order) {
+  return getFulfillerStatus(order) === 'DECLINED';
+}
+
+function getStatusReasonText(statusReason?: DtpStatusReason) {
   const firstCoding = statusReason?.coding?.find((coding) => coding.display || coding.code);
   return statusReason?.text ?? firstCoding?.display ?? firstCoding?.code;
 }
 
-function getDtpReasonFromOrder(order: Order) {
-  return getDtpReasonText((order as OrderWithDtpStatusReason).statusReasonCodeableConcept);
+function getStatusReasonFromOrder(order: Order) {
+  return getStatusReasonText((order as OrderWithDtpStatusReason).statusReasonCodeableConcept);
 }
 
 function getOrderUuidFromPrescriptionReference(reference?: string) {
@@ -120,29 +145,108 @@ function getOrderUuidFromPrescriptionReference(reference?: string) {
   return undefined;
 }
 
-function buildDtpReasonByOrderUuidFromDispenseBundle(data?: MedicationDispenseSearchResponse) {
-  const dtpReasonByOrderUuid = new Map<string, string>();
+function buildStatusReasonByOrderUuidFromDispenseBundle(data?: MedicationDispenseSearchResponse) {
+  const statusReasonByOrderUuid = new Map<string, string>();
 
   data?.entry?.forEach(({ resource: dispense }) => {
-    if (dispense?.status !== 'declined') {
+    if (!dispense) {
       return;
     }
 
     const orderUuid = getOrderUuidFromPrescriptionReference(dispense.authorizingPrescription?.[0]?.reference);
-    const dtpReason = getDtpReasonText(dispense.statusReasonCodeableConcept);
-    if (orderUuid && dtpReason && !dtpReasonByOrderUuid.has(orderUuid)) {
-      dtpReasonByOrderUuid.set(orderUuid, dtpReason);
+    const statusReason = getStatusReasonText(dispense.statusReasonCodeableConcept);
+    if (orderUuid && statusReason && !statusReasonByOrderUuid.has(orderUuid)) {
+      statusReasonByOrderUuid.set(orderUuid, statusReason);
     }
   });
 
-  return dtpReasonByOrderUuid;
+  return statusReasonByOrderUuid;
 }
 
-async function fetchReturnedMedicationDispenses(orderUuids: Array<string>) {
+async function fetchMedicationDispenses(orderUuids: Array<string>) {
   const { data } = await openmrsFetch<MedicationDispenseSearchResponse>(
     `${fhirBaseUrl}/MedicationDispense?prescription=${orderUuids.join(',')}`,
   );
   return data;
+}
+
+type PharmacyStatusLabelKey =
+  | 'dispensed'
+  | 'cancelled'
+  | 'stockedOut'
+  | 'notDispensed'
+  | 'received'
+  | 'inProgress'
+  | 'onHold';
+
+type PharmacyStatusTagType = 'red' | 'green' | 'blue' | 'gray';
+
+type PharmacyStatusDisplay = {
+  label: string;
+  type: PharmacyStatusTagType;
+  labelKey: PharmacyStatusLabelKey;
+};
+
+/**
+ * Normalizes FHIR statusReason text/codes for known terminal DECLINED outcomes from Dagu/WF12.
+ */
+function normalizeStatusReasonKey(statusReason?: string | null): string | null {
+  if (!statusReason?.trim()) {
+    return null;
+  }
+
+  const normalized = statusReason.trim().toLowerCase().replace(/\s+/g, '-');
+  if (normalized === 'cancelled' || normalized === 'canceled') {
+    return 'cancelled';
+  }
+  if (normalized === 'out-of-stock' || normalized === 'stocked-out') {
+    return 'out-of-stock';
+  }
+
+  return normalized;
+}
+
+/**
+ * Maps fulfiller status (and statusReason for DECLINED) to a per-order display tag.
+ * Returned (EXCEPTION) is shown only on the encounter header, not per order.
+ */
+function getPharmacyStatusDisplay(
+  order: Order,
+  t: (key: string, fallback: string) => string,
+  statusReason?: string,
+): PharmacyStatusDisplay | null {
+  switch (getFulfillerStatus(order)) {
+    case 'COMPLETED':
+      return { label: t('fulfillmentDispensed', 'Dispensed'), type: 'green', labelKey: 'dispensed' };
+    case 'DECLINED': {
+      const reasonKey = normalizeStatusReasonKey(statusReason);
+      if (reasonKey === 'cancelled') {
+        return { label: t('fulfillmentCancelled', 'Cancelled'), type: 'red', labelKey: 'cancelled' };
+      }
+      if (reasonKey === 'out-of-stock') {
+        return { label: t('fulfillmentStockedOut', 'Stocked out'), type: 'red', labelKey: 'stockedOut' };
+      }
+      return { label: t('fulfillmentNotDispensed', 'Not dispensed'), type: 'red', labelKey: 'notDispensed' };
+    }
+    case 'EXCEPTION':
+      return null;
+    case 'RECEIVED':
+      return { label: t('fulfillmentReceived', 'Received'), type: 'blue', labelKey: 'received' };
+    case 'IN_PROGRESS':
+      return { label: t('fulfillmentInProgress', 'In progress'), type: 'blue', labelKey: 'inProgress' };
+    case 'ON_HOLD':
+      return { label: t('fulfillmentOnHold', 'On hold'), type: 'gray', labelKey: 'onHold' };
+    default:
+      return null;
+  }
+}
+
+function shouldShowPharmacyReasonAlongside(display: PharmacyStatusDisplay, statusReason?: string) {
+  if (!statusReason?.trim()) {
+    return false;
+  }
+  // Known DECLINED labels already encode the reason; only show raw reason for unknown DECLINED cases.
+  return display.labelKey === 'notDispensed';
 }
 
 const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
@@ -171,24 +275,26 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
 
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(patient, 'medications');
   const { results, goTo, currentPage } = usePagination(medications, pageSize);
-  const returnedOrderUuidsMissingReason = useMemo(
+  const ordersMissingStatusReason = useMemo(
     () =>
       medications
-        ?.filter((medication) => isReturnedMedicationOrder(medication) && !getDtpReasonFromOrder(medication))
+        ?.filter((medication) => orderNeedsStatusReason(medication) && !getStatusReasonFromOrder(medication))
         .map((medication) => medication.uuid)
         .filter(Boolean)
         .sort() ?? [],
     [medications],
   );
-  const { data: returnedMedicationDispenseBundle } = useSWRImmutable(
-    returnedOrderUuidsMissingReason.length
-      ? ['returned-medication-dispenses', ...returnedOrderUuidsMissingReason]
-      : null,
-    ([, ...orderUuids]: Array<string>) => fetchReturnedMedicationDispenses(orderUuids),
+  const { data: medicationDispenseBundle } = useSWRImmutable(
+    ordersMissingStatusReason.length ? ['medication-dispenses', ...ordersMissingStatusReason] : null,
+    ([, ...orderUuids]: Array<string>) => fetchMedicationDispenses(orderUuids),
   );
-  const dtpReasonByOrderUuid = useMemo(
-    () => buildDtpReasonByOrderUuidFromDispenseBundle(returnedMedicationDispenseBundle),
-    [returnedMedicationDispenseBundle],
+  const statusReasonByOrderUuid = useMemo(
+    () => buildStatusReasonByOrderUuidFromDispenseBundle(medicationDispenseBundle),
+    [medicationDispenseBundle],
+  );
+  const getStatusReasonForOrder = useCallback(
+    (order: Order) => getStatusReasonFromOrder(order) ?? statusReasonByOrderUuid.get(order.uuid),
+    [statusReasonByOrderUuid],
   );
 
   const tableHeaders = [
@@ -281,106 +387,122 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
     [launchReturnedPrescriptionBasket, orders, setOrders],
   );
 
-  const tableRows = results?.map((medication) => ({
-    id: medication.uuid,
-    details: {
-      sortKey: medication.drug?.display,
-      content: (
-        <div className={styles.medicationRecord}>
-          <div>
-            <p className={styles.bodyLong01}>
-              <strong>{capitalize(medication.drug?.display)}</strong>{' '}
-              {medication.drug?.strength && <>&mdash; {medication.drug?.strength.toLowerCase()}</>}{' '}
-              {medication.drug?.dosageForm?.display && <>&mdash; {medication.drug.dosageForm.display.toLowerCase()}</>}
-              {medication.dateStopped && (
-                <Tooltip align="right" label={<>{formatDate(new Date(medication.dateStopped))}</>}>
-                  <Tag type="gray" className={styles.tag}>
-                    {t('discontinued', 'Discontinued')}
-                  </Tag>
-                </Tooltip>
-              )}
-            </p>
-            <p className={styles.bodyLong01}>
-              {medication.dose != null && (
-                <>
-                  <span className={styles.label01}>{t('dose', 'Dose').toUpperCase()}</span>{' '}
-                  <span className={styles.dosage}>
-                    {medication.dose} {medication.doseUnits?.display?.toLowerCase()}
-                  </span>{' '}
-                </>
-              )}
-              {medication.route?.display && (
-                <>
-                  {medication.dose != null && <>&mdash; </>}
-                  {medication.route?.display.toLowerCase()}{' '}
-                </>
-              )}
-              {medication.frequency?.display && <>&mdash; {medication.frequency?.display.toLowerCase()} </>}
-              {medication.duration != null && (
-                <>
-                  {(medication.dose != null || medication.route?.display || medication.frequency?.display) && (
-                    <>&mdash; </>
-                  )}
-                  {t('medicationDurationAndUnit', 'for {{duration}} {{durationUnit}}', {
-                    duration: medication.duration,
-                    durationUnit: medication.durationUnits?.display?.toLowerCase(),
-                  })}{' '}
-                </>
-              )}
-              {medication.duration == null &&
-                (medication.dose != null || medication.route?.display || medication.frequency?.display) && (
-                  <>&mdash; {t('medicationIndefiniteDuration', 'Indefinite duration').toLowerCase()} </>
+  const tableRows = results?.map((medication) => {
+    const pharmacyStatusReason = getStatusReasonForOrder(medication);
+    const pharmacyStatus = getPharmacyStatusDisplay(medication, t, pharmacyStatusReason);
+    const showPharmacyReason =
+      pharmacyStatus && shouldShowPharmacyReasonAlongside(pharmacyStatus, pharmacyStatusReason);
+    return {
+      id: medication.uuid,
+      details: {
+        sortKey: medication.drug?.display,
+        content: (
+          <div className={styles.medicationRecord}>
+            <div>
+              <p className={styles.bodyLong01}>
+                <strong>{capitalize(medication.drug?.display)}</strong>{' '}
+                {medication.drug?.strength && <>&mdash; {medication.drug?.strength.toLowerCase()}</>}{' '}
+                {medication.drug?.dosageForm?.display && (
+                  <>&mdash; {medication.drug.dosageForm.display.toLowerCase()}</>
                 )}
-              {medication.numRefills != null && medication.numRefills !== 0 && (
+                {medication.dateStopped && (
+                  <Tooltip align="right" label={<>{formatDate(new Date(medication.dateStopped))}</>}>
+                    <Tag type="gray" className={styles.tag}>
+                      {t('discontinued', 'Discontinued')}
+                    </Tag>
+                  </Tooltip>
+                )}
+                {pharmacyStatus && (
+                  <span className={styles.fulfillmentStatus}>
+                    <Tag type={pharmacyStatus.type} className={styles.tag}>
+                      {pharmacyStatus.label}
+                    </Tag>
+                    {showPharmacyReason && <span className={styles.fulfillmentReason}>{pharmacyStatusReason}</span>}
+                  </span>
+                )}
+              </p>
+              <p className={styles.bodyLong01}>
+                {medication.dose != null && (
+                  <>
+                    <span className={styles.label01}>{t('dose', 'Dose').toUpperCase()}</span>{' '}
+                    <span className={styles.dosage}>
+                      {medication.dose} {medication.doseUnits?.display?.toLowerCase()}
+                    </span>{' '}
+                  </>
+                )}
+                {medication.route?.display && (
+                  <>
+                    {medication.dose != null && <>&mdash; </>}
+                    {medication.route?.display.toLowerCase()}{' '}
+                  </>
+                )}
+                {medication.frequency?.display && <>&mdash; {medication.frequency?.display.toLowerCase()} </>}
+                {medication.duration != null && (
+                  <>
+                    {(medication.dose != null || medication.route?.display || medication.frequency?.display) && (
+                      <>&mdash; </>
+                    )}
+                    {t('medicationDurationAndUnit', 'for {{duration}} {{durationUnit}}', {
+                      duration: medication.duration,
+                      durationUnit: medication.durationUnits?.display?.toLowerCase(),
+                    })}{' '}
+                  </>
+                )}
+                {medication.duration == null &&
+                  (medication.dose != null || medication.route?.display || medication.frequency?.display) && (
+                    <>&mdash; {t('medicationIndefiniteDuration', 'Indefinite duration').toLowerCase()} </>
+                  )}
+                {medication.numRefills != null && medication.numRefills !== 0 && (
+                  <span>
+                    {(medication.dose != null ||
+                      medication.route?.display ||
+                      medication.frequency?.display ||
+                      medication.duration != null) && <> &mdash; </>}
+                    <span className={styles.label01}>{t('refills', 'Refills').toUpperCase()}</span>{' '}
+                    {medication.numRefills}
+                  </span>
+                )}
+                {medication.dosingInstructions && (
+                  <span>
+                    {(medication.dose != null ||
+                      medication.route?.display ||
+                      medication.frequency?.display ||
+                      medication.duration != null ||
+                      (medication.numRefills != null && medication.numRefills !== 0)) && <> &mdash; </>}
+                    {medication.dosingInstructions.toLocaleLowerCase()}
+                  </span>
+                )}
+              </p>
+            </div>
+            <p className={styles.bodyLong01}>
+              {medication.orderReasonNonCoded && (
                 <span>
-                  {(medication.dose != null ||
-                    medication.route?.display ||
-                    medication.frequency?.display ||
-                    medication.duration != null) && <> &mdash; </>}
-                  <span className={styles.label01}>{t('refills', 'Refills').toUpperCase()}</span>{' '}
-                  {medication.numRefills}
+                  <span className={styles.label01}>{t('indication', 'Indication').toUpperCase()}</span>{' '}
+                  {medication.orderReasonNonCoded}
                 </span>
-              )}
-              {medication.dosingInstructions && (
+              )}{' '}
+              {medication.orderReasonNonCoded && medication.quantity != null && <>&mdash;</>}
+              {medication.quantity != null && (
                 <span>
-                  {(medication.dose != null ||
-                    medication.route?.display ||
-                    medication.frequency?.display ||
-                    medication.duration != null ||
-                    (medication.numRefills != null && medication.numRefills !== 0)) && <> &mdash; </>}
-                  {medication.dosingInstructions.toLocaleLowerCase()}
+                  <span className={styles.label01}> {t('quantity', 'Quantity').toUpperCase()}</span>{' '}
+                  {medication.quantity} {medication?.quantityUnits?.display}
                 </span>
               )}
             </p>
           </div>
-          <p className={styles.bodyLong01}>
-            {medication.orderReasonNonCoded && (
-              <span>
-                <span className={styles.label01}>{t('indication', 'Indication').toUpperCase()}</span>{' '}
-                {medication.orderReasonNonCoded}
-              </span>
-            )}{' '}
-            {medication.orderReasonNonCoded && medication.quantity != null && <>&mdash;</>}
-            {medication.quantity != null && (
-              <span>
-                <span className={styles.label01}> {t('quantity', 'Quantity').toUpperCase()}</span> {medication.quantity}{' '}
-                {medication?.quantityUnits?.display}
-              </span>
-            )}
-          </p>
-        </div>
-      ),
-    },
-    startDate: {
-      sortKey: dayjs(medication.dateActivated).toDate(),
-      content: (
-        <div className={styles.startDateColumn}>
-          <span>{formatDate(new Date(medication.dateActivated))}</span>
-          {!isPrinting && <InfoTooltip orderer={medication.orderer?.person?.display ?? '--'} />}
-        </div>
-      ),
-    },
-  }));
+        ),
+      },
+      startDate: {
+        sortKey: dayjs(medication.dateActivated).toDate(),
+        content: (
+          <div className={styles.startDateColumn}>
+            <span>{formatDate(new Date(medication.dateActivated))}</span>
+            {!isPrinting && <InfoTooltip orderer={medication.orderer?.person?.display ?? '--'} />}
+          </div>
+        ),
+      },
+    };
+  });
 
   const sortRow = (cellA, cellB, { sortDirection, sortStates }) => {
     return sortDirection === sortStates.DESC
@@ -518,15 +640,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                       const allOrdersAlreadyInBasket = encounterMedications.every((groupMedication) =>
                         orders.some((existingOrder) => existingOrder.uuid === groupMedication.uuid),
                       );
-                      const hasReturnedMedication = encounterMedications.some(isReturnedMedicationOrder);
-                      const dtpReason = encounterMedications
-                        .filter(isReturnedMedicationOrder)
-                        .map(
-                          (returnedMedication) =>
-                            getDtpReasonFromOrder(returnedMedication) ??
-                            dtpReasonByOrderUuid.get(returnedMedication.uuid),
-                        )
-                        .find(Boolean);
+                      const isReturnedGroup = isReturnedEncounterGroup(encounterMedications);
 
                       renderedRows.push(
                         <TableRow key={`encounter-${encounterGroupKey}`} className={styles.encounterRow}>
@@ -536,32 +650,27 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                             <div className={styles.encounterHeaderContent}>
                               <div className={styles.encounterHeaderLabel}>
                                 <span>{getEncounterGroupLabel(medication)}</span>
-                                {hasReturnedMedication && (
+                                {isReturnedGroup && (
                                   <Tag type="red" className={styles.returnedPrescriptionTag}>
                                     {t('prescriptionReturned', 'Prescription returned')}
                                   </Tag>
                                 )}
-                                {dtpReason && (
-                                  <span className={styles.dtpReason}>
-                                    {t('dtpReason', 'Reason')}: {dtpReason}
-                                  </span>
-                                )}
                               </div>
                               {!isPrinting &&
                                 encounterUuid &&
-                                ((hasReturnedMedication && showResendPrescriptionButton) ||
-                                  (!hasReturnedMedication && showRenewButton)) && (
+                                ((isReturnedGroup && showResendPrescriptionButton) ||
+                                  (!isReturnedGroup && showRenewButton)) && (
                                   <Button
                                     kind="ghost"
                                     size="sm"
                                     className={styles.renewAllButton}
                                     disabled={allOrdersAlreadyInBasket}
                                     onClick={() =>
-                                      hasReturnedMedication
+                                      isReturnedGroup
                                         ? handleResendPrescriptionClick(encounterUuid, encounterMedications)
                                         : handleRenewAllClick(encounterUuid, encounterMedications)
                                     }>
-                                    {hasReturnedMedication
+                                    {isReturnedGroup
                                       ? t('resendPrescription', 'Resend prescription')
                                       : t('renewAll', 'Renew all')}
                                   </Button>

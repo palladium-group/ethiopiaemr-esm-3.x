@@ -57,6 +57,17 @@
   letter-spacing: 0;
 }
 
+.fulfillmentStatus {
+  display: inline-flex;
+  align-items: center;
+}
+
+.fulfillmentReason {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin-left: layout.$spacing-02;
+}
+
 .renewAllButton {
   min-height: auto;
   padding-inline: 0;

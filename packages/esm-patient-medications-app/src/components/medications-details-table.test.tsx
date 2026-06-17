@@ -180,12 +180,12 @@ describe('MedicationsDetailsTable', () => {
     expect(await screen.findByText(/unknown date/i)).toBeInTheDocument();
   });
 
-  test('marks encounter groups with declined orders as returned prescriptions', async () => {
+  test('marks an encounter group as returned only when all orders have EXCEPTION fulfiller status', async () => {
     const medications = [
       {
         ...mockPatientDrugOrdersApiData[0],
         uuid: 'med-1',
-        fulfillerStatus: 'DECLINED',
+        fulfillerStatus: 'EXCEPTION',
         statusReasonCodeableConcept: {
           text: 'Inappropriate dose',
         },
@@ -199,7 +199,7 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[1],
         uuid: 'med-2',
-        fulfillerStatus: 'RECEIVED',
+        fulfillerStatus: 'EXCEPTION',
         dateActivated: '2026-04-27T11:50:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[1].encounter,
@@ -221,7 +221,111 @@ describe('MedicationsDetailsTable', () => {
     );
 
     expect(await screen.findByText(/prescription returned/i)).toBeInTheDocument();
-    expect(screen.getByText(/reason: inappropriate dose/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /resend prescription/i })).toBeInTheDocument();
+    expect(screen.queryByText('Returned')).not.toBeInTheDocument();
+  });
+
+  test('does not mark an encounter group as returned when not all orders have EXCEPTION fulfiller status', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
+        fulfillerStatus: 'EXCEPTION',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+      {
+        ...mockPatientDrugOrdersApiData[1],
+        uuid: 'med-2',
+        fulfillerStatus: 'COMPLETED',
+        dateActivated: '2026-04-27T11:50:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[1].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: /renew all/i })).toBeInTheDocument();
+    expect(screen.queryByText(/prescription returned/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /resend prescription/i })).not.toBeInTheDocument();
+  });
+
+  test('renders per-order pharmacy fulfillment status tags from fulfiller status and status reason', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-dispensed',
+        fulfillerStatus: 'COMPLETED',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-dispensed',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+      {
+        ...mockPatientDrugOrdersApiData[1],
+        uuid: 'med-declined',
+        fulfillerStatus: 'DECLINED',
+        statusReasonCodeableConcept: {
+          text: 'out-of-stock',
+        },
+        dateActivated: '2026-04-27T10:13:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[1].encounter,
+          uuid: 'enc-declined',
+          encounterDatetime: '2026-04-27T10:13:00',
+        },
+      },
+      {
+        ...mockPatientDrugOrdersApiData[2],
+        uuid: 'med-cancelled',
+        fulfillerStatus: 'DECLINED',
+        statusReasonCodeableConcept: {
+          coding: [{ code: 'cancelled', display: 'cancelled' }],
+        },
+        dateActivated: '2026-04-27T09:00:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-cancelled',
+          encounterDatetime: '2026-04-27T09:00:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Past Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton={false}
+        showModifyButton={false}
+        showRenewButton
+      />,
+    );
+
+    expect(await screen.findByText('Dispensed')).toBeInTheDocument();
+    expect(screen.getByText('Stocked out')).toBeInTheDocument();
+    expect(screen.getByText('Cancelled')).toBeInTheDocument();
+    expect(screen.queryByText('out-of-stock')).not.toBeInTheDocument();
+    expect(screen.queryByText('Not dispensed')).not.toBeInTheDocument();
   });
 
   test('renders renew all only for encounter groups with a valid encounter uuid', async () => {
@@ -315,7 +419,7 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[0],
         uuid: 'med-1',
-        fulfillerStatus: 'DECLINED',
+        fulfillerStatus: 'EXCEPTION',
         statusReasonCodeableConcept: {
           text: 'Inappropriate dose',
         },
@@ -350,7 +454,7 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[0],
         uuid: 'med-1',
-        fulfillerStatus: 'DECLINED',
+        fulfillerStatus: 'EXCEPTION',
         dateActivated: '2026-04-27T11:49:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[0].encounter,
@@ -361,7 +465,7 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[1],
         uuid: 'med-2',
-        fulfillerStatus: 'RECEIVED',
+        fulfillerStatus: 'EXCEPTION',
         dateActivated: '2026-04-27T11:50:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[1].encounter,
