@@ -1,8 +1,8 @@
 import React from 'react';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type Order, useOrderBasket } from '@openmrs/esm-patient-common-lib';
-import { formatDate, useConfig, useSession } from '@openmrs/esm-framework';
+import { formatDate, openmrsFetch, useConfig, useSession } from '@openmrs/esm-framework';
 import { mockPatientDrugOrdersApiData, mockSessionDataResponse } from '__mocks__';
 import MedicationsDetailsTable from './medications-details-table.component';
 import { mockPatient, renderWithSwr } from 'tools';
@@ -10,6 +10,7 @@ import { mockPatient, renderWithSwr } from 'tools';
 const mockUseOrderBasket = jest.mocked(useOrderBasket);
 const mockUseConfig = jest.mocked(useConfig);
 const mockUseSession = jest.mocked(useSession);
+const mockOpenmrsFetch = openmrsFetch as jest.Mock;
 const mockLaunchOrderBasket = jest.fn();
 const mockLaunchReturnedPrescriptionBasket = jest.fn();
 const mockSetOrders = jest.fn();
@@ -33,6 +34,8 @@ describe('MedicationsDetailsTable', () => {
     mockSetOrders.mockClear();
     mockLaunchOrderBasket.mockClear();
     mockLaunchReturnedPrescriptionBasket.mockClear();
+    mockOpenmrsFetch.mockReset();
+    mockOpenmrsFetch.mockImplementation(() => Promise.resolve({ data: { entry: [] } }));
     mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
     mockUseOrderBasket.mockReturnValue({
@@ -222,7 +225,72 @@ describe('MedicationsDetailsTable', () => {
 
     expect(await screen.findByText(/prescription returned/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /resend prescription/i })).toBeInTheDocument();
+    expect(screen.getByText('Inappropriate dose')).toBeInTheDocument();
     expect(screen.queryByText('Returned')).not.toBeInTheDocument();
+    expect(document.querySelector('.cds--tag--purple')).toBeInTheDocument();
+  });
+
+  test('displays pharmacist note from MedicationDispense for returned prescriptions', async () => {
+    const orderUuid = '819edce3-c5e7-4342-aeba-7e406f639699';
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: orderUuid,
+        fulfillerStatus: 'EXCEPTION',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        entry: [
+          {
+            resource: {
+              status: 'declined',
+              statusReasonCodeableConcept: {
+                coding: [{ system: 'https://cielterminology.org', code: '165170' }],
+                text: 'Inappropriate dose',
+              },
+              note: [
+                {
+                  text: "DTP Case Comment: The dose is too high for this patient's age. Please revise to 2.5mg.",
+                },
+              ],
+              authorizingPrescription: [{ reference: `MedicationRequest/${orderUuid}` }],
+            },
+          },
+        ],
+      },
+    });
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+        `/ws/fhir2/R4/MedicationDispense?prescription=${orderUuid}&_summary=`,
+      );
+    });
+
+    expect(await screen.findByText('Inappropriate dose')).toBeInTheDocument();
+    expect(
+      screen.getByText("DTP Case Comment: The dose is too high for this patient's age. Please revise to 2.5mg."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^Reason$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Pharmacist note$/i)).toBeInTheDocument();
   });
 
   test('does not mark an encounter group as returned when not all orders have EXCEPTION fulfiller status', async () => {

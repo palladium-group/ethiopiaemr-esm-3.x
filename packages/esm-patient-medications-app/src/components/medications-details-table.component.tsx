@@ -74,6 +74,7 @@ type DtpStatusReason = {
   coding?: Array<{
     code?: string;
     display?: string;
+    system?: string;
   }>;
 };
 
@@ -81,12 +82,26 @@ type OrderWithDtpStatusReason = Order & {
   statusReasonCodeableConcept?: DtpStatusReason;
 };
 
+type MedicationDispenseResource = fhir.MedicationDispense & {
+  statusReasonCodeableConcept?: DtpStatusReason;
+  note?: Array<{ text?: string }>;
+};
+
 type MedicationDispenseSearchResponse = {
   entry?: Array<{
-    resource?: fhir.MedicationDispense & {
-      statusReasonCodeableConcept?: DtpStatusReason;
-    };
+    resource?: MedicationDispenseResource;
   }>;
+};
+
+type MedicationDispenseDetails = {
+  statusReason?: string;
+  reasonCategory?: string;
+  pharmacistNote?: string;
+};
+
+type ReturnedPrescriptionDisplay = {
+  reasonCategory?: string;
+  pharmacistNote?: string;
 };
 
 function getFulfillerStatus(order: Order) {
@@ -124,8 +139,37 @@ function getStatusReasonText(statusReason?: DtpStatusReason) {
   return statusReason?.text ?? firstCoding?.display ?? firstCoding?.code;
 }
 
+/**
+ * Human-readable return/decline category from a coded concept (CIEL), with text fallback.
+ */
+function getReasonCategoryFromStatusReason(statusReason?: DtpStatusReason) {
+  const codingWithDisplay = statusReason?.coding?.find((coding) => coding.display?.trim());
+  if (codingWithDisplay?.display) {
+    return codingWithDisplay.display.trim();
+  }
+
+  if (statusReason?.text?.trim()) {
+    return statusReason.text.trim();
+  }
+
+  const codingWithCode = statusReason?.coding?.find((coding) => coding.code?.trim());
+  return codingWithCode?.code?.trim();
+}
+
+function getPharmacistNoteFromDispense(dispense?: MedicationDispenseResource) {
+  return dispense?.note?.find((entry) => entry.text?.trim())?.text?.trim();
+}
+
 function getStatusReasonFromOrder(order: Order) {
   return getStatusReasonText((order as OrderWithDtpStatusReason).statusReasonCodeableConcept);
+}
+
+function orderNeedsDispenseDetails(order: Order) {
+  if (isReturnedMedicationOrder(order)) {
+    return true;
+  }
+
+  return orderNeedsStatusReason(order) && !getStatusReasonFromOrder(order);
 }
 
 function getOrderUuidFromPrescriptionReference(reference?: string) {
@@ -145,8 +189,8 @@ function getOrderUuidFromPrescriptionReference(reference?: string) {
   return undefined;
 }
 
-function buildStatusReasonByOrderUuidFromDispenseBundle(data?: MedicationDispenseSearchResponse) {
-  const statusReasonByOrderUuid = new Map<string, string>();
+function buildMedicationDispenseDetailsByOrderUuid(data?: MedicationDispenseSearchResponse) {
+  const detailsByOrderUuid = new Map<string, MedicationDispenseDetails>();
 
   data?.entry?.forEach(({ resource: dispense }) => {
     if (!dispense) {
@@ -154,18 +198,53 @@ function buildStatusReasonByOrderUuidFromDispenseBundle(data?: MedicationDispens
     }
 
     const orderUuid = getOrderUuidFromPrescriptionReference(dispense.authorizingPrescription?.[0]?.reference);
-    const statusReason = getStatusReasonText(dispense.statusReasonCodeableConcept);
-    if (orderUuid && statusReason && !statusReasonByOrderUuid.has(orderUuid)) {
-      statusReasonByOrderUuid.set(orderUuid, statusReason);
+    if (!orderUuid || detailsByOrderUuid.has(orderUuid)) {
+      return;
     }
+
+    detailsByOrderUuid.set(orderUuid, {
+      statusReason: getStatusReasonText(dispense.statusReasonCodeableConcept),
+      reasonCategory: getReasonCategoryFromStatusReason(dispense.statusReasonCodeableConcept),
+      pharmacistNote: getPharmacistNoteFromDispense(dispense),
+    });
   });
 
-  return statusReasonByOrderUuid;
+  return detailsByOrderUuid;
 }
 
+function getReturnedPrescriptionDisplayForEncounter(
+  encounterMedications: Array<Order>,
+  dispenseDetailsByOrderUuid: Map<string, MedicationDispenseDetails>,
+): ReturnedPrescriptionDisplay | null {
+  if (!isReturnedEncounterGroup(encounterMedications)) {
+    return null;
+  }
+
+  let reasonCategory: string | undefined;
+  let pharmacistNote: string | undefined;
+
+  encounterMedications.forEach((order) => {
+    const dispenseDetails = dispenseDetailsByOrderUuid.get(order.uuid);
+    reasonCategory ??=
+      getReasonCategoryFromStatusReason((order as OrderWithDtpStatusReason).statusReasonCodeableConcept) ??
+      dispenseDetails?.reasonCategory;
+    pharmacistNote ??= dispenseDetails?.pharmacistNote;
+  });
+
+  if (!reasonCategory && !pharmacistNote) {
+    return null;
+  }
+
+  return { reasonCategory, pharmacistNote };
+}
+
+/**
+ * openmrsFetch auto-appends `_summary=data` to FHIR URLs unless `_summary` is already set.
+ * Summary mode omits fields such as `note`; pass an empty `_summary` to request full resources.
+ */
 async function fetchMedicationDispenses(orderUuids: Array<string>) {
   const { data } = await openmrsFetch<MedicationDispenseSearchResponse>(
-    `${fhirBaseUrl}/MedicationDispense?prescription=${orderUuids.join(',')}`,
+    `${fhirBaseUrl}/MedicationDispense?prescription=${orderUuids.join(',')}&_summary=`,
   );
   return data;
 }
@@ -275,26 +354,26 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
 
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(patient, 'medications');
   const { results, goTo, currentPage } = usePagination(medications, pageSize);
-  const ordersMissingStatusReason = useMemo(
+  const orderUuidsNeedingDispenseDetails = useMemo(
     () =>
       medications
-        ?.filter((medication) => orderNeedsStatusReason(medication) && !getStatusReasonFromOrder(medication))
+        ?.filter((medication) => orderNeedsDispenseDetails(medication))
         .map((medication) => medication.uuid)
         .filter(Boolean)
         .sort() ?? [],
     [medications],
   );
   const { data: medicationDispenseBundle } = useSWRImmutable(
-    ordersMissingStatusReason.length ? ['medication-dispenses', ...ordersMissingStatusReason] : null,
+    orderUuidsNeedingDispenseDetails.length ? ['medication-dispenses', ...orderUuidsNeedingDispenseDetails] : null,
     ([, ...orderUuids]: Array<string>) => fetchMedicationDispenses(orderUuids),
   );
-  const statusReasonByOrderUuid = useMemo(
-    () => buildStatusReasonByOrderUuidFromDispenseBundle(medicationDispenseBundle),
+  const dispenseDetailsByOrderUuid = useMemo(
+    () => buildMedicationDispenseDetailsByOrderUuid(medicationDispenseBundle),
     [medicationDispenseBundle],
   );
   const getStatusReasonForOrder = useCallback(
-    (order: Order) => getStatusReasonFromOrder(order) ?? statusReasonByOrderUuid.get(order.uuid),
-    [statusReasonByOrderUuid],
+    (order: Order) => getStatusReasonFromOrder(order) ?? dispenseDetailsByOrderUuid.get(order.uuid)?.statusReason,
+    [dispenseDetailsByOrderUuid],
   );
 
   const tableHeaders = [
@@ -641,40 +720,75 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                         orders.some((existingOrder) => existingOrder.uuid === groupMedication.uuid),
                       );
                       const isReturnedGroup = isReturnedEncounterGroup(encounterMedications);
+                      const returnedPrescriptionDisplay = getReturnedPrescriptionDisplayForEncounter(
+                        encounterMedications,
+                        dispenseDetailsByOrderUuid,
+                      );
 
                       renderedRows.push(
                         <TableRow key={`encounter-${encounterGroupKey}`} className={styles.encounterRow}>
                           <TableCell
                             className={styles.encounterHeaderCell}
                             colSpan={headers.length + (isPrinting ? 0 : 1)}>
-                            <div className={styles.encounterHeaderContent}>
-                              <div className={styles.encounterHeaderLabel}>
-                                <span>{getEncounterGroupLabel(medication)}</span>
-                                {isReturnedGroup && (
-                                  <Tag type="red" className={styles.returnedPrescriptionTag}>
-                                    {t('prescriptionReturned', 'Prescription returned')}
-                                  </Tag>
-                                )}
+                            <div
+                              className={
+                                isReturnedGroup
+                                  ? `${styles.encounterHeaderContent} ${styles.encounterHeaderContentReturned}`
+                                  : styles.encounterHeaderContent
+                              }>
+                              <div className={styles.encounterHeaderMain}>
+                                <div className={styles.encounterHeaderLabel}>
+                                  <span>{getEncounterGroupLabel(medication)}</span>
+                                  {isReturnedGroup && (
+                                    <Tag type="purple" className={styles.returnedPrescriptionTag}>
+                                      {t('prescriptionReturned', 'Prescription returned')}
+                                    </Tag>
+                                  )}
+                                </div>
+                                {!isPrinting &&
+                                  encounterUuid &&
+                                  ((isReturnedGroup && showResendPrescriptionButton) ||
+                                    (!isReturnedGroup && showRenewButton)) && (
+                                    <Button
+                                      kind="ghost"
+                                      size="sm"
+                                      className={styles.renewAllButton}
+                                      disabled={allOrdersAlreadyInBasket}
+                                      onClick={() =>
+                                        isReturnedGroup
+                                          ? handleResendPrescriptionClick(encounterUuid, encounterMedications)
+                                          : handleRenewAllClick(encounterUuid, encounterMedications)
+                                      }>
+                                      {isReturnedGroup
+                                        ? t('resendPrescription', 'Resend prescription')
+                                        : t('renewAll', 'Renew all')}
+                                    </Button>
+                                  )}
                               </div>
-                              {!isPrinting &&
-                                encounterUuid &&
-                                ((isReturnedGroup && showResendPrescriptionButton) ||
-                                  (!isReturnedGroup && showRenewButton)) && (
-                                  <Button
-                                    kind="ghost"
-                                    size="sm"
-                                    className={styles.renewAllButton}
-                                    disabled={allOrdersAlreadyInBasket}
-                                    onClick={() =>
-                                      isReturnedGroup
-                                        ? handleResendPrescriptionClick(encounterUuid, encounterMedications)
-                                        : handleRenewAllClick(encounterUuid, encounterMedications)
-                                    }>
-                                    {isReturnedGroup
-                                      ? t('resendPrescription', 'Resend prescription')
-                                      : t('renewAll', 'Renew all')}
-                                  </Button>
-                                )}
+                              {isReturnedGroup && returnedPrescriptionDisplay && (
+                                <div className={styles.returnedPrescriptionDetails}>
+                                  {returnedPrescriptionDisplay.reasonCategory && (
+                                    <div className={styles.returnedPrescriptionDetailRow}>
+                                      <span className={styles.returnedPrescriptionDetailLabel}>
+                                        {t('returnReasonCategory', 'Reason')}
+                                      </span>
+                                      <span className={styles.returnedPrescriptionDetailValue}>
+                                        {returnedPrescriptionDisplay.reasonCategory}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {returnedPrescriptionDisplay.pharmacistNote && (
+                                    <div className={styles.returnedPrescriptionDetailRow}>
+                                      <span className={styles.returnedPrescriptionDetailLabel}>
+                                        {t('pharmacistNote', 'Pharmacist note')}
+                                      </span>
+                                      <span className={styles.returnedPrescriptionDetailValue}>
+                                        {returnedPrescriptionDisplay.pharmacistNote}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>,

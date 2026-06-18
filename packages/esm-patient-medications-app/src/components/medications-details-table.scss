@@ -39,6 +39,19 @@
   align-items: center;
   justify-content: space-between;
   gap: layout.$spacing-03;
+  width: 100%;
+}
+
+.encounterHeaderContentReturned {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.encounterHeaderMain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
 }
 
 .encounterHeaderLabel {
@@ -49,6 +62,37 @@
 
 .returnedPrescriptionTag {
   margin: 0;
+  text-transform: none;
+}
+
+.returnedPrescriptionDetails {
+  @include type.type-style('body-compact-01');
+  background-color: colors.$purple-10;
+  border-left: 3px solid colors.$purple-60;
+  border-radius: 0 layout.$spacing-02 layout.$spacing-02 0;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  letter-spacing: normal;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  text-transform: none;
+}
+
+.returnedPrescriptionDetailRow {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-01;
+}
+
+.returnedPrescriptionDetailLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  flex-shrink: 0;
+}
+
+.returnedPrescriptionDetailValue {
+  color: colors.$gray-100;
+  white-space: pre-wrap;
 }
 
 .dtpReason {
