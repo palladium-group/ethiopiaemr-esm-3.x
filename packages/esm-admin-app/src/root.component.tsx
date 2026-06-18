@@ -1,15 +1,17 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { setLeftNav, unsetLeftNav, WorkspaceContainer } from '@openmrs/esm-framework';
+import { navigate, setLeftNav, unsetLeftNav, userHasAccess, useSession } from '@openmrs/esm-framework';
 import styles from './root.scss';
 import LeftPanel from './components/side-menu/left-pannel.component';
 import UserManagentLandingPage from './components/users/manage-users/manage-user.component';
 import FacilitySetup from './components/facility-setup/facility-setup.component';
 import HomeComponent from './components/locations/home/home-locations.component';
+import { AdminPermissions } from './permissions.constants';
 
 const Root: React.FC = () => {
   const spaBasePath = window.spaBase;
   const adminBasename = window.getOpenmrsSpaBase() + 'admin';
+  const session = useSession();
 
   useEffect(() => {
     setLeftNav({
@@ -18,6 +20,16 @@ const Root: React.FC = () => {
     });
     return () => unsetLeftNav('admin-left-panel-slot');
   }, [spaBasePath]);
+
+  useEffect(() => {
+    if (session?.authenticated && !userHasAccess(AdminPermissions.ManageUsers, session?.user)) {
+      navigate({ to: `${window.getOpenmrsSpaBase()}home` });
+    }
+  }, [session]);
+
+  if (!session?.authenticated) {
+    return null;
+  }
 
   return (
     <BrowserRouter basename={adminBasename}>

@@ -7,22 +7,26 @@
     {
       "component": "adminLeftPanelLink",
       "name": "admin-left-panel-link",
-      "slot": "admin-left-panel-slot"
+      "slot": "admin-left-panel-slot",
+      "privilege": "Add Users"
     },
     {
       "component": "userManagementLeftPannelLink",
       "name": "user-management-left-panel-link",
-      "slot": "admin-left-panel-slot"
-    }, 
+      "slot": "admin-left-panel-slot",
+      "privilege": "Add Users"
+    },
     {
       "component": "locationsLeftPanelLink",
       "name": "locations-left-panel-link",
-      "slot": "admin-left-panel-slot"
+      "slot": "admin-left-panel-slot",
+      "privilege": "Add Users"
     },
     {
       "component": "facilitySetupLeftPanelLink",
       "name": "facility-setup-left-panel-link",
-      "slot": "admin-left-panel-slot"
+      "slot": "admin-left-panel-slot",
+      "privilege": "Add Users"
     },
     {
       "component": "providerBanner",
@@ -90,7 +94,8 @@
   "pages": [
     {
       "component": "root",
-      "route": "admin"
+      "route": "admin",
+      "privilege": "Add Users"
     }
   ]
 }
