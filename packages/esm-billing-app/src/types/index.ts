@@ -317,7 +317,7 @@ export type QueueEntry = {
   };
 };
 
-export type RequestStatus = 'INITIATED' | 'COMPLETE' | 'FAILED' | 'NOT-FOUND' | 'UNKNOWN';
+export type RequestStatus = 'INITIATED' | 'COMPLETE' | 'FAILED' | 'NOT-FOUND' | 'UNKNOWN' | 'SETTLEMENT-FAILED';
 
 export enum PaymentStatus {
   POSTED = 'POSTED',

@@ -4,25 +4,25 @@ import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import { from, interval, of } from 'rxjs';
 import { catchError, scan, startWith, switchMap, take, takeWhile } from 'rxjs/operators';
-import { processBillPayment, usePaymentModes } from '../billing.resource';
-import { BillingConfig } from '../config-schema';
 import { extractServiceIdentifier } from '../invoice/payments/utils';
 import { getErrorMessage, getRequestStatus, readableStatusMap } from '../telebirr/telebirr-resource';
-import { useClockInStatus } from '../bill-administration/payment-points/use-clock-in-status';
+import { BillingConfig } from '../config-schema';
 import { LineItem, MappedBill, PaymentStatus, RequestStatus, Timesheet } from '../types';
-import { extractErrorMessagesFromResponse, waitForASecond } from '../utils';
+import { waitForASecond } from '../utils';
 
 type RequestData = {
   originatorConversationId: string | null;
   requestStatus: RequestStatus | null;
-  amount: string | null;
 };
 
 type PollState = {
   attempts: number;
   lastStatus: RequestStatus | null;
   lastReferenceCode?: string;
+  lastSettlementError?: string;
 };
+
+const TERMINAL_STATUSES: RequestStatus[] = ['COMPLETE', 'FAILED', 'NOT-FOUND', 'SETTLEMENT-FAILED'];
 
 export const createMobileMoneyPaymentPayload = (
   bill: MappedBill,
@@ -101,6 +101,12 @@ export const createMobileMoneyPaymentPayload = (
 
 /**
  * useRequestStatus
+ *
+ * Polls the payment middleware for the authoritative status of a Telebirr
+ * payment intent. Settlement now happens server-side, so the browser only
+ * observes the outcome and refreshes the bill view; it never settles the bill
+ * itself.
+ *
  * @param setNotification a function to call with the appropriate notification type
  * @returns a function to trigger the polling.
  */
@@ -111,39 +117,27 @@ export const useRequestStatus = (
 ): [RequestData, React.Dispatch<React.SetStateAction<RequestData | null>>] => {
   const { t } = useTranslation();
   const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
-  const { paymentModes } = usePaymentModes();
 
-  // TODO: make this configurable
-  const POLL_INTERVAL_MS = 6000; // 6 seconds
-  const MAX_ATTEMPTS = 10; // 10 attempts, that is 60 seconds
-
-  // Get the payment reference UUID for the mobile money payment mode
-  // TODO: avoid using hardcoded property value
-  const paymentReferenceUUID = paymentModes
-    .find((mode) => mode.name === 'Mobile Money')
-    ?.attributeTypes.find((type) => type.description === 'Reference Number')?.uuid;
+  const POLL_INTERVAL_MS = 6000;
+  const MAX_ATTEMPTS = 10;
 
   const [requestData, setRequestData] = useState<RequestData>({
     originatorConversationId: null,
     requestStatus: null,
-    amount: null,
   });
-
-  const { globalActiveSheet } = useClockInStatus();
 
   useEffect(() => {
     if (!requestData.originatorConversationId) {
       return;
     }
 
-    if (['COMPLETE', 'FAILED', 'NOT-FOUND'].includes(requestData.requestStatus)) {
+    if (TERMINAL_STATUSES.includes(requestData.requestStatus)) {
       return;
     }
 
     let latestState: PollState = {
       attempts: 0,
       lastStatus: requestData.requestStatus,
-      lastReferenceCode: undefined,
     };
 
     const polling$ = interval(POLL_INTERVAL_MS).pipe(
@@ -158,9 +152,10 @@ export const useRequestStatus = (
         ),
       ),
       scan(
-        (state: PollState, result: { status: RequestStatus; referenceCode?: string } | null) => {
-          // On transport/HTTP error, keep lastStatus as-is but still count an attempt,
-          // so we continue polling up to MAX_ATTEMPTS.
+        (
+          state: PollState,
+          result: { status: RequestStatus; referenceCode?: string; settlementError?: string } | null,
+        ) => {
           if (!result) {
             return { ...state, attempts: state.attempts + 1 };
           }
@@ -169,31 +164,21 @@ export const useRequestStatus = (
             attempts: state.attempts + 1,
             lastStatus: result.status,
             lastReferenceCode: result.referenceCode,
+            lastSettlementError: result.settlementError,
           };
         },
         {
           attempts: 0,
           lastStatus: requestData.requestStatus,
-          lastReferenceCode: undefined,
         } as PollState,
       ),
-      // Keep polling on errors or INITIATED until we either:
-      // - hit a real terminal status (handled in the subscriber), or
-      // - exhaust MAX_ATTEMPTS (handled in complete handler as timeout).
-      takeWhile(
-        (state) =>
-          state.attempts < MAX_ATTEMPTS &&
-          state.lastStatus !== 'COMPLETE' &&
-          state.lastStatus !== 'FAILED' &&
-          state.lastStatus !== 'NOT-FOUND',
-        true,
-      ),
+      takeWhile((state) => state.attempts < MAX_ATTEMPTS && !TERMINAL_STATUSES.includes(state.lastStatus), true),
     );
 
     const subscription = polling$.subscribe({
       next: (state) => {
         latestState = state;
-        const { lastStatus, lastReferenceCode } = state;
+        const { lastStatus, lastSettlementError } = state;
 
         if (!lastStatus) {
           return;
@@ -210,41 +195,46 @@ export const useRequestStatus = (
             closeModal();
           });
 
-          const mobileMoneyPaymentMethodInstanceTypeUUID = paymentModes.find(
-            (method) => method.name === 'Mobile Money',
-          ).uuid;
+          showSnackbar({
+            title: t('billPayment', 'Bill payment'),
+            subtitle: t('billPaymentSuccessful', 'Bill payment processing has been successful'),
+            kind: 'success',
+            timeoutInMs: 3000,
+          });
 
-          const mobileMoneyPayload = createMobileMoneyPaymentPayload(
-            bill,
-            parseInt(requestData.amount),
-            mobileMoneyPaymentMethodInstanceTypeUUID,
-            { uuid: paymentReferenceUUID, value: lastReferenceCode },
-            globalActiveSheet,
-          );
+          const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
+          mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
 
-          processBillPayment(mobileMoneyPayload, bill.uuid).then(
-            () => {
-              showSnackbar({
-                title: t('billPayment', 'Bill payment'),
-                subtitle: 'Bill payment processing has been successful',
-                kind: 'success',
-                timeoutInMs: 3000,
-              });
-              const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
-              mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
-            },
-            (error) => {
-              showSnackbar({
-                title: t('failedBillPayment', 'Bill payment failed'),
-                subtitle: `An unexpected error occurred while processing your bill payment. Please contact the system administrator and provide them with the following error details: ${extractErrorMessagesFromResponse(
-                  error.responseBody,
-                )}`,
-                kind: 'error',
-                timeoutInMs: 3000,
-                isLowContrast: true,
-              });
-            },
-          );
+          return;
+        }
+
+        if (lastStatus === 'SETTLEMENT-FAILED') {
+          // Telebirr took the money but OpenMRS settlement failed. Surface a
+          // distinct, prominent error and DO NOT prompt a retry, to avoid
+          // charging the patient twice. Keep the modal open so the cashier
+          // sees it and can escalate with the reference code.
+          setRequestData((prev) => ({
+            ...prev,
+            originatorConversationId: null,
+            requestStatus: 'SETTLEMENT-FAILED',
+          }));
+
+          const baseMessage = readableStatusMap.get('SETTLEMENT-FAILED');
+          setNotification({
+            type: 'error',
+            message: lastSettlementError ? `${baseMessage} (${lastSettlementError})` : baseMessage,
+          });
+
+          showSnackbar({
+            title: t('settlementFailed', 'Bill settlement failed'),
+            subtitle: baseMessage,
+            kind: 'error',
+            timeoutInMs: 0,
+            isLowContrast: true,
+          });
+
+          const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
+          mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
 
           return;
         }
@@ -264,21 +254,22 @@ export const useRequestStatus = (
         }
       },
       complete: () => {
-        // onComplete: handle timeout case where we exhausted attempts but remained INITIATED or UNKNOWN (network error)
         const timedOut =
           (latestState.lastStatus === 'INITIATED' || latestState.lastStatus === 'UNKNOWN') &&
           latestState.attempts >= MAX_ATTEMPTS;
         if (timedOut) {
           setNotification({
             type: 'error',
-            message: 'Payment confirmation timed out. Please try again.',
+            message: t(
+              'paymentConfirmationTimedOut',
+              'Payment confirmation timed out. If you completed the USSD prompt, do not retry; refresh the bill or contact the administrator.',
+            ),
           });
         }
 
         setRequestData((prev) => ({
           ...prev,
           originatorConversationId: null,
-          // Clear waiting state on timeout so the modal shows only the error notification
           requestStatus: timedOut ? null : latestState.lastStatus ?? prev.requestStatus,
         }));
       },
@@ -288,17 +279,13 @@ export const useRequestStatus = (
       subscription.unsubscribe();
     };
   }, [
-    bill,
+    bill.uuid,
     closeModal,
     paymentAPIBaseUrl,
-    paymentModes,
-    paymentReferenceUUID,
-    requestData.amount,
     requestData.originatorConversationId,
     requestData.requestStatus,
     setNotification,
     t,
-    globalActiveSheet,
   ]);
 
   return [requestData, setRequestData];
