@@ -50,9 +50,11 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
 
   const isWaitingForTelebirr = requestStatus === 'INITIATED';
-  const selectedLineItemsPendingAmount = selectedLineItems
-    .filter((item) => item.paymentStatus === PaymentStatus.PENDING)
-    .reduce((curr: number, prev) => curr + Number(prev.price * prev.quantity), 0);
+  const pendingLineItems = selectedLineItems.filter((item) => item.paymentStatus === PaymentStatus.PENDING);
+  const selectedLineItemsPendingAmount = pendingLineItems.reduce(
+    (curr: number, prev) => curr + Number(prev.price * prev.quantity),
+    0,
+  );
 
   const {
     control,
@@ -79,29 +81,28 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   }, [watchedPhoneNumber, setValue, phoneNumber, reset]);
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    const phoneNumber = formatEthiopianPhoneNumber(data.phoneNumber);
-    const amountBilled = data.billAmount;
-    // TODO: set proper conversation id
-    const conversationId = bill.uuid;
+    const formattedPhoneNumber = formatEthiopianPhoneNumber(data.phoneNumber);
+    const lineItemUuids = pendingLineItems.map((item) => item.uuid);
 
-    // check if amountBilled is equal to selectedLineItemsPendingAmount
-    if (Number(amountBilled) !== selectedLineItemsPendingAmount) {
-      setNotification({ type: 'error', message: 'Amount billed does not match selected line items pending amount.' });
+    if (lineItemUuids.length === 0) {
+      setNotification({ type: 'error', message: 'No pending line items selected for payment.' });
       return;
     }
 
     const payload = {
-      conversationId,
-      mobileNumber: phoneNumber,
-      amount: amountBilled,
+      billUuid: bill.uuid,
+      lineItemUuids,
+      mobileNumber: formattedPhoneNumber,
     };
 
     setIsLoading(true);
     try {
       const originatorConversationId = await initiateTelebirrPayment(payload, setNotification, paymentAPIBaseUrl);
-      // check if we have a valid originator conversation id
       if (originatorConversationId) {
-        pollingTrigger({ originatorConversationId, requestStatus: 'INITIATED', amount: amountBilled });
+        pollingTrigger({
+          originatorConversationId,
+          requestStatus: 'INITIATED',
+        });
       } else {
         setNotification({ type: 'error', message: 'Unable to initiate Telebirr payment, please try again later.' });
       }
