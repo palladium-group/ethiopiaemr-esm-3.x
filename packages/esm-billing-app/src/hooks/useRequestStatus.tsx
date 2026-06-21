@@ -1,4 +1,4 @@
-import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { showSnackbar } from '@openmrs/esm-framework';
 import { SetStateAction, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
@@ -6,7 +6,6 @@ import { from, interval, of } from 'rxjs';
 import { catchError, scan, startWith, switchMap, take, takeWhile } from 'rxjs/operators';
 import { extractServiceIdentifier } from '../invoice/payments/utils';
 import { getErrorMessage, getRequestStatus, readableStatusMap } from '../telebirr/telebirr-resource';
-import { BillingConfig } from '../config-schema';
 import { LineItem, MappedBill, PaymentStatus, RequestStatus, Timesheet } from '../types';
 import { waitForASecond } from '../utils';
 
@@ -102,8 +101,8 @@ export const createMobileMoneyPaymentPayload = (
 /**
  * useRequestStatus
  *
- * Polls the payment middleware for the authoritative status of a Telebirr
- * payment intent. Settlement now happens server-side, so the browser only
+ * Polls the custom module for the authoritative status of a Telebirr payment
+ * intent. Settlement happens server-side in OpenMRS, so the browser only
  * observes the outcome and refreshes the bill view; it never settles the bill
  * itself.
  *
@@ -116,7 +115,6 @@ export const useRequestStatus = (
   bill: MappedBill,
 ): [RequestData, React.Dispatch<React.SetStateAction<RequestData | null>>] => {
   const { t } = useTranslation();
-  const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
 
   const POLL_INTERVAL_MS = 6000;
   const MAX_ATTEMPTS = 10;
@@ -144,7 +142,7 @@ export const useRequestStatus = (
       startWith(0),
       take(MAX_ATTEMPTS),
       switchMap(() =>
-        from(getRequestStatus(requestData.originatorConversationId, paymentAPIBaseUrl)).pipe(
+        from(getRequestStatus(requestData.originatorConversationId)).pipe(
           catchError((error) => {
             setNotification({ type: 'error', message: getErrorMessage(error, t) });
             return of(null);
@@ -278,15 +276,7 @@ export const useRequestStatus = (
     return () => {
       subscription.unsubscribe();
     };
-  }, [
-    bill.uuid,
-    closeModal,
-    paymentAPIBaseUrl,
-    requestData.originatorConversationId,
-    requestData.requestStatus,
-    setNotification,
-    t,
-  ]);
+  }, [bill.uuid, closeModal, requestData.originatorConversationId, requestData.requestStatus, setNotification, t]);
 
   return [requestData, setRequestData];
 };

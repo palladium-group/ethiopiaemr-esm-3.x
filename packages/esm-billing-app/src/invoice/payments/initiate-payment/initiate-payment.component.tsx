@@ -12,12 +12,10 @@ import {
   TextInput,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useConfig } from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { BillingConfig } from '../../../config-schema';
 import { usePatientAttributes } from '../../../hooks/usePatientAttributes';
 import { useRequestStatus } from '../../../hooks/useRequestStatus';
 import { initiateTelebirrPayment } from '../../../telebirr/telebirr-resource';
@@ -47,7 +45,6 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const [notification, setNotification] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [{ requestStatus }, pollingTrigger] = useRequestStatus(setNotification, closeModal, bill);
-  const { paymentAPIBaseUrl } = useConfig<BillingConfig>();
 
   const isWaitingForTelebirr = requestStatus === 'INITIATED';
   const pendingLineItems = selectedLineItems.filter((item) => item.paymentStatus === PaymentStatus.PENDING);
@@ -97,7 +94,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
 
     setIsLoading(true);
     try {
-      const originatorConversationId = await initiateTelebirrPayment(payload, setNotification, paymentAPIBaseUrl);
+      const originatorConversationId = await initiateTelebirrPayment(payload, setNotification);
       if (originatorConversationId) {
         pollingTrigger({
           originatorConversationId,

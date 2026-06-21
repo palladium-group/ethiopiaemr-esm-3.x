@@ -250,7 +250,8 @@ export const configSchema: ConfigSchema = {
   },
   paymentAPIBaseUrl: {
     _type: Type.String,
-    _description: 'The base url that will be used to make any backend calls related to telebirr.',
+    _description:
+      'Deprecated. Telebirr payments are handled by the ethiopiaemrcustommodule REST endpoints via openmrsFetch. This setting is no longer used.',
     _default: 'https://api.telebirr.com/v1',
   },
   showStockAvailability: {
