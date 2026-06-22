@@ -1,3 +1,4 @@
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { RequestStatus } from '../types';
 
 export interface TelebirrInitiatePayload {
@@ -7,24 +8,31 @@ export interface TelebirrInitiatePayload {
 }
 
 interface TelebirrInitiateResponse {
-  success: boolean;
-  responseCode: string;
-  responseDesc: string;
-  serviceStatus: string;
-  conversationId?: string;
+  intentUuid: string;
   originatorConversationId: string;
   amount: number;
-  billUuid: string;
+  status: PaymentIntentStatus;
 }
 
-// Raw payment intent status as reported by the middleware.
-type PaymentIntentStatus = 'INITIATED' | 'COMPLETE' | 'FAILED' | 'SETTLED' | 'SETTLEMENT_FAILED' | 'NOT_FOUND';
+type PaymentIntentStatus = 'INITIATED' | 'SETTLED' | 'FAILED';
 
 interface TelebirrStatusResponse {
+  intentUuid: string;
+  originatorConversationId: string;
   status: PaymentIntentStatus;
-  referenceCode?: string | null;
-  settlementError?: string | null;
+  amount?: number;
+  telebirrTransactionId?: string | null;
+  lastError?: string | null;
 }
+
+interface TelebirrPaymentErrorResponse {
+  success?: boolean;
+  errorCode?: string;
+  message?: string;
+}
+
+const TELEBIRR_INITIATE_URL = `${restBaseUrl}/ethiopiaemrcustommodule/telebirr/initiate`;
+const TELEBIRR_STATUS_URL = `${restBaseUrl}/ethiopiaemrcustommodule/telebirr/status`;
 
 export const readableStatusMap = new Map<RequestStatus, string>();
 readableStatusMap.set('COMPLETE', 'Complete');
@@ -36,61 +44,71 @@ readableStatusMap.set(
   'Payment was received but the bill could not be settled automatically. Do not retry. Please contact the system administrator.',
 );
 
-const mapIntentStatus = (status: PaymentIntentStatus): RequestStatus => {
-  switch (status) {
+const isSettlementFailure = (lastError?: string | null): boolean => {
+  if (!lastError) {
+    return false;
+  }
+
+  const lower = lastError.toLowerCase();
+  return (
+    lower.includes('bill') ||
+    lower.includes('settlement') ||
+    lower.includes('line item') ||
+    lower.includes('payment mode') ||
+    lower.includes('cashier') ||
+    lower.includes('payment intent')
+  );
+};
+
+const mapIntentStatus = (body: TelebirrStatusResponse): RequestStatus => {
+  switch (body.status) {
     case 'SETTLED':
       return 'COMPLETE';
-    case 'FAILED':
-      return 'FAILED';
-    case 'SETTLEMENT_FAILED':
-      return 'SETTLEMENT-FAILED';
-    case 'NOT_FOUND':
-      return 'NOT-FOUND';
     case 'INITIATED':
-    case 'COMPLETE':
-      // COMPLETE here means Telebirr confirmed but OpenMRS settlement is still
-      // pending, so keep waiting until the intent reaches SETTLED.
       return 'INITIATED';
+    case 'FAILED':
+      if (body.telebirrTransactionId || isSettlementFailure(body.lastError)) {
+        return 'SETTLEMENT-FAILED';
+      }
+      return 'FAILED';
     default:
       return 'UNKNOWN';
   }
 };
 
+const getTelebirrErrorMessage = (error: unknown, fallback: string): string => {
+  const responseBody = (error as { responseBody?: TelebirrPaymentErrorResponse })?.responseBody;
+  if (responseBody?.message) {
+    return responseBody.message;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+};
+
 export const initiateTelebirrPayment = async (
   payload: TelebirrInitiatePayload,
   setNotification: (notification: { type: 'error' | 'success'; message: string }) => void,
-  paymentAPIBaseUrl: string,
 ): Promise<string | undefined> => {
   try {
-    const url = `${paymentAPIBaseUrl}/payments/telebirr/initiate`;
-
-    const res = await fetch(url, {
+    const response = await openmrsFetch<TelebirrInitiateResponse>(TELEBIRR_INITIATE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
+      body: {
         billUuid: payload.billUuid,
         lineItemUuids: payload.lineItemUuids,
         mobileNumber: payload.mobileNumber,
-      }),
+      },
     });
 
-    if (res.ok) {
-      const response: TelebirrInitiateResponse = await res.json();
-      setNotification({ message: 'Telebirr payment initiated successfully', type: 'success' });
-      return response.originatorConversationId;
-    }
-
-    const errorBody = await res.json().catch(() => null);
-    const message = errorBody?.message ?? 'Unable to initiate Telebirr payment, please try again later.';
-    throw new Error(message);
+    setNotification({ message: 'Telebirr payment initiated successfully', type: 'success' });
+    return response.data.originatorConversationId;
   } catch (err) {
     setNotification({
-      message:
-        err instanceof Error && err.message
-          ? err.message
-          : 'Unable to initiate Telebirr payment, please try again later.',
+      message: getTelebirrErrorMessage(err, 'Unable to initiate Telebirr payment, please try again later.'),
       type: 'error',
     });
   }
@@ -98,36 +116,22 @@ export const initiateTelebirrPayment = async (
 
 export const getRequestStatus = async (
   originatorConversationId: string,
-  paymentAPIBaseUrl: string,
 ): Promise<{ status: RequestStatus; referenceCode?: string; settlementError?: string }> => {
   try {
-    const response = await fetch(
-      `${paymentAPIBaseUrl}/payments/telebirr/status?originatorConversationId=${encodeURIComponent(
-        originatorConversationId,
-      )}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+    const url = `${TELEBIRR_STATUS_URL}?originatorConversationId=${encodeURIComponent(originatorConversationId)}`;
+    const response = await openmrsFetch<TelebirrStatusResponse>(url);
+    const body = response.data;
 
-    if (response.status === 404) {
-      return { status: 'NOT-FOUND' };
-    }
-
-    if (!response.ok) {
-      return { status: 'UNKNOWN' };
-    }
-
-    const body: TelebirrStatusResponse = await response.json();
     return {
-      status: mapIntentStatus(body.status),
-      referenceCode: body.referenceCode ?? undefined,
-      settlementError: body.settlementError ?? undefined,
+      status: mapIntentStatus(body),
+      referenceCode: body.telebirrTransactionId ?? undefined,
+      settlementError: body.lastError ?? undefined,
     };
   } catch (error) {
+    const errorCode = (error as { responseBody?: TelebirrPaymentErrorResponse })?.responseBody?.errorCode;
+    if (errorCode === 'INTENT_NOT_FOUND') {
+      return { status: 'NOT-FOUND' };
+    }
     return { status: 'UNKNOWN' };
   }
 };
