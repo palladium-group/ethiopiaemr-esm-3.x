@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type Order, useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import { formatDate, openmrsFetch, useConfig, useSession } from '@openmrs/esm-framework';
@@ -14,6 +14,68 @@ const mockOpenmrsFetch = openmrsFetch as jest.Mock;
 const mockLaunchOrderBasket = jest.fn();
 const mockLaunchReturnedPrescriptionBasket = jest.fn();
 const mockSetOrders = jest.fn();
+
+const dtpPharmacyReturn = {
+  groupConceptUuid: 'dtp-group-uuid',
+  categoryConceptUuid: 'dtp-category-uuid',
+  reasonConceptUuid: 'dtp-reason-uuid',
+  noteConceptUuid: 'dtp-note-uuid',
+  responseConceptUuid: 'dtp-response-uuid',
+};
+
+type DtpReturnGroupInput = {
+  obsDatetime: string;
+  category?: string;
+  reason?: string;
+  note?: string;
+};
+
+function buildReturnGroupObs({ obsDatetime, category, reason, note }: DtpReturnGroupInput) {
+  return {
+    uuid: `grp-${obsDatetime}`,
+    obsDatetime,
+    concept: { uuid: dtpPharmacyReturn.groupConceptUuid },
+    groupMembers: [
+      category != null ? { concept: { uuid: dtpPharmacyReturn.categoryConceptUuid }, value: category } : null,
+      reason != null ? { concept: { uuid: dtpPharmacyReturn.reasonConceptUuid }, value: reason } : null,
+      note != null ? { concept: { uuid: dtpPharmacyReturn.noteConceptUuid }, value: note } : null,
+    ].filter(Boolean),
+  };
+}
+
+function buildEncounterObsResponse(
+  uuid: string,
+  groups: Array<DtpReturnGroupInput>,
+  responseDatetimes: Array<string> = [],
+) {
+  return {
+    uuid,
+    obs: [
+      ...groups.map(buildReturnGroupObs),
+      ...responseDatetimes.map((obsDatetime) => ({
+        uuid: `resp-${obsDatetime}`,
+        obsDatetime,
+        concept: { uuid: dtpPharmacyReturn.responseConceptUuid },
+        value: { uuid: 'answer-uuid', display: 'Accepted' },
+      })),
+    ],
+  };
+}
+
+/**
+ * Routes openmrsFetch by URL: encounter obs requests resolve from `encounterObsByUuid`, everything
+ * else (e.g. MedicationDispense) falls back to an empty FHIR bundle.
+ */
+function mockFetchByUrl(encounterObsByUuid: Record<string, ReturnType<typeof buildEncounterObsResponse>>) {
+  mockOpenmrsFetch.mockImplementation((url: string) => {
+    const encounterMatch = url.match(/\/encounter\/([^?]+)/);
+    if (encounterMatch) {
+      const data = encounterObsByUuid[encounterMatch[1]] ?? { uuid: encounterMatch[1], obs: [] };
+      return Promise.resolve({ data });
+    }
+    return Promise.resolve({ data: { entry: [] } });
+  });
+}
 
 jest.mock('@openmrs/esm-patient-common-lib', () => ({
   ...jest.requireActual('@openmrs/esm-patient-common-lib'),
@@ -47,6 +109,7 @@ describe('MedicationsDetailsTable', () => {
     mockUseConfig.mockReturnValue({
       showPrintButton: false,
       excludePatientIdentifierCodeTypes: { uuids: [] },
+      dtpPharmacyReturn,
     });
   });
 
@@ -183,15 +246,11 @@ describe('MedicationsDetailsTable', () => {
     expect(await screen.findByText(/unknown date/i)).toBeInTheDocument();
   });
 
-  test('marks an encounter group as returned only when all orders have EXCEPTION fulfiller status', async () => {
+  test('marks an encounter group as returned when the encounter has a DTP pharmacy return group obs', async () => {
     const medications = [
       {
         ...mockPatientDrugOrdersApiData[0],
         uuid: 'med-1',
-        fulfillerStatus: 'EXCEPTION',
-        statusReasonCodeableConcept: {
-          text: 'Inappropriate dose',
-        },
         dateActivated: '2026-04-27T11:49:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[0].encounter,
@@ -202,7 +261,6 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[1],
         uuid: 'med-2',
-        fulfillerStatus: 'EXCEPTION',
         dateActivated: '2026-04-27T11:50:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[1].encounter,
@@ -211,6 +269,17 @@ describe('MedicationsDetailsTable', () => {
         },
       },
     ] as unknown as Array<Order>;
+
+    mockFetchByUrl({
+      'enc-1': buildEncounterObsResponse('enc-1', [
+        {
+          obsDatetime: '2026-04-27T12:00:00.000+0000',
+          category: 'Dosing',
+          reason: 'Inappropriate dose',
+          note: 'Please revise to 2.5mg',
+        },
+      ]),
+    });
 
     renderWithSwr(
       <MedicationsDetailsTable
@@ -225,18 +294,19 @@ describe('MedicationsDetailsTable', () => {
 
     expect(await screen.findByText(/prescription returned/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /resend prescription/i })).toBeInTheDocument();
+    expect(screen.getByText(/DTP reason 1/i)).toBeInTheDocument();
     expect(screen.getByText('Inappropriate dose')).toBeInTheDocument();
+    expect(screen.getByText('Dosing')).toBeInTheDocument();
+    expect(screen.getByText('Please revise to 2.5mg')).toBeInTheDocument();
     expect(screen.queryByText('Returned')).not.toBeInTheDocument();
     expect(document.querySelector('.cds--tag--purple')).toBeInTheDocument();
   });
 
-  test('displays pharmacist note from MedicationDispense for returned prescriptions', async () => {
-    const orderUuid = '819edce3-c5e7-4342-aeba-7e406f639699';
+  test('renders one line per DTP return reason group', async () => {
     const medications = [
       {
         ...mockPatientDrugOrdersApiData[0],
-        uuid: orderUuid,
-        fulfillerStatus: 'EXCEPTION',
+        uuid: 'med-1',
         dateActivated: '2026-04-27T11:49:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[0].encounter,
@@ -246,26 +316,11 @@ describe('MedicationsDetailsTable', () => {
       },
     ] as unknown as Array<Order>;
 
-    mockOpenmrsFetch.mockResolvedValue({
-      data: {
-        entry: [
-          {
-            resource: {
-              status: 'declined',
-              statusReasonCodeableConcept: {
-                coding: [{ system: 'https://cielterminology.org', code: '165170' }],
-                text: 'Inappropriate dose',
-              },
-              note: [
-                {
-                  text: "DTP Case Comment: The dose is too high for this patient's age. Please revise to 2.5mg.",
-                },
-              ],
-              authorizingPrescription: [{ reference: `MedicationRequest/${orderUuid}` }],
-            },
-          },
-        ],
-      },
+    mockFetchByUrl({
+      'enc-1': buildEncounterObsResponse('enc-1', [
+        { obsDatetime: '2026-04-27T12:00:00.000+0000', category: 'Dosing', reason: 'Inappropriate dose' },
+        { obsDatetime: '2026-04-27T12:05:00.000+0000', category: 'Interaction', reason: 'Drug interaction' },
+      ]),
     });
 
     renderWithSwr(
@@ -279,26 +334,92 @@ describe('MedicationsDetailsTable', () => {
       />,
     );
 
-    await waitFor(() => {
-      expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-        `/ws/fhir2/R4/MedicationDispense?prescription=${orderUuid}&_summary=`,
-      );
-    });
-
-    expect(await screen.findByText('Inappropriate dose')).toBeInTheDocument();
-    expect(
-      screen.getByText("DTP Case Comment: The dose is too high for this patient's age. Please revise to 2.5mg."),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/^Reason$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^Pharmacist note$/i)).toBeInTheDocument();
+    expect(await screen.findByText(/DTP reason 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/DTP reason 2/i)).toBeInTheDocument();
+    expect(screen.getByText('Inappropriate dose')).toBeInTheDocument();
+    expect(screen.getByText('Drug interaction')).toBeInTheDocument();
   });
 
-  test('does not mark an encounter group as returned when not all orders have EXCEPTION fulfiller status', async () => {
+  test('hides the returned tag when a DTP response is same-or-newer than the latest return group', async () => {
     const medications = [
       {
         ...mockPatientDrugOrdersApiData[0],
         uuid: 'med-1',
-        fulfillerStatus: 'EXCEPTION',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    mockFetchByUrl({
+      'enc-1': buildEncounterObsResponse(
+        'enc-1',
+        [{ obsDatetime: '2026-04-27T12:00:00.000+0000', category: 'Dosing', reason: 'Inappropriate dose' }],
+        ['2026-04-27T12:30:00.000+0000'],
+      ),
+    });
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: /renew all/i })).toBeInTheDocument();
+    expect(screen.queryByText(/prescription returned/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /resend prescription/i })).not.toBeInTheDocument();
+  });
+
+  test('re-shows the returned tag when a newer return group arrives after a DTP response', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    mockFetchByUrl({
+      'enc-1': buildEncounterObsResponse(
+        'enc-1',
+        [{ obsDatetime: '2026-04-27T13:00:00.000+0000', category: 'Dosing', reason: 'Still wrong dose' }],
+        ['2026-04-27T12:30:00.000+0000'],
+      ),
+    });
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    expect(await screen.findByText(/prescription returned/i)).toBeInTheDocument();
+    expect(screen.getByText('Still wrong dose')).toBeInTheDocument();
+  });
+
+  test('does not mark an encounter group as returned when the encounter has no DTP return group obs', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
         dateActivated: '2026-04-27T11:49:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[0].encounter,
@@ -309,7 +430,6 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[1],
         uuid: 'med-2',
-        fulfillerStatus: 'COMPLETED',
         dateActivated: '2026-04-27T11:50:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[1].encounter,
@@ -318,6 +438,8 @@ describe('MedicationsDetailsTable', () => {
         },
       },
     ] as unknown as Array<Order>;
+
+    mockFetchByUrl({ 'enc-1': buildEncounterObsResponse('enc-1', []) });
 
     renderWithSwr(
       <MedicationsDetailsTable
@@ -487,10 +609,6 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[0],
         uuid: 'med-1',
-        fulfillerStatus: 'EXCEPTION',
-        statusReasonCodeableConcept: {
-          text: 'Inappropriate dose',
-        },
         dateActivated: '2026-04-27T11:49:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[0].encounter,
@@ -499,6 +617,12 @@ describe('MedicationsDetailsTable', () => {
         },
       },
     ] as unknown as Array<Order>;
+
+    mockFetchByUrl({
+      'enc-1': buildEncounterObsResponse('enc-1', [
+        { obsDatetime: '2026-04-27T12:00:00.000+0000', category: 'Dosing', reason: 'Inappropriate dose' },
+      ]),
+    });
 
     renderWithSwr(
       <MedicationsDetailsTable
@@ -522,7 +646,6 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[0],
         uuid: 'med-1',
-        fulfillerStatus: 'EXCEPTION',
         dateActivated: '2026-04-27T11:49:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[0].encounter,
@@ -533,7 +656,6 @@ describe('MedicationsDetailsTable', () => {
       {
         ...mockPatientDrugOrdersApiData[1],
         uuid: 'med-2',
-        fulfillerStatus: 'EXCEPTION',
         dateActivated: '2026-04-27T11:50:00',
         encounter: {
           ...mockPatientDrugOrdersApiData[1].encounter,
@@ -542,6 +664,12 @@ describe('MedicationsDetailsTable', () => {
         },
       },
     ] as unknown as Array<Order>;
+
+    mockFetchByUrl({
+      'enc-1': buildEncounterObsResponse('enc-1', [
+        { obsDatetime: '2026-04-27T12:00:00.000+0000', category: 'Dosing', reason: 'Inappropriate dose' },
+      ]),
+    });
 
     renderWithSwr(
       <MedicationsDetailsTable

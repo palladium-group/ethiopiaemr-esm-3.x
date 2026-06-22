@@ -55,6 +55,7 @@ import { type AddDrugOrderWorkspaceProps } from '../add-drug-order/add-drug-orde
 import { type ConfigObject } from '../config-schema';
 import PrintComponent from '../print/print.component';
 import { type ReturnedPrescriptionBasketItem } from '../types';
+import { type DtpReturnReason, useDtpReturnObs } from '../utils/dtp-return-obs';
 import styles from './medications-details-table.scss';
 
 export interface MedicationsDetailsTableProps {
@@ -84,7 +85,6 @@ type OrderWithDtpStatusReason = Order & {
 
 type MedicationDispenseResource = fhir.MedicationDispense & {
   statusReasonCodeableConcept?: DtpStatusReason;
-  note?: Array<{ text?: string }>;
 };
 
 type MedicationDispenseSearchResponse = {
@@ -95,36 +95,10 @@ type MedicationDispenseSearchResponse = {
 
 type MedicationDispenseDetails = {
   statusReason?: string;
-  reasonCategory?: string;
-  pharmacistNote?: string;
-};
-
-type ReturnedPrescriptionDisplay = {
-  reasonCategory?: string;
-  pharmacistNote?: string;
 };
 
 function getFulfillerStatus(order: Order) {
   return (order as Order & { fulfillerStatus?: string | null }).fulfillerStatus?.toUpperCase() ?? null;
-}
-
-/**
- * A returned prescription is defined purely by fulfiller status: the pharmacy (through the Dagu
- * mediator) sets EXCEPTION on the drug order when it returns a prescription to the physician for
- * revision and resend. It is intentionally NOT derived from the status reason, which is a dynamic,
- * free-text/coded value used only for display.
- */
-function isReturnedMedicationOrder(order: Order) {
-  return getFulfillerStatus(order) === 'EXCEPTION';
-}
-
-/**
- * An encounter group is a returned prescription only when it contains at least one order and ALL of
- * its orders carry the EXCEPTION fulfiller status. The mediator updates every order of an encounter
- * when the whole prescription is returned, so a partially-EXCEPTION group is not treated as returned.
- */
-function isReturnedEncounterGroup(encounterMedications: Array<Order>) {
-  return encounterMedications.length > 0 && encounterMedications.every(isReturnedMedicationOrder);
 }
 
 /**
@@ -139,36 +113,11 @@ function getStatusReasonText(statusReason?: DtpStatusReason) {
   return statusReason?.text ?? firstCoding?.display ?? firstCoding?.code;
 }
 
-/**
- * Human-readable return/decline category from a coded concept (CIEL), with text fallback.
- */
-function getReasonCategoryFromStatusReason(statusReason?: DtpStatusReason) {
-  const codingWithDisplay = statusReason?.coding?.find((coding) => coding.display?.trim());
-  if (codingWithDisplay?.display) {
-    return codingWithDisplay.display.trim();
-  }
-
-  if (statusReason?.text?.trim()) {
-    return statusReason.text.trim();
-  }
-
-  const codingWithCode = statusReason?.coding?.find((coding) => coding.code?.trim());
-  return codingWithCode?.code?.trim();
-}
-
-function getPharmacistNoteFromDispense(dispense?: MedicationDispenseResource) {
-  return dispense?.note?.find((entry) => entry.text?.trim())?.text?.trim();
-}
-
 function getStatusReasonFromOrder(order: Order) {
   return getStatusReasonText((order as OrderWithDtpStatusReason).statusReasonCodeableConcept);
 }
 
 function orderNeedsDispenseDetails(order: Order) {
-  if (isReturnedMedicationOrder(order)) {
-    return true;
-  }
-
   return orderNeedsStatusReason(order) && !getStatusReasonFromOrder(order);
 }
 
@@ -204,43 +153,16 @@ function buildMedicationDispenseDetailsByOrderUuid(data?: MedicationDispenseSear
 
     detailsByOrderUuid.set(orderUuid, {
       statusReason: getStatusReasonText(dispense.statusReasonCodeableConcept),
-      reasonCategory: getReasonCategoryFromStatusReason(dispense.statusReasonCodeableConcept),
-      pharmacistNote: getPharmacistNoteFromDispense(dispense),
     });
   });
 
   return detailsByOrderUuid;
 }
 
-function getReturnedPrescriptionDisplayForEncounter(
-  encounterMedications: Array<Order>,
-  dispenseDetailsByOrderUuid: Map<string, MedicationDispenseDetails>,
-): ReturnedPrescriptionDisplay | null {
-  if (!isReturnedEncounterGroup(encounterMedications)) {
-    return null;
-  }
-
-  let reasonCategory: string | undefined;
-  let pharmacistNote: string | undefined;
-
-  encounterMedications.forEach((order) => {
-    const dispenseDetails = dispenseDetailsByOrderUuid.get(order.uuid);
-    reasonCategory ??=
-      getReasonCategoryFromStatusReason((order as OrderWithDtpStatusReason).statusReasonCodeableConcept) ??
-      dispenseDetails?.reasonCategory;
-    pharmacistNote ??= dispenseDetails?.pharmacistNote;
-  });
-
-  if (!reasonCategory && !pharmacistNote) {
-    return null;
-  }
-
-  return { reasonCategory, pharmacistNote };
-}
-
 /**
  * openmrsFetch auto-appends `_summary=data` to FHIR URLs unless `_summary` is already set.
- * Summary mode omits fields such as `note`; pass an empty `_summary` to request full resources.
+ * Summary mode omits fields such as `statusReasonCodeableConcept`; pass an empty `_summary` to
+ * request full resources for the per-order DECLINED status reason.
  */
 async function fetchMedicationDispenses(orderUuids: Array<string>) {
   const { data } = await openmrsFetch<MedicationDispenseSearchResponse>(
@@ -286,8 +208,9 @@ function normalizeStatusReasonKey(statusReason?: string | null): string | null {
 }
 
 /**
- * Maps fulfiller status (and statusReason for DECLINED) to a per-order display tag.
- * Returned (EXCEPTION) is shown only on the encounter header, not per order.
+ * Maps fulfiller status (and statusReason for DECLINED) to a per-order display tag. EXCEPTION yields
+ * no per-order tag; the returned-prescription state is derived from encounter DTP return obs and
+ * shown on the encounter header instead.
  */
 function getPharmacyStatusDisplay(
   order: Order,
@@ -415,6 +338,9 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
     return groups;
   }, [medications]);
 
+  const encounterUuids = useMemo(() => Array.from(encounterMedicationsByUuid.keys()), [encounterMedicationsByUuid]);
+  const { dtpReturnByEncounter } = useDtpReturnObs(encounterUuids);
+
   const getEncounterGroupLabel = useCallback(
     (medication: Order) => {
       const encounterDateTime = medication.encounter?.encounterDatetime;
@@ -452,11 +378,10 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
       }
 
       const returnedPrescriptionOrders = ordersToResend.map((medication) => {
-        const isReturnedPrescription = isReturnedMedicationOrder(medication);
         return {
           ...buildMedicationOrder(medication, 'REVISE'),
-          isReturnedPrescription,
-          isOrderIncomplete: isReturnedPrescription,
+          isReturnedPrescription: true,
+          isOrderIncomplete: true,
         } as ReturnedPrescriptionBasketItem;
       });
 
@@ -719,11 +644,9 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                       const allOrdersAlreadyInBasket = encounterMedications.every((groupMedication) =>
                         orders.some((existingOrder) => existingOrder.uuid === groupMedication.uuid),
                       );
-                      const isReturnedGroup = isReturnedEncounterGroup(encounterMedications);
-                      const returnedPrescriptionDisplay = getReturnedPrescriptionDisplayForEncounter(
-                        encounterMedications,
-                        dispenseDetailsByOrderUuid,
-                      );
+                      const dtpReturnInfo = encounterUuid ? dtpReturnByEncounter.get(encounterUuid) : undefined;
+                      const isReturnedGroup = Boolean(dtpReturnInfo?.isReturned);
+                      const dtpReturnReasons = isReturnedGroup ? dtpReturnInfo?.reasons ?? [] : [];
 
                       renderedRows.push(
                         <TableRow key={`encounter-${encounterGroupKey}`} className={styles.encounterRow}>
@@ -765,28 +688,15 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                                     </Button>
                                   )}
                               </div>
-                              {isReturnedGroup && returnedPrescriptionDisplay && (
+                              {isReturnedGroup && dtpReturnReasons.length > 0 && (
                                 <div className={styles.returnedPrescriptionDetails}>
-                                  {returnedPrescriptionDisplay.reasonCategory && (
-                                    <div className={styles.returnedPrescriptionDetailRow}>
-                                      <span className={styles.returnedPrescriptionDetailLabel}>
-                                        {t('returnReasonCategory', 'Reason')}
-                                      </span>
-                                      <span className={styles.returnedPrescriptionDetailValue}>
-                                        {returnedPrescriptionDisplay.reasonCategory}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {returnedPrescriptionDisplay.pharmacistNote && (
-                                    <div className={styles.returnedPrescriptionDetailRow}>
-                                      <span className={styles.returnedPrescriptionDetailLabel}>
-                                        {t('pharmacistNote', 'Pharmacist note')}
-                                      </span>
-                                      <span className={styles.returnedPrescriptionDetailValue}>
-                                        {returnedPrescriptionDisplay.pharmacistNote}
-                                      </span>
-                                    </div>
-                                  )}
+                                  {dtpReturnReasons.map((dtpReason, dtpReasonIndex) => (
+                                    <DtpReturnReasonLine
+                                      key={dtpReason.obsUuid ?? `${encounterGroupKey}-reason-${dtpReasonIndex}`}
+                                      reason={dtpReason}
+                                      index={dtpReasonIndex}
+                                    />
+                                  ))}
                                 </div>
                               )}
                             </div>
@@ -843,6 +753,33 @@ function InfoTooltip({ orderer }: { orderer: string }) {
     <IconButton className={styles.tooltip} align="top-left" label={orderer} kind="ghost" size="sm">
       <UserIcon size={16} />
     </IconButton>
+  );
+}
+
+function DtpReturnReasonLine({ reason, index }: { reason: DtpReturnReason; index: number }) {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.dtpReturnReasonLine}>
+      <span className={styles.dtpReturnReasonHeading}>
+        {t('dtpReturnReasonHeading', 'DTP reason {{number}}', { number: index + 1 })}
+      </span>
+      {reason.category && (
+        <span className={styles.dtpReturnField}>
+          <span className={styles.dtpReturnFieldLabel}>{t('dtpReturnCategoryLabel', 'Category')}:</span>{' '}
+          {reason.category}
+        </span>
+      )}
+      {reason.reason && (
+        <span className={styles.dtpReturnField}>
+          <span className={styles.dtpReturnFieldLabel}>{t('dtpReturnReasonLabel', 'Reason')}:</span> {reason.reason}
+        </span>
+      )}
+      {reason.note && (
+        <span className={styles.dtpReturnField}>
+          <span className={styles.dtpReturnFieldLabel}>{t('dtpReturnNoteLabel', 'Note')}:</span> {reason.note}
+        </span>
+      )}
+    </div>
   );
 }
 
