@@ -17,13 +17,15 @@ export const DTP_RETURN_OBS_SWR_KEY = 'dtp-return-obs';
 const DTP_RETURN_REFRESH_INTERVAL_MS = 10_000;
 
 const encounterObsRepresentation =
-  'custom:(uuid,obs:(uuid,obsDatetime,value,concept:(uuid),' + 'groupMembers:(uuid,obsDatetime,value,concept:(uuid))))';
+  'custom:(uuid,obs:(uuid,obsDatetime,dateCreated,value,concept:(uuid),' +
+  'groupMembers:(uuid,obsDatetime,value,concept:(uuid))))';
 
 type ObsValue = string | number | boolean | { uuid?: string; display?: string } | null;
 
 interface EncounterObs {
   uuid?: string;
   obsDatetime?: string;
+  dateCreated?: string;
   value?: ObsValue;
   concept?: { uuid?: string };
   groupMembers?: Array<EncounterObs>;
@@ -36,28 +38,32 @@ export interface EncounterObsResponse {
 
 export interface DtpReturnReason {
   obsUuid?: string;
-  obsDatetime: number;
+  /** Milliseconds since epoch from `dateCreated` (fallback: `obsDatetime`). */
+  dateCreated: number;
   category?: string;
   reason?: string;
   note?: string;
 }
 
 export interface DtpReturnInfo {
-  /** Return reasons, newest first. */
+  /** Return reasons, newest first (by `dateCreated`). */
   reasons: Array<DtpReturnReason>;
-  latestReturnDatetime: number | null;
-  latestResponseDatetime: number | null;
+  latestReturnCreated: number | null;
+  latestResponseCreated: number | null;
   /**
    * True when at least one return group exists and it has not been answered by a same-or-newer
    * DTP response obs (Option A). A newer return group re-opens the returned state.
+   *
+   * Uses `dateCreated` rather than `obsDatetime` because encounter updates re-stamp all obs
+   * datetimes to the encounter time while preserving true creation order in `dateCreated`.
    */
   isReturned: boolean;
 }
 
 const EMPTY_DTP_RETURN_INFO: DtpReturnInfo = {
   reasons: [],
-  latestReturnDatetime: null,
-  latestResponseDatetime: null,
+  latestReturnCreated: null,
+  latestResponseCreated: null,
   isReturned: false,
 };
 
@@ -74,12 +80,31 @@ function getObsTextValue(value: ObsValue): string | undefined {
   return value.display?.trim() || undefined;
 }
 
-function getObsDatetime(obs: EncounterObs): number {
-  const time = obs.obsDatetime ? new Date(obs.obsDatetime).getTime() : NaN;
+function parseObsTime(value?: string): number {
+  const time = value ? new Date(value).getTime() : NaN;
   return Number.isNaN(time) ? 0 : time;
 }
 
+/**
+ * Prefer `dateCreated` for ordering; fall back to `obsDatetime` when absent (e.g. test mocks).
+ */
+function getObsCreatedTime(obs: EncounterObs): number {
+  const created = parseObsTime(obs.dateCreated);
+  if (created) {
+    return created;
+  }
+  return parseObsTime(obs.obsDatetime);
+}
+
 type DtpReturnConceptUuids = ConfigObject['dtpPharmacyReturn'];
+
+function compareReturnReasonsNewestFirst(a: DtpReturnReason, b: DtpReturnReason) {
+  const diff = b.dateCreated - a.dateCreated;
+  if (diff !== 0) {
+    return diff;
+  }
+  return (b.obsUuid ?? '').localeCompare(a.obsUuid ?? '');
+}
 
 /**
  * Parses the DTP pharmacy return state from a single encounter's obs tree.
@@ -87,7 +112,7 @@ type DtpReturnConceptUuids = ConfigObject['dtpPharmacyReturn'];
  * Return groups are top-level obs whose concept matches `groupConceptUuid`; the category, reason and
  * note are text obs nested as group members. The physician's resend writes a top-level DTP response
  * obs (`responseConceptUuid`); when the latest response is same-or-newer than the latest return
- * group, the prescription is considered handled and the returned UI is hidden.
+ * group (by `dateCreated`), the prescription is considered handled and the returned UI is hidden.
  */
 export function parseDtpReturnInfo(
   encounter: EncounterObsResponse | undefined,
@@ -98,7 +123,7 @@ export function parseDtpReturnInfo(
   }
 
   const reasons: Array<DtpReturnReason> = [];
-  let latestResponseDatetime: number | null = null;
+  let latestResponseCreated: number | null = null;
 
   encounter.obs.forEach((obs) => {
     const conceptUuid = obs.concept?.uuid;
@@ -107,7 +132,7 @@ export function parseDtpReturnInfo(
     }
 
     if (conceptUuid === concepts.groupConceptUuid) {
-      const reason: DtpReturnReason = { obsUuid: obs.uuid, obsDatetime: getObsDatetime(obs) };
+      const reason: DtpReturnReason = { obsUuid: obs.uuid, dateCreated: getObsCreatedTime(obs) };
       obs.groupMembers?.forEach((member) => {
         switch (member.concept?.uuid) {
           case concepts.categoryConceptUuid:
@@ -128,23 +153,23 @@ export function parseDtpReturnInfo(
     }
 
     if (conceptUuid === concepts.responseConceptUuid) {
-      const datetime = getObsDatetime(obs);
-      latestResponseDatetime = latestResponseDatetime == null ? datetime : Math.max(latestResponseDatetime, datetime);
+      const created = getObsCreatedTime(obs);
+      latestResponseCreated = latestResponseCreated == null ? created : Math.max(latestResponseCreated, created);
     }
   });
 
   if (!reasons.length) {
-    return { ...EMPTY_DTP_RETURN_INFO, latestResponseDatetime };
+    return { ...EMPTY_DTP_RETURN_INFO, latestResponseCreated };
   }
 
-  reasons.sort((a, b) => b.obsDatetime - a.obsDatetime);
-  const latestReturnDatetime = reasons[0].obsDatetime;
-  const isHandled = latestResponseDatetime != null && latestResponseDatetime >= latestReturnDatetime;
+  reasons.sort(compareReturnReasonsNewestFirst);
+  const latestReturnCreated = reasons[0].dateCreated;
+  const isHandled = latestResponseCreated != null && latestResponseCreated >= latestReturnCreated;
 
   return {
     reasons,
-    latestReturnDatetime,
-    latestResponseDatetime,
+    latestReturnCreated,
+    latestResponseCreated,
     isReturned: !isHandled,
   };
 }

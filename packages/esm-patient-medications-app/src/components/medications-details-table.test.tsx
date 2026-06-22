@@ -25,15 +25,18 @@ const dtpPharmacyReturn = {
 
 type DtpReturnGroupInput = {
   obsDatetime: string;
+  dateCreated?: string;
   category?: string;
   reason?: string;
   note?: string;
 };
 
-function buildReturnGroupObs({ obsDatetime, category, reason, note }: DtpReturnGroupInput) {
+function buildReturnGroupObs({ obsDatetime, dateCreated, category, reason, note }: DtpReturnGroupInput) {
+  const created = dateCreated ?? obsDatetime;
   return {
-    uuid: `grp-${obsDatetime}`,
+    uuid: `grp-${created}`,
     obsDatetime,
+    dateCreated: created,
     concept: { uuid: dtpPharmacyReturn.groupConceptUuid },
     groupMembers: [
       category != null ? { concept: { uuid: dtpPharmacyReturn.categoryConceptUuid }, value: category } : null,
@@ -43,21 +46,31 @@ function buildReturnGroupObs({ obsDatetime, category, reason, note }: DtpReturnG
   };
 }
 
+type DtpResponseInput = {
+  obsDatetime: string;
+  dateCreated?: string;
+};
+
 function buildEncounterObsResponse(
   uuid: string,
   groups: Array<DtpReturnGroupInput>,
-  responseDatetimes: Array<string> = [],
+  responses: Array<DtpResponseInput | string> = [],
 ) {
   return {
     uuid,
     obs: [
       ...groups.map(buildReturnGroupObs),
-      ...responseDatetimes.map((obsDatetime) => ({
-        uuid: `resp-${obsDatetime}`,
-        obsDatetime,
-        concept: { uuid: dtpPharmacyReturn.responseConceptUuid },
-        value: { uuid: 'answer-uuid', display: 'Accepted' },
-      })),
+      ...responses.map((response) => {
+        const obsDatetime = typeof response === 'string' ? response : response.obsDatetime;
+        const dateCreated = typeof response === 'string' ? response : response.dateCreated ?? response.obsDatetime;
+        return {
+          uuid: `resp-${dateCreated}`,
+          obsDatetime,
+          dateCreated,
+          concept: { uuid: dtpPharmacyReturn.responseConceptUuid },
+          value: { uuid: 'answer-uuid', display: 'Accepted' },
+        };
+      }),
     ],
   };
 }
@@ -341,6 +354,7 @@ describe('MedicationsDetailsTable', () => {
   });
 
   test('hides the returned tag when a DTP response is same-or-newer than the latest return group', async () => {
+    const sharedObsDatetime = '2026-06-22T09:41:33.000+0000';
     const medications = [
       {
         ...mockPatientDrugOrdersApiData[0],
@@ -357,8 +371,15 @@ describe('MedicationsDetailsTable', () => {
     mockFetchByUrl({
       'enc-1': buildEncounterObsResponse(
         'enc-1',
-        [{ obsDatetime: '2026-04-27T12:00:00.000+0000', category: 'Dosing', reason: 'Inappropriate dose' }],
-        ['2026-04-27T12:30:00.000+0000'],
+        [
+          {
+            obsDatetime: sharedObsDatetime,
+            dateCreated: '2026-06-22T09:41:51.000+0000',
+            category: 'Dosing',
+            reason: 'Inappropriate dose',
+          },
+        ],
+        [{ obsDatetime: sharedObsDatetime, dateCreated: '2026-06-22T09:42:39.000+0000' }],
       ),
     });
 
@@ -379,6 +400,7 @@ describe('MedicationsDetailsTable', () => {
   });
 
   test('re-shows the returned tag when a newer return group arrives after a DTP response', async () => {
+    const sharedObsDatetime = '2026-06-22T09:41:33.000+0000';
     const medications = [
       {
         ...mockPatientDrugOrdersApiData[0],
@@ -395,8 +417,15 @@ describe('MedicationsDetailsTable', () => {
     mockFetchByUrl({
       'enc-1': buildEncounterObsResponse(
         'enc-1',
-        [{ obsDatetime: '2026-04-27T13:00:00.000+0000', category: 'Dosing', reason: 'Still wrong dose' }],
-        ['2026-04-27T12:30:00.000+0000'],
+        [
+          {
+            obsDatetime: sharedObsDatetime,
+            dateCreated: '2026-06-22T09:43:33.000+0000',
+            category: 'Dosing',
+            reason: 'Still wrong dose',
+          },
+        ],
+        [{ obsDatetime: sharedObsDatetime, dateCreated: '2026-06-22T09:42:39.000+0000' }],
       ),
     });
 
