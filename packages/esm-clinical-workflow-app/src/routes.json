@@ -91,6 +91,30 @@
       "slot": "queue-table-actions-slot"
     },
     {
+      "name": "optimized-queue-table-dashboard",
+      "component": "optimizedQueueTableDashboard",
+      "slot": "service-queues-dashboard-slot",
+      "order": 0,
+      "online": true,
+      "offline": true
+    },
+    {
+      "name": "service-queues-dashboard-shell",
+      "component": "serviceQueuesDashboardShell",
+      "slot": "service-queues-dashboard-slot",
+      "order": -20,
+      "online": true,
+      "offline": true
+    },
+    {
+      "name": "clinical-metrics-card-checked-in-patients",
+      "component": "clinicalMetricsCardCheckedInPatients",
+      "slot": "service-queues-metrics-slot",
+      "order": 1,
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "filtered-queue-table-dashboard",
       "component": "filteredQueueTableDashboard",
       "slot": "service-queues-dashboard-slot",
@@ -245,6 +269,10 @@
     {
       "name": "assign-queue-room-modal",
       "component": "assignQueueRoomModal"
+    },
+    {
+      "name": "call-queue-entry-modal",
+      "component": "callQueueEntryModal"
     }
   ]
 }

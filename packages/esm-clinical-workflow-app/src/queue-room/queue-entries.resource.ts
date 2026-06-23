@@ -171,6 +171,10 @@ export function useQueueLocations() {
 interface Queue {
   uuid: string;
   display: string;
+  service: {
+    uuid: string;
+    display: string;
+  };
   allowedStatuses?: Array<{ uuid: string; display: string }>;
 }
 

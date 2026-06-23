@@ -1,0 +1,34 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.header {
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  border-left: 0;
+  display: flex;
+  justify-content: space-between;
+  padding-right: layout.$spacing-03;
+}
+
+.dropdownSkeletonContainer {
+  width: 18.75rem;
+}
+
+.dropdownContainer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: layout.$spacing-03;
+}
+
+.dropdown {
+  :global(.cds--list-box__field) {
+    width: 14rem;
+    overflow: hidden;
+  }
+
+  :global(.cds--dropdown--inline .cds--list-box__menu) {
+    left: -(layout.$spacing-10);
+  }
+}

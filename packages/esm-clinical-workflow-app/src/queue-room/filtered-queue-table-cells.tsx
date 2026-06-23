@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import { Tag } from '@carbon/react';
 import { ConfigurableLink, ExtensionSlot, useConfig } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
+import QueuePriority, { type PriorityConfig } from './components/queue-priority.component';
 
-const extensionColumnIds = new Set(['serve-patient', 'transfer-status', 'room-assignment', 'actions']);
+const extensionColumnIds = new Set(['transfer-status', 'room-assignment', 'actions']);
 
 interface ServiceQueuesTableConfig {
   visitQueueNumberAttributeUuid?: string;
   customPatientChartUrl?: string;
-  priorityConfigs?: Array<{ conceptUuid: string; color?: string }>;
+  priorityConfigs?: PriorityConfig[];
   queueTables?: {
     columnDefinitions?: Array<{ id: string; columnType?: string; header?: string }>;
     tableDefinitions?: Array<{ columns: string[] }>;
@@ -90,16 +90,17 @@ export const FilteredQueueTableCell: React.FC<FilteredQueueTableCellProps> = ({ 
     }
     case 'coming-from':
       return <span>{queueEntry.queueComingFrom?.display ?? '--'}</span>;
-    case 'priority': {
-      const priorityConfig = config.priorityConfigs?.find(
-        (priority) => priority.conceptUuid === queueEntry.priority?.uuid,
-      );
+    case 'priority':
+      if (!queueEntry.priority) {
+        return <span>--</span>;
+      }
       return (
-        <Tag type={(priorityConfig?.color as 'red') ?? 'gray'} title={queueEntry.priorityComment ?? undefined}>
-          {queueEntry.priority?.display}
-        </Tag>
+        <QueuePriority
+          priority={queueEntry.priority}
+          priorityComment={queueEntry.priorityComment}
+          priorityConfigs={config.priorityConfigs ?? []}
+        />
       );
-    }
     case 'status':
       return <span>{queueEntry.status?.display ?? '--'}</span>;
     case 'queue':

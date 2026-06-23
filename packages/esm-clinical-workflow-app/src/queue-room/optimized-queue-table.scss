@@ -1,0 +1,149 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.tableContainer {
+  background-color: colors.$gray-10;
+  padding: 0 1rem;
+
+  a {
+    text-decoration: none;
+  }
+
+  th {
+    color: $text-02;
+  }
+
+  :global(.cds--data-table) {
+    background-color: $ui-03;
+  }
+
+  .toolbarContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .toolbarContent {
+    display: flex;
+    z-index: 1;
+    column-gap: layout.$spacing-03;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+  }
+
+  :global(.cds--table-toolbar) {
+    flex: 3;
+    position: static;
+    overflow: visible;
+    justify-content: flex-end;
+  }
+
+  :global(.cds--toolbar-content) {
+    justify-content: flex-end;
+  }
+}
+
+.loaderContainer {
+  display: flex;
+  flex: 0.25;
+  justify-content: center;
+  align-items: center;
+  background-color: white;
+
+  :global(.cds--inline-loading) {
+    justify-content: end;
+  }
+}
+
+.queueTable {
+  a {
+    text-decoration: none;
+  }
+}
+
+.search {
+  max-width: 16rem;
+  display: inline;
+
+  input {
+    background-color: $ui-02 !important;
+  }
+}
+
+.filterContainer {
+  :global(.cds--dropdown__wrapper--inline) {
+    gap: 0;
+  }
+
+  :global(.cds--list-box__menu-icon) {
+    height: layout.$spacing-05;
+  }
+}
+
+.clearQueueButton,
+.clearQueueButton:hover {
+  color: $danger;
+  white-space: nowrap;
+}
+
+.tileContainer {
+  border-top: 1px solid $ui-03;
+  padding: layout.$spacing-07 layout.$spacing-05;
+  background: white;
+  margin: 0;
+}
+
+.tile {
+  background-color: colors.$gray-10;
+  margin: auto;
+  width: fit-content;
+}
+
+.tileContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.content {
+  @include type.type-style('heading-compact-02');
+  color: $text-02;
+  margin-bottom: layout.$spacing-03;
+}
+
+.helper {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
+.expandedActiveVisitRow {
+  td {
+    padding: layout.$spacing-03;
+
+    > div {
+      max-height: max-content !important;
+      background-color: $ui-02;
+    }
+  }
+}
+
+.hiddenRow {
+  display: none;
+}
+
+.expandedTabList {
+  padding-left: layout.$spacing-05;
+}
+
+.expandedTab {
+  min-width: fit-content;
+}
+
+.expandedRowFallback {
+  padding: layout.$spacing-05;
+  color: $text-02;
+}
