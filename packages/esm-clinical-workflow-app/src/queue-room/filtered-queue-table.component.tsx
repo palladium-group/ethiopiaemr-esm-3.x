@@ -29,9 +29,15 @@ interface FilteredQueueTableProps {
   queueEntries: QueueEntry[];
   isLoading?: boolean;
   isValidating?: boolean;
+  paginationResetKey?: string;
 }
 
-const FilteredQueueTable: React.FC<FilteredQueueTableProps> = ({ queueEntries, isLoading, isValidating }) => {
+const FilteredQueueTable: React.FC<FilteredQueueTableProps> = ({
+  queueEntries,
+  isLoading,
+  isValidating,
+  paginationResetKey,
+}) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const [currentPageSize, setPageSize] = useState(10);
@@ -55,7 +61,7 @@ const FilteredQueueTable: React.FC<FilteredQueueTableProps> = ({ queueEntries, i
 
   useEffect(() => {
     goTo(1);
-  }, [goTo, queueEntries]);
+  }, [goTo, paginationResetKey]);
 
   const rows = useMemo(
     () =>

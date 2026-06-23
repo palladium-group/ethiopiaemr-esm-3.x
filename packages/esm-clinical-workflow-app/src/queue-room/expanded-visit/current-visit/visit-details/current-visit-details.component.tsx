@@ -43,10 +43,12 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
       if (enc.encounterType?.display === 'Visit Note') {
         enc.obs.forEach((obs: Observation) => {
           if (obs.concept && obs.concept.display === 'Visit Diagnoses') {
-            // // Putting all the diagnoses in a single array.
-            diagnoses.push({
-              diagnosis: obs.groupMembers.find((mem) => mem.concept.display === 'PROBLEM LIST').value.display,
-            });
+            const problemListObs = obs.groupMembers?.find((mem) => mem.concept?.display === 'PROBLEM LIST');
+            if (problemListObs?.value?.display) {
+              diagnoses.push({
+                diagnosis: problemListObs.value.display,
+              });
+            }
           } else if (obs.concept && obs.concept.display === 'General patient note') {
             // Putting all notes in a single array.
             notes.push({

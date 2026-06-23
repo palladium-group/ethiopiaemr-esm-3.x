@@ -100,6 +100,11 @@ function OptimizedQueueTableSection() {
     );
   }, [columnIds, queueEntries, searchTerm, visitQueueNumberAttributeUuid]);
 
+  const paginationResetKey = useMemo(
+    () => JSON.stringify({ searchCriteria, searchTerm }),
+    [searchCriteria, searchTerm],
+  );
+
   if (isLoading || columnIds.length === 0) {
     return <DataTableSkeleton className={styles.tableSection} role="progressbar" />;
   }
@@ -108,6 +113,7 @@ function OptimizedQueueTableSection() {
     <OptimizedQueueTable
       isLoading={isLoading}
       isValidating={isValidating}
+      paginationResetKey={paginationResetKey}
       queueEntries={filteredQueueEntries}
       tableFilters={
         <>

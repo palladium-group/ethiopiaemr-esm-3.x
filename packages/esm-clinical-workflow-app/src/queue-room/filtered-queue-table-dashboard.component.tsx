@@ -133,6 +133,16 @@ function FilteredQueueTableSection() {
     return filterQueueEntriesBySearch(filteredByRoom, searchTerm, columnIds, visitQueueNumberAttributeUuid);
   }, [columnIds, filteredByRoom, searchTerm, visitQueueNumberAttributeUuid]);
 
+  const paginationResetKey = useMemo(
+    () =>
+      JSON.stringify({
+        searchCriteria,
+        selectedRoomId: selectedRoom?.id,
+        searchTerm,
+      }),
+    [searchCriteria, selectedRoom?.id, searchTerm],
+  );
+
   const handleLocationChange = useCallback(({ selectedItem }: { selectedItem: LocationOption }) => {
     setSelectedLocation(selectedItem);
   }, []);
@@ -192,7 +202,12 @@ function FilteredQueueTableSection() {
           size={isDesktop(layout) ? 'sm' : 'lg'}
         />
       </div>
-      <FilteredQueueTable isLoading={isLoading} isValidating={isValidating} queueEntries={filteredQueueEntries} />
+      <FilteredQueueTable
+        isLoading={isLoading}
+        isValidating={isValidating}
+        paginationResetKey={paginationResetKey}
+        queueEntries={filteredQueueEntries}
+      />
     </>
   );
 }

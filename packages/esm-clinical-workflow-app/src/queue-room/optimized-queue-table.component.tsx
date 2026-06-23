@@ -36,6 +36,8 @@ interface OptimizedQueueTableProps {
   isLoading?: boolean;
   isValidating?: boolean;
   tableFilters?: React.ReactNode;
+  /** Changes when filters/search change — used to reset pagination without reacting to SWR revalidations. */
+  paginationResetKey?: string;
 }
 
 export function filterOptimizedQueueEntriesBySearch(
@@ -62,6 +64,7 @@ const OptimizedQueueTable: React.FC<OptimizedQueueTableProps> = ({
   isLoading,
   isValidating,
   tableFilters,
+  paginationResetKey,
 }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
@@ -86,7 +89,7 @@ const OptimizedQueueTable: React.FC<OptimizedQueueTableProps> = ({
 
   useEffect(() => {
     goTo(1);
-  }, [goTo, queueEntries]);
+  }, [goTo, paginationResetKey]);
 
   const rows = useMemo(
     () =>
