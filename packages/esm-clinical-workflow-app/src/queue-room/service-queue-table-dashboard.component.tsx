@@ -3,15 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { Button, DataTableSkeleton, Dropdown, Layer, TableToolbarSearch } from '@carbon/react';
 import { isDesktop, showModal, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
-import { useOptimizedQueueEntries } from './optimized-queue-entries.resource';
-import OptimizedQueueTable, { filterOptimizedQueueEntriesBySearch } from './optimized-queue-table.component';
+import { useServiceQueueEntries } from './service-queue-entries.resource';
+import ServiceQueueTable, { filterServiceQueueEntriesBySearch } from './service-queue-table.component';
 import { useFilteredQueueTableColumnIds } from './filtered-queue-table-cells';
 import { useServiceQueuesConfig } from './queue-room.resource';
 import { useQueueStatuses } from './queue-entries.resource';
 import AddPatientToQueueButton from './add-patient-to-queue-button.component';
 import { updateSelectedQueueStatus, useServiceQueuesFilterState } from './service-queues-store.util';
-import styles from './optimized-queue-table-dashboard.scss';
-import tableStyles from './optimized-queue-table.scss';
+import styles from './service-queue-table-dashboard.scss';
+import tableStyles from './service-queue-table.scss';
 
 function ClearQueueEntriesButton({ queueEntries }: { queueEntries: QueueEntry[] }) {
   const { t } = useTranslation();
@@ -49,7 +49,7 @@ function StatusDropdownFilter() {
   return (
     <div className={tableStyles.filterContainer}>
       <Dropdown
-        id="optimized-queue-status"
+        id="service-queue-status"
         items={[{ display: t('any', 'Any') }, ...(statuses ?? [])]}
         itemToString={(item) => (item ? item.display : '')}
         label={selectedQueueStatusDisplay ?? t('all', 'All')}
@@ -62,7 +62,7 @@ function StatusDropdownFilter() {
   );
 }
 
-function OptimizedQueueTableSection() {
+function ServiceQueueTableSection() {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const columnIds = useFilteredQueueTableColumnIds();
@@ -79,7 +79,7 @@ function OptimizedQueueTableSection() {
     };
   }, [selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid]);
 
-  const { queueEntries, isLoading, isValidating, error } = useOptimizedQueueEntries(searchCriteria);
+  const { queueEntries, isLoading, isValidating, error } = useServiceQueueEntries(searchCriteria);
 
   useEffect(() => {
     if (error?.message) {
@@ -92,12 +92,7 @@ function OptimizedQueueTableSection() {
   }, [error?.message, t]);
 
   const filteredQueueEntries = useMemo(() => {
-    return filterOptimizedQueueEntriesBySearch(
-      queueEntries ?? [],
-      searchTerm,
-      columnIds,
-      visitQueueNumberAttributeUuid,
-    );
+    return filterServiceQueueEntriesBySearch(queueEntries ?? [], searchTerm, columnIds, visitQueueNumberAttributeUuid);
   }, [columnIds, queueEntries, searchTerm, visitQueueNumberAttributeUuid]);
 
   const paginationResetKey = useMemo(
@@ -110,7 +105,7 @@ function OptimizedQueueTableSection() {
   }
 
   return (
-    <OptimizedQueueTable
+    <ServiceQueueTable
       isLoading={isLoading}
       isValidating={isValidating}
       paginationResetKey={paginationResetKey}
@@ -133,15 +128,15 @@ function OptimizedQueueTableSection() {
 }
 
 /**
- * Drop-in replacement for the default service queue table with optimized data fetching.
+ * Drop-in replacement for the default service queue table.
  * Uses the same filters, columns, actions, and expanded rows as the upstream table.
  */
-const OptimizedQueueTableDashboard: React.FC = () => {
+const ServiceQueueTableDashboard: React.FC = () => {
   const { t } = useTranslation();
   const layout = useLayoutType();
 
   return (
-    <div className={styles.optimizedQueueTableDashboard}>
+    <div className={styles.serviceQueueTableDashboard}>
       <Layer className={styles.tableSection}>
         <div className={styles.headerContainer}>
           <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
@@ -151,10 +146,10 @@ const OptimizedQueueTableDashboard: React.FC = () => {
             <AddPatientToQueueButton />
           </div>
         </div>
-        <OptimizedQueueTableSection />
+        <ServiceQueueTableSection />
       </Layer>
     </div>
   );
 };
 
-export default OptimizedQueueTableDashboard;
+export default ServiceQueueTableDashboard;

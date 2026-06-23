@@ -6,6 +6,19 @@ import QueuePriority, { type PriorityConfig } from './components/queue-priority.
 
 const extensionColumnIds = new Set(['transfer-status', 'room-assignment', 'actions']);
 
+const defaultColumnHeaders: Record<string, string> = {
+  'patient-name': 'Patient Name',
+  'queue-number': 'Queue Number',
+  'coming-from': 'Coming From',
+  priority: 'Priority',
+  status: 'Status',
+  'transfer-status': 'Linkage',
+  'room-assignment': 'Room',
+  queue: 'Queue',
+  'wait-time': 'Wait Time',
+  actions: 'Actions',
+};
+
 interface ServiceQueuesTableConfig {
   visitQueueNumberAttributeUuid?: string;
   customPatientChartUrl?: string;
@@ -26,7 +39,7 @@ export function useFilteredQueueTableColumnIds() {
 
 export function getColumnHeader(columnId: string, config: ServiceQueuesTableConfig): string {
   const columnDef = config.queueTables?.columnDefinitions?.find((column) => column.id === columnId);
-  return columnDef?.header ?? columnId;
+  return columnDef?.header ?? defaultColumnHeaders[columnId] ?? columnId;
 }
 
 export function isExtensionColumn(columnId: string, config: ServiceQueuesTableConfig): boolean {
