@@ -148,6 +148,23 @@ export const queueTableActionsColumn = getAsyncLifecycle(
 
 export const assignQueueRoomModal = getAsyncLifecycle(() => import('./queue-room/assign-queue-room.modal'), options);
 
+export const callQueueEntryModal = getAsyncLifecycle(() => import('./queue-room/call-queue-entry.modal'), options);
+
+export const serviceQueuesDashboardShell = getAsyncLifecycle(
+  () => import('./queue-room/service-queues-dashboard-shell.component'),
+  options,
+);
+
+export const clinicalMetricsCardCheckedInPatients = getAsyncLifecycle(
+  () => import('./queue-room/metrics/checked-in-patients-metric.extension'),
+  options,
+);
+
+export const optimizedQueueTableDashboard = getAsyncLifecycle(
+  () => import('./queue-room/optimized-queue-table-dashboard.component'),
+  options,
+);
+
 export const filteredQueueTableDashboard = getAsyncLifecycle(
   () => import('./queue-room/filtered-queue-table-dashboard.component'),
   options,

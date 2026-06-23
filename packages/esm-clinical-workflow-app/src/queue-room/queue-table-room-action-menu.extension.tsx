@@ -21,7 +21,8 @@ const QueueTableRoomActionMenu: React.FC<QueueTableRoomActionMenuProps> = ({ que
   const { activeTickets } = useActiveTicketAssignments();
   const assignedRoomName = findAssignedRoomName(ticketNumber, activeTickets);
 
-  const handleClick = () => {
+  const handleClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
     const dispose = showModal('assign-queue-room-modal', {
       queueEntry,
       closeModal: () => dispose(),
