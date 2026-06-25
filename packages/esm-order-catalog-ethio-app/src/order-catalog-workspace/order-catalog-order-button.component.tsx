@@ -1,6 +1,7 @@
 import React from 'react';
 import { Checkmark, Subtract } from '@carbon/react/icons';
 import classNames from 'classnames';
+import { type CatalogTestAvailability } from '../types/order-catalog.types';
 import styles from './order-catalog-order-button.scss';
 
 export type OrderCatalogOrderButtonVariant = 'panel' | 'test' | 'child';
@@ -15,6 +16,7 @@ export interface OrderCatalogOrderButtonProps {
   className?: string;
   title?: string;
   disabled?: boolean;
+  availability?: CatalogTestAvailability;
 }
 
 const OrderCatalogOrderButton: React.FC<OrderCatalogOrderButtonProps> = ({
@@ -26,9 +28,12 @@ const OrderCatalogOrderButton: React.FC<OrderCatalogOrderButtonProps> = ({
   className,
   title,
   disabled = false,
+  availability = 'available',
 }) => {
+  const isUnavailable = availability === 'unavailable' && !disabled;
   const showFilled = active && !partial && !disabled;
   const showPartial = partial && !disabled;
+  const showUnavailableIdle = isUnavailable && !showFilled && !showPartial;
 
   return (
     <button
@@ -38,9 +43,12 @@ const OrderCatalogOrderButton: React.FC<OrderCatalogOrderButtonProps> = ({
         {
           [styles.orderBtnPanel]: variant === 'panel',
           [styles.orderBtnChild]: variant === 'child',
-          [styles.orderBtnActive]: showFilled,
-          [styles.orderBtnPartial]: showPartial,
+          [styles.orderBtnActive]: showFilled && !isUnavailable,
+          [styles.orderBtnActiveUnavailable]: showFilled && isUnavailable,
+          [styles.orderBtnPartial]: showPartial && !isUnavailable,
+          [styles.orderBtnPartialUnavailable]: showPartial && isUnavailable,
           [styles.orderBtnDisabled]: disabled,
+          [styles.orderBtnUnavailable]: showUnavailableIdle,
         },
         className,
       )}

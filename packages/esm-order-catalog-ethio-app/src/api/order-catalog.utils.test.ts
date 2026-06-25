@@ -79,7 +79,90 @@ describe('order-catalog.utils', () => {
   it('parses a full category with tests and panels', () => {
     const category = parseOrderCatalogCategory(mockTab.setMembers![0], 'en');
     expect(category.tests[0].isPanel).toBe(true);
+    expect(category.tests[0].availability).toBe('unavailable');
     expect(category.tests[0].childTests).toHaveLength(2);
+    expect(category.tests[0].childTests[0].availability).toBe('unavailable');
+  });
+
+  it('marks a concept available only when explicitly enabled in lookup', () => {
+    const categoryConcept: CatalogConceptResponse = {
+      uuid: 'cat-1',
+      display: 'Chemistry',
+      setMembers: [{ uuid: 'glucose', display: 'Glucose' }],
+    };
+
+    const enabledCategory = parseOrderCatalogCategory(categoryConcept, 'en', new Map([['glucose', true]]));
+    expect(enabledCategory.tests[0].availability).toBe('available');
+
+    const disabledCategory = parseOrderCatalogCategory(categoryConcept, 'en', new Map([['glucose', false]]));
+    expect(disabledCategory.tests[0].availability).toBe('unavailable');
+
+    const missingInLookupCategory = parseOrderCatalogCategory(categoryConcept, 'en', new Map([['other-test', false]]));
+    expect(missingInLookupCategory.tests[0].availability).toBe('unavailable');
+  });
+
+  it('propagates unavailable panel status to all children', () => {
+    const category = parseOrderCatalogCategory(
+      mockTab.setMembers![0],
+      'en',
+      new Map([
+        ['panel-1', false],
+        ['child-1', true],
+      ]),
+    );
+    const panel = category.tests[0];
+
+    expect(panel.availability).toBe('unavailable');
+    expect(panel.childTests.every((child) => child.availability === 'unavailable')).toBe(true);
+  });
+
+  it('keeps panel available when child is unavailable', () => {
+    const category = parseOrderCatalogCategory(
+      mockTab.setMembers![0],
+      'en',
+      new Map([
+        ['panel-1', true],
+        ['child-2', false],
+      ]),
+    );
+    const panel = category.tests[0];
+    const childTwo = panel.childTests.find((child) => child.uuid === 'child-2');
+
+    expect(panel.availability).toBe('available');
+    expect(childTwo?.availability).toBe('unavailable');
+  });
+
+  it('marks standalone duplicates unavailable when their panel is unavailable', () => {
+    const category = parseOrderCatalogCategory(
+      {
+        uuid: 'blood',
+        display: 'Blood Specimen',
+        setMembers: [
+          {
+            uuid: 'panel-1',
+            display: 'CBC Panel',
+            conceptClass: { uuid: 'c1', name: 'LabSet', description: 'Panels' },
+            setMembers: [
+              { uuid: 'child-1', display: 'WBC' },
+              { uuid: 'child-2', display: 'RBC' },
+            ],
+          },
+          { uuid: 'child-1', display: 'WBC' },
+        ],
+      },
+      'en',
+      new Map([
+        ['panel-1', false],
+        ['child-1', true],
+      ]),
+    );
+
+    const panel = category.tests.find((test) => test.uuid === 'panel-1')!;
+    const standaloneDuplicate = category.tests.find((test) => !test.isPanel && test.uuid === 'child-1')!;
+
+    expect(panel.availability).toBe('unavailable');
+    expect(panel.childTests.every((child) => child.availability === 'unavailable')).toBe(true);
+    expect(standaloneDuplicate.availability).toBe('unavailable');
   });
 
   it('includes uncategorized tests in the default group', () => {
