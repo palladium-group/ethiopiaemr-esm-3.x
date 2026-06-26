@@ -53,7 +53,7 @@
   "dtpResponseRequired": "DTP response is required",
   "dtpReturnCategoryLabel": "Category",
   "dtpReturnNoteLabel": "Note",
-  "dtpReturnReasonHeading": "DTP reason {{number}}",
+  "dtpReturnReasonHeading": "Reason {{number}}",
   "dtpReturnReasonLabel": "Reason",
   "duration": "Duration",
   "durationGreaterThanZeroErrorMessage": "Duration must be greater than 0",

@@ -307,10 +307,10 @@ describe('MedicationsDetailsTable', () => {
 
     expect(await screen.findByText(/prescription returned/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /resend prescription/i })).toBeInTheDocument();
-    expect(screen.getByText(/DTP reason 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Reason 1/i)).toBeInTheDocument();
     expect(screen.getByText('Inappropriate dose')).toBeInTheDocument();
     expect(screen.getByText('Dosing')).toBeInTheDocument();
-    expect(screen.getByText('Please revise to 2.5mg')).toBeInTheDocument();
+    expect(screen.getByText(/Please revise to 2\.5mg/)).toBeInTheDocument();
     expect(screen.queryByText('Returned')).not.toBeInTheDocument();
     expect(document.querySelector('.cds--tag--purple')).toBeInTheDocument();
   });
@@ -347,8 +347,8 @@ describe('MedicationsDetailsTable', () => {
       />,
     );
 
-    expect(await screen.findByText(/DTP reason 1/i)).toBeInTheDocument();
-    expect(screen.getByText(/DTP reason 2/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Reason 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Reason 2/i)).toBeInTheDocument();
     expect(screen.getByText('Inappropriate dose')).toBeInTheDocument();
     expect(screen.getByText('Drug interaction')).toBeInTheDocument();
   });
@@ -545,6 +545,40 @@ describe('MedicationsDetailsTable', () => {
     expect(screen.getByText('Cancelled')).toBeInTheDocument();
     expect(screen.queryByText('out-of-stock')).not.toBeInTheDocument();
     expect(screen.queryByText('Not dispensed')).not.toBeInTheDocument();
+  });
+
+  test('renders Stocked out for Supplies not available status reason', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-supplies-not-available',
+        fulfillerStatus: 'DECLINED',
+        statusReasonCodeableConcept: {
+          coding: [{ display: 'Supplies not available' }],
+        },
+        dateActivated: '2026-04-27T10:13:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-supplies-not-available',
+          encounterDatetime: '2026-04-27T10:13:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Past Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton={false}
+        showModifyButton={false}
+        showRenewButton
+      />,
+    );
+
+    expect(await screen.findByText('Stocked out')).toBeInTheDocument();
+    expect(screen.queryByText('Not dispensed')).not.toBeInTheDocument();
+    expect(screen.queryByText('Supplies not available')).not.toBeInTheDocument();
   });
 
   test('renders renew all only for encounter groups with a valid encounter uuid', async () => {
