@@ -102,6 +102,35 @@ export const configSchema = {
       _validators: [validator((v: unknown) => typeof v === 'number' && v > 0, 'Must be greater than zero')],
     },
   },
+  dtpPharmacyReturn: {
+    groupConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: 'a438b7e7-4652-45ea-896b-b15775d476e6',
+      _description:
+        'Concept UUID for the DTP pharmacy return grouping obs written on the order encounter. Its presence (relative to a later DTP response) marks the encounter prescription as returned.',
+    },
+    categoryConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '6307d0c0-d323-4b43-bdbf-4d15cdcb32bf',
+      _description: 'Concept UUID for the DTP return category obs (Text datatype) nested in the return group.',
+    },
+    reasonConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '1ddc0970-f488-4461-89af-4d3592f0ab11',
+      _description: 'Concept UUID for the DTP return reason obs (Text datatype) nested in the return group.',
+    },
+    noteConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '768dc035-48f1-4a45-8087-12eee1fdbc14',
+      _description: 'Concept UUID for the DTP return note obs (Text datatype) nested in the return group.',
+    },
+    responseConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '83ab5a72-08de-48c4-94b5-e2587d722d45',
+      _description:
+        'Concept UUID for the DTP response obs the physician writes on resend. When a response is same-or-newer than the latest return group, the returned UI is hidden.',
+    },
+  },
 };
 
 export interface ConfigObject {
@@ -126,5 +155,12 @@ export interface ConfigObject {
   dtpRemark: {
     conceptUuid: string;
     maxLength: number;
+  };
+  dtpPharmacyReturn: {
+    groupConceptUuid: string;
+    categoryConceptUuid: string;
+    reasonConceptUuid: string;
+    noteConceptUuid: string;
+    responseConceptUuid: string;
   };
 }

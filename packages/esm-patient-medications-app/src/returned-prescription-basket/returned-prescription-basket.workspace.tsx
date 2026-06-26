@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import { Button, ButtonSet, InlineLoading, InlineNotification } from '@carbon/react';
 import {
   launchWorkspace2,
@@ -25,6 +26,7 @@ import { type ConfigObject } from '../config-schema';
 import { moduleName } from '../dashboard.meta';
 import DrugOrderBasketPanelExtension from '../drug-order-basket-panel/drug-order-basket-panel.extension';
 import { type ReturnedPrescriptionBasketItem, type ReturnedPrescriptionDtpState } from '../types';
+import { DTP_RETURN_OBS_SWR_KEY } from '../utils/dtp-return-obs';
 import { buildReturnedPrescriptionOrderPayloads } from './returned-prescription-basket.utils';
 
 export default function ReturnedPrescriptionBasketWorkspace({
@@ -39,7 +41,12 @@ export default function ReturnedPrescriptionBasketWorkspace({
     externalModuleName: '@openmrs/esm-patient-orders-app',
   });
   const { currentProvider, sessionLocation } = useSession();
+  const { mutate: globalMutate } = useSWRConfig();
   const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
+  const mutateDtpReturnObs = useCallback(
+    () => globalMutate((key) => Array.isArray(key) && key[0] === DTP_RETURN_OBS_SWR_KEY),
+    [globalMutate],
+  );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
@@ -139,6 +146,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
       setOrders([]);
       mutateOrders();
       mutateVisitContext?.();
+      mutateDtpReturnObs();
       showOrderSuccessToast(moduleName, orders);
       await closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
@@ -157,6 +165,7 @@ export default function ReturnedPrescriptionBasketWorkspace({
     currentProvider?.uuid,
     dtpRemarkConfig.conceptUuid,
     dtpResponse.questionConceptUuid,
+    mutateDtpReturnObs,
     mutateOrders,
     mutateVisitContext,
     orderEncounterType,
