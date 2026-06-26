@@ -39,8 +39,11 @@ export interface CatalogTest {
   conceptClassName: string;
   conceptClassDescription: string;
   isPanel: boolean;
+  availability: CatalogTestAvailability;
   childTests: Array<CatalogTest>;
 }
+
+export type CatalogTestAvailability = 'available' | 'unavailable';
 
 export interface CatalogCategory {
   uuid: string;

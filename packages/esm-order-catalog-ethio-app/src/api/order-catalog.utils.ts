@@ -1,4 +1,5 @@
 import {
+  type CatalogTestAvailability,
   type CatalogCategory,
   type CatalogConceptResponse,
   type CatalogTab,
@@ -6,6 +7,7 @@ import {
   type CatalogTest,
   type OrderCatalogOrderType,
 } from '../types/order-catalog.types';
+import type { BillableAvailabilityLookup } from './billable-availability.resource';
 
 function normalizeLocale(locale: string): string {
   return locale.split(/[-_]/)[0].toLowerCase();
@@ -96,24 +98,52 @@ export function getStandaloneOrderablesSectionLabel(
   }
 }
 
-function mapTest(concept: CatalogConceptResponse, locale: string): CatalogTest {
+function resolveTestAvailability(
+  conceptUuid: string,
+  availabilityLookup: BillableAvailabilityLookup,
+): CatalogTestAvailability {
+  const enabled = availabilityLookup.get(conceptUuid);
+  if (enabled === true) {
+    return 'available';
+  }
+  return 'unavailable';
+}
+
+function mapTest(
+  concept: CatalogConceptResponse,
+  locale: string,
+  availabilityLookup: BillableAvailabilityLookup,
+): CatalogTest {
   const childMembers = concept.setMembers ?? [];
+  const childTests = childMembers.map((child) => mapTest(child, locale, availabilityLookup));
+  const availability = resolveTestAvailability(concept.uuid, availabilityLookup);
+
   return {
     uuid: concept.uuid,
     displayName: getConceptDisplayName(concept, locale),
     conceptClassName: concept.conceptClass?.name ?? '',
     conceptClassDescription: concept.conceptClass?.description ?? concept.conceptClass?.name ?? '',
     isPanel: childMembers.length > 0,
-    childTests: childMembers.map((child) => mapTest(child, locale)),
+    availability,
+    childTests:
+      availability === 'unavailable'
+        ? childTests.map((child) => ({ ...child, availability: 'unavailable' as const }))
+        : childTests,
   };
 }
 
-export function parseOrderCatalogRoot(rootConcept: CatalogConceptResponse, locale = 'en'): Array<CatalogTab> {
+export function parseOrderCatalogRoot(
+  rootConcept: CatalogConceptResponse,
+  locale = 'en',
+  availabilityLookup: BillableAvailabilityLookup = new Map(),
+): Array<CatalogTab> {
   return (rootConcept.setMembers ?? []).map((tabMember) => ({
     uuid: tabMember.uuid,
     displayName: getConceptDisplayName(tabMember, locale),
     orderType: inferOrderTypeFromTab(tabMember, locale),
-    categories: (tabMember.setMembers ?? []).map((categoryMember) => parseOrderCatalogCategory(categoryMember, locale)),
+    categories: (tabMember.setMembers ?? []).map((categoryMember) =>
+      parseOrderCatalogCategory(categoryMember, locale, availabilityLookup),
+    ),
   }));
 }
 
@@ -145,11 +175,27 @@ export function parseOrderCatalogCategoryStubs(
   }));
 }
 
-export function parseOrderCatalogCategory(categoryConcept: CatalogConceptResponse, locale = 'en'): CatalogCategory {
+export function parseOrderCatalogCategory(
+  categoryConcept: CatalogConceptResponse,
+  locale = 'en',
+  availabilityLookup: BillableAvailabilityLookup = new Map(),
+): CatalogCategory {
+  const tests = (categoryConcept.setMembers ?? []).map((member) => mapTest(member, locale, availabilityLookup));
+  const unavailablePanelChildUuids = new Set(
+    tests
+      .filter((test) => test.isPanel && test.availability === 'unavailable')
+      .flatMap((panel) => panel.childTests.map((child) => child.uuid)),
+  );
+
   return {
     uuid: categoryConcept.uuid,
     displayName: getConceptDisplayName(categoryConcept, locale),
-    tests: (categoryConcept.setMembers ?? []).map((member) => mapTest(member, locale)),
+    tests: tests.map((test) => {
+      if (!test.isPanel && unavailablePanelChildUuids.has(test.uuid)) {
+        return { ...test, availability: 'unavailable' as const };
+      }
+      return test;
+    }),
   };
 }
 

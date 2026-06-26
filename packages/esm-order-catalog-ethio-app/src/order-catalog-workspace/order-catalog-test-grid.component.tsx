@@ -58,6 +58,7 @@ const OrderCatalogTestGrid: React.FC<OrderCatalogTestGridProps> = ({
                     variant="panel"
                     active={state.checked || state.indeterminate}
                     partial={state.indeterminate}
+                    availability={panel.availability}
                     onClick={() => onSelectionChange(togglePanelSelection(panel, selectedUuids))}
                   />
                 </li>
@@ -84,6 +85,7 @@ const OrderCatalogTestGrid: React.FC<OrderCatalogTestGridProps> = ({
                           label={child.displayName}
                           variant="child"
                           active={selectedUuids.has(child.uuid)}
+                          availability={child.availability}
                           onClick={() => onSelectionChange(toggleChildSelection(panel, child, selectedUuids))}
                         />
                       </li>
@@ -104,6 +106,7 @@ const OrderCatalogTestGrid: React.FC<OrderCatalogTestGridProps> = ({
                 <OrderCatalogOrderButton
                   label={test.displayName}
                   active={selectedUuids.has(test.uuid)}
+                  availability={test.availability}
                   onClick={() => onSelectionChange(toggleTestSelection(test, selectedUuids))}
                 />
               </li>

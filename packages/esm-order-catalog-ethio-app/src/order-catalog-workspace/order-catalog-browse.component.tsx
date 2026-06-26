@@ -4,6 +4,7 @@ import { Button, ButtonSet, SkeletonText, Tab, TabList, Tabs } from '@carbon/rea
 import { useConfig, type Visit } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import { useOrderCatalog } from '../api/order-catalog.resource';
+import { useBillableAvailabilityLookup } from '../api/billable-availability.resource';
 import { type ConfigObject } from '../config-schema';
 import { type OrderDetail } from '../types/order-catalog.types';
 import OrderCatalogTabView from './order-catalog-tab-view.component';
@@ -19,7 +20,14 @@ export interface OrderCatalogBrowseProps {
 const OrderCatalogBrowse: React.FC<OrderCatalogBrowseProps> = ({ patient, visit, onRequestClose }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { tabs, error, isLoading } = useOrderCatalog(config.allOrderablesConceptUuid, config.orderCatalogDisplayLocale);
+  const { lookup, isLoading: isBillingLoading, error: billingError } = useBillableAvailabilityLookup();
+  const {
+    tabs,
+    error: catalogError,
+    isLoading: isCatalogLoading,
+  } = useOrderCatalog(config.allOrderablesConceptUuid, config.orderCatalogDisplayLocale, lookup);
+  const isLoading = isCatalogLoading || isBillingLoading;
+  const error = catalogError ?? billingError;
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [selectedUuids, setSelectedUuids] = useState<Set<string>>(() => new Set());
   const [orderDetails, setOrderDetails] = useState<Record<string, OrderDetail>>({});
