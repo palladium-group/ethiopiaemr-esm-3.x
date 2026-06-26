@@ -203,6 +203,7 @@ export const configSchema = {
         'Managed by',
         'Remark',
       ],
+      // Family Planning Register
       '1577dff3-b523-4bf1-a939-f7af4f5f6eae': [
         'S.N',
         'MRN',
