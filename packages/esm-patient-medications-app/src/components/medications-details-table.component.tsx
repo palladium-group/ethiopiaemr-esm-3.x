@@ -200,7 +200,13 @@ function normalizeStatusReasonKey(statusReason?: string | null): string | null {
   if (normalized === 'cancelled' || normalized === 'canceled') {
     return 'cancelled';
   }
-  if (normalized === 'out-of-stock' || normalized === 'stocked-out') {
+  if (
+    normalized === 'out-of-stock' ||
+    normalized === 'stocked-out' ||
+    normalized === 'supplies-not-available' ||
+    normalized === 'supply-stock-out' ||
+    normalized === 'insufficient-supplies'
+  ) {
     return 'out-of-stock';
   }
 
@@ -758,27 +764,25 @@ function InfoTooltip({ orderer }: { orderer: string }) {
 
 function DtpReturnReasonLine({ reason, index }: { reason: DtpReturnReason; index: number }) {
   const { t } = useTranslation();
+
+  const fields = [
+    reason.category ? { label: t('dtpReturnCategoryLabel', 'Category'), value: reason.category, isNote: false } : null,
+    reason.reason ? { label: t('dtpReturnReasonLabel', 'Reason'), value: reason.reason, isNote: false } : null,
+    reason.note ? { label: t('dtpReturnNoteLabel', 'Note'), value: reason.note, isNote: true } : null,
+  ].filter((field): field is { label: string; value: string; isNote: boolean } => field != null);
+
   return (
     <div className={styles.dtpReturnReasonLine}>
-      <span className={styles.dtpReturnReasonHeading}>
-        {t('dtpReturnReasonHeading', 'DTP reason {{number}}', { number: index + 1 })}
-      </span>
-      {reason.category && (
-        <span className={styles.dtpReturnField}>
-          <span className={styles.dtpReturnFieldLabel}>{t('dtpReturnCategoryLabel', 'Category')}:</span>{' '}
-          {reason.category}
+      <strong className={styles.dtpReturnReasonHeading}>
+        {t('dtpReturnReasonHeading', 'Reason {{number}}', { number: index + 1 })}
+      </strong>
+      {fields.map((field, fieldIndex) => (
+        <span key={field.label} className={styles.dtpReturnField}>
+          <span className={styles.dtpReturnFieldSeparator}>{fieldIndex === 0 ? ' — ' : ' | '}</span>
+          <strong className={styles.dtpReturnFieldLabel}>{field.label}:</strong>{' '}
+          {field.isNote ? <em className={styles.dtpReturnNoteValue}>&ldquo;{field.value}&rdquo;</em> : field.value}
         </span>
-      )}
-      {reason.reason && (
-        <span className={styles.dtpReturnField}>
-          <span className={styles.dtpReturnFieldLabel}>{t('dtpReturnReasonLabel', 'Reason')}:</span> {reason.reason}
-        </span>
-      )}
-      {reason.note && (
-        <span className={styles.dtpReturnField}>
-          <span className={styles.dtpReturnFieldLabel}>{t('dtpReturnNoteLabel', 'Note')}:</span> {reason.note}
-        </span>
-      )}
+      ))}
     </div>
   );
 }

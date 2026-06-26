@@ -52,6 +52,7 @@
   align-items: center;
   justify-content: space-between;
   gap: layout.$spacing-03;
+  width: 100%;
 }
 
 .encounterHeaderLabel {
@@ -78,48 +79,32 @@
   text-transform: none;
 }
 
-.returnedPrescriptionDetailRow {
-  display: flex;
-  flex-direction: column;
-  gap: layout.$spacing-01;
-}
-
-.returnedPrescriptionDetailLabel {
-  @include type.type-style('label-01');
-  color: colors.$gray-70;
-  flex-shrink: 0;
-}
-
-.returnedPrescriptionDetailValue {
-  color: colors.$gray-100;
-  white-space: pre-wrap;
-}
-
 .dtpReturnReasonLine {
+  @include type.type-style('body-compact-01');
   color: colors.$gray-100;
   white-space: normal;
   word-break: break-word;
 }
 
 .dtpReturnReasonHeading {
-  @include type.type-style('heading-compact-01');
-  color: colors.$purple-70;
-  margin-right: layout.$spacing-03;
+  font-weight: 600;
 }
 
 .dtpReturnField {
-  margin-right: layout.$spacing-04;
+  display: inline;
+}
+
+.dtpReturnFieldSeparator {
+  font-weight: 400;
 }
 
 .dtpReturnFieldLabel {
-  @include type.type-style('label-01');
-  color: colors.$gray-70;
+  font-weight: 600;
 }
 
-.dtpReason {
-  color: colors.$gray-70;
-  text-transform: none;
-  letter-spacing: 0;
+.dtpReturnNoteValue {
+  font-style: italic;
+  font-weight: 400;
 }
 
 .fulfillmentStatus {
