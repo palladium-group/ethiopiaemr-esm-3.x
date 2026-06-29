@@ -8,7 +8,7 @@ import {
   mockPatientDrugOrdersApiData,
   mockSessionDataResponse,
 } from '__mocks__';
-import { getTemplateOrderBasketItem, useDrugSearch, useDrugTemplate } from './drug-search/drug-search.resource';
+import { getTemplateOrderBasketItem, useDrugSearch, useDrugTemplates } from './drug-search/drug-search.resource';
 import { ExtensionSlot, launchWorkspace2, UserHasAccess, useSession } from '@openmrs/esm-framework';
 import { type PostDataPrepFunction, useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import { _resetOrderBasketStore } from '@openmrs/esm-patient-common-lib/src/orders/store';
@@ -18,7 +18,7 @@ const mockCloseWorkspace = jest.fn();
 const mockLaunchWorkspace = jest.mocked(launchWorkspace2);
 const mockUseSession = jest.mocked(useSession);
 const mockUseDrugSearch = jest.mocked(useDrugSearch);
-const mockUseDrugTemplate = jest.mocked(useDrugTemplate);
+const mockUseDrugTemplates = jest.mocked(useDrugTemplates);
 const mockExtensionSlot = jest.mocked(ExtensionSlot);
 const mockUserHasAccess = jest.mocked(UserHasAccess);
 const usePatientOrdersMock = jest.fn();
@@ -30,7 +30,7 @@ mockUserHasAccess.mockImplementation(({ children }) => <>{children}</>);
 jest.mock('./drug-search/drug-search.resource', () => ({
   ...jest.requireActual('./drug-search/drug-search.resource'),
   useDrugSearch: jest.fn(),
-  useDrugTemplate: jest.fn(),
+  useDrugTemplates: jest.fn(),
 }));
 
 jest.mock('../api/api', () => ({
@@ -53,11 +53,16 @@ describe('AddDrugOrderWorkspace drug search', () => {
       mutate: jest.fn(),
     }));
 
-    mockUseDrugTemplate.mockImplementation((drugUuid) => ({
-      templates: mockDrugOrderTemplateApiData[drugUuid] ?? [],
-      isLoading: false,
-      error: null,
-    }));
+    mockUseDrugTemplates.mockImplementation((drugs) => {
+      const templateByDrugUuid = new Map();
+      (drugs ?? []).forEach((drug: { uuid: string }) => {
+        const templates = mockDrugOrderTemplateApiData[drug.uuid];
+        if (templates?.length) {
+          templateByDrugUuid.set(drug.uuid, templates);
+        }
+      });
+      return { templateByDrugUuid, isLoading: false, error: null, isValidating: false, mutate: jest.fn() };
+    });
 
     usePatientOrdersMock.mockReturnValue({
       isLoading: false,

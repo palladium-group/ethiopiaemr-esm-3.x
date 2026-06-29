@@ -3,7 +3,13 @@ import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import { Button, ButtonSkeleton, SkeletonText, Tag, Tile } from '@carbon/react';
 import { ArrowRight, ShoppingCartArrowUp } from '@carbon/react/icons';
-import { type DrugOrderBasketItem, useOrderBasket } from '@openmrs/esm-patient-common-lib';
+import {
+  type Drug,
+  type DrugOrderBasketItem,
+  type DrugOrderTemplate,
+  type Order,
+  useOrderBasket,
+} from '@openmrs/esm-patient-common-lib';
 import {
   ArrowRightIcon,
   ExtensionSlot,
@@ -20,8 +26,9 @@ import { ordersEqual } from './helpers';
 import {
   type DrugSearchResult,
   getTemplateOrderBasketItem,
+  MAX_TEMPLATE_PREFETCH,
   useDrugSearch,
-  useDrugTemplate,
+  useDrugTemplates,
 } from './drug-search.resource';
 import OrderSetReview from './order-set-review.component';
 import { type OrderSetSearchResult, useOrderSetSearch } from './order-set.resource';
@@ -42,6 +49,12 @@ interface DrugSearchResultItemProps {
   openOrderForm: (searchResult: DrugOrderBasketItem) => void;
   visit: Visit;
   closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
+  orders: Array<DrugOrderBasketItem>;
+  setOrders: (orders: Array<DrugOrderBasketItem>) => void;
+  activeOrders: Array<Order> | null;
+  isLoadingActiveOrders: boolean;
+  templates: Array<DrugOrderTemplate> | undefined;
+  fetchingDrugOrderTemplatesError?: Error;
 }
 
 interface OrderSetSearchResultItemProps {
@@ -67,6 +80,16 @@ export default function OrderBasketSearchResults({
     isLoading: isLoadingOrderSets,
     error: orderSetSearchError,
   } = useOrderSetSearch(searchTerm, enableOrderSets);
+  const patientUuid = patient?.id;
+  const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
+    patient,
+    'medications',
+    prepMedicationOrderPostData,
+  );
+  const { data: activeOrders, isLoading: isLoadingActiveOrders } = useActivePatientOrders(patientUuid);
+  const { templateByDrugUuid, error: fetchingDrugOrderTemplatesError } = useDrugTemplates(
+    (drugs ?? []).slice(0, MAX_TEMPLATE_PREFETCH) as unknown as Drug[],
+  );
 
   if (!searchTerm) {
     return <div className={styles.container}></div>;
@@ -165,6 +188,12 @@ export default function OrderBasketSearchResults({
                 openOrderForm={openOrderForm}
                 visit={visit}
                 closeWorkspace={closeWorkspace}
+                orders={orders}
+                setOrders={setOrders}
+                activeOrders={activeOrders}
+                isLoadingActiveOrders={isLoadingActiveOrders}
+                templates={templateByDrugUuid?.get(drug.uuid)}
+                fetchingDrugOrderTemplatesError={fetchingDrugOrderTemplatesError}
               />
             ))}
           </div>
@@ -213,20 +242,18 @@ const OrderSetSearchResultItem: React.FC<OrderSetSearchResultItemProps> = ({ ord
 };
 
 export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
-  patient,
   drug,
   openOrderForm,
   visit,
   closeWorkspace,
+  orders,
+  setOrders,
+  activeOrders,
+  isLoadingActiveOrders,
+  templates,
+  fetchingDrugOrderTemplatesError,
 }) => {
   const isTablet = useLayoutType() === 'tablet';
-  const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
-    patient,
-    'medications',
-    prepMedicationOrderPostData,
-  );
-  const patientUuid = patient.id;
-  const { data: activeOrders, isLoading: isLoadingActiveOrders } = useActivePatientOrders(patientUuid);
   const drugAlreadyInBasket = useMemo(
     () => orders?.some((order) => ordersEqual(order, getTemplateOrderBasketItem(drug, visit))),
     [orders, drug, visit],
@@ -236,7 +263,6 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
     [activeOrders, drug?.uuid],
   );
 
-  const { templates, error: fetchingDrugOrderTemplatesError } = useDrugTemplate(drug?.uuid);
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const drugItemTemplateOptions: Array<DrugOrderBasketItem> = useMemo(
