@@ -3,9 +3,16 @@ import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import { InlineNotification, SkeletonText, Tile } from '@carbon/react';
 import { useLayoutType, type Visit, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
-import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
+import {
+  type Drug,
+  type DrugOrderBasketItem,
+  type DrugOrderTemplate,
+  type Order,
+  useOrderBasket,
+} from '@openmrs/esm-patient-common-lib';
+import { prepMedicationOrderPostData, useActivePatientOrders } from '../../api/api';
 import { DrugBrowseEmptyState } from './drug-browse-empty-state.component';
-import { type DrugSearchResult } from './drug-search.resource';
+import { type DrugSearchResult, MAX_TEMPLATE_PREFETCH, useDrugTemplates } from './drug-search.resource';
 import { DrugSearchResultItem } from './order-basket-search-results.component';
 import styles from './order-basket-search-results.scss';
 
@@ -32,6 +39,16 @@ export default function DrugBrowseResults({
 }: DrugBrowseResultsProps) {
   const { t } = useTranslation();
   const hasErrors = errors.length > 0;
+  const patientUuid = patient?.id;
+  const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
+    patient,
+    'medications',
+    prepMedicationOrderPostData,
+  );
+  const { data: activeOrders, isLoading: isLoadingActiveOrders } = useActivePatientOrders(patientUuid);
+  const { templateByDrugUuid, error: fetchingDrugOrderTemplatesError } = useDrugTemplates(
+    (drugs ?? []).slice(0, MAX_TEMPLATE_PREFETCH) as unknown as Drug[],
+  );
 
   if (isLoading) {
     return <DrugBrowseSkeleton />;
@@ -75,6 +92,12 @@ export default function DrugBrowseResults({
             visit={visit}
             closeWorkspace={closeWorkspace}
             openOrderForm={openOrderForm}
+            orders={orders}
+            setOrders={setOrders}
+            activeOrders={activeOrders}
+            isLoadingActiveOrders={isLoadingActiveOrders}
+            templates={templateByDrugUuid?.get(drug.uuid)}
+            fetchingDrugOrderTemplatesError={fetchingDrugOrderTemplatesError}
           />
         ))}
       </div>
