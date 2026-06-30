@@ -2,6 +2,13 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 export interface ReportDataSet {
   name: string;
+  /**
+   * Column names in their original SQL SELECT order, taken from the dataset's
+   * `metadata.columns`. The server preserves declared order here, whereas the
+   * per-row JSON objects in `rows` are serialised in hash order — so always
+   * render against `columns`, never `Object.keys(rows[0])`.
+   */
+  columns: Array<string>;
   rows: Array<Record<string, unknown>>;
 }
 
@@ -16,13 +23,65 @@ export async function runReport(reportUuid: string, params: Record<string, strin
   const url = `${restBaseUrl}/reportingrest/reportdata/${reportUuid}${query ? `?${query}` : ''}`;
 
   const response = await openmrsFetch<{
-    dataSets?: Array<{ definition?: { name?: string }; rows?: Array<Record<string, unknown>> }>;
+    dataSets?: Array<{
+      definition?: { name?: string };
+      metadata?: { columns?: Array<{ name?: string }> };
+      rows?: Array<Record<string, unknown>>;
+    }>;
   }>(url);
   const dataSets = response.data?.dataSets ?? [];
-  return dataSets.map((ds) => ({
-    name: ds?.definition?.name ?? 'Dataset',
-    rows: ds?.rows ?? [],
-  }));
+  return dataSets.map((ds) => {
+    const rows = ds?.rows ?? [];
+    // Prefer the server-declared column order; fall back to row keys (hash order)
+    // only if metadata is somehow absent.
+    const columns =
+      ds?.metadata?.columns?.map((c) => c?.name).filter((n): n is string => typeof n === 'string') ??
+      (rows.length > 0 ? Object.keys(rows[0]) : []);
+    return {
+      name: ds?.definition?.name ?? 'Dataset',
+      columns,
+      rows,
+    };
+  });
+}
+
+/**
+ * Returns the names of datasets that exist only to feed an Excel (or other)
+ * ReportDesign template, so the caller can hide them from the on-screen tables.
+ *
+ * A ReportDesign's `repeatingSections` property declares which dataset it consumes, in the form
+ * `sheet:<n>,row:<a>-<b>,dataset:<name>` (one section per repeating block). Any
+ * dataset named there is, by definition, a template feeder. A report with no
+ * designs returns an empty set, so a web-only report hides nothing.
+ *
+ * `properties` is only serialised by the custom representation, not by the
+ * default/full ones, so the explicit `v=custom:(...)` is required.
+ */
+export async function fetchFeederDatasetNames(reportUuid: string, signal?: AbortSignal): Promise<Set<string>> {
+  const url = `${restBaseUrl}/reportingrest/reportDesign?reportDefinitionUuid=${encodeURIComponent(
+    reportUuid,
+  )}&v=custom:(uuid,name,properties)`;
+  const feeders = new Set<string>();
+  try {
+    const response = await openmrsFetch<{
+      results?: Array<{ properties?: { repeatingSections?: string } }>;
+    }>(url, { signal });
+    for (const design of response.data?.results ?? []) {
+      const repeatingSections = design?.properties?.repeatingSections;
+      if (!repeatingSections) {
+        continue;
+      }
+      // Each section is comma-delimited; capture every `dataset:<name>` token.
+      for (const match of repeatingSections.matchAll(/dataset:([^,\s]+)/g)) {
+        feeders.add(match[1]);
+      }
+    }
+  } catch {
+    // If designs can't be read, fall back to hiding nothing rather than failing
+    // the whole report view — a feeder shown is recoverable; a broken page isn't.
+    return new Set<string>();
+  }
+  return feeders;
 }
 
 const REQUEST_URL = `${restBaseUrl}/reportingrest/reportRequest`;
