@@ -152,6 +152,11 @@
       "slot": "ward-ui-extension-hidden-slot"
     },
     {
+      "name": "ethiopia-admitted-patients-table",
+      "component": "ethiopiaAdmittedPatientsTable",
+      "slot": "ward-patients-admitted-slot"
+    },
+    {
       "name": "ethiopiaemr-etl-admin-dashboard-link",
       "component": "etlAdminDashboardLink",
       "slot": "navbar-items-slot",
