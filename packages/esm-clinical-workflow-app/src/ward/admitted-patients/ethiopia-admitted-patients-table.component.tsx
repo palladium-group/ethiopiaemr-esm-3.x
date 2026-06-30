@@ -20,8 +20,6 @@ import {
   useAppContext,
   useConfig,
   usePagination,
-  userHasAccess,
-  useSession,
 } from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
@@ -33,12 +31,8 @@ import { EmptyState } from './empty-state.component';
 import { HyperLinkPatientCell } from './patient-cells';
 import type { WardAppConfigSlice, WardViewContext } from './ward.types';
 
-const WARD_DASHBOARD_PRIVILEGE = 'o3: View Ward Dashboard';
-
 const EthiopiaAdmittedPatientsTable = () => {
   const [search, setSearch] = useState('');
-  const session = useSession();
-  const canExchangeBeds = userHasAccess(WARD_DASHBOARD_PRIVILEGE, session?.user);
   const { wardPatientGroupDetails } = useAppContext<WardViewContext>('ward-view-context') ?? {};
   const { isLoading } = wardPatientGroupDetails ?? {};
   const { t } = useTranslation();
@@ -102,25 +96,12 @@ const EthiopiaAdmittedPatientsTable = () => {
             <OverflowMenuItem
               itemText={t('bedSwap', 'Bed Swap')}
               onClick={() =>
-                launchWorkspace2('patient-bed-swap-form', {
-                  workspaceTitle: 'Bed Swap',
+                launchWorkspace2('ethiopia-bed-swap-workspace', {
+                  workspaceTitle: t('bedSwap', 'Bed Swap'),
                   wardPatient: patient,
-                  withContentSwitcher: false,
-                  defaultTransfersection: 'bed-swap',
                 })
               }
             />
-            {canExchangeBeds && patient.visit ? (
-              <OverflowMenuItem
-                itemText={t('exchangeBeds', 'Exchange beds')}
-                onClick={() =>
-                  launchWorkspace2('ethiopia-bed-exchange-workspace', {
-                    workspaceTitle: t('exchangeBeds', 'Exchange beds'),
-                    wardPatient: patient,
-                  })
-                }
-              />
-            ) : null}
             <OverflowMenuItem
               itemText={t('discharge', 'Discharge')}
               onClick={() => {
@@ -136,7 +117,7 @@ const EthiopiaAdmittedPatientsTable = () => {
         ),
       };
     });
-  }, [results, config, t, canExchangeBeds]);
+  }, [results, config, t]);
 
   if (isLoading) {
     return <DataTableSkeleton />;

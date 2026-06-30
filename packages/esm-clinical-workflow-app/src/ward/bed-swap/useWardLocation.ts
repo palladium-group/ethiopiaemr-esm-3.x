@@ -1,5 +1,4 @@
 import { type Location, openmrsFetch, restBaseUrl, type FetchResponse, useSession } from '@openmrs/esm-framework';
-import last from 'lodash-es/last';
 import useSWRImmutable from 'swr/immutable';
 
 const isUUID = (value?: string) => {
@@ -16,7 +15,7 @@ function useLocation(locationUuid: string | null) {
 
 export function useWardLocation() {
   const { pathname } = window.location;
-  const segment = last(pathname.split('/'));
+  const segment = pathname.split('/').at(-1);
   const locationUuidFromUrl = isUUID(segment) ? segment : null;
   const { sessionLocation } = useSession();
   const {

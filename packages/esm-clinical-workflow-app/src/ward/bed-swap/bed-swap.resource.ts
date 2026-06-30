@@ -1,25 +1,31 @@
 import { openmrsFetch, type Encounter, restBaseUrl } from '@openmrs/esm-framework';
 
-export interface CreateEncounterParams {
-  patientUuid: string;
-  visitUuid: string;
+export interface EncounterContextParams {
   encounterTypeUuid: string;
   locationUuid: string;
   providerUuid: string;
   encounterRoleUuid: string;
 }
 
-export interface ExchangePatientBedsParams {
+export interface CreateEncounterParams extends EncounterContextParams {
+  patientUuid: string;
+  visitUuid: string;
+}
+
+export interface MovePatientToBedParams extends EncounterContextParams {
+  patientUuid: string;
+  visitUuid: string;
+  sourceBedId: number;
+  targetBedId: number;
+}
+
+export interface ExchangePatientBedsParams extends EncounterContextParams {
   patientAUuid: string;
   patientBUuid: string;
   visitAUuid: string;
   visitBUuid: string;
   bedAId: number;
   bedBId: number;
-  encounterTypeUuid: string;
-  locationUuid: string;
-  providerUuid: string;
-  encounterRoleUuid: string;
 }
 
 async function createBedAssignmentEncounter(params: CreateEncounterParams): Promise<Encounter> {
@@ -66,6 +72,45 @@ export function removePatientFromBed(bedId: number, patientUuid: string) {
   return openmrsFetch(`${restBaseUrl}/beds/${bedId}?patientUuid=${patientUuid}`, {
     method: 'DELETE',
   });
+}
+
+export async function movePatientToBed(params: MovePatientToBedParams) {
+  let encounterUuid: string | undefined;
+  let removedFromSource = false;
+
+  try {
+    const encounter = await createBedAssignmentEncounter({
+      patientUuid: params.patientUuid,
+      visitUuid: params.visitUuid,
+      encounterTypeUuid: params.encounterTypeUuid,
+      locationUuid: params.locationUuid,
+      providerUuid: params.providerUuid,
+      encounterRoleUuid: params.encounterRoleUuid,
+    });
+    encounterUuid = encounter.uuid;
+
+    const removeResponse = await removePatientFromBed(params.sourceBedId, params.patientUuid);
+    if (!removeResponse.ok) {
+      throw new Error('Failed to remove patient from their current bed');
+    }
+    removedFromSource = true;
+
+    const assignResponse = await assignPatientToBed(params.targetBedId, params.patientUuid, encounterUuid);
+    if (!assignResponse.ok) {
+      throw new Error('Failed to assign patient to the selected bed');
+    }
+
+    return { ok: true as const };
+  } catch (error) {
+    if (removedFromSource && encounterUuid) {
+      try {
+        await assignPatientToBed(params.sourceBedId, params.patientUuid, encounterUuid);
+      } catch (rollbackError) {
+        console.error('[bed-swap] Rollback failed after move error', rollbackError);
+      }
+    }
+    throw error;
+  }
 }
 
 export async function exchangePatientBeds(params: ExchangePatientBedsParams) {
@@ -133,7 +178,7 @@ export async function exchangePatientBeds(params: ExchangePatientBedsParams) {
         await assignPatientToBed(params.bedAId, params.patientAUuid, encounterAUuid);
       }
     } catch (rollbackError) {
-      console.error('[bed-exchange] Rollback failed after exchange error', rollbackError);
+      console.error('[bed-swap] Rollback failed after exchange error', rollbackError);
     }
 
     throw error;

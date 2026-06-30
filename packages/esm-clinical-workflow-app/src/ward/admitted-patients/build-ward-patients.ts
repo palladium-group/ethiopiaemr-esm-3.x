@@ -37,15 +37,3 @@ export function buildWardPatients(
     return !ipdDischargeEncounter;
   });
 }
-
-export function getExchangeCandidates(wardPatients: WardPatient[], sourcePatientUuid: string): WardPatient[] {
-  const source = wardPatients.find((wardPatient) => wardPatient.patient.uuid === sourcePatientUuid);
-  if (!source?.visit) {
-    return [];
-  }
-
-  return wardPatients.filter(
-    (candidate) =>
-      candidate.patient.uuid !== sourcePatientUuid && candidate.visit && candidate.bed.id !== source.bed.id,
-  );
-}

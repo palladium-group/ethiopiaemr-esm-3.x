@@ -221,8 +221,8 @@
       "window": "visit-note-shadow"
     },
     {
-      "name": "ethiopia-bed-exchange-workspace",
-      "component": "ethiopiaBedExchangeWorkspace",
+      "name": "ethiopia-bed-swap-workspace",
+      "component": "ethiopiaBedSwapWorkspace",
       "window": "kenyaemr-esm-ward-window"
     }
   ],

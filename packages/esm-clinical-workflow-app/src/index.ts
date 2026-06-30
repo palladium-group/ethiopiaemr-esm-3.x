@@ -200,10 +200,7 @@ export const ethiopiaAdmittedPatientsTable = getAsyncLifecycle(
   options,
 );
 
-export const ethiopiaBedExchangeWorkspace = getAsyncLifecycle(
-  () => import('./ward/bed-exchange/bed-exchange.workspace'),
-  options,
-);
+export const ethiopiaBedSwapWorkspace = getAsyncLifecycle(() => import('./ward/bed-swap/bed-swap.workspace'), options);
 
 export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, options);
 
