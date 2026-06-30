@@ -6,12 +6,31 @@ import type { QueueEntry } from '../types';
 import { useServiceQueueEntries } from './service-queue-entries.resource';
 import ServiceQueueTable, { filterServiceQueueEntriesBySearch } from './service-queue-table.component';
 import { useFilteredQueueTableColumnIds } from './filtered-queue-table-cells';
-import { useServiceQueuesConfig } from './queue-room.resource';
-import { useQueueStatuses } from './queue-entries.resource';
+import {
+  ALL_ROOMS_FILTER,
+  filterQueueEntriesByRoom,
+  UNASSIGNED_ROOM_FILTER,
+  useActiveTicketAssignments,
+  useQueueRoomsAtLocation,
+  useServiceQueuesConfig,
+} from './queue-room.resource';
+import { useQueueLocations, useQueueStatuses } from './queue-entries.resource';
 import AddPatientToQueueButton from './add-patient-to-queue-button.component';
 import { updateSelectedQueueStatus, useServiceQueuesFilterState } from './service-queues-store.util';
 import styles from './service-queue-table-dashboard.scss';
 import tableStyles from './service-queue-table.scss';
+
+const ALL_LOCATIONS_ID = 'all';
+
+interface LocationOption {
+  id: string;
+  name: string;
+}
+
+interface RoomFilterOption {
+  id: string;
+  name: string;
+}
 
 function ClearQueueEntriesButton({ queueEntries }: { queueEntries: QueueEntry[] }) {
   const { t } = useTranslation();
@@ -33,6 +52,70 @@ function ClearQueueEntriesButton({ queueEntries }: { queueEntries: QueueEntry[] 
       iconDescription={t('clearQueue', 'Clear queue')}>
       {t('clearQueue', 'Clear queue')}
     </Button>
+  );
+}
+
+function LocationDropdownFilter({
+  locationOptions,
+  selectedLocation,
+  isLoadingLocations,
+  onLocationChange,
+}: {
+  locationOptions: LocationOption[];
+  selectedLocation: LocationOption;
+  isLoadingLocations: boolean;
+  onLocationChange: (location: LocationOption) => void;
+}) {
+  const { t } = useTranslation();
+  const layout = useLayoutType();
+
+  return (
+    <div className={tableStyles.filterContainer}>
+      <Dropdown
+        id="service-queue-location"
+        items={locationOptions}
+        itemToString={(item) => (item ? item.name : '')}
+        label={selectedLocation.name}
+        selectedItem={selectedLocation}
+        onChange={({ selectedItem }) => selectedItem && onLocationChange(selectedItem)}
+        size={isDesktop(layout) ? 'sm' : 'lg'}
+        titleText={t('location', 'Location')}
+        type="inline"
+        disabled={isLoadingLocations || locationOptions.length === 0}
+      />
+    </div>
+  );
+}
+
+function RoomDropdownFilter({
+  roomFilterOptions,
+  selectedRoom,
+  isLoadingRooms,
+  onRoomChange,
+}: {
+  roomFilterOptions: RoomFilterOption[];
+  selectedRoom: RoomFilterOption;
+  isLoadingRooms: boolean;
+  onRoomChange: (room: RoomFilterOption) => void;
+}) {
+  const { t } = useTranslation();
+  const layout = useLayoutType();
+
+  return (
+    <div className={tableStyles.filterContainer}>
+      <Dropdown
+        id="service-queue-room"
+        items={roomFilterOptions}
+        itemToString={(item) => (item ? item.name : '')}
+        label={selectedRoom.name}
+        selectedItem={selectedRoom}
+        onChange={({ selectedItem }) => selectedItem && onRoomChange(selectedItem)}
+        size={isDesktop(layout) ? 'sm' : 'lg'}
+        titleText={t('room', 'Room')}
+        type="inline"
+        disabled={isLoadingRooms}
+      />
+    </div>
   );
 }
 
@@ -67,17 +150,59 @@ function ServiceQueueTableSection() {
   const layout = useLayoutType();
   const columnIds = useFilteredQueueTableColumnIds();
   const { visitQueueNumberAttributeUuid } = useServiceQueuesConfig();
-  const { selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid } = useServiceQueuesFilterState();
+  const { selectedServiceUuid, selectedQueueStatusUuid } = useServiceQueuesFilterState();
+  const { queueLocations, isLoading: isLoadingLocations } = useQueueLocations();
+  const { activeTickets } = useActiveTicketAssignments();
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [selectedLocation, setSelectedLocation] = useState<LocationOption>({
+    id: ALL_LOCATIONS_ID,
+    name: t('all', 'All'),
+  });
+  const [selectedRoom, setSelectedRoom] = useState<RoomFilterOption>({
+    id: ALL_ROOMS_FILTER,
+    name: t('all', 'All'),
+  });
+
+  const locationOptions = useMemo<LocationOption[]>(() => {
+    return [
+      { id: ALL_LOCATIONS_ID, name: t('all', 'All') },
+      ...queueLocations.map((location) => ({ id: location.id ?? '', name: location.name ?? '' })),
+    ];
+  }, [queueLocations, t]);
+
+  const locationUuidForRooms = selectedLocation.id === ALL_LOCATIONS_ID ? undefined : selectedLocation.id;
+  const { queueRooms, isLoading: isLoadingRooms } = useQueueRoomsAtLocation(locationUuidForRooms);
+
+  const roomFilterOptions = useMemo<RoomFilterOption[]>(() => {
+    const roomItems =
+      selectedLocation.id === ALL_LOCATIONS_ID
+        ? (activeTickets ? Object.keys(activeTickets) : []).map((name) => ({ id: name, name }))
+        : queueRooms.map((room) => ({ id: room.name, name: room.name }));
+
+    return [
+      { id: ALL_ROOMS_FILTER, name: t('all', 'All') },
+      ...roomItems,
+      { id: UNASSIGNED_ROOM_FILTER, name: t('unassigned', 'Unassigned') },
+    ];
+  }, [activeTickets, queueRooms, selectedLocation.id, t]);
+
+  const handleLocationChange = useCallback(
+    (location: LocationOption) => {
+      setSelectedLocation(location);
+      setSelectedRoom({ id: ALL_ROOMS_FILTER, name: t('all', 'All') });
+    },
+    [t],
+  );
 
   const searchCriteria = useMemo(() => {
     return {
       service: selectedServiceUuid,
-      location: selectedQueueLocationUuid,
+      location: selectedLocation.id === ALL_LOCATIONS_ID ? undefined : selectedLocation.id,
       isEnded: false,
       status: selectedQueueStatusUuid,
     };
-  }, [selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid]);
+  }, [selectedLocation.id, selectedServiceUuid, selectedQueueStatusUuid]);
 
   const { queueEntries, isLoading, isValidating, error } = useServiceQueueEntries(searchCriteria);
 
@@ -91,13 +216,22 @@ function ServiceQueueTableSection() {
     }
   }, [error?.message, t]);
 
+  const filteredByRoom = useMemo(() => {
+    return filterQueueEntriesByRoom(queueEntries ?? [], selectedRoom.id, visitQueueNumberAttributeUuid, activeTickets);
+  }, [activeTickets, queueEntries, selectedRoom.id, visitQueueNumberAttributeUuid]);
+
   const filteredQueueEntries = useMemo(() => {
-    return filterServiceQueueEntriesBySearch(queueEntries ?? [], searchTerm, columnIds, visitQueueNumberAttributeUuid);
-  }, [columnIds, queueEntries, searchTerm, visitQueueNumberAttributeUuid]);
+    return filterServiceQueueEntriesBySearch(filteredByRoom, searchTerm, columnIds, visitQueueNumberAttributeUuid);
+  }, [columnIds, filteredByRoom, searchTerm, visitQueueNumberAttributeUuid]);
 
   const paginationResetKey = useMemo(
-    () => JSON.stringify({ searchCriteria, searchTerm }),
-    [searchCriteria, searchTerm],
+    () =>
+      JSON.stringify({
+        searchCriteria,
+        selectedRoomId: selectedRoom.id,
+        searchTerm,
+      }),
+    [searchCriteria, selectedRoom.id, searchTerm],
   );
 
   if (isLoading || columnIds.length === 0) {
@@ -113,6 +247,18 @@ function ServiceQueueTableSection() {
       tableFilters={
         <>
           <ClearQueueEntriesButton queueEntries={filteredQueueEntries} />
+          <LocationDropdownFilter
+            isLoadingLocations={isLoadingLocations}
+            locationOptions={locationOptions}
+            onLocationChange={handleLocationChange}
+            selectedLocation={selectedLocation}
+          />
+          <RoomDropdownFilter
+            isLoadingRooms={isLoadingRooms}
+            onRoomChange={setSelectedRoom}
+            roomFilterOptions={roomFilterOptions}
+            selectedRoom={selectedRoom}
+          />
           <StatusDropdownFilter />
           <TableToolbarSearch
             className={tableStyles.search}

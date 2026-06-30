@@ -115,14 +115,6 @@
       "offline": true
     },
     {
-      "name": "filtered-queue-table-dashboard",
-      "component": "filteredQueueTableDashboard",
-      "slot": "service-queues-dashboard-slot",
-      "order": -10,
-      "online": true,
-      "offline": true
-    },
-    {
       "name": "transfer-notes-overview-widget",
       "component": "transferNotesOverview",
       "slot": "patient-chart-summary-dashboard-slot",

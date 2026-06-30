@@ -165,11 +165,6 @@ export const serviceQueueTableDashboard = getAsyncLifecycle(
   options,
 );
 
-export const filteredQueueTableDashboard = getAsyncLifecycle(
-  () => import('./queue-room/filtered-queue-table-dashboard.component'),
-  options,
-);
-
 export const patientTransferDetailsModal = getAsyncLifecycle(
   () => import('./patient-transfer/transfer-details.modal'),
   options,
