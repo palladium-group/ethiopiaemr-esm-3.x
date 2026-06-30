@@ -49,8 +49,12 @@ const ReportResults: React.FC<ReportResultsProps> = ({ dataSets, feederDatasets 
           );
         }
 
-        // Server-declared SELECT order; fall back to row keys if columns are absent.
-        const columns = ds.columns.length > 0 ? ds.columns : Object.keys(ds.rows[0]);
+        // Render in the server-declared SELECT order (`ds.columns`). Append any
+        // keys present in the data but not declared, so a column is never
+        // silently dropped; fall back to row keys entirely if metadata is absent.
+        const rowKeys = Object.keys(ds.rows[0]);
+        const columns =
+          ds.columns.length > 0 ? [...ds.columns, ...rowKeys.filter((k) => !ds.columns.includes(k))] : rowKeys;
         const headers = columns.map((c) => ({ key: c, header: c }));
         const tableRows = ds.rows.map((row, rIdx) => {
           const r: Record<string, string> = { id: String(rIdx) };

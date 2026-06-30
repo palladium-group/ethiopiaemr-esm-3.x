@@ -28,32 +28,17 @@ Reports returned by the backend are grouped into categories (e.g. Common, Cohort
 Each report declares zero or more parameters with a name, display label, and Java type. The runner renders the appropriate Carbon input for each parameter — a `DatePicker` for any `java.util.Date`-typed parameter, and a `TextInput` for everything else. The Run and Download buttons are disabled until all parameters are filled.
 
 ### On-screen results table
-After a report runs, each result dataset is displayed in a scrollable Carbon `DataTable`. Column order is controlled by the `columnOrderByUuid` config (see below) so that tables match the source paper layout rather than the alphabetical order that the REST API returns.
+After a report runs, each result dataset is displayed in a scrollable Carbon `DataTable`. Columns are rendered in the dataset's server-declared order — the `metadata.columns` returned by `reportingrest`, i.e. the SQL `SELECT` order — so tables match the source paper layout rather than the hash order of the per-row JSON. Datasets that exist only to feed a report design template are hidden (see [Report layout](#report-layout)).
 
 ### Report design downloads
 If a report has one or more rendering designs (e.g. an Excel template), a Download button is shown for each. Downloads are generated server-side and streamed to the browser; an `AbortController` cancels any in-flight download when the user navigates away.
 
-## Configuration
+## Report layout
 
-Configuration is managed through the O3 config system (`@openmrs/esm-framework`). The schema is defined in `src/config-schema.ts`.
+The app needs **no per-report configuration** — column order and hidden datasets are both derived from data the backend already returns, so adding a report requires no frontend change.
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `columnOrderByUuid` | `Object` | See schema | Map of report UUID → ordered column name array. Columns are rendered in this order; columns present in the data but not listed are appended at the end. |
-| `hiddenDatasets` | `Array<string>` | `["immRegisterExcel"]` | Dataset names that feed an Excel template only and should not appear in the on-screen table. |
-
-Example configuration override:
-
-```json
-{
-  "@palladium-ethiopia/esm-reports-app": {
-    "columnOrderByUuid": {
-      "your-report-uuid-here": ["Column A", "Column B", "Column C"]
-    },
-    "hiddenDatasets": ["excelOnlyDataset"]
-  }
-}
-```
+- **Column order** comes from each dataset's `metadata.columns` (the SQL `SELECT` order preserved by `reportingrest`). Any column present in the data but absent from `metadata.columns` is appended rather than dropped; if the server omits metadata entirely, the renderer falls back to the row keys.
+- **Hidden feeder datasets** are derived from each `ReportDesign`'s `repeatingSections` (`dataset:<name>` tokens, fetched via the `v=custom:(uuid,name,properties)` representation). A dataset named there feeds a template (e.g. an Excel export) and is hidden from the on-screen tables; everything else is shown. The captured name is matched against each dataset's `definition.name`, so a report's dataset key and its `DataSetDefinition` name must agree. If the designs can't be read, nothing is hidden — a visible feeder is preferable to a broken page.
 
 ## Development
 

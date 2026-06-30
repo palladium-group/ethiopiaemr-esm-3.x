@@ -5,8 +5,9 @@ export interface ReportDataSet {
   /**
    * Column names in their original SQL SELECT order, taken from the dataset's
    * `metadata.columns`. The server preserves declared order here, whereas the
-   * per-row JSON objects in `rows` are serialised in hash order — so always
-   * render against `columns`, never `Object.keys(rows[0])`.
+   * per-row JSON objects in `rows` are serialised in hash order — so render
+   * against `columns`. This is empty only when the server omits metadata, in
+   * which case the renderer falls back to the row keys.
    */
   columns: Array<string>;
   rows: Array<Record<string, unknown>>;
@@ -30,19 +31,13 @@ export async function runReport(reportUuid: string, params: Record<string, strin
     }>;
   }>(url);
   const dataSets = response.data?.dataSets ?? [];
-  return dataSets.map((ds) => {
-    const rows = ds?.rows ?? [];
-    // Prefer the server-declared column order; fall back to row keys (hash order)
-    // only if metadata is somehow absent.
-    const columns =
-      ds?.metadata?.columns?.map((c) => c?.name).filter((n): n is string => typeof n === 'string') ??
-      (rows.length > 0 ? Object.keys(rows[0]) : []);
-    return {
-      name: ds?.definition?.name ?? 'Dataset',
-      columns,
-      rows,
-    };
-  });
+  return dataSets.map((ds) => ({
+    name: ds?.definition?.name ?? 'Dataset',
+    // Server-declared SELECT order. May be empty if the server omits metadata,
+    // in which case ReportResults falls back to the row keys.
+    columns: ds?.metadata?.columns?.map((c) => c?.name).filter((n): n is string => typeof n === 'string') ?? [],
+    rows: ds?.rows ?? [],
+  }));
 }
 
 /**
@@ -54,10 +49,14 @@ export async function runReport(reportUuid: string, params: Record<string, strin
  * dataset named there is, by definition, a template feeder. A report with no
  * designs returns an empty set, so a web-only report hides nothing.
  *
+ * The captured `<name>` is matched against each dataset's `definition.name` (see
+ * ReportResults) to decide what to hide, so a report's dataset key and its
+ * `DataSetDefinition` name must agree.
+ *
  * `properties` is only serialised by the custom representation, not by the
  * default/full ones, so the explicit `v=custom:(...)` is required.
  */
-export async function fetchFeederDatasetNames(reportUuid: string, signal?: AbortSignal): Promise<Set<string>> {
+export async function fetchFeederDatasetNames(reportUuid: string): Promise<Set<string>> {
   const url = `${restBaseUrl}/reportingrest/reportDesign?reportDefinitionUuid=${encodeURIComponent(
     reportUuid,
   )}&v=custom:(uuid,name,properties)`;
@@ -65,7 +64,7 @@ export async function fetchFeederDatasetNames(reportUuid: string, signal?: Abort
   try {
     const response = await openmrsFetch<{
       results?: Array<{ properties?: { repeatingSections?: string } }>;
-    }>(url, { signal });
+    }>(url);
     for (const design of response.data?.results ?? []) {
       const repeatingSections = design?.properties?.repeatingSections;
       if (!repeatingSections) {
