@@ -219,6 +219,11 @@
       "name": "visit-notes-form-shadow-workspace",
       "component": "visitNotesFormWorkspace",
       "window": "visit-note-shadow"
+    },
+    {
+      "name": "ethiopia-bed-exchange-workspace",
+      "component": "ethiopiaBedExchangeWorkspace",
+      "window": "kenyaemr-esm-ward-window"
     }
   ],
   "workspaceWindows2": [

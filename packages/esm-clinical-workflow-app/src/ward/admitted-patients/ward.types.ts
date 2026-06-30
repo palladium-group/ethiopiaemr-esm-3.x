@@ -68,6 +68,7 @@ export interface WardPatientGroupDetails {
   bedLayouts?: BedLayout[];
   wardAdmittedPatientsWithBed?: Map<string, InpatientAdmission>;
   isLoading?: boolean;
+  mutate?: () => void;
 }
 
 export interface WardViewContext {

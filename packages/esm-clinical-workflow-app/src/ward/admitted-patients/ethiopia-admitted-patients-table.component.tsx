@@ -20,20 +20,27 @@ import {
   useAppContext,
   useConfig,
   usePagination,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { bedLayoutToBed, getOpenmrsId } from './admitted-patients.utils';
+import { getOpenmrsId } from './admitted-patients.utils';
+import { buildWardPatients } from './build-ward-patients';
 import { EmptyState } from './empty-state.component';
 import { HyperLinkPatientCell } from './patient-cells';
-import type { WardAppConfigSlice, WardPatient, WardViewContext } from './ward.types';
+import type { WardAppConfigSlice, WardViewContext } from './ward.types';
+
+const WARD_DASHBOARD_PRIVILEGE = 'o3: View Ward Dashboard';
 
 const EthiopiaAdmittedPatientsTable = () => {
   const [search, setSearch] = useState('');
+  const session = useSession();
+  const canExchangeBeds = userHasAccess(WARD_DASHBOARD_PRIVILEGE, session?.user);
   const { wardPatientGroupDetails } = useAppContext<WardViewContext>('ward-view-context') ?? {};
-  const { bedLayouts, wardAdmittedPatientsWithBed, isLoading } = wardPatientGroupDetails ?? {};
+  const { isLoading } = wardPatientGroupDetails ?? {};
   const { t } = useTranslation();
   const config = useConfig<WardAppConfigSlice>({ externalModuleName: '@kenyaemr/esm-ward-app' });
   const headers = [
@@ -47,40 +54,7 @@ const EthiopiaAdmittedPatientsTable = () => {
     { key: 'action', header: t('action', 'Action') },
   ];
 
-  const patients = useMemo(() => {
-    return (
-      bedLayouts
-        ?.map((bedLayout) => {
-          const { patients } = bedLayout;
-          const bed = bedLayoutToBed(bedLayout);
-          const wardPatients: WardPatient[] = patients.map((patient): WardPatient => {
-            const inpatientAdmission = wardAdmittedPatientsWithBed?.get(patient.uuid);
-            if (inpatientAdmission) {
-              const { patient, visit, currentInpatientRequest } = inpatientAdmission;
-              return { patient, visit, bed, inpatientAdmission, inpatientRequest: currentInpatientRequest || null };
-            }
-
-            return {
-              patient,
-              visit: null,
-              bed,
-              inpatientAdmission: null,
-              inpatientRequest: null,
-            };
-          });
-          return wardPatients;
-        })
-        ?.flat() ?? []
-    ).filter((pat) => {
-      const ipdDischargeEncounter = pat?.visit?.encounters?.find(
-        (encounter) => encounter.encounterType?.uuid === config.ipdDischargeEncounterTypeUuid,
-      );
-      if (!ipdDischargeEncounter) {
-        return true;
-      }
-      return false;
-    });
-  }, [bedLayouts, wardAdmittedPatientsWithBed, config]);
+  const patients = useMemo(() => buildWardPatients(wardPatientGroupDetails, config), [wardPatientGroupDetails, config]);
 
   const [pageSize, setPageSize] = useState(5);
   const searchResults = useMemo(() => {
@@ -136,6 +110,17 @@ const EthiopiaAdmittedPatientsTable = () => {
                 })
               }
             />
+            {canExchangeBeds && patient.visit ? (
+              <OverflowMenuItem
+                itemText={t('exchangeBeds', 'Exchange beds')}
+                onClick={() =>
+                  launchWorkspace2('ethiopia-bed-exchange-workspace', {
+                    workspaceTitle: t('exchangeBeds', 'Exchange beds'),
+                    wardPatient: patient,
+                  })
+                }
+              />
+            ) : null}
             <OverflowMenuItem
               itemText={t('discharge', 'Discharge')}
               onClick={() => {
@@ -151,7 +136,7 @@ const EthiopiaAdmittedPatientsTable = () => {
         ),
       };
     });
-  }, [results, config, t]);
+  }, [results, config, t, canExchangeBeds]);
 
   if (isLoading) {
     return <DataTableSkeleton />;
