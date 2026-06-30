@@ -10,28 +10,31 @@ import {
   Layer,
   TextInput,
 } from '@carbon/react';
-import { useConfig } from '@openmrs/esm-framework';
-import { type EthiopiaReportsConfig } from '../config-schema';
 import { useReportDefinition } from '../api/reports.resource';
-import { runReport, downloadReportDesign, type ReportDataSet } from '../api/report-request';
+import { runReport, fetchFeederDatasetNames, downloadReportDesign, type ReportDataSet } from '../api/report-request';
 import ReportResults from './report-results.component';
 import styles from './report-runner.component.scss';
 
 const ReportRunner: React.FC = () => {
   const { t } = useTranslation();
   const { reportUuid } = useParams<{ reportUuid: string }>();
-  const config = useConfig<EthiopiaReportsConfig>();
   const { reportDefinition, isLoading, error } = useReportDefinition(reportUuid);
 
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Array<ReportDataSet> | null>(null);
+  const [feederDatasets, setFeederDatasets] = useState<Set<string>>(() => new Set());
   const [running, setRunning] = useState(false);
   const [downloadingUuid, setDownloadingUuid] = useState<string | null>(null);
   const [status, setStatus] = useState<{ text: string; kind: 'success' | 'error' } | null>(null);
   const downloadAbortRef = useRef<AbortController | null>(null);
 
-  // Abort any in-flight download poll when the component unmounts or the report changes.
+  // When the component is reused for a different report (route param change),
+  // clear the previous report's results/status so they don't linger over the new
+  // report, and abort any in-flight download poll on change or unmount.
   useEffect(() => {
+    setResults(null);
+    setFeederDatasets(new Set());
+    setStatus(null);
     return () => {
       downloadAbortRef.current?.abort();
     };
@@ -66,8 +69,15 @@ const ReportRunner: React.FC = () => {
     setRunning(true);
     setStatus({ text: t('running', 'Running report, please wait…'), kind: 'success' });
     try {
-      const dataSets = await runReport(reportUuid, paramValues);
+      // Run the report and resolve its template-feeder datasets in parallel; the
+      // feeder list (from ReportDesign repeatingSections) decides which datasets
+      // are hidden from the on-screen tables.
+      const [dataSets, feeders] = await Promise.all([
+        runReport(reportUuid, paramValues),
+        fetchFeederDatasetNames(reportUuid),
+      ]);
       setResults(dataSets);
+      setFeederDatasets(feeders);
       setStatus({ text: t('reportCompleted', 'Report completed successfully.'), kind: 'success' });
     } catch (e) {
       setStatus({
@@ -208,14 +218,7 @@ const ReportRunner: React.FC = () => {
         )}
       </Layer>
 
-      {results && (
-        <ReportResults
-          reportUuid={reportUuid}
-          dataSets={results}
-          columnOrderByUuid={config.columnOrderByUuid}
-          hiddenDatasets={config.hiddenDatasets}
-        />
-      )}
+      {results && <ReportResults dataSets={results} feederDatasets={feederDatasets} />}
     </div>
   );
 };
