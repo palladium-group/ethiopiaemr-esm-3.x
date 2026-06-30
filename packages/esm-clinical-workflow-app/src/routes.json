@@ -91,8 +91,8 @@
       "slot": "queue-table-actions-slot"
     },
     {
-      "name": "optimized-queue-table-dashboard",
-      "component": "optimizedQueueTableDashboard",
+      "name": "service-queue-table-dashboard",
+      "component": "serviceQueueTableDashboard",
       "slot": "service-queues-dashboard-slot",
       "order": 0,
       "online": true,
@@ -111,14 +111,6 @@
       "component": "clinicalMetricsCardCheckedInPatients",
       "slot": "service-queues-metrics-slot",
       "order": 1,
-      "online": true,
-      "offline": true
-    },
-    {
-      "name": "filtered-queue-table-dashboard",
-      "component": "filteredQueueTableDashboard",
-      "slot": "service-queues-dashboard-slot",
-      "order": -10,
       "online": true,
       "offline": true
     },

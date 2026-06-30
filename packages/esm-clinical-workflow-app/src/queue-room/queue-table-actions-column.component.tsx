@@ -3,7 +3,7 @@ import { Button, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { isDesktop, showModal, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
-import { useMutateOptimizedQueueEntries } from './optimized-queue-entries.resource';
+import { useMutateServiceQueueEntries } from './service-queue-entries.resource';
 import { serveQueueEntry } from './service-queues-api.resource';
 import QueueTableRoomActionMenu from './queue-table-room-action-menu.extension';
 import styles from './queue-table-actions-column.scss';
@@ -34,7 +34,7 @@ function useActionPropsByKey() {
     concepts: { defaultStatusConceptUuid },
     visitQueueNumberAttributeUuid,
   } = useConfig<ServiceQueuesActionConfig>({ externalModuleName: '@openmrs/esm-service-queues-app' });
-  const { mutateQueueEntries } = useMutateOptimizedQueueEntries();
+  const { mutateQueueEntries } = useMutateServiceQueueEntries();
 
   const actionPropsByKey: Record<QueueEntryAction, ActionProps> = useMemo(() => {
     const openModal = (modalName: string, queueEntry: QueueEntry) => {

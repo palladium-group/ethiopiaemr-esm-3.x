@@ -28,10 +28,10 @@ import {
   getQueueEntrySearchValue,
   useFilteredQueueTableColumnIds,
 } from './filtered-queue-table-cells';
-import OptimizedQueueTableExpandedRow from './optimized-queue-table-expanded-row.component';
-import styles from './optimized-queue-table.scss';
+import ServiceQueueTableExpandedRow from './service-queue-table-expanded-row.component';
+import styles from './service-queue-table.scss';
 
-interface OptimizedQueueTableProps {
+interface ServiceQueueTableProps {
   queueEntries: QueueEntry[];
   isLoading?: boolean;
   isValidating?: boolean;
@@ -40,7 +40,7 @@ interface OptimizedQueueTableProps {
   paginationResetKey?: string;
 }
 
-export function filterOptimizedQueueEntriesBySearch(
+export function filterServiceQueueEntriesBySearch(
   queueEntries: QueueEntry[],
   searchTerm: string,
   columnIds: string[],
@@ -59,7 +59,7 @@ export function filterOptimizedQueueEntriesBySearch(
   );
 }
 
-const OptimizedQueueTable: React.FC<OptimizedQueueTableProps> = ({
+const ServiceQueueTable: React.FC<ServiceQueueTableProps> = ({
   queueEntries,
   isLoading,
   isValidating,
@@ -174,7 +174,7 @@ const OptimizedQueueTable: React.FC<OptimizedQueueTableProps> = ({
                     </TableExpandRow>
                     {row.isExpanded ? (
                       <TableExpandedRow className={styles.expandedActiveVisitRow} colSpan={tableHeaders.length + 2}>
-                        <OptimizedQueueTableExpandedRow queueEntry={paginatedQueueEntries[index]} />
+                        <ServiceQueueTableExpandedRow queueEntry={paginatedQueueEntries[index]} />
                       </TableExpandedRow>
                     ) : (
                       <TableExpandedRow className={styles.hiddenRow} colSpan={tableHeaders.length + 2} />
@@ -218,4 +218,4 @@ const OptimizedQueueTable: React.FC<OptimizedQueueTableProps> = ({
   );
 };
 
-export default OptimizedQueueTable;
+export default ServiceQueueTable;

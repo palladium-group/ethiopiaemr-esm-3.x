@@ -1,64 +1,50 @@
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { closeWorkspace, ExtensionSlot, launchWorkspace } from '@openmrs/esm-framework';
+import { launchWorkspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import { useServiceQueuesFilterState } from './service-queues-store.util';
 
+const QUEUE_PATIENT_SEARCH_WORKSPACE = 'queue-patient-search-workspace';
 const CREATE_QUEUE_ENTRY_WORKSPACE = 'create-queue-entry-workspace';
-
-function usePatientSearchVisibility() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return {
-    hidePatientSearch: useCallback(() => setIsOpen(false), []),
-    isPatientSearchOpen: isOpen,
-    showPatientSearch: useCallback(() => setIsOpen(true), []),
-  };
-}
+const QUEUE_PATIENT_SEARCH_START_VISIT_WORKSPACE = 'queue-patient-search-start-visit-workspace';
 
 /**
- * Uses the patient-search-button extension (from esm-patient-search-app) and the upstream
- * create-queue-entry-workspace, matching the default service-queues dashboard flow.
+ * Uses workspaces2 registered by @openmrs/esm-service-queues-app v10+.
  */
 const AddPatientToQueueButton: React.FC = () => {
   const { t } = useTranslation();
   const { selectedServiceUuid } = useServiceQueuesFilterState();
-  const [patientSearchQuery, setPatientSearchQuery] = useState('');
-  const { isPatientSearchOpen, hidePatientSearch, showPatientSearch } = usePatientSearchVisibility();
-
-  const handleReturnToSearchList = useCallback(() => {
-    showPatientSearch();
-    closeWorkspace(CREATE_QUEUE_ENTRY_WORKSPACE);
-  }, [showPatientSearch]);
 
   return (
-    <ExtensionSlot
-      name="patient-search-button-slot"
-      state={{
-        buttonText: t('addPatientToQueue', 'Add patient to queue'),
-        buttonProps: {
-          kind: 'secondary',
-          renderIcon: (props) => <Add size={16} {...props} />,
-          size: 'sm',
-        },
-        handleReturnToSearchList,
-        hidePatientSearch,
-        isOpen: isPatientSearchOpen,
-        searchQuery: patientSearchQuery,
-        searchQueryUpdatedAction: (searchQuery: string) => setPatientSearchQuery(searchQuery),
-        selectPatientAction: (selectedPatientUuid: string) => {
-          hidePatientSearch();
-          launchWorkspace(CREATE_QUEUE_ENTRY_WORKSPACE, {
-            currentServiceQueueUuid: selectedServiceUuid,
-            handleReturnToSearchList,
-            selectedPatientUuid,
-          });
-        },
-        showPatientSearch,
-        workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
-      }}
-    />
+    <Button
+      kind="secondary"
+      renderIcon={(props) => <Add size={16} {...props} />}
+      size="sm"
+      onClick={() => {
+        launchWorkspace2(
+          QUEUE_PATIENT_SEARCH_WORKSPACE,
+          {
+            initialQuery: '',
+            workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
+            onPatientSelected(
+              _patientUuid: string,
+              patient: fhir.Patient,
+              launchChildWorkspace: Workspace2DefinitionProps['launchChildWorkspace'],
+            ) {
+              launchChildWorkspace(CREATE_QUEUE_ENTRY_WORKSPACE, {
+                currentServiceQueueUuid: selectedServiceUuid,
+                selectedPatientUuid: patient.id,
+              });
+            },
+          },
+          {
+            startVisitWorkspaceName: QUEUE_PATIENT_SEARCH_START_VISIT_WORKSPACE,
+          },
+        ).catch(() => undefined);
+      }}>
+      {t('addPatientToQueue', 'Add patient to queue')}
+    </Button>
   );
 };
 

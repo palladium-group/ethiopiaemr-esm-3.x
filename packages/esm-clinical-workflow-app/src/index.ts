@@ -160,13 +160,8 @@ export const clinicalMetricsCardCheckedInPatients = getAsyncLifecycle(
   options,
 );
 
-export const optimizedQueueTableDashboard = getAsyncLifecycle(
-  () => import('./queue-room/optimized-queue-table-dashboard.component'),
-  options,
-);
-
-export const filteredQueueTableDashboard = getAsyncLifecycle(
-  () => import('./queue-room/filtered-queue-table-dashboard.component'),
+export const serviceQueueTableDashboard = getAsyncLifecycle(
+  () => import('./queue-room/service-queue-table-dashboard.component'),
   options,
 );
 

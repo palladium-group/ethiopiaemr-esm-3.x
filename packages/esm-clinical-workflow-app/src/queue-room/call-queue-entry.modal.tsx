@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
 import { navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
-import { useMutateOptimizedQueueEntries } from './optimized-queue-entries.resource';
+import { useMutateServiceQueueEntries } from './service-queue-entries.resource';
 import { serveQueueEntry } from './service-queues-api.resource';
 import {
   formatPatientDob,
@@ -34,7 +34,7 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
   const config = useConfig<ServiceQueuesCallConfig>({
     externalModuleName: '@openmrs/esm-service-queues-app',
   });
-  const { mutateQueueEntries } = useMutateOptimizedQueueEntries();
+  const { mutateQueueEntries } = useMutateServiceQueueEntries();
 
   const { queueEntry: fullQueueEntry, isLoading, error } = useCallQueueEntry(queueEntry.uuid);
 
