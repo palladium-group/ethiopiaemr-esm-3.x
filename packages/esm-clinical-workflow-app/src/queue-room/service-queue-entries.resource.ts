@@ -17,7 +17,7 @@ type QueueEntryResponse = FetchResponse<{
  * Lean representation: only fields read by queue table columns and row actions.
  * Omits visit.encounters (obs, diagnoses, providers) which the table never displays.
  */
-export const optimizedQueueEntryRep =
+export const serviceQueueEntryRep =
   'custom:(uuid,display,queue:(uuid,display,name,location:(uuid,display)),status:(uuid,display),patient:(uuid,display,person:(uuid,display,birthdate),identifiers:(uuid,display,identifier,identifierType:(uuid,display))),visit:(uuid,display,startDatetime,attributes:(uuid,display,value,attributeType:(uuid,display))),priority:(uuid,display),priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor:(uuid,display),queueComingFrom:(uuid,display),providerWaitingFor:(uuid,display),previousQueueEntry:(uuid,display))';
 
 function getInitialUrl(rep: string, searchCriteria?: QueueEntrySearchCriteria) {
@@ -48,7 +48,7 @@ function getNextUrlFromResponse(data: QueueEntryResponse) {
   return null;
 }
 
-export function useMutateOptimizedQueueEntries() {
+export function useMutateServiceQueueEntries() {
   const { mutate } = useSWRConfig();
 
   return {
@@ -66,16 +66,13 @@ export function useMutateOptimizedQueueEntries() {
 }
 
 /**
- * Optimized alternative to the upstream useQueueEntries hook:
+ * Service queue table data hook — lean alternative to the upstream useQueueEntries:
  * - Uses a trimmed REST representation
  * - Renders the table after the first page arrives (progressive loading)
  * - Does not force a refetch on mount
  */
-export function useOptimizedQueueEntries(
-  searchCriteria?: QueueEntrySearchCriteria,
-  rep: string = optimizedQueueEntryRep,
-) {
-  const { mutateQueueEntries } = useMutateOptimizedQueueEntries();
+export function useServiceQueueEntries(searchCriteria?: QueueEntrySearchCriteria, rep: string = serviceQueueEntryRep) {
+  const { mutateQueueEntries } = useMutateServiceQueueEntries();
 
   const [currentPage, setCurrentPage] = useState(0);
   const [currentRep, setCurrentRep] = useState(rep);

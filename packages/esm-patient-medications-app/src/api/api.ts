@@ -1,7 +1,14 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import useSWRImmutable from 'swr/immutable';
-import { openmrsFetch, restBaseUrl, useConfig, type FetchResponse } from '@openmrs/esm-framework';
+import {
+  openmrsFetch,
+  restBaseUrl,
+  useConfig,
+  getGlobalStore,
+  subscribeTo,
+  type FetchResponse,
+} from '@openmrs/esm-framework';
 import {
   type DrugOrderBasketItem,
   type DrugOrderPost,
@@ -34,6 +41,39 @@ function sortOrdersByDateActivated(orders: Order[]) {
 }
 
 /**
+ * Subscribes to the shared order basket store (via @openmrs/esm-framework singleton) and calls
+ * the provided `mutate` when the medication basket for this patient transitions from non-empty
+ * to empty, which signals that orders were submitted via Sign and Close.
+ *
+ * This bypasses the cross-module SWR cache invalidation issue: the community
+ * esm-patient-orders-app calls useMutatePatientOrders() using its own SWR instance,
+ * which may differ from the SWR instance in this app when running as a separate bundle.
+ * The order basket store is always shared as a singleton via the framework, so subscribing
+ * to it is reliable for detecting order submission across module boundaries.
+ */
+function useRevalidateOnBasketSubmit(patientUuid: string, mutate: () => void) {
+  const mutateRef = useRef(mutate);
+  useEffect(() => {
+    mutateRef.current = mutate;
+  });
+
+  useEffect(() => {
+    if (!patientUuid) {
+      return;
+    }
+    const store = getGlobalStore<{ items: Record<string, Record<string, Array<unknown>>> }>('order-basket');
+    let prevCount = 0;
+    return subscribeTo(store, (state) => {
+      const currentCount = (state.items?.[patientUuid]?.['medications'] ?? []).length;
+      if (prevCount > 0 && currentCount === 0) {
+        mutateRef.current();
+      }
+      prevCount = currentCount;
+    });
+  }, [patientUuid]);
+}
+
+/**
  * SWR-based data fetcher for patient orders.
  *
  * @param patientUuid The UUID of the patient whose orders should be fetched.
@@ -59,6 +99,8 @@ export function usePatientOrders(patientUuid: string) {
     [mutate, patientUuid],
   );
 
+  useRevalidateOnBasketSubmit(patientUuid, mutateOrders);
+
   const drugOrders = useMemo(() => sortOrdersByDateActivated(data?.data?.results) ?? null, [data]);
 
   return {
@@ -77,7 +119,6 @@ export function usePatientOrders(patientUuid: string) {
  */
 export function useActivePatientOrders(patientUuid: string) {
   const { drugOrderTypeUUID } = useConfig<ConfigObject>();
-  const { mutate } = useSWRConfig();
 
   const ordersUrl = useMemo(
     () =>
@@ -86,10 +127,12 @@ export function useActivePatientOrders(patientUuid: string) {
         : null,
     [patientUuid, drugOrderTypeUUID],
   );
-  const { data, error, isLoading, isValidating } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(
     ordersUrl,
     openmrsFetch,
   );
+
+  const mutateOrders = useCallback(() => mutate(), [mutate]);
 
   const activeOrders = useMemo(() => sortOrdersByDateActivated(data?.data?.results) ?? null, [data]);
 
@@ -98,7 +141,7 @@ export function useActivePatientOrders(patientUuid: string) {
     error,
     isLoading,
     isValidating,
-    mutate,
+    mutate: mutateOrders,
   };
 }
 

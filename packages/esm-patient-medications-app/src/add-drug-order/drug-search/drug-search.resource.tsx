@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useSWRConfig } from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { type FetchResponse, openmrsFetch, restBaseUrl, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
 import {
@@ -55,6 +56,9 @@ interface DrugListFetchResult {
 const maxConceptsPerRequest = 20;
 const drugPageSize = 50;
 const drugSearchRepresentation = 'custom:(uuid,display,name,strength,dosageForm:(display,uuid),concept:(display,uuid))';
+
+// Limits upfront template requests until backend supports batch fetching (OEUI-312)
+export const MAX_TEMPLATE_PREFETCH = 15;
 
 /**
  * Search for a list of drugs based on the given query string or concepts (uuid/name/mapping)
@@ -203,47 +207,99 @@ export function useDrugTemplate(drugUuid: string): {
 }
 
 /**
- * Search for a list of order templates associated with drugs in the given array
+ * Search for a list of order templates associated with drugs in the given array.
  * Requires the ordertemplates module installed to work properly.
  *
- * Note: This hook is inefficient as it makes a request for each uuid. Having a
- * backend search handler that supports passing in multiple drug uuids will fix that.
- * See: https://openmrs.atlassian.net/browse/OEUI-312
- * @param drugUuids
- * @returns a Map mapping each drug uuid to a list of associated order templates
+ * Caches results per individual drug UUID in SWR's cache so incremental searches
+ * (typing letter by letter) reuse cached templates for drugs that appear across
+ * multiple result sets, without triggering extra network requests.
+ *
+ * Note: Having a backend batch handler for multiple drug uuids would further reduce
+ * requests. See: https://openmrs.atlassian.net/browse/OEUI-312
  */
 export function useDrugTemplates(drugs: Drug[]) {
-  const drugUuids = drugs?.map((d) => d.uuid);
   const isOrderTemplatesModuleInstalled = useFeatureFlag('ordertemplates-module');
-  const { data, ...rest } = useSWRImmutable<FetchResponse<OrderTemplateResource>[], Error>(
-    isOrderTemplatesModuleInstalled ? drugUuids : null,
-    (drugUuids: string[]) => {
-      return Promise.all(
-        drugUuids.map((drugUuid) => {
-          return openmrsFetch<OrderTemplateResource>(`${restBaseUrl}/ordertemplates/orderTemplate?drug=${drugUuid}`);
-        }),
-      );
-    },
+  const { cache, mutate } = useSWRConfig();
+
+  const drugUuids = useMemo(() => drugs?.map((d) => d.uuid) ?? [], [drugs]);
+
+  const getTemplateKey = useCallback(
+    (drugUuid: string) =>
+      isOrderTemplatesModuleInstalled && drugUuid
+        ? `${restBaseUrl}/ordertemplates/orderTemplate?drug=${drugUuid}`
+        : null,
+    [isOrderTemplatesModuleInstalled],
   );
 
-  const templateByDrugUuid = useMemo(() => {
-    const templateByDrugUuid: Map<string, DrugOrderTemplate[]> = new Map();
-    for (const d of data ?? []) {
-      if (d.data?.drug) {
-        const key = d.data.drug.uuid;
-        if (!templateByDrugUuid.has(key)) {
-          templateByDrugUuid.set(key, []);
+  // Split drugs into those already in SWR cache vs those that need fetching
+  const { cachedTemplates, uncachedUuids } = useMemo(() => {
+    const cachedTemplates = new Map<string, DrugOrderTemplate[]>();
+    const uncachedUuids: string[] = [];
+
+    for (const uuid of drugUuids) {
+      const key = getTemplateKey(uuid);
+      const entry = key ? cache.get(key) : undefined;
+      if (entry?.data !== undefined) {
+        const results = (entry.data as FetchResponse<{ results: Array<OrderTemplateResource> }>)?.data?.results ?? [];
+        const templates = results.map((t) => ({
+          ...t,
+          template: JSON.parse(t.template) as OrderTemplate,
+        }));
+        if (templates.length) {
+          cachedTemplates.set(uuid, templates);
         }
-        templateByDrugUuid.get(key).push({
-          ...d.data,
-          template: JSON.parse(d.data.template) as OrderTemplate,
-        });
+      } else {
+        uncachedUuids.push(uuid);
       }
     }
-    return templateByDrugUuid;
-  }, [data]);
 
-  return { templateByDrugUuid, ...rest };
+    return { cachedTemplates, uncachedUuids };
+  }, [drugUuids, cache, getTemplateKey]);
+
+  // Only fetch the drugs not already in SWR cache
+  const batchKey = uncachedUuids.length > 0 ? ['drug-templates-batch', ...uncachedUuids] : null;
+
+  const {
+    data: batchData,
+    isLoading,
+    error,
+  } = useSWRImmutable(batchKey, async () => {
+    const results = await Promise.all(
+      uncachedUuids.map((uuid) =>
+        openmrsFetch<{ results: Array<OrderTemplateResource> }>(
+          `${restBaseUrl}/ordertemplates/orderTemplate?drug=${uuid}`,
+        ),
+      ),
+    );
+    // Populate individual SWR cache entries keyed by drug UUID so future
+    // searches that include the same drug skip the network entirely
+    uncachedUuids.forEach((uuid, i) => {
+      const key = getTemplateKey(uuid);
+      if (key) {
+        mutate(key, results[i], { revalidate: false });
+      }
+    });
+    return results.map((r, i) => ({
+      uuid: uncachedUuids[i],
+      templates: (r.data?.results ?? []).map((t) => ({
+        ...t,
+        template: JSON.parse(t.template) as OrderTemplate,
+      })),
+    }));
+  });
+
+  // Merge already-cached templates with the newly fetched ones
+  const templateByDrugUuid = useMemo(() => {
+    const map = new Map<string, DrugOrderTemplate[]>(cachedTemplates);
+    for (const { uuid, templates } of batchData ?? []) {
+      if (templates.length) {
+        map.set(uuid, templates);
+      }
+    }
+    return map;
+  }, [cachedTemplates, batchData]);
+
+  return { templateByDrugUuid, isLoading, error };
 }
 
 export function getDefault(template: OrderTemplate, prop: string) {

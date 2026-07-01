@@ -14,21 +14,24 @@ import { type ReportDataSet } from '../api/report-request';
 import styles from './report-results.component.scss';
 
 interface ReportResultsProps {
-  reportUuid: string;
   dataSets: Array<ReportDataSet>;
-  columnOrderByUuid: Record<string, Array<string>>;
-  hiddenDatasets: Array<string>;
+  /**
+   * Names of datasets that exist only to feed a ReportDesign template (derived
+   * from each design's `repeatingSections`), and so should not be shown on
+   * screen. Authoritative signal — not a name heuristic.
+   */
+  feederDatasets: Set<string>;
 }
 
 /**
  * Renders run-report results, one table per (visible) dataset. Columns are
- * ordered using the configured per-report column order, with any unlisted columns
- * appended afterwards — porting the legacy GSP's orderColumns()/HIDDEN_DATASETS.
+ * rendered in the dataset's server-declared order (`ds.columns`, i.e. the SQL
+ * SELECT order), so no per-report column-order config is needed. Template feeder
+ * datasets (named in a ReportDesign's `repeatingSections`) are hidden.
  */
-const ReportResults: React.FC<ReportResultsProps> = ({ reportUuid, dataSets, columnOrderByUuid, hiddenDatasets }) => {
+const ReportResults: React.FC<ReportResultsProps> = ({ dataSets, feederDatasets }) => {
   const { t } = useTranslation();
-  const hidden = new Set(hiddenDatasets);
-  const visible = dataSets.filter((ds) => !hidden.has(ds.name));
+  const visible = dataSets.filter((ds) => !feederDatasets.has(ds.name));
 
   if (visible.length === 0) {
     return <p className={styles.empty}>{t('noData', 'No data returned.')}</p>;
@@ -46,7 +49,12 @@ const ReportResults: React.FC<ReportResultsProps> = ({ reportUuid, dataSets, col
           );
         }
 
-        const columns = orderColumns(reportUuid, Object.keys(ds.rows[0]), columnOrderByUuid);
+        // Render in the server-declared SELECT order (`ds.columns`). Append any
+        // keys present in the data but not declared, so a column is never
+        // silently dropped; fall back to row keys entirely if metadata is absent.
+        const rowKeys = Object.keys(ds.rows[0]);
+        const columns =
+          ds.columns.length > 0 ? [...ds.columns, ...rowKeys.filter((k) => !ds.columns.includes(k))] : rowKeys;
         const headers = columns.map((c) => ({ key: c, header: c }));
         const tableRows = ds.rows.map((row, rIdx) => {
           const r: Record<string, string> = { id: String(rIdx) };
@@ -101,31 +109,5 @@ const ReportResults: React.FC<ReportResultsProps> = ({ reportUuid, dataSets, col
     </div>
   );
 };
-
-function orderColumns(
-  uuid: string,
-  availableCols: Array<string>,
-  columnOrderByUuid: Record<string, Array<string>>,
-): Array<string> {
-  const preferred = columnOrderByUuid?.[uuid];
-  if (!preferred) {
-    return availableCols;
-  }
-  const present = new Set(availableCols);
-  const ordered: Array<string> = [];
-  preferred.forEach((c) => {
-    if (present.has(c)) {
-      ordered.push(c);
-      present.delete(c);
-    }
-  });
-  // append any data columns not in the preferred list
-  availableCols.forEach((c) => {
-    if (present.has(c)) {
-      ordered.push(c);
-    }
-  });
-  return ordered;
-}
 
 export default ReportResults;
