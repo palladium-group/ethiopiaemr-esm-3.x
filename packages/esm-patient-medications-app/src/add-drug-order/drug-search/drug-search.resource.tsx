@@ -214,8 +214,8 @@ export function useDrugTemplate(drugUuid: string): {
  * (typing letter by letter) reuse cached templates for drugs that appear across
  * multiple result sets, without triggering extra network requests.
  *
- * Note: Having a backend batch handler for multiple drug uuids would further reduce
- * requests. See: https://openmrs.atlassian.net/browse/OEUI-312
+ * Uses the backend batch endpoint (?drugs=uuid1,uuid2,...) added in OEUI-312
+ * to fetch all templates in a single request instead of one per drug.
  */
 export function useDrugTemplates(drugs: Drug[]) {
   const isOrderTemplatesModuleInstalled = useFeatureFlag('ordertemplates-module');
@@ -256,44 +256,56 @@ export function useDrugTemplates(drugs: Drug[]) {
     return { cachedTemplates, uncachedUuids };
   }, [drugUuids, cache, getTemplateKey]);
 
-  // Only fetch the drugs not already in SWR cache
-  const batchKey = uncachedUuids.length > 0 ? ['drug-templates-batch', ...uncachedUuids] : null;
+  // One batch request for all uncached drugs using the ?drugs= batch endpoint
+  const batchUrl =
+    uncachedUuids.length > 0 && isOrderTemplatesModuleInstalled
+      ? `${restBaseUrl}/ordertemplates/orderTemplate?drugs=${uncachedUuids.join(',')}`
+      : null;
 
   const {
     data: batchData,
     isLoading,
     error,
-  } = useSWRImmutable(batchKey, async () => {
-    const results = await Promise.all(
-      uncachedUuids.map((uuid) =>
-        openmrsFetch<{ results: Array<OrderTemplateResource> }>(
-          `${restBaseUrl}/ordertemplates/orderTemplate?drug=${uuid}`,
-        ),
-      ),
-    );
-    // Populate individual SWR cache entries keyed by drug UUID so future
-    // searches that include the same drug skip the network entirely
-    uncachedUuids.forEach((uuid, i) => {
+  } = useSWRImmutable(batchUrl, async (url: string) => {
+    const response = await openmrsFetch<{ results: Array<OrderTemplateResource> }>(url);
+    const allTemplates = response.data?.results ?? [];
+
+    // Group templates by drug UUID
+    const byDrugUuid = new Map<string, Array<OrderTemplateResource>>();
+    for (const template of allTemplates) {
+      const uuid = template.drug?.uuid;
+      if (uuid) {
+        if (!byDrugUuid.has(uuid)) {
+          byDrugUuid.set(uuid, []);
+        }
+        byDrugUuid.get(uuid).push(template);
+      }
+    }
+
+    // Populate individual per-drug SWR cache entries so future searches
+    // that include the same drug skip the network entirely
+    for (const uuid of uncachedUuids) {
       const key = getTemplateKey(uuid);
       if (key) {
-        mutate(key, results[i], { revalidate: false });
+        mutate(key, { data: { results: byDrugUuid.get(uuid) ?? [] } }, { revalidate: false });
       }
-    });
-    return results.map((r, i) => ({
-      uuid: uncachedUuids[i],
-      templates: (r.data?.results ?? []).map((t) => ({
-        ...t,
-        template: JSON.parse(t.template) as OrderTemplate,
-      })),
-    }));
+    }
+
+    return byDrugUuid;
   });
 
   // Merge already-cached templates with the newly fetched ones
   const templateByDrugUuid = useMemo(() => {
     const map = new Map<string, DrugOrderTemplate[]>(cachedTemplates);
-    for (const { uuid, templates } of batchData ?? []) {
-      if (templates.length) {
-        map.set(uuid, templates);
+    if (batchData) {
+      for (const [uuid, templates] of batchData) {
+        const parsed = templates.map((t) => ({
+          ...t,
+          template: JSON.parse(t.template) as OrderTemplate,
+        }));
+        if (parsed.length) {
+          map.set(uuid, parsed);
+        }
       }
     }
     return map;
