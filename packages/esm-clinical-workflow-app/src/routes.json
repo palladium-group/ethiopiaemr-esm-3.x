@@ -144,6 +144,11 @@
       "slot": "ward-ui-extension-hidden-slot"
     },
     {
+      "name": "ethiopia-admitted-patients-table",
+      "component": "ethiopiaAdmittedPatientsTable",
+      "slot": "ward-patients-admitted-slot"
+    },
+    {
       "name": "ethiopiaemr-etl-admin-dashboard-link",
       "component": "etlAdminDashboardLink",
       "slot": "navbar-items-slot",
@@ -206,6 +211,11 @@
       "name": "visit-notes-form-shadow-workspace",
       "component": "visitNotesFormWorkspace",
       "window": "visit-note-shadow"
+    },
+    {
+      "name": "ethiopia-bed-swap-workspace",
+      "component": "ethiopiaBedSwapWorkspace",
+      "window": "kenyaemr-esm-ward-window"
     }
   ],
   "workspaceWindows2": [

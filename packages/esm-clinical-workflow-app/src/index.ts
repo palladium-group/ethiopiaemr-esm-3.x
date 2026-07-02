@@ -22,6 +22,7 @@ import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/vis
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
 import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
+import { subscribeAdmittedPatientsSlotSync } from './ward/admitted-patients/sync-admitted-patients-slot';
 import ImmunizationRegisterActionButton from './patient-immunization/immunization-register-action-button.component';
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
@@ -61,6 +62,8 @@ export function startupApp() {
 
   removeCoreButton();
   workspace2Store.subscribe(removeCoreButton);
+
+  subscribeAdmittedPatientsSlotSync();
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
@@ -186,6 +189,13 @@ export const finishServiceButton = getSyncLifecycle(FinishServiceButton, {
 });
 
 export const addPatientToWardSiderailButton = getSyncLifecycle(AddPatientToWardSiderailButton, options);
+
+export const ethiopiaAdmittedPatientsTable = getAsyncLifecycle(
+  () => import('./ward/admitted-patients/ethiopia-admitted-patients-table.component'),
+  options,
+);
+
+export const ethiopiaBedSwapWorkspace = getAsyncLifecycle(() => import('./ward/bed-swap/bed-swap.workspace'), options);
 
 export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, options);
 
