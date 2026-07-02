@@ -3,12 +3,12 @@ import { BillingConfig } from '../config-schema';
 
 // Default locale to currency mapping (fallback)
 export const DEFAULT_LOCALE_CURRENCY_MAP: Record<string, string> = {
-  en: 'KES', // English - Kenyan Shilling
-  sw: 'KES', // Swahili - Kenyan Shilling
+  en: 'ETB', // English - Ethiopian Birr
+  sw: 'ETB', // Swahili - Ethiopian Birr
   am: 'ETB', // Amharic - Ethiopian Birr
-  'en-KE': 'KES', // English Kenya
-  'sw-KE': 'KES', // Swahili Kenya
-  'am-ET': 'ETB', // Amharic Ethiopia
+  'en-US': 'ETB', // English United States
+  'en-GB': 'ETB', // English United Kingdom
+  'om-ET': 'ETB', // Oromo Ethiopia
 };
 
 /**
@@ -17,7 +17,7 @@ export const DEFAULT_LOCALE_CURRENCY_MAP: Record<string, string> = {
  */
 export const getCurrencyForLocale = (): string => {
   const currentLocale = localStorage.getItem('i18nextLng') ?? 'en';
-  return DEFAULT_LOCALE_CURRENCY_MAP[currentLocale] || 'KES';
+  return DEFAULT_LOCALE_CURRENCY_MAP[currentLocale] || 'ETB';
 };
 
 /**
@@ -30,7 +30,7 @@ export const getCurrencyForLocaleWithConfig = (config?: BillingConfig): string =
 
   // Use config mapping if available, otherwise fall back to default
   const currencyMap = config?.localeCurrencyMapping || DEFAULT_LOCALE_CURRENCY_MAP;
-  return currencyMap[currentLocale] || 'KES';
+  return currencyMap[currentLocale] || 'ETB';
 };
 
 /**
