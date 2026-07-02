@@ -229,13 +229,13 @@ export const configSchema: ConfigSchema = {
     _type: Type.Object,
     _description: 'Mapping of locale codes to currency codes for internationalization',
     _default: {
-      en: 'KES',
-      sw: 'KES',
+      en: 'ETB',
+      sw: 'ETB',
       am: 'ETB',
-      'en-KE': 'KES',
-      'sw-KE': 'KES',
+      'en-KE': 'ETB',
+      'sw-KE': 'ETB',
       'am-ET': 'ETB',
-      'en-GB': 'KES',
+      'en-GB': 'ETB',
     },
   },
   enableClaims: {

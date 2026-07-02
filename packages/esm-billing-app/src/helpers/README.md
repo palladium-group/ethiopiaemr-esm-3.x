@@ -13,11 +13,11 @@ This module provides locale-based currency formatting for the billing applicatio
 
 | Locale | Currency | Description |
 |--------|----------|-------------|
-| `en` | KES | English - Kenyan Shilling |
-| `sw` | KES | Swahili - Kenyan Shilling |
+| `en` | ETB | English - Ethiopian Birr |
+| `sw` | ETB | Swahili - Ethiopian Birr |
 | `am` | ETB | Amharic - Ethiopian Birr |
-| `en-KE` | KES | English Kenya |
-| `sw-KE` | KES | Swahili Kenya |
+| `en-KE` | ETB | English Kenya |
+| `sw-KE` | ETB | Swahili Kenya |
 | `am-ET` | ETB | Amharic Ethiopia |
 
 ## Usage
