@@ -20,7 +20,7 @@ import styles from './mru.scss';
 import { type ClinicalWorkflowConfig } from '../config-schema';
 import VisitsTable from '../patient-scoreboard/visits-table/visits-table.component';
 import { useActiveVisits } from '../patient-scoreboard/hooks/useVisitList';
-import { DEFAULT_PAGE_SIZE } from '../constants';
+import { DEFAULT_PAGE_SIZE, spaBasePath } from '../constants';
 import { Permissions } from '../permission/permissions.constants';
 const MRU: React.FC = () => {
   const { t } = useTranslation();
@@ -83,7 +83,8 @@ const PatientSearch: React.FC = () => {
   };
 
   const handlePatientInformationEdit = () => {
-    navigate({ to: `${window.spaBase}/patient/${patientUuid}/edit` });
+    const mruReturnUrl = encodeURIComponent(`${spaBasePath}/mru/${patientUuid}`);
+    navigate({ to: `${window.spaBase}/patient/${patientUuid}/edit?afterUrl=${mruReturnUrl}` });
   };
 
   return (
