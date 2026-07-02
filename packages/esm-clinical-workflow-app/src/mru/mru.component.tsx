@@ -83,7 +83,8 @@ const PatientSearch: React.FC = () => {
   };
 
   const handlePatientInformationEdit = () => {
-    navigate({ to: `${window.spaBase}/patient/${patientUuid}/edit` });
+    const mruReturnUrl = encodeURIComponent(`${window.spaBase}/home/mru/${patientUuid}`);
+    navigate({ to: `${window.spaBase}/patient/${patientUuid}/edit?afterUrl=${mruReturnUrl}` });
   };
 
   return (
