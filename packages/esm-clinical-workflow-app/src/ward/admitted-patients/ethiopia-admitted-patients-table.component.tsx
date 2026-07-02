@@ -169,7 +169,7 @@ const EthiopiaAdmittedPatientsTable = () => {
                 page={currentPage}
                 pageSize={pageSize}
                 pageSizes={pageSizes}
-                totalItems={(patients ?? []).length}
+                totalItems={(searchResults ?? []).length}
                 onChange={({ page, pageSize }) => {
                   goTo(page);
                   setPageSize(pageSize);
