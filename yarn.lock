@@ -3724,6 +3724,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-login-app@workspace:packages/esm-login-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-login-app@workspace:packages/esm-login-app"
+  dependencies:
+    "@hookform/resolvers": "npm:^3.1.1"
+    lodash-es: "npm:^4.17.15"
+    react-hook-form: "npm:^7.45.1"
+    zod: "npm:^3.21.4"
+  peerDependencies:
+    "@carbon/react": ^1.83.0
+    "@openmrs/esm-framework": 8.x
+    react: ^18.1.0
+    react-dom: ^18.1.0
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: ^6.6.3
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-order-catalog-ethio-app@workspace:packages/esm-order-catalog-ethio-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-order-catalog-ethio-app@workspace:packages/esm-order-catalog-ethio-app"
