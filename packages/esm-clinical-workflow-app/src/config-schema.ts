@@ -322,6 +322,11 @@ export const configSchema = {
     _type: Type.String,
     _default: 'Routine Immunization Register',
   },
+  inpatientOrderSheetFormUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the Inpatient Order Sheet form',
+    _default: '038fea05-4091-4a08-a24c-5fc7e4d11b82',
+  },
 };
 
 export interface PatientTypeConfig {
@@ -382,6 +387,7 @@ export type ClinicalWorkflowConfig = {
   transferNoteConceptUuid: string;
   transferDestinationLocationConceptUuid: string;
   recentDiagnosesCount: number;
+  inpatientOrderSheetFormUuid: string;
 };
 
 export interface VisitNoteConfig {
