@@ -26,6 +26,13 @@
       "offline": false
     },
     {
+      "name": "order-sheet",
+      "component": "orderSheet",
+      "slot": "ewf-admissions-dashboard-slot",
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "patient-scoreboard-link",
       "component": "patientScoreboardLink",
       "slot": "homepage-dashboard-slot",

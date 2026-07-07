@@ -28,6 +28,7 @@ import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 import EtlAdminDashboardLink from './admin/etl-admin-dashboard-link.extension';
 import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
+import OrderSheet from './ward/order-sheet.component';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
@@ -201,3 +202,5 @@ export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, opt
 
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
 export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);
+
+export const orderSheet = getSyncLifecycle(OrderSheet, options);
