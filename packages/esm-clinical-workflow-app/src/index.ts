@@ -23,12 +23,12 @@ import startVisitActionButtonComponent from './patient-chart/start-visit-action-
 import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { subscribeAdmittedPatientsSlotSync } from './ward/admitted-patients/sync-admitted-patients-slot';
+import { registerAdmitWorkspaceOverride } from './ward/admit-to-inpatient/register-admit-workspace-override';
 import ImmunizationRegisterActionButton from './patient-immunization/immunization-register-action-button.component';
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 import EtlAdminDashboardLink from './admin/etl-admin-dashboard-link.extension';
 import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
-import OrderSheet from './ward/order-sheet.component';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
@@ -65,6 +65,7 @@ export function startupApp() {
   workspace2Store.subscribe(removeCoreButton);
 
   subscribeAdmittedPatientsSlotSync();
+  registerAdmitWorkspaceOverride();
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
@@ -198,9 +199,12 @@ export const ethiopiaAdmittedPatientsTable = getAsyncLifecycle(
 
 export const ethiopiaBedSwapWorkspace = getAsyncLifecycle(() => import('./ward/bed-swap/bed-swap.workspace'), options);
 
+export const ethiopiaAdmitPatientFormWorkspace = getAsyncLifecycle(
+  () => import('./ward/admit-to-inpatient/ethiopia-admit-patient-form.workspace'),
+  options,
+);
+
 export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, options);
 
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
 export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);
-
-export const orderSheet = getSyncLifecycle(OrderSheet, options);
