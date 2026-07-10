@@ -142,6 +142,7 @@
   "pillDispensedErrorMessage": "Quantity to dispense is required",
   "prescriptionDuration": "Prescription duration",
   "prescriptionReturned": "Prescription returned",
+  "prescriptionSyncFailed": "Sync failed",
   "print": "Print",
   "printedBy": "Printed by",
   "printMedications": "Print medications",

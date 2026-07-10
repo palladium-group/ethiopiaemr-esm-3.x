@@ -81,4 +81,26 @@ describe('PastMedications', () => {
       expect(within(table).getByRole('row', { name: row })).toBeInTheDocument();
     });
   });
+
+  test('does not fetch or render prescription sync failure status for past medications', async () => {
+    mockOpenmrsFetch
+      .mockReturnValueOnce({
+        data: { results: mockPatientDrugOrdersApiData },
+      })
+      .mockReturnValueOnce({
+        data: { results: [] }, // simulate no active orders so all become "past"
+      });
+
+    renderWithSwr(<PastMedications patient={mockPatient} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.queryByText(/sync failed/i)).not.toBeInTheDocument();
+
+    const syncStatusCalls = mockOpenmrsFetch.mock.calls.filter(
+      ([url]) => typeof url === 'string' && url.includes('prescriptionOutbox/status'),
+    );
+    expect(syncStatusCalls).toHaveLength(0);
+  });
 });

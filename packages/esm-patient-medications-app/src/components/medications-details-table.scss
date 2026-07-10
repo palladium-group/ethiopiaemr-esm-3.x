@@ -79,6 +79,24 @@
   text-transform: none;
 }
 
+.failedSyncTag {
+  margin: 0;
+  text-transform: none;
+}
+
+.failedSyncDetails {
+  @include type.type-style('body-compact-01');
+  background-color: colors.$red-10;
+  border-left: 3px solid colors.$red-60;
+  border-radius: 0 layout.$spacing-02 layout.$spacing-02 0;
+  color: colors.$gray-100;
+  letter-spacing: normal;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  text-transform: none;
+  white-space: normal;
+  word-break: break-word;
+}
+
 .dtpReturnReasonLine {
   @include type.type-style('body-compact-01');
   color: colors.$gray-100;
