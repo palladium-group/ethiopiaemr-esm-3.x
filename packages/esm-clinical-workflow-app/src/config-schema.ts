@@ -287,6 +287,16 @@ export const configSchema = {
     _description: "UUID for the 'Drug' order type to fetch medications",
     _default: '131168f4-15f5-102d-96e4-000c29c2a5d7',
   },
+  admissionRequestFormUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the admission request form used to request inpatient admission',
+    _default: '5e725bad-750e-4d31-b4bc-cab4c9ea63ff',
+  },
+  admissionRequestFormName: {
+    _type: Type.String,
+    _description: 'Display name for the admission request form workspace title',
+    _default: 'Admission Request Form',
+  },
   patientTransferFormUuid: {
     _type: Type.UUID,
     _description: 'UUID of the patient transfer form',
@@ -382,6 +392,8 @@ export type ClinicalWorkflowConfig = {
   emergencyLocationTags: string[];
   medicalRecordingUnitLocationTagUuid: string;
   medicalRecordingUnitLocationTagName: string;
+  admissionRequestFormUuid: string;
+  admissionRequestFormName: string;
   patientTransferFormUuid: string;
   transferEncounterTypeUuid: string;
   transferNoteConceptUuid: string;

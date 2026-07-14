@@ -20,9 +20,11 @@ import recentDiagnosesWidgetComponent from './patient-notes/recent-diagnoses-wid
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
+import admitPatientActionButtonComponent from './patient-chart/admit-patient-action-button.component';
 import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { subscribeAdmittedPatientsSlotSync } from './ward/admitted-patients/sync-admitted-patients-slot';
+import { subscribeAwaitingAdmissionSlotSync } from './ward/awaiting-admission/sync-awaiting-admission-slot';
 import ImmunizationRegisterActionButton from './patient-immunization/immunization-register-action-button.component';
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
@@ -65,6 +67,7 @@ export function startupApp() {
   workspace2Store.subscribe(removeCoreButton);
 
   subscribeAdmittedPatientsSlotSync();
+  subscribeAwaitingAdmissionSlotSync();
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
@@ -184,6 +187,11 @@ export const startVisitActionButton = getSyncLifecycle(startVisitActionButtonCom
   moduleName,
 });
 
+export const admitPatientActionButton = getSyncLifecycle(admitPatientActionButtonComponent, {
+  featureName: 'patient-action-admit-patient',
+  moduleName,
+});
+
 export const finishServiceButton = getSyncLifecycle(FinishServiceButton, {
   featureName: 'finish-service-button',
   moduleName,
@@ -193,6 +201,11 @@ export const addPatientToWardSiderailButton = getSyncLifecycle(AddPatientToWardS
 
 export const ethiopiaAdmittedPatientsTable = getAsyncLifecycle(
   () => import('./ward/admitted-patients/ethiopia-admitted-patients-table.component'),
+  options,
+);
+
+export const ethiopiaAwaitingAdmissionPatientsTable = getAsyncLifecycle(
+  () => import('./ward/awaiting-admission/ethiopia-awaiting-admission-patients-table.component'),
   options,
 );
 
