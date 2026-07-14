@@ -21,6 +21,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { isDesktop, useConfig, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZES } from '../constants';
 import type { QueueEntry } from '../types';
 import {
   FilteredQueueTableCell,
@@ -68,14 +69,13 @@ const ServiceQueueTable: React.FC<ServiceQueueTableProps> = ({
 }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const [currentPageSize, setPageSize] = useState(10);
-  const pageSizes = [10, 20, 30, 40, 50];
+  const [currentPageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const columnIds = useFilteredQueueTableColumnIds();
   const config = useConfig({
     externalModuleName: '@openmrs/esm-service-queues-app',
   });
 
-  const { goTo, results: paginatedQueueEntries, currentPage, paginated } = usePagination(queueEntries, currentPageSize);
+  const { goTo, results: paginatedQueueEntries, currentPage } = usePagination(queueEntries, currentPageSize);
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
 
   const headers = useMemo(
@@ -87,9 +87,12 @@ const ServiceQueueTable: React.FC<ServiceQueueTableProps> = ({
     [columnIds, config],
   );
 
+  // Reset to page 1 only when filters/search change — not when goTo's identity
+  // changes as progressive loading grows the list (that would cancel page navigation).
   useEffect(() => {
     goTo(1);
-  }, [goTo, paginationResetKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit goTo
+  }, [paginationResetKey]);
 
   const rows = useMemo(
     () =>
@@ -194,17 +197,23 @@ const ServiceQueueTable: React.FC<ServiceQueueTableProps> = ({
               </Tile>
             </div>
           )}
-          {paginated && (
+          {queueEntries.length > 0 && (
             <Pagination
+              className={styles.pagination}
               forwardText={t('nextPage', 'Next page')}
               backwardText={t('previousPage', 'Previous page')}
+              itemsPerPageText={t('itemsPerPage', 'Items per page:')}
               page={currentPage}
+              pageNumberText={t('pageNumber', 'Page Number')}
               pageSize={currentPageSize}
-              pageSizes={pageSizes}
+              pageSizes={DEFAULT_PAGE_SIZES}
+              size={responsiveSize}
               totalItems={queueEntries.length}
               onChange={({ pageSize, page }) => {
                 if (pageSize !== currentPageSize) {
                   setPageSize(pageSize);
+                  goTo(1);
+                  return;
                 }
                 if (page !== currentPage) {
                   goTo(page);
