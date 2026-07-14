@@ -1,4 +1,134 @@
+@use '@carbon/colors';
 @use '@carbon/layout';
+@use '@carbon/type';
+
+.widgetCard {
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  margin: layout.$spacing-05 0;
+  overflow: hidden;
+}
+
+.encounterList {
+  display: flex;
+  flex-direction: column;
+}
+
+.encounterSection {
+  border-top: 1px solid colors.$gray-20;
+}
+
+.encounterHeader {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-05;
+  background-color: colors.$white;
+}
+
+.encounterTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+}
+
+.encounterDate {
+  margin: 0;
+  color: colors.$gray-100;
+  @include type.type-style('heading-compact-02');
+}
+
+.encounterDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05 layout.$spacing-07;
+  margin: 0;
+}
+
+.encounterDetail {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-01;
+  min-width: 0;
+}
+
+.encounterDetail dt {
+  margin: 0;
+  color: colors.$gray-70;
+  @include type.type-style('label-01');
+}
+
+.encounterDetail dd {
+  margin: 0;
+  color: colors.$gray-100;
+  overflow-wrap: anywhere;
+  @include type.type-style('body-compact-01');
+}
+
+.encounterNote {
+  margin: 0;
+  padding-top: layout.$spacing-03;
+  border-top: 1px solid colors.$gray-20;
+  color: colors.$gray-100;
+  @include type.type-style('body-compact-01');
+}
+
+.encounterNoteLabel {
+  display: block;
+  margin-bottom: layout.$spacing-01;
+  color: colors.$gray-70;
+  @include type.type-style('label-01');
+}
+
+.table {
+  width: 100%;
+}
+
+.widgetCard :global(.cds--data-table-container),
+.widgetCard :global(.cds--data-table),
+.widgetCard :global(table) {
+  background-color: colors.$white;
+}
+
+.table :global(thead tr) {
+  background-color: colors.$gray-10;
+}
+
+.table :global(thead th),
+.table :global(thead th .cds--table-header-label) {
+  background-color: colors.$gray-10;
+  border-top: none;
+  border-bottom: none;
+  box-shadow: none;
+  color: colors.$gray-100;
+  @include type.type-style('heading-compact-01');
+}
+
+.table :global(thead th::after),
+.table :global(thead th .cds--table-header-label::after) {
+  display: none;
+}
+
+.table :global(tbody tr:first-child td) {
+  border-top: none;
+}
+
+.table :global(tbody tr td) {
+  background-color: colors.$white;
+  border-bottom: 1px solid colors.$gray-20;
+  color: colors.$gray-100;
+  vertical-align: middle;
+  @include type.type-style('body-compact-01');
+}
+
+.table :global(tbody tr:hover td) {
+  background-color: colors.$gray-10;
+}
+
+.table :global(tbody tr:last-child td) {
+  border-bottom: none;
+}
 
 .diagnosisNameCell {
   display: flex;
