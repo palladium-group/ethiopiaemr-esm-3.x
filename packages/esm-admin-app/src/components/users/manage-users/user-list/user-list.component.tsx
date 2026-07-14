@@ -245,6 +245,16 @@ const UserList: React.FC = () => {
             }}
             itemText={t('editUser', 'Edit user')}
           />
+          <OverflowMenuItem
+            className={styles.btn}
+            onClick={() =>
+              launchWorkspace('user-login-locations-workspace', {
+                workspaceTitle: t('manageLoginLocations', 'Manage login locations'),
+                user,
+              })
+            }
+            itemText={t('manageLoginLocations', 'Manage login locations')}
+          />
         </OverflowMenu>
       ),
     };
