@@ -1,0 +1,33 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.formContainer {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  overflow-y: auto;
+}
+
+.patientName {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.buttonSet {
+  padding: 0;
+  margin-top: auto;
+
+  :global(.cds--btn) {
+    max-width: none;
+    width: 50%;
+    height: 4rem;
+  }
+}
+
+.inlineLoading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
