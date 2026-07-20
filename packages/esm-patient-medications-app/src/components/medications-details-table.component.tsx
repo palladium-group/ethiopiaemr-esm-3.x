@@ -56,6 +56,7 @@ import { type ConfigObject } from '../config-schema';
 import PrintComponent from '../print/print.component';
 import { type ReturnedPrescriptionBasketItem } from '../types';
 import { type DtpReturnReason, useDtpReturnObs } from '../utils/dtp-return-obs';
+import { useFailedPrescriptionSync } from '../utils/failed-prescription-sync';
 import styles from './medications-details-table.scss';
 
 export interface MedicationsDetailsTableProps {
@@ -67,6 +68,8 @@ export interface MedicationsDetailsTableProps {
   showModifyButton: boolean;
   showRenewButton: boolean;
   showResendPrescriptionButton?: boolean;
+  /** Only active medications have an eAPTS sync status worth surfacing to the physician. */
+  showFailedSyncStatus?: boolean;
   patient: fhir.Patient;
 }
 
@@ -266,6 +269,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
   showModifyButton,
   showRenewButton,
   showResendPrescriptionButton = true,
+  showFailedSyncStatus = true,
   patient,
 }) => {
   const pageSize = 5;
@@ -346,6 +350,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
 
   const encounterUuids = useMemo(() => Array.from(encounterMedicationsByUuid.keys()), [encounterMedicationsByUuid]);
   const { dtpReturnByEncounter } = useDtpReturnObs(encounterUuids);
+  const { failedSyncByEncounter } = useFailedPrescriptionSync(showFailedSyncStatus ? encounterUuids : []);
 
   const getEncounterGroupLabel = useCallback(
     (medication: Order) => {
@@ -653,6 +658,9 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                       const dtpReturnInfo = encounterUuid ? dtpReturnByEncounter.get(encounterUuid) : undefined;
                       const isReturnedGroup = Boolean(dtpReturnInfo?.isReturned);
                       const dtpReturnReasons = isReturnedGroup ? dtpReturnInfo?.reasons ?? [] : [];
+                      const failedSync = encounterUuid ? failedSyncByEncounter.get(encounterUuid) : undefined;
+                      const hasFailedSync = Boolean(failedSync);
+                      const hasDetailsPanel = isReturnedGroup || hasFailedSync;
 
                       renderedRows.push(
                         <TableRow key={`encounter-${encounterGroupKey}`} className={styles.encounterRow}>
@@ -661,7 +669,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                             colSpan={headers.length + (isPrinting ? 0 : 1)}>
                             <div
                               className={
-                                isReturnedGroup
+                                hasDetailsPanel
                                   ? `${styles.encounterHeaderContent} ${styles.encounterHeaderContentReturned}`
                                   : styles.encounterHeaderContent
                               }>
@@ -671,6 +679,11 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                                   {isReturnedGroup && (
                                     <Tag type="purple" className={styles.returnedPrescriptionTag}>
                                       {t('prescriptionReturned', 'Prescription returned')}
+                                    </Tag>
+                                  )}
+                                  {hasFailedSync && (
+                                    <Tag type="red" className={styles.failedSyncTag}>
+                                      {t('prescriptionSyncFailed', 'Sync failed')}
                                     </Tag>
                                   )}
                                 </div>
@@ -704,6 +717,9 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                                     />
                                   ))}
                                 </div>
+                              )}
+                              {hasFailedSync && failedSync?.reason && (
+                                <div className={styles.failedSyncDetails}>{failedSync.reason}</div>
                               )}
                             </div>
                           </TableCell>

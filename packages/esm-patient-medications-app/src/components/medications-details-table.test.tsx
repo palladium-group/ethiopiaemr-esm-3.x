@@ -75,16 +75,30 @@ function buildEncounterObsResponse(
   };
 }
 
+type FailedSyncFixture = { reason?: string | null };
+
 /**
- * Routes openmrsFetch by URL: encounter obs requests resolve from `encounterObsByUuid`, everything
- * else (e.g. MedicationDispense) falls back to an empty FHIR bundle.
+ * Routes openmrsFetch by URL: encounter obs requests resolve from `encounterObsByUuid`,
+ * prescription sync status requests resolve from `failedSyncByEncounterUuid`, everything else
+ * (e.g. MedicationDispense) falls back to an empty FHIR bundle.
  */
-function mockFetchByUrl(encounterObsByUuid: Record<string, ReturnType<typeof buildEncounterObsResponse>>) {
+function mockFetchByUrl(
+  encounterObsByUuid: Record<string, ReturnType<typeof buildEncounterObsResponse>>,
+  failedSyncByEncounterUuid: Record<string, FailedSyncFixture> = {},
+) {
   mockOpenmrsFetch.mockImplementation((url: string) => {
     const encounterMatch = url.match(/\/encounter\/([^?]+)/);
     if (encounterMatch) {
       const data = encounterObsByUuid[encounterMatch[1]] ?? { uuid: encounterMatch[1], obs: [] };
       return Promise.resolve({ data });
+    }
+    const syncStatusMatch = url.match(/prescriptionOutbox\/status\?encounters=(.+)/);
+    if (syncStatusMatch) {
+      const encounterUuids = syncStatusMatch[1].split(',');
+      const results = encounterUuids
+        .filter((uuid) => failedSyncByEncounterUuid[uuid])
+        .map((uuid) => ({ encounterUuid: uuid, syncStatus: 'FAILED', reason: failedSyncByEncounterUuid[uuid].reason }));
+      return Promise.resolve({ data: { results } });
     }
     return Promise.resolve({ data: { entry: [] } });
   });
@@ -905,5 +919,106 @@ describe('MedicationsDetailsTable', () => {
 
     expect(mockSetOrders).not.toHaveBeenCalled();
     expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
+  });
+
+  test('renders a sync failed tag and reason when the latest prescription sync attempt failed', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    mockFetchByUrl(
+      { 'enc-1': buildEncounterObsResponse('enc-1', []) },
+      { 'enc-1': { reason: 'eAPTS rejected the prescription' } },
+    );
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    expect(await screen.findByText(/sync failed/i)).toBeInTheDocument();
+    expect(screen.getByText('eAPTS rejected the prescription')).toBeInTheDocument();
+    expect(document.querySelector('.cds--tag--red')).toBeInTheDocument();
+  });
+
+  test('does not render a sync failed tag when showFailedSyncStatus is false', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    mockFetchByUrl(
+      { 'enc-1': buildEncounterObsResponse('enc-1', []) },
+      { 'enc-1': { reason: 'eAPTS rejected the prescription' } },
+    );
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Past Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton={false}
+        showModifyButton={false}
+        showRenewButton
+        showFailedSyncStatus={false}
+      />,
+    );
+
+    await screen.findByRole('table', { name: /medications/i });
+    expect(screen.queryByText(/sync failed/i)).not.toBeInTheDocument();
+  });
+
+  test('does not render a sync failed tag when there is no failed sync for the encounter', async () => {
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-1',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-1',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    mockFetchByUrl({ 'enc-1': buildEncounterObsResponse('enc-1', []) }, {});
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    await screen.findByRole('table', { name: /medications/i });
+    expect(screen.queryByText(/sync failed/i)).not.toBeInTheDocument();
   });
 });
