@@ -97,7 +97,11 @@ function mockFetchByUrl(
       const encounterUuids = syncStatusMatch[1].split(',');
       const results = encounterUuids
         .filter((uuid) => failedSyncByEncounterUuid[uuid])
-        .map((uuid) => ({ encounterUuid: uuid, syncStatus: 'FAILED', reason: failedSyncByEncounterUuid[uuid].reason }));
+        .map((uuid) => ({
+          encounterUuid: uuid,
+          outcomeStatus: 'FAILED',
+          reason: failedSyncByEncounterUuid[uuid].reason,
+        }));
       return Promise.resolve({ data: { results } });
     }
     return Promise.resolve({ data: { entry: [] } });
