@@ -14,7 +14,7 @@ import {
   type FetchResponse,
 } from '@openmrs/esm-framework';
 import {
-  mockUserLoginLocationsResponse,
+  mockResolvedLoginLocationsResponse,
   validatingLocationFailureResponse,
   validatingLocationSuccessResponse,
 } from '../../__mocks__/locations.mock';
@@ -22,8 +22,20 @@ import { mockConfig } from '../../__mocks__/config.mock';
 import renderWithRouter from '../test-helpers/render-with-router';
 import LocationPickerView, { isSafeReturnUrl } from './location-picker-view.component';
 
-const firstLocation = mockUserLoginLocationsResponse.data.results[0];
-const secondLocation = mockUserLoginLocationsResponse.data.results[1];
+const firstLocation = mockResolvedLoginLocationsResponse.data.results[0];
+const secondLocation = mockResolvedLoginLocationsResponse.data.results[1];
+
+// With restrictByUser (mockConfig default), useLoginLocations reads the backend-resolved list from
+// /userlocation/loginlocation. Validation (useValidateLocationUuid) hits FHIR with _id=. Route by URL.
+const routeFetch = async (url: unknown): Promise<FetchResponse<unknown>> => {
+  const requestUrl = url as string;
+  if (requestUrl.includes('_id=')) {
+    return (
+      requestUrl.includes(invalidLocationUuid) ? validatingLocationFailureResponse : validatingLocationSuccessResponse
+    ) as FetchResponse<unknown>;
+  }
+  return mockResolvedLoginLocationsResponse as FetchResponse<unknown>;
+};
 
 const invalidLocationUuid = '2gf1b7d4-c865-4178-82b0-5932e51503d6';
 const userUuid = '90bd24b3-e700-46b0-a5ef-c85afdfededd';
@@ -53,14 +65,7 @@ describe('LocationPickerView', () => {
     mockUseConfig.mockReturnValue(mockConfig);
     mockUseSession.mockReturnValue(sessionWithDefaultLocation());
 
-    const urlResponseMap: Record<string, FetchResponse<unknown>> = {
-      [`/ws/fhir2/R4/Location?_id=${firstLocation.uuid}`]: validatingLocationSuccessResponse as FetchResponse<unknown>,
-      [`/ws/fhir2/R4/Location?_id=${invalidLocationUuid}`]: validatingLocationFailureResponse as FetchResponse<unknown>,
-    };
-
-    mockOpenmrsFetch.mockImplementation(
-      async (url) => urlResponseMap[url as string] ?? (mockUserLoginLocationsResponse as FetchResponse<unknown>),
-    );
+    mockOpenmrsFetch.mockImplementation(routeFetch);
 
     mockSetSessionLocation.mockResolvedValue(undefined);
   });
@@ -259,6 +264,27 @@ describe('LocationPickerView', () => {
       expect(mockSetUserProperties).not.toHaveBeenCalled();
     });
   });
+
+  it('auto-selects a lone location without saving it as the default preference', async () => {
+    // A single resolved location auto-submits. The user never chose to remember it, and clinical
+    // roles can't write their own account (POST /user/{uuid} → 403), so no preference is persisted.
+    mockOpenmrsFetch.mockImplementation(async (url: unknown) => {
+      const requestUrl = url as string;
+      if (requestUrl.includes('_id=')) {
+        return validatingLocationSuccessResponse as FetchResponse<unknown>;
+      }
+      return {
+        data: { results: [{ uuid: firstLocation.uuid, display: firstLocation.display }] },
+      } as FetchResponse<unknown>;
+    });
+
+    renderWithRouter(LocationPickerView, {});
+
+    await waitFor(() => {
+      expect(mockSetSessionLocation).toHaveBeenCalledWith(firstLocation.uuid, expect.anything());
+    });
+    expect(mockSetUserProperties).not.toHaveBeenCalled();
+  });
 });
 
 describe('isSafeReturnUrl', () => {
@@ -301,7 +327,7 @@ describe('returnToUrl open-redirect protection', () => {
     mockUseConnectivity.mockReturnValue(true);
     mockUseConfig.mockReturnValue(mockConfig);
     mockUseSession.mockReturnValue(sessionWithDefaultLocation());
-    mockOpenmrsFetch.mockResolvedValue(mockUserLoginLocationsResponse as FetchResponse<unknown>);
+    mockOpenmrsFetch.mockImplementation(routeFetch);
     mockSetSessionLocation.mockResolvedValue(undefined);
     mockNavigate.mockClear();
   });

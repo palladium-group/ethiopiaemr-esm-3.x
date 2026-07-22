@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 import useSwrImmutable from 'swr/immutable';
 import {
   fhirBaseUrl,
@@ -98,44 +99,57 @@ export interface LoginLocation {
   name: string;
 }
 
-interface UserLoginLocationRestResponse {
+interface LoginLocationRestResponse {
   results: Array<{ uuid: string; display: string }>;
 }
 
 const shouldRetryOnServerErrorOnly = (err: { response?: { status: number } }) => {
-  if (err?.response?.status) {
-    return err.response.status >= 500;
+  const status = err?.response?.status;
+  if (status) {
+    // 401 immediately after login is a transient race — the session cookie isn't authenticated on the
+    // backend yet — so retry it (SWR caps at errorRetryCount) along with 5xx. A truly expired session
+    // just exhausts the retries. 403 (privilege denied) is permanent and not retried.
+    return status >= 500 || status === 401;
   }
   return false;
 };
 
 /**
- * GET /user/{uuid}/location?tag=Login Location, which resolves to the intersection of the tag
- * and the user's own login-location mappings (or every tag-matching location when the user has
- * no mappings, i.e. unrestricted by default).
+ * GET /userlocation/loginlocation — the already-resolved set of locations the *authenticated* user
+ * may log in at (their user_location mappings intersected with the "Login Location" tag, or every
+ * tagged location when unmapped). Server-scoped to the current user (no uuid), so it needs only an
+ * authenticated session — unlike /user/{uuid}/location, which is GET_USERS-gated and 403s ordinary
+ * clinical users. Enforcement is server-side (UserLocationEnforcementFilter).
+ *
+ * Right after login the session cookie isn't attached to the next request yet, so the first fetch can
+ * transiently 401; shouldRetryOnServerErrorOnly retries those (and 5xx) via SWR's native error-retry.
  */
-function useLoginLocationsForUser(userUuid: string | undefined, enabled: boolean) {
-  const url =
-    enabled && userUuid ? `${restBaseUrl}/user/${userUuid}/location?tag=Login+Location&v=default&limit=1000` : null;
+const MAX_LOGIN_LOCATION_RETRIES = 8;
+const LOGIN_LOCATION_RETRY_INTERVAL = 500;
 
-  const { data, error, isLoading } = useSwrImmutable<FetchResponse<UserLoginLocationRestResponse>>(url, openmrsFetch, {
+function useResolvedLoginLocations(enabled: boolean) {
+  const url = enabled ? `${restBaseUrl}/userlocation/loginlocation` : null;
+
+  const { data, error, isLoading, isValidating } = useSWR<FetchResponse<LoginLocationRestResponse>>(url, openmrsFetch, {
     shouldRetryOnError: shouldRetryOnServerErrorOnly,
+    errorRetryCount: MAX_LOGIN_LOCATION_RETRIES,
+    errorRetryInterval: LOGIN_LOCATION_RETRY_INTERVAL,
   });
 
   return useMemo(
     () => ({
       locations: (data?.data?.results ?? []).map((result) => ({ uuid: result.uuid, name: result.display })),
-      error,
-      // still resolving the session's user uuid; keep the caller's loading state true
-      isLoading: enabled && !userUuid ? true : isLoading,
+      // keep the transient post-login 401 hidden while SWR is still retrying; surface only once it gives up
+      error: error && !isValidating ? error : undefined,
+      isLoading: isLoading || (!!error && isValidating && !data),
     }),
-    [data, error, isLoading, enabled, userUuid],
+    [data, error, isLoading, isValidating],
   );
 }
 
 /**
- * GET /ws/fhir2/R4/Location?_tag=Login Location, unfiltered by user. Used as a fallback when
- * chooseLocation.restrictByUser is turned off, matching upstream OpenMRS's default behavior.
+ * GET /ws/fhir2/R4/Location?_tag=Login Location — every location tagged as a login location,
+ * unfiltered by user.
  */
 function useAllTaggedLoginLocations(enabled: boolean) {
   const url = enabled ? `${fhirBaseUrl}/Location?_tag=Login+Location&_count=1000` : null;
@@ -154,11 +168,13 @@ function useAllTaggedLoginLocations(enabled: boolean) {
   );
 }
 
+/**
+ * The locations a user may pick at login: the per-user resolved set when {@code restrictByUser} is on,
+ * else every tagged login location (unfiltered FHIR search).
+ */
 export function useLoginLocations(restrictByUser: boolean) {
-  const { user } = useSession();
+  const tagged = useAllTaggedLoginLocations(!restrictByUser);
+  const resolved = useResolvedLoginLocations(restrictByUser);
 
-  const restricted = useLoginLocationsForUser(user?.uuid, restrictByUser);
-  const unrestricted = useAllTaggedLoginLocations(!restrictByUser);
-
-  return restrictByUser ? restricted : unrestricted;
+  return restrictByUser ? resolved : tagged;
 }

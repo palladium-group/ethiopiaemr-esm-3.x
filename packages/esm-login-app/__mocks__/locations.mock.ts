@@ -539,17 +539,12 @@ export const mockSoleLoginLocation = {
 
 export const mockSetSessionLocation = Promise.resolve();
 
-export const mockUserLoginLocationsResponse = {
+// GET /userlocation/loginlocation — the backend-resolved list for the authenticated user.
+export const mockResolvedLoginLocationsResponse = {
   data: {
     results: [
       { uuid: '44c3efb0-2583-4c80-a79e-1f756a03c0a1', display: 'Outpatient Clinic' },
       { uuid: 'ba685651-ed3b-4e63-9b35-78893060758a', display: 'Inpatient Ward' },
     ],
-  },
-};
-
-export const mockEmptyUserLoginLocationsResponse = {
-  data: {
-    results: [],
   },
 };

@@ -59,10 +59,10 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: true,
       _description:
-        "When true, the location picker only shows locations returned by the backend's per-user login-location " +
-        'mapping (GET /ws/rest/v1/user/{uuid}/location). Users with no mappings still see every tag-matching ' +
-        'location (unrestricted), so this is backward compatible by default. When false, falls back to the ' +
-        'unfiltered FHIR Location search used by upstream OpenMRS.',
+        'When true, the location picker only shows the locations the backend resolves for the current user ' +
+        '(GET /ws/rest/v1/userlocation/loginlocation): the intersection of their login-location mappings with ' +
+        'the tag, or every tag-matching location when they have no mappings (unrestricted), so this is backward ' +
+        'compatible by default. When false, falls back to the unfiltered FHIR Location search used by upstream OpenMRS.',
     },
   },
   links: {

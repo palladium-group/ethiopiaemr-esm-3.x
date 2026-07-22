@@ -12,7 +12,7 @@ interface FhirLocationBundle {
 }
 
 interface UserLocationRestResponse {
-  results: Array<{ uuid: string; display: string }>;
+  results: Array<{ location: { uuid: string; display: string } }>;
 }
 
 /**
@@ -34,17 +34,21 @@ export function useTaggedLoginLocations() {
 }
 
 /**
- * The user's raw login-location mappings (possibly empty). mappedOnly=true skips the backend's
- * "no mappings means all tagged locations" fallback, which is right for the login picker but
- * wrong for an edit UI.
+ * The user's raw login-location mappings (possibly empty). The collection endpoint returns the
+ * raw {@code user_location} rows as {@code {location: {uuid, display}}} — no query params, since
+ * the REST framework routes any non-standard param to search-handler dispatch, which this
+ * subresource does not support.
  */
 export function useUserLoginLocationMappings(userUuid: string) {
-  const url = `${restBaseUrl}/user/${userUuid}/location?mappedOnly=true&v=default&limit=1000`;
+  const url = `${restBaseUrl}/user/${userUuid}/location`;
   const { data, error, isLoading } = useSWR<FetchResponse<UserLocationRestResponse>>(url, openmrsFetch);
 
   return useMemo(
     () => ({
-      mappings: (data?.data?.results ?? []).map((result) => ({ uuid: result.uuid, name: result.display })),
+      mappings: (data?.data?.results ?? []).map((result) => ({
+        uuid: result.location.uuid,
+        name: result.location.display,
+      })),
       error,
       isLoading,
     }),
