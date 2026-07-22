@@ -1025,4 +1025,89 @@ describe('MedicationsDetailsTable', () => {
     await screen.findByRole('table', { name: /medications/i });
     expect(screen.queryByText(/sync failed/i)).not.toBeInTheDocument();
   });
+
+  test('disables Modify and Discontinue once the pharmacy has updated the order status but keeps Renew available', async () => {
+    const user = userEvent.setup();
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-received',
+        fulfillerStatus: 'RECEIVED',
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-received',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    await screen.findByRole('table', { name: /medications/i });
+    await user.click(screen.getByRole('button', { name: /options/i }));
+
+    // Carbon's floating menu renders with `visibility: hidden` in jsdom, which strips the visible
+    // label from each item's accessible name, so select the menu items by their stable ids instead.
+    const modify = document.getElementById('modify');
+    const discontinue = document.getElementById('discontinue');
+    const renew = document.getElementById('renew');
+
+    expect(modify).toBeDisabled();
+    expect(modify).toHaveAttribute('title', expect.stringContaining('Cannot modify'));
+    expect(discontinue).toBeDisabled();
+    expect(discontinue).toHaveAttribute('title', expect.stringContaining('Cannot cancel'));
+    expect(renew).toBeEnabled();
+  });
+
+  test('keeps Modify, Discontinue, and Renew available when the pharmacy has not updated the order status', async () => {
+    const user = userEvent.setup();
+    const medications = [
+      {
+        ...mockPatientDrugOrdersApiData[0],
+        uuid: 'med-no-status',
+        fulfillerStatus: null,
+        dateActivated: '2026-04-27T11:49:00',
+        encounter: {
+          ...mockPatientDrugOrdersApiData[0].encounter,
+          uuid: 'enc-no-status',
+          encounterDatetime: '2026-04-27T11:49:00',
+        },
+      },
+    ] as unknown as Array<Order>;
+
+    renderWithSwr(
+      <MedicationsDetailsTable
+        title="Active Medications"
+        medications={medications}
+        patient={mockPatient}
+        showDiscontinueButton
+        showModifyButton
+        showRenewButton
+      />,
+    );
+
+    await screen.findByRole('table', { name: /medications/i });
+    await user.click(screen.getByRole('button', { name: /options/i }));
+
+    // Select by stable id (see note above about the hidden floating menu and accessible names).
+    const modify = document.getElementById('modify');
+    const discontinue = document.getElementById('discontinue');
+    const renew = document.getElementById('renew');
+
+    expect(modify).toBeEnabled();
+    expect(modify).not.toHaveAttribute('title');
+    expect(discontinue).toBeEnabled();
+    expect(discontinue).not.toHaveAttribute('title');
+    expect(renew).toBeEnabled();
+  });
 });

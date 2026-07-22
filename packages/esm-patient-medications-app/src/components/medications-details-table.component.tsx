@@ -111,6 +111,16 @@ function orderNeedsStatusReason(order: Order) {
   return getFulfillerStatus(order) === 'DECLINED';
 }
 
+/**
+ * Once the pharmacy system reports any fulfiller status (Received, In progress, On hold, Dispensed,
+ * Declined, Exception), it has taken ownership of the order, so the physician can no longer modify or
+ * cancel it from the medications summary. Renew is unaffected — it creates a brand new order rather
+ * than changing this one.
+ */
+function isLockedByPharmacy(order: Order) {
+  return getFulfillerStatus(order) != null;
+}
+
 function getStatusReasonText(statusReason?: DtpStatusReason) {
   const firstCoding = statusReason?.coding?.find((coding) => coding.display || coding.code);
   return statusReason?.text ?? firstCoding?.display ?? firstCoding?.code;
@@ -824,6 +834,15 @@ function OrderBasketItemActions({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const alreadyInBasket = items.some((x) => x.uuid === medication.uuid);
+  const lockedByPharmacy = isLockedByPharmacy(medication);
+  const modifyLockedReason = t(
+    'cannotModifyAfterPharmacyUpdate',
+    'Cannot modify — the pharmacy has already updated this order’s status',
+  );
+  const discontinueLockedReason = t(
+    'cannotCancelAfterPharmacyUpdate',
+    'Cannot cancel — the pharmacy has already updated this order’s status',
+  );
 
   const workspaceGroupProps: PatientWorkspaceGroupProps = useMemo(
     () => ({
@@ -882,7 +901,9 @@ function OrderBasketItemActions({
           id="modify"
           itemText={t('modify', 'Modify')}
           onClick={handleModifyClick}
-          disabled={alreadyInBasket}
+          disabled={alreadyInBasket || lockedByPharmacy}
+          requireTitle={lockedByPharmacy}
+          title={lockedByPharmacy ? modifyLockedReason : undefined}
         />
       )}
       {showRenewButton && (
@@ -897,7 +918,9 @@ function OrderBasketItemActions({
       {showDiscontinueButton && (
         <OverflowMenuItem
           className={styles.menuItem}
-          disabled={alreadyInBasket}
+          disabled={alreadyInBasket || lockedByPharmacy}
+          requireTitle={lockedByPharmacy}
+          title={lockedByPharmacy ? discontinueLockedReason : undefined}
           hasDivider
           id="discontinue"
           isDelete
