@@ -108,7 +108,10 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     if (locations.length === 0) {
       changeLocation();
     } else if (locations.length === 1 || !chooseLocation.enabled) {
-      changeLocation(locations[0].uuid, true);
+      // Auto-selected, not chosen by the user — don't persist it as their saved default (that POSTs
+      // to the user's own account, which clinical roles can't do → 403). The single/only location is
+      // re-resolved every login anyway, so there's nothing to remember.
+      changeLocation(locations[0].uuid, false);
     }
   }, [locations, isLoadingLocations]);
 

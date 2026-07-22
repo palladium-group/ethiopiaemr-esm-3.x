@@ -62,25 +62,34 @@ export function useDefaultLocation(isUpdateFlow: boolean) {
         return;
       }
 
-      updateUserPropsWithDefaultLocation(locationUuid, saveDefaultLocation).then(() => {
-        if (saveDefaultLocation) {
-          showSnackbar({
-            title: !isUpdateFlow ? t('locationSaved', 'Location saved') : t('locationUpdated', 'Location updated'),
-            subtitle: !isUpdateFlow
-              ? t('locationSaveMessage', 'Your preferred location has been saved for future logins')
-              : t('locationUpdateMessage', 'Your preferred login location has been updated'),
-            kind: 'success',
-            isLowContrast: true,
-          });
-        } else if (defaultLocation) {
-          showSnackbar({
-            title: t('locationPreferenceRemoved', 'Location preference removed'),
-            subtitle: t('locationPreferenceRemovedMessage', 'You will need to select a location on each login'),
-            kind: 'success',
-            isLowContrast: true,
-          });
-        }
-      });
+      try {
+        await updateUserPropsWithDefaultLocation(locationUuid, saveDefaultLocation);
+      } catch (error) {
+        // Persisting the preference writes to the user's own account (POST /user/{uuid}), which
+        // clinical roles lack the privilege to do → 403. That's a non-fatal degradation: they just
+        // can't remember a default location. Swallow it so it isn't an uncaught rejection at login,
+        // and don't show a "saved" snackbar for a save that didn't happen.
+        console.warn('Could not save login-location preference:', error);
+        return;
+      }
+
+      if (saveDefaultLocation) {
+        showSnackbar({
+          title: !isUpdateFlow ? t('locationSaved', 'Location saved') : t('locationUpdated', 'Location updated'),
+          subtitle: !isUpdateFlow
+            ? t('locationSaveMessage', 'Your preferred location has been saved for future logins')
+            : t('locationUpdateMessage', 'Your preferred login location has been updated'),
+          kind: 'success',
+          isLowContrast: true,
+        });
+      } else if (defaultLocation) {
+        showSnackbar({
+          title: t('locationPreferenceRemoved', 'Location preference removed'),
+          subtitle: t('locationPreferenceRemovedMessage', 'You will need to select a location on each login'),
+          kind: 'success',
+          isLowContrast: true,
+        });
+      }
     },
     [savePreference, defaultLocation, updateUserPropsWithDefaultLocation, t, isUpdateFlow],
   );
