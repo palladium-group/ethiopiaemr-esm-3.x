@@ -113,7 +113,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
       // re-resolved every login anyway, so there's nothing to remember.
       changeLocation(locations[0].uuid, false);
     }
-  }, [locations, isLoadingLocations]);
+  }, [locations, isLoadingLocations, changeLocation, chooseLocation.enabled]);
 
   // Handle cases where the login location is present in the userProperties.
   useEffect(() => {
