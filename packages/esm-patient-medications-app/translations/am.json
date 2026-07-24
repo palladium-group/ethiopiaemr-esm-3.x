@@ -41,6 +41,7 @@
   "drugName": "Drug name",
   "drugOrders": "Drug orders",
   "drugRequiredErrorMessage": "Drug is required",
+  "drugSearchResultsTruncated": "Showing the first {{limit}} matches. Refine your search to narrow the results.",
   "drugs": "Drugs",
   "dtpRemark": "Remark",
   "dtpRemarkPlaceholder": "Enter a remark for this returned prescription",
