@@ -10,6 +10,7 @@ import UserRoleScopeWorkspace from './components/users/manage-users/manage-user-
 import HWRSyncModal from './components/modal/hwr-sync.modal';
 import AddLocationWorkspace from './components/locations/forms/add-location/add-location.workspace';
 import SearchLocationWorkspace from './components/locations/forms/search-location/search-location.workspace';
+import UserLoginLocationsWorkspace from './components/users/manage-users/user-login-locations/user-login-locations.workspace';
 import ProviderBannerTag from './components/provider-banner/provider-banner.component';
 
 const options = {
@@ -26,6 +27,15 @@ export function startupApp() {
 }
 
 export const manageUserWorkspace = getSyncLifecycle(ManageUserWorkspace, options);
+
+// keys used only in user-login-locations.workspace.tsx, which the i18next extractor does not scan
+// t('loginLocations', 'Login locations')
+// t('loginLocationsHelper', 'A user with no mapped locations can log in at any login location.')
+// t('loginLocationsSaveError', 'Error saving login locations')
+// t('loginLocationsUpdated', 'Login locations for {{userName}} were updated successfully.')
+// t('selectLoginLocations', 'Select login location(s)')
+// t('selectLoginLocationsPlaceholder', 'Search for a login location')
+export const userLoginLocationsWorkspace = getSyncLifecycle(UserLoginLocationsWorkspace, options);
 export const userRoleScopeWorkspace = getSyncLifecycle(UserRoleScopeWorkspace, options);
 
 export const userManagementLeftPannelLink = getSyncLifecycle(

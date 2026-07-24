@@ -65,6 +65,12 @@
       "type": "workspace"
     },
     {
+      "name": "user-login-locations-workspace",
+      "title": "Manage login locations",
+      "component": "userLoginLocationsWorkspace",
+      "type": "workspace"
+    },
+    {
       "name": "hwr-sync-workspace",
       "title": "HWR Sync Workspace",
       "component": "hwrSyncWorkspace",

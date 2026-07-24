@@ -94,3 +94,9 @@ e2e/storageState.json
 .qodo
 .claude/**
 .cursor/**
+.codegraph
+
+# local dev frontend config (importmap/routes overrides + generator)
+dev-importmap.local.json
+dev-routes.local.json
+/scripts/sync-dev-frontend-config.mjs
