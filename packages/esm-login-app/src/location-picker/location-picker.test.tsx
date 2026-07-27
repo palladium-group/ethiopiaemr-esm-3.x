@@ -285,6 +285,63 @@ describe('LocationPickerView', () => {
     });
     expect(mockSetUserProperties).not.toHaveBeenCalled();
   });
+
+  describe('when the login-location list fails to load', () => {
+    // Regression: an empty `locations` used to be indistinguishable from a failed fetch, so the
+    // auto-select effect submitted no location at all and navigated to the home page. The user
+    // ended up logged in with no session location and never saw the error.
+    const failingFetch = (status: number) => async (url: unknown) => {
+      const requestUrl = url as string;
+      if (requestUrl.includes('_id=')) {
+        return validatingLocationSuccessResponse as FetchResponse<unknown>;
+      }
+      return Promise.reject({ response: { status } });
+    };
+
+    it.each([403, 500])('keeps the user on the picker and shows the error (HTTP %i)', async (status) => {
+      mockOpenmrsFetch.mockImplementation(failingFetch(status));
+
+      renderWithRouter(LocationPickerView, {});
+
+      expect(await screen.findByText(/unable to load login locations/i)).toBeInTheDocument();
+      expect(mockSetSessionLocation).not.toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('reloads the list when the user clicks try again', async () => {
+      const user = userEvent.setup();
+      mockOpenmrsFetch.mockImplementation(failingFetch(403));
+
+      renderWithRouter(LocationPickerView, {});
+
+      await screen.findByText(/unable to load login locations/i);
+
+      mockOpenmrsFetch.mockImplementation(routeFetch);
+      await user.click(screen.getByRole('button', { name: /try again/i }));
+
+      expect(await screen.findByRole('radio', { name: firstLocation.display })).toBeInTheDocument();
+      expect(screen.queryByText(/unable to load login locations/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('moves on without a session location when the user genuinely has none', async () => {
+    // A *successful* empty response still means "this user has no login locations" — proceed, as
+    // upstream does. Only a failed fetch must not take this path.
+    mockOpenmrsFetch.mockImplementation(async (url: unknown) => {
+      const requestUrl = url as string;
+      if (requestUrl.includes('_id=')) {
+        return validatingLocationSuccessResponse as FetchResponse<unknown>;
+      }
+      return { data: { results: [] } } as FetchResponse<unknown>;
+    });
+
+    renderWithRouter(LocationPickerView, {});
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith({ to: mockConfig.links.loginSuccess });
+    });
+    expect(mockSetSessionLocation).toHaveBeenCalledWith(undefined, expect.anything());
+  });
 });
 
 describe('isSafeReturnUrl', () => {

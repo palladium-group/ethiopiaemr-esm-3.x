@@ -1,5 +1,6 @@
 import React, { useId, useMemo, useState } from 'react';
-import { InlineNotification, RadioButton, RadioButtonGroup, RadioButtonSkeleton, Search } from '@carbon/react';
+import { ActionableNotification, RadioButton, RadioButtonGroup, RadioButtonSkeleton, Search } from '@carbon/react';
+import { useTranslation } from 'react-i18next';
 import { getCoreTranslation } from '@openmrs/esm-framework';
 import { type LoginLocation } from './location-picker.resource';
 import styles from './user-location-picker.module.scss';
@@ -8,6 +9,7 @@ interface UserLoginLocationPickerProps {
   locations: Array<LoginLocation>;
   isLoading: boolean;
   error?: unknown;
+  onRetry: () => void;
   selectedLocationUuid?: string;
   onChange: (locationUuid?: string) => void;
 }
@@ -21,9 +23,11 @@ const UserLoginLocationPicker: React.FC<UserLoginLocationPickerProps> = ({
   locations,
   isLoading,
   error,
+  onRetry,
   selectedLocationUuid,
   onChange,
 }) => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const searchId = useId();
 
@@ -52,8 +56,13 @@ const UserLoginLocationPicker: React.FC<UserLoginLocationPickerProps> = ({
       />
       {error ? (
         <div className={styles.errorNotification} id={`${searchId}-error`}>
-          <InlineNotification
+          <ActionableNotification
+            actionButtonLabel={t('tryAgain', 'Try again')}
+            hideCloseButton
+            inline
             kind="error"
+            // wrapped: passed directly, SWR's mutate would take the click event as the new value
+            onActionButtonClick={() => onRetry()}
             subtitle={getCoreTranslation(
               'errorLoadingLoginLocations',
               'Unable to load login locations. Please try again or contact support if the problem persists.',
