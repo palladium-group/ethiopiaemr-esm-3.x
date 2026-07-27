@@ -1,4 +1,4 @@
-import React, { type ComponentProps, useCallback, useState } from 'react';
+import React, { type ComponentProps, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import {
@@ -89,17 +89,20 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
     error: conceptSetsError,
   } = useConceptSets(drugCategoryConceptSets);
 
-  const openOrderForm = useCallback(
-    (searchResult: DrugOrderBasketItem) => {
-      const existingOrder = orders.find((order) => ordersEqual(order, searchResult));
-      if (existingOrder) {
-        setCurrentOrder(existingOrder);
-      } else {
-        setCurrentOrder(searchResult);
-      }
-    },
-    [orders],
-  );
+  // Keep a ref to the latest orders so openOrderForm stays referentially stable across
+  // renders. A [orders] dependency makes it a new function every render — including while
+  // typing when the basket is empty and `orders` is a fresh [] each render — which would
+  // defeat memo(OrderBasketSearchResults) and re-render the whole result list per keystroke.
+  const ordersRef = useRef(orders);
+  ordersRef.current = orders;
+  const openOrderForm = useCallback((searchResult: DrugOrderBasketItem) => {
+    const existingOrder = ordersRef.current.find((order) => ordersEqual(order, searchResult));
+    if (existingOrder) {
+      setCurrentOrder(existingOrder);
+    } else {
+      setCurrentOrder(searchResult);
+    }
+  }, []);
 
   const saveDrugOrderToBasket = useCallback(
     async (finalizedOrder: DrugOrderBasketItem) => {

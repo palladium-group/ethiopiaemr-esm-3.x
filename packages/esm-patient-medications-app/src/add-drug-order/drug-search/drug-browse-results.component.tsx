@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import { InlineNotification, SkeletonText, Tile } from '@carbon/react';
@@ -13,7 +13,7 @@ import {
 import { prepMedicationOrderPostData, useActivePatientOrders } from '../../api/api';
 import { DrugBrowseEmptyState } from './drug-browse-empty-state.component';
 import { type DrugSearchResult, MAX_TEMPLATE_PREFETCH, useDrugTemplates } from './drug-search.resource';
-import { DrugSearchResultItem } from './order-basket-search-results.component';
+import { DrugSearchResultItem, EMPTY_ORDERS } from './order-basket-search-results.component';
 import styles from './order-basket-search-results.scss';
 
 interface DrugBrowseResultsProps {
@@ -45,10 +45,16 @@ export default function DrugBrowseResults({
     'medications',
     prepMedicationOrderPostData,
   );
+  // Stable references so memo(DrugSearchResultItem) is effective here too (see the same
+  // treatment in order-basket-search-results.component.tsx): useOrderBasket returns a fresh
+  // setOrders every render and an empty [] when the basket has no medications.
+  const setOrdersRef = useRef(setOrders);
+  setOrdersRef.current = setOrders;
+  const stableSetOrders = useCallback((value: Array<DrugOrderBasketItem>) => setOrdersRef.current(value), []);
+  const stableOrders = orders.length > 0 ? orders : EMPTY_ORDERS;
   const { data: activeOrders, isLoading: isLoadingActiveOrders } = useActivePatientOrders(patientUuid);
-  const { templateByDrugUuid, error: fetchingDrugOrderTemplatesError } = useDrugTemplates(
-    (drugs ?? []).slice(0, MAX_TEMPLATE_PREFETCH) as unknown as Drug[],
-  );
+  const prefetchDrugs = useMemo(() => (drugs ?? []).slice(0, MAX_TEMPLATE_PREFETCH) as unknown as Drug[], [drugs]);
+  const { templateByDrugUuid, error: fetchingDrugOrderTemplatesError } = useDrugTemplates(prefetchDrugs);
 
   if (isLoading) {
     return <DrugBrowseSkeleton />;
@@ -92,8 +98,8 @@ export default function DrugBrowseResults({
             visit={visit}
             closeWorkspace={closeWorkspace}
             openOrderForm={openOrderForm}
-            orders={orders}
-            setOrders={setOrders}
+            orders={stableOrders}
+            setOrders={stableSetOrders}
             activeOrders={activeOrders}
             isLoadingActiveOrders={isLoadingActiveOrders}
             templates={templateByDrugUuid?.get(drug.uuid)}
