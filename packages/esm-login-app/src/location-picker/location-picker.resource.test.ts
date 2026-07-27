@@ -50,10 +50,25 @@ describe('useLoginLocations', () => {
     expect(calledUrls.some((url) => url.includes('/ws/fhir2/'))).toBe(false);
   });
 
-  it('recovers from a transient 401 right after login by retrying', async () => {
-    // The session cookie isn't attached to the first request yet → 401; the retry then succeeds.
+  it('leaves locations undefined and surfaces the error when the fetch fails', async () => {
+    // `undefined` rather than `[]` is what lets callers tell "this user has no login locations"
+    // apart from "we couldn't find out". Returning [] here is what used to log users in with no
+    // session location at all.
+    mockOpenmrsFetch.mockRejectedValue({ response: { status: 403 } });
+
+    const { result } = renderHook(() => useLoginLocations(true), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.error).toBeDefined();
+    });
+
+    expect(result.current.locations).toBeUndefined();
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('retries a server error and resolves once it succeeds', async () => {
     mockOpenmrsFetch
-      .mockRejectedValueOnce({ response: { status: 401 } })
+      .mockRejectedValueOnce({ response: { status: 503 } })
       .mockResolvedValue(mockResolvedLoginLocationsResponse as FetchResponse<any>);
 
     const { result } = renderHook(() => useLoginLocations(true), { wrapper });
@@ -62,11 +77,27 @@ describe('useLoginLocations', () => {
       () => {
         expect(result.current.locations).toHaveLength(2);
       },
-      { timeout: 3000 },
+      { timeout: 15000 },
     );
-    // the transient failure was never surfaced to the caller
-    expect(result.current.error).toBeUndefined();
     expect(mockOpenmrsFetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('refetches when mutate is called', async () => {
+    mockOpenmrsFetch.mockRejectedValueOnce({ response: { status: 403 } });
+
+    const { result } = renderHook(() => useLoginLocations(true), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.error).toBeDefined();
+    });
+
+    mockOpenmrsFetch.mockResolvedValue(mockResolvedLoginLocationsResponse as FetchResponse<any>);
+    await result.current.mutate();
+
+    await waitFor(() => {
+      expect(result.current.locations).toHaveLength(2);
+    });
+    expect(result.current.error).toBeUndefined();
   });
 
   it('uses the unfiltered FHIR search when restrictByUser is false', async () => {

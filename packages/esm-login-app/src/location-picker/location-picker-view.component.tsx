@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Button, Checkbox, InlineLoading } from '@carbon/react';
 import { useLocation, type Location, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +51,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     locations,
     isLoading: isLoadingLocations,
     error: locationsError,
+    mutate: retryLoadingLocations,
   } = useLoginLocations(chooseLocation.restrictByUser);
 
   const { user, sessionLocation } = useSession();
@@ -69,6 +70,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasAutoSelected = useRef(false);
 
   const { state } = useLocation() as unknown as Omit<Location, 'state'> & {
     state: LoginReferrer;
@@ -101,9 +103,19 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   // Handle cases where the location picker is disabled, there is only one location, or there are no locations.
   useEffect(() => {
-    if (isLoadingLocations) {
+    // `locations` is undefined until a response lands. Auto-selecting on a failed or in-flight fetch
+    // would send the user on to the app with no session location at all and no visible error — the
+    // list has to have actually loaded before an empty one means "this user has no login locations".
+    if (isLoadingLocations || locationsError || !locations) {
       return;
     }
+
+    // changeLocation's identity churns with the session store, so without this the effect can
+    // re-fire and submit the same location twice.
+    if (hasAutoSelected.current) {
+      return;
+    }
+    hasAutoSelected.current = true;
 
     if (locations.length === 0) {
       changeLocation();
@@ -113,7 +125,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
       // re-resolved every login anyway, so there's nothing to remember.
       changeLocation(locations[0].uuid, false);
     }
-  }, [locations, isLoadingLocations, changeLocation, chooseLocation.enabled]);
+  }, [locations, isLoadingLocations, locationsError, changeLocation, chooseLocation.enabled]);
 
   // Handle cases where the login location is present in the userProperties.
   useEffect(() => {
@@ -155,9 +167,10 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
             </p>
           </div>
           <UserLoginLocationPicker
-            locations={locations}
+            locations={locations ?? []}
             isLoading={isLoadingLocations}
             error={locationsError}
+            onRetry={retryLoadingLocations}
             selectedLocationUuid={activeLocation}
             onChange={(locationUuid) => setActiveLocation(locationUuid)}
           />

@@ -112,15 +112,13 @@ interface LoginLocationRestResponse {
   results: Array<{ uuid: string; display: string }>;
 }
 
+// 5xx is worth another attempt; 4xx is not. Note that a 401 never reaches here at all: openmrsFetch
+// intercepts it (redirectAuthFailure) and returns a promise that never settles, so SWR sees neither
+// data nor error. The post-login session-rotation race is handled at the fetch layer instead (see
+// the distro's session-race-retry.js shim).
 const shouldRetryOnServerErrorOnly = (err: { response?: { status: number } }) => {
   const status = err?.response?.status;
-  if (status) {
-    // 401 immediately after login is a transient race — the session cookie isn't authenticated on the
-    // backend yet — so retry it (SWR caps at errorRetryCount) along with 5xx. A truly expired session
-    // just exhausts the retries. 403 (privilege denied) is permanent and not retried.
-    return status >= 500 || status === 401;
-  }
-  return false;
+  return status ? status >= 500 : false;
 };
 
 /**
@@ -129,30 +127,24 @@ const shouldRetryOnServerErrorOnly = (err: { response?: { status: number } }) =>
  * tagged location when unmapped). Server-scoped to the current user (no uuid), so it needs only an
  * authenticated session — unlike /user/{uuid}/location, which is GET_USERS-gated and 403s ordinary
  * clinical users. Enforcement is server-side (UserLocationEnforcementFilter).
- *
- * Right after login the session cookie isn't attached to the next request yet, so the first fetch can
- * transiently 401; shouldRetryOnServerErrorOnly retries those (and 5xx) via SWR's native error-retry.
  */
-const MAX_LOGIN_LOCATION_RETRIES = 8;
-const LOGIN_LOCATION_RETRY_INTERVAL = 500;
-
 function useResolvedLoginLocations(enabled: boolean) {
   const url = enabled ? `${restBaseUrl}/userlocation/loginlocation` : null;
 
-  const { data, error, isLoading, isValidating } = useSWR<FetchResponse<LoginLocationRestResponse>>(url, openmrsFetch, {
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<LoginLocationRestResponse>>(url, openmrsFetch, {
     shouldRetryOnError: shouldRetryOnServerErrorOnly,
-    errorRetryCount: MAX_LOGIN_LOCATION_RETRIES,
-    errorRetryInterval: LOGIN_LOCATION_RETRY_INTERVAL,
   });
 
   return useMemo(
     () => ({
-      locations: (data?.data?.results ?? []).map((result) => ({ uuid: result.uuid, name: result.display })),
-      // keep the transient post-login 401 hidden while SWR is still retrying; surface only once it gives up
-      error: error && !isValidating ? error : undefined,
-      isLoading: isLoading || (!!error && isValidating && !data),
+      // undefined until a response actually lands, so callers can tell "the user has no login
+      // locations" apart from "we don't know yet / the request failed"
+      locations: data ? data.data.results.map((result) => ({ uuid: result.uuid, name: result.display })) : undefined,
+      error,
+      isLoading,
+      mutate,
     }),
-    [data, error, isLoading, isValidating],
+    [data, error, isLoading, mutate],
   );
 }
 
@@ -163,17 +155,20 @@ function useResolvedLoginLocations(enabled: boolean) {
 function useAllTaggedLoginLocations(enabled: boolean) {
   const url = enabled ? `${fhirBaseUrl}/Location?_tag=Login+Location&_count=1000` : null;
 
-  const { data, error, isLoading } = useSwrImmutable<FetchResponse<LocationResponse>>(url, openmrsFetch, {
+  const { data, error, isLoading, mutate } = useSwrImmutable<FetchResponse<LocationResponse>>(url, openmrsFetch, {
     shouldRetryOnError: shouldRetryOnServerErrorOnly,
   });
 
   return useMemo(
     () => ({
-      locations: (data?.data?.entry ?? []).map((entry) => ({ uuid: entry.resource.id, name: entry.resource.name })),
+      locations: data
+        ? (data.data.entry ?? []).map((entry) => ({ uuid: entry.resource.id, name: entry.resource.name }))
+        : undefined,
       error,
       isLoading,
+      mutate,
     }),
-    [data, error, isLoading],
+    [data, error, isLoading, mutate],
   );
 }
 
