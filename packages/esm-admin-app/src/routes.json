@@ -95,6 +95,11 @@
      {
       "component": "hwrSyncModal",
       "name": "hwr-syncing-modal"
+    },
+    {
+      "component": "locationBulkImportModal",
+      "name": "location-bulk-import-modal",
+      "size": "lg"
     }
   ],
   "pages": [
