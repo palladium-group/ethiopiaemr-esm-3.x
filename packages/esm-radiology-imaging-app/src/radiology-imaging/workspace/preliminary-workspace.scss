@@ -1,0 +1,266 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 layout.$spacing-05;
+  padding-top: layout.$spacing-05;
+  gap: layout.$spacing-04;
+}
+
+.clinicalHistory {
+  padding: layout.$spacing-03 0;
+
+  label {
+    text-transform: uppercase;
+    @include type.type-style('label-01');
+    color: colors.$gray-70;
+  }
+  p {
+    @include type.type-style('body-01');
+    color: colors.$gray-100;
+  }
+}
+
+.formHeader {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  padding: 0 layout.$spacing-03;
+  background-color: colors.$gray-10;
+  border: 1px solid colors.$gray-20;
+  flex-wrap: wrap;
+}
+
+.divider {
+  width: 1px;
+  height: 1.5rem;
+  background-color: colors.$gray-30;
+  margin: 0 layout.$spacing-02;
+}
+
+.editorWrapper {
+  border: 1px solid colors.$gray-20;
+  overflow-y: auto;
+  min-height: 300px;
+  background-color: colors.$gray-10;
+}
+
+.editorArea {
+  outline: none;
+  padding: layout.$spacing-05;
+  min-height: 300px;
+  @include type.type-style('body-01');
+
+  p {
+    margin-bottom: layout.$spacing-03;
+  }
+
+  ul,
+  ol {
+    padding-left: layout.$spacing-06;
+    margin-bottom: layout.$spacing-03;
+  }
+
+  blockquote {
+    border-left: 3px solid colors.$gray-40;
+    padding-left: layout.$spacing-04;
+    color: colors.$gray-70;
+    margin: layout.$spacing-03 0;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  em {
+    font-style: italic;
+  }
+
+  u {
+    text-decoration: underline;
+  }
+
+  s {
+    text-decoration: line-through;
+  }
+
+  // Text alignment (preserved from pasted Word documents)
+  [style*='text-align: left'],
+  &[style*='text-align: left'] {
+    text-align: left;
+  }
+
+  [style*='text-align: center'],
+  &[style*='text-align: center'] {
+    text-align: center;
+  }
+
+  [style*='text-align: right'],
+  &[style*='text-align: right'] {
+    text-align: right;
+  }
+
+  [style*='text-align: justify'],
+  &[style*='text-align: justify'] {
+    text-align: justify;
+  }
+
+  // Heading styles preserved from Word
+  h1 {
+    @include type.type-style('heading-05');
+    margin-bottom: layout.$spacing-04;
+  }
+
+  h2 {
+    @include type.type-style('heading-04');
+    margin-bottom: layout.$spacing-03;
+  }
+
+  h3 {
+    @include type.type-style('heading-03');
+    margin-bottom: layout.$spacing-03;
+  }
+
+  table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+    margin: 0.5rem 0;
+    overflow: hidden;
+
+    td,
+    th {
+      position: relative;
+      box-sizing: border-box;
+      min-width: 1em;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid #8d8d8d;
+      vertical-align: top;
+    }
+
+    th {
+      font-weight: 600;
+      text-align: left;
+      background-color: #f4f4f4;
+    }
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0.5rem 0;
+
+    &:global(.ProseMirror-selectednode) {
+      outline: 2px solid #0f62fe;
+    }
+  }
+
+  // TipTap-generated global classes (not scoped by CSS modules)
+  :global(.selectedCell)::after {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    content: '';
+    background: rgba(15, 98, 254, 0.1);
+    pointer-events: none;
+  }
+
+  :global(.column-resize-handle) {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    bottom: -2px;
+    width: 4px;
+    background-color: #0f62fe;
+    pointer-events: none;
+  }
+}
+
+.actions {
+  display: flex;
+  height: 4rem;
+
+  button {
+    width: 50%;
+    align-items: center;
+  }
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: layout.$spacing-02;
+}
+
+.label {
+  display: block;
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.templateButton {
+  padding: 0 layout.$spacing-03;
+  min-height: unset;
+  @include type.type-style('label-01');
+}
+
+.errorText {
+  margin-top: layout.$spacing-02;
+  @include type.type-style('label-01');
+  color: colors.$red-60;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.formContainer {
+  margin: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  overflow-y: auto;
+}
+
+.tablet {
+  padding: layout.$spacing-06 layout.$spacing-05;
+  background-color: colors.$white;
+}
+
+.desktop {
+  padding: 0;
+
+  & button {
+    max-width: 50% !important;
+  }
+}
+
+.buttonContainer {
+  max-width: 50%;
+}
+
+.inlineLoading {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.hiddenInput {
+  display: none;
+}

@@ -1,0 +1,38 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+
+// Styles for containers rendered directly by FinalizedReportExpandedContent.
+// Shared sub-components (ReportHeader, FindingsSection, etc.) carry their own
+// styles via report-expanded-content.shared.scss.
+
+.wrapper {
+  background: colors.$white;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.reportCard {
+  border: 1px solid colors.$gray-20;
+  padding: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+}
+
+.statusTag {
+  background-color: #5a0f1e !important;
+  color: colors.$white !important;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+// Two-column grid for resident + attending radiologist entries
+.radiologists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: layout.$spacing-07;
+  padding-top: layout.$spacing-05;
+  border-top: 1px solid colors.$gray-20;
+}

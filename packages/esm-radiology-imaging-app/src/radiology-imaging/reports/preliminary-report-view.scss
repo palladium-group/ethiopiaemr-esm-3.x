@@ -1,0 +1,22 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  background-color: colors.$white;
+
+  :global(.cds--table-toolbar) {
+    position: relative !important;
+  }
+}
+
+.toolbarContent {
+  display: flex;
+  align-items: center;
+}
+
+.expandedRow {
+  > td {
+    padding-left: 1rem !important;
+  }
+}

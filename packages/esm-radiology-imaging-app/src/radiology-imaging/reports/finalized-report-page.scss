@@ -1,0 +1,27 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: colors.$gray-10;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: layout.$spacing-03 0;
+  background: colors.$white;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  gap: layout.$spacing-02;
+}
+
+.content {
+  width: 100%;
+}

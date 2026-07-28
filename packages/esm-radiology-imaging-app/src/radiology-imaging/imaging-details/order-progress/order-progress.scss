@@ -1,0 +1,17 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.orderProgress {
+  margin: layout.$spacing-05 0;
+  padding: layout.$spacing-05;
+  background-color: colors.$gray-10;
+  height: calc(layout.$layout-06 + layout.$spacing-05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  > ul {
+    width: 100%;
+  }
+}

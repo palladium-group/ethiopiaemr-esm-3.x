@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "fhir2": ">=1.2",
+    "webservices.rest": ">=2.2.0",
+    "appointments": ">=2.0.0"
+  },
+  "extensions": [
+    {
+      "name": "radiology-imaging-nav-link",
+      "slot": "navbar-items-slot",
+      "component": "radiologyImagingNavLink",
+      "order": 0,
+      "meta": {
+        "name": "radiology-imaging",
+        "title": "Radiology Imaging",
+        "search": ["radiology-imaging", "Radiology Imaging"]
+      }
+    },
+    {
+      "name": "radiology-imaging-incoming-orders-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingHomeLink",
+      "order": 1,
+      "meta": {
+        "name": "incoming-orders",
+        "title": "Incoming Orders"
+      }
+    },
+    {
+      "name": "radiology-imaging-scheduled-orders-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingScheduledOrdersLink",
+      "order": 2,
+      "meta": {
+        "name": "scheduled-orders",
+        "title": "Scheduled Orders"
+      }
+    },
+    {
+      "name": "radiology-imaging-in-progress-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingInProgressLink",
+      "order": 3,
+      "meta": {
+        "name": "in-progress",
+        "title": "In Progress"
+      }
+    },
+    {
+      "name": "radiology-imaging-image-acquired-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingImageAcquiredLink",
+      "order": 4,
+      "meta": {
+        "name": "image-acquired",
+        "title": "Image Acquired"
+      }
+    },
+    {
+      "name": "radiology-imaging-preliminary-report-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingPreliminaryReportLink",
+      "order": 5,
+      "meta": {
+        "name": "preliminary-report",
+        "title": "Preliminary Report"
+      }
+    },
+    {
+      "name": "radiology-imaging-finalized-report-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingFinalizedReportLink",
+      "order": 6,
+      "meta": {
+        "name": "finalized-report",
+        "title": "Finalized Report"
+      }
+    },
+    {
+      "name": "radiology-imaging-referred-out-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingReferredOutLink",
+      "order": 7,
+      "meta": {
+        "name": "referred-out",
+        "title": "Referred Out"
+      }
+    },
+    {
+      "name": "radiology-imaging-not-done-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingNotDoneLink",
+      "order": 8,
+      "meta": {
+        "name": "not-done",
+        "title": "Not Done"
+      }
+    },
+    {
+      "name": "radiology-imaging-search-link",
+      "slot": "radiology-imaging-left-panel-slot",
+      "component": "radiologyImagingSearchLink",
+      "order": 0,
+      "meta": {
+        "name": "imaging-search",
+        "title": "Imaging Search"
+      }
+    }
+  ],
+  "pages": [
+    {
+      "component": "root",
+      "route": "root"
+    },
+    {
+      "component": "radiologyImagingRoot",
+      "route": "radiology-imaging"
+    }
+  ],
+  "modals": [
+    {
+      "name": "reject-preliminary-report-modal",
+      "component": "rejectPreliminaryReportModal"
+    },
+    {
+      "name": "print-preview-modal",
+      "component": "printPreviewModal"
+    },
+    {
+      "name": "custom-date-range-modal",
+      "component": "customDateRangeModal"
+    },
+    {
+      "name": "refer-order-external-modal",
+      "component": "referOrderExternalModal"
+    },
+    {
+      "name": "reject-order-modal",
+      "component": "rejectOrderModal"
+    }
+  ],
+  "workspaces2":[
+    {
+      "name": "radiology-appointment-workspace",
+      "window":"radiology-imaging-workspace-window",
+      "component": "radiologyAppointmentWorkspace"
+    },
+    {
+      "name": "radiology-report-workspace",
+      "window": "radiology-imaging-workspace-window",
+      "component": "preliminaryWorkspace"
+    }
+  ],
+  "workspaceWindows2":[
+    {
+      "name": "radiology-imaging-workspace-window",
+      "group": "radiology-imaging-group",
+      "canMaximize": true,
+      "width":"wider"
+    }
+  ],
+  "workspaceGroups2":[
+    {
+      "name": "radiology-imaging-group",
+      "scopePattern": "radiology-imaging"
+    }
+  ]
+}
