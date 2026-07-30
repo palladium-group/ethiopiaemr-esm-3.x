@@ -1,0 +1,6 @@
+name,tags,parentName,parentUuid,uuid,description,attribute.8a845a89-6aa5-4111-81d3-0af31c45c002,attribute.54686249-2c26-4dd9-be90-fc7868dedd8f,attribute.f369dbaa-3a0a-416e-97d1-cac1a230824f,attribute.d4e54a2f-39bf-4b0a-8000-f2048eddbe12
+Example Hospital,Visit Location|Login Location,,,aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1,Facility root / visit location,12345678,12345678,General Hospital,Operational
+OPD Clinic,Visit Location|Login Location,Example Hospital,,,Outpatient department,,,,
+Surgical Ward,Admission Location|Surgical Ward|Visit Location,,aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1,,Inpatient surgical ward,,,,
+Cash Point Desk,Payment Point|Login Location,Example Hospital,,,Billing cash point,,,,
+Emergency Triage,Emergency|Visit Location|Login Location,Example Hospital,,,Emergency department,,,,

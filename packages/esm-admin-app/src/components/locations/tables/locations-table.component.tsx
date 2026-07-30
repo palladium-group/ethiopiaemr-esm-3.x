@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -17,15 +17,25 @@ import {
   Tile,
   Tag,
 } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
-import { WorkspaceContainer, isDesktop as desktopLayout, launchWorkspace, useLayoutType } from '@openmrs/esm-framework';
+import { Add, Upload } from '@carbon/react/icons';
+import {
+  WorkspaceContainer,
+  isDesktop as desktopLayout,
+  launchWorkspace,
+  showModal,
+  useLayoutType,
+  useSession,
+  userHasAccess,
+} from '@openmrs/esm-framework';
 import styles from './locations-table.scss';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { useFacilitiesTagged } from './locations-table.resource';
 import { useLocationTags } from '../hooks/useLocationTags';
+import { AdminPermissions } from '../../../permissions.constants';
 
 const LocationsTable: React.FC = () => {
   const { t } = useTranslation();
+  const session = useSession();
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const isDesktop = desktopLayout(layout);
@@ -33,8 +43,15 @@ const LocationsTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { locationTagList, isLoading: tagsLoading, error: tagsError } = useLocationTags();
-  const { facilityList, isLoading: taggedLoading } = useFacilitiesTagged({ results: locationTagList });
+  const canBulkImport = userHasAccess(AdminPermissions.ManageLocationBulkImport, session?.user);
+  const { locationTagList, isLoading: tagsLoading } = useLocationTags();
+  const {
+    facilityList,
+    isLoading: taggedLoading,
+    mutate: mutateLocations,
+  } = useFacilitiesTagged({
+    results: locationTagList,
+  });
 
   const handleAddLocationWorkspace = () => {
     launchWorkspace('add-location-workspace', {
@@ -45,6 +62,13 @@ const LocationsTable: React.FC = () => {
   const handleSearchLocationWorkspace = () => {
     launchWorkspace('search-location-workspace', {
       workspaceTitle: t('tagLocation', 'Tag Location'),
+    });
+  };
+
+  const handleImportLocations = () => {
+    const dispose = showModal('location-bulk-import-modal', {
+      closeModal: () => dispose(),
+      mutateLocations: () => mutateLocations(),
     });
   };
 
@@ -157,6 +181,14 @@ const LocationsTable: React.FC = () => {
                 onClick={handleSearchLocationWorkspace}>
                 {t('tagLocation', 'Tag Location')}
               </Button>
+              {canBulkImport ? (
+                <Button
+                  kind="ghost"
+                  renderIcon={(props) => <Upload size={16} {...props} />}
+                  onClick={handleImportLocations}>
+                  {t('importLocations', 'Import locations')}
+                </Button>
+              ) : null}
             </>
           </div>
         </CardHeader>

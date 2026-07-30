@@ -1,0 +1,103 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.description {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-05;
+}
+
+.columnsHelp {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-05;
+}
+
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  align-items: center;
+  margin-bottom: layout.$spacing-05;
+}
+
+.uploadRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  align-items: center;
+  margin-bottom: layout.$spacing-05;
+}
+
+.selectedFile {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-80;
+}
+
+.fileHint {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-05;
+}
+
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-05;
+}
+
+.summaryTile {
+  background-color: colors.$gray-10;
+  border: 1px solid colors.$gray-20;
+  padding: layout.$spacing-03 layout.$spacing-05;
+  min-width: 6rem;
+}
+
+.summaryLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  display: block;
+}
+
+.summaryValue {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.resultsHeading {
+  @include type.type-style('heading-compact-01');
+  margin-bottom: layout.$spacing-03;
+}
+
+.excludeActions {
+  margin-bottom: layout.$spacing-05;
+}
+
+.excludeHint {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+}
+
+.resultsTable {
+  margin-bottom: layout.$spacing-05;
+  max-height: 18rem;
+  overflow: auto;
+}
+
+.errorList {
+  margin: 0;
+  padding-left: layout.$spacing-05;
+}
+
+.iconMarginLeft {
+  margin-left: layout.$spacing-03;
+}
+
+.footerLoading {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
