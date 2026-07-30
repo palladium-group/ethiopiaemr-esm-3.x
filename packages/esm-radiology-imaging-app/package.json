@@ -1,0 +1,77 @@
+{
+  "name": "@palladium-ethiopia/esm-radiology-imaging-app",
+  "version": "1.0.0",
+  "description": "Radiology imaging workflow app for OpenMRS 3 (worklists, PACS, scheduling, reporting)",
+  "keywords": [
+    "openmrs",
+    "ethiopiaemr",
+    "radiology",
+    "imaging"
+  ],
+  "homepage": "https://github.com/palladium-group/ethiopiaemr-esm-3.x#readme",
+  "bugs": {
+    "url": "https://github.com/palladium-group/ethiopiaemr-esm-3.x/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palladium-group/ethiopiaemr-esm-3.x.git"
+  },
+  "license": "MPL-2.0",
+  "main": "src/index.ts",
+  "source": true,
+  "browser": "dist/esm-radiology-imaging-app.js",
+  "scripts": {
+    "analyze": "rspack --mode=production --env analyze=true",
+    "build": "rspack --mode=production",
+    "coverage": "yarn test --coverage",
+    "debug": "yarn serve",
+    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.modal.tsx' 'src/index.ts' --config ../../tools/i18next-parser.config.js",
+    "lint": "cross-env eslint src --ext ts,tsx",
+    "serve": "rspack serve --mode=development",
+    "start": "openmrs develop",
+    "test": "cross-env TZ=UTC jest --config jest.config.js --verbose false --passWithNoTests --color",
+    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
+    "typescript": "tsc"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "dependencies": {
+    "@carbon/react": "^1.83.0",
+    "@hookform/resolvers": "^3.9.1",
+    "@tiptap/extension-color": "^3.23.6",
+    "@tiptap/extension-image": "^3.23.6",
+    "@tiptap/extension-table": "^3.23.6",
+    "@tiptap/extension-table-cell": "^3.23.6",
+    "@tiptap/extension-table-header": "^3.23.6",
+    "@tiptap/extension-table-row": "^3.23.6",
+    "@tiptap/extension-text-align": "^3.23.6",
+    "@tiptap/extension-text-style": "^3.23.6",
+    "@tiptap/extension-underline": "^3.23.6",
+    "@tiptap/pm": "^3.23.6",
+    "@tiptap/react": "^3.23.6",
+    "@tiptap/starter-kit": "^3.23.6",
+    "dompurify": "^3.4.6",
+    "he": "^1.2.0",
+    "html-react-parser": "^6.1.2",
+    "lodash-es": "^4.17.21",
+    "react-hook-form": "^7.54.0",
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "@openmrs/esm-framework": "8.x",
+    "@openmrs/esm-patient-common-lib": "12.x",
+    "dayjs": "1.x",
+    "react": "18.x",
+    "react-i18next": "11.x",
+    "react-router-dom": "6.x",
+    "rxjs": "6.x",
+    "swr": "2.x"
+  },
+  "devDependencies": {
+    "@types/he": "^1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

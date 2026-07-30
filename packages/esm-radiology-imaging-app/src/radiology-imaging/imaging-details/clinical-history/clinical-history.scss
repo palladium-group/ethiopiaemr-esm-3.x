@@ -1,0 +1,114 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  background-color: colors.$white;
+  padding: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  height: 100%;
+}
+
+.title {
+  @include type.type-style('heading-03');
+  color: colors.$gray-100;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  font-weight: 600;
+  border-bottom: 1px solid colors.$gray-20;
+  padding-bottom: layout.$spacing-02;
+
+  & svg {
+    fill: colors.$blue-80;
+  }
+}
+
+.content {
+  margin-top: layout.$spacing-05;
+
+  .label {
+    @include type.type-style('label-01');
+    color: colors.$gray-70;
+  }
+
+  .value {
+    @include type.type-style('body-01');
+    color: colors.$gray-100;
+  }
+
+  .referringPhysician {
+    display: flex;
+    align-items: center;
+    gap: layout.$spacing-02;
+    @include type.type-style('body-01');
+    color: colors.$gray-100;
+    font-weight: 600;
+    margin-top: layout.$spacing-02;
+
+    & svg {
+      fill: colors.$gray-70;
+    }
+  }
+}
+
+.clinicalHistoryContent {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: layout.$spacing-05;
+  align-items: start;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+// ─── Technologist notes ───────────────────────────────────────────────────────
+
+.notesSection {
+  margin-top: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+}
+
+.noteEntry {
+  padding: layout.$spacing-04;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid colors.$gray-10;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &.comment {
+    border-left-color: colors.$blue-50;
+  }
+
+  &.instructions {
+    border-left-color: colors.$teal-50;
+  }
+}
+
+.noteLabel {
+  @include type.type-style('helper-text-01');
+  font-weight: 600;
+  text-transform: uppercase;
+  color: colors.$gray-70;
+  letter-spacing: 0.32px;
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  margin-bottom: layout.$spacing-02;
+
+  & svg {
+    flex-shrink: 0;
+    fill: colors.$gray-60;
+  }
+}
+
+.noteText {
+  @include type.type-style('label-01');
+  color: colors.$gray-80;
+  margin: 0;
+}

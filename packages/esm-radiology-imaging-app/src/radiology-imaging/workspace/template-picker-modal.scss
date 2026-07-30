@@ -1,0 +1,43 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.search {
+  margin-bottom: layout.$spacing-05;
+}
+
+.templateList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.templateTile {
+  cursor: pointer;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  @include type.type-style('body-01');
+  border: 1px solid transparent;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+
+  &:hover {
+    background-color: colors.$gray-20;
+  }
+}
+
+.selected {
+  background-color: colors.$blue-10;
+  border-color: colors.$blue-60;
+
+  &:hover {
+    background-color: colors.$blue-20;
+  }
+}
+
+.empty {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  padding: layout.$spacing-05;
+  text-align: center;
+}

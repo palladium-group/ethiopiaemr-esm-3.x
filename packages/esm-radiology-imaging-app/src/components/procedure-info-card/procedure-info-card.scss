@@ -1,0 +1,40 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.procedureInfo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: layout.$spacing-09;
+  row-gap: layout.$spacing-05;
+  width: 100%;
+}
+
+.procedureInfoCard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  justify-content: space-between;
+}
+
+.label {
+  @include type.type-style('label-01');
+
+  color: colors.$gray-70;
+  text-transform: uppercase;
+  letter-spacing: 0.32px;
+}
+
+.value {
+  @include type.type-style('body-compact-01');
+
+  color: colors.$gray-100;
+  font-weight: 400;
+}
+
+@media (max-width: 42rem) {
+  .procedureInfo {
+    grid-template-columns: 1fr;
+    row-gap: layout.$spacing-05;
+  }
+}

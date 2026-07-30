@@ -1,0 +1,17 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  background-color: colors.$white;
+
+  :global(.cds--table-toolbar) {
+    position: relative !important;
+  }
+}
+
+.viewDicomImages {
+  :global(tr.cds--parent-row.cds--expandable-row + tr[data-child-row]) {
+    padding-left: 0;
+  }
+}

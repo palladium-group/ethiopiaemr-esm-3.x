@@ -1,0 +1,65 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  border: 1px solid colors.$gray-20;
+}
+
+.tile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 30rem;
+  padding: layout.$spacing-10;
+  border-top: 1px solid colors.$gray-20;
+  background-color: colors.$white;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: layout.$spacing-04;
+  text-align: center;
+}
+
+.iconCircle {
+  position: relative;
+  width: 8rem;
+  height: 8rem;
+  border-radius: 50%;
+  background-color: colors.$gray-10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.clipboardIcon {
+  color: colors.$gray-50;
+}
+
+.searchIcon {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  color: colors.$gray-50;
+}
+
+.heading {
+  @include type.type-style('productive-heading-04');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.body {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  margin: 0;
+  width: 100%;
+}
+
+.action {
+  margin-top: layout.$spacing-02;
+}
