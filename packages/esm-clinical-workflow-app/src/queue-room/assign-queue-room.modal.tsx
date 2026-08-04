@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Dropdown, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
+import { Button, Dropdown, InlineLoading, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
 import { showSnackbar, useSession } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
 import {
@@ -26,12 +26,19 @@ const AssignQueueRoomModal: React.FC<AssignQueueRoomModalProps> = ({ queueEntry,
   const queueUuid = queueEntry.queue?.uuid;
   const locationUuid = queueEntry.queue?.location?.uuid ?? sessionLocation?.uuid;
 
-  const { activeTickets, mutate: mutateActiveTickets } = useActiveTicketAssignments();
+  const { activeTickets, isLoading: isLoadingTickets, mutate: mutateActiveTickets } = useActiveTicketAssignments();
   const { queueRooms, isLoading: isLoadingRooms } = useQueueRooms(queueUuid, locationUuid);
+  const isLoadingData = isLoadingRooms || isLoadingTickets;
 
   const currentRoomName = findAssignedRoomName(ticketNumber, activeTickets);
   const [selectedRoomName, setSelectedRoomName] = useState<string | null>(currentRoomName ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (currentRoomName && selectedRoomName === null) {
+      setSelectedRoomName(currentRoomName);
+    }
+  }, [currentRoomName, selectedRoomName]);
 
   const roomItems = queueRooms.map((room) => ({
     id: room.uuid,
@@ -119,44 +126,52 @@ const AssignQueueRoomModal: React.FC<AssignQueueRoomModalProps> = ({ queueEntry,
               {t('queueNumber', 'Queue number')}: {ticketNumber}
             </p>
           )}
-          {currentRoomName ? (
-            <p>
-              {t('currentRoom', 'Current room')}: <Tag type="blue">{currentRoomName}</Tag>
-            </p>
+          {isLoadingData ? (
+            <div className={styles.loadingContainer}>
+              <InlineLoading description={t('loadingRooms', 'Loading rooms...')} />
+            </div>
           ) : (
-            <p>{t('notAssignedToRoom', 'Not currently assigned to a room')}</p>
-          )}
-          {!ticketNumber && (
-            <p className={styles.errorText}>
-              {t(
-                'queueNumberMissingDescription',
-                'This patient does not have a queue number. Assign a queue number before assigning a room.',
+            <>
+              {currentRoomName ? (
+                <p>
+                  {t('currentRoom', 'Current room')}: <Tag type="blue">{currentRoomName}</Tag>
+                </p>
+              ) : (
+                <p>{t('notAssignedToRoom', 'Not currently assigned to a room')}</p>
               )}
-            </p>
-          )}
-          {!locationUuid && (
-            <p className={styles.errorText}>
-              {t('queueLocationMissing', 'Unable to load rooms because the queue location is not configured.')}
-            </p>
-          )}
-          <Dropdown
-            id="queue-room-select"
-            className={styles.roomDropdown}
-            titleText={t('selectQueueRoom', 'Select queue room')}
-            label={roomDropdownLabel}
-            items={roomItems}
-            itemToString={(item) => item?.name ?? ''}
-            selectedItem={selectedRoom}
-            onChange={({ selectedItem }) => setSelectedRoomName(selectedItem?.name ?? null)}
-            disabled={isLoadingRooms || !ticketNumber || !locationUuid || roomItems.length === 0}
-          />
-          {!isLoadingRooms && roomItems.length === 0 && locationUuid && (
-            <p className={styles.errorText}>
-              {t(
-                'noQueueRoomsConfigured',
-                'No queue rooms are configured for this queue. Create rooms in queue admin.',
+              {!ticketNumber && (
+                <p className={styles.errorText}>
+                  {t(
+                    'queueNumberMissingDescription',
+                    'This patient does not have a queue number. Assign a queue number before assigning a room.',
+                  )}
+                </p>
               )}
-            </p>
+              {!locationUuid && (
+                <p className={styles.errorText}>
+                  {t('queueLocationMissing', 'Unable to load rooms because the queue location is not configured.')}
+                </p>
+              )}
+              <Dropdown
+                id="queue-room-select"
+                className={styles.roomDropdown}
+                titleText={t('selectQueueRoom', 'Select queue room')}
+                label={roomDropdownLabel}
+                items={roomItems}
+                itemToString={(item) => item?.name ?? ''}
+                selectedItem={selectedRoom}
+                onChange={({ selectedItem }) => setSelectedRoomName(selectedItem?.name ?? null)}
+                disabled={!ticketNumber || !locationUuid || roomItems.length === 0}
+              />
+              {roomItems.length === 0 && locationUuid && (
+                <p className={styles.errorText}>
+                  {t(
+                    'noQueueRoomsConfigured',
+                    'No queue rooms are configured for this queue. Create rooms in queue admin.',
+                  )}
+                </p>
+              )}
+            </>
           )}
         </div>
       </ModalBody>
@@ -164,7 +179,10 @@ const AssignQueueRoomModal: React.FC<AssignQueueRoomModalProps> = ({ queueEntry,
         <Button kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="primary" onClick={handleSubmit} disabled={isSubmitting || !ticketNumber}>
+        <Button
+          kind="primary"
+          onClick={handleSubmit}
+          disabled={isSubmitting || isLoadingData || !ticketNumber || !selectedRoomName}>
           {currentRoomName ? t('transferRoom', 'Transfer room') : t('assignRoom', 'Assign room')}
         </Button>
       </ModalFooter>

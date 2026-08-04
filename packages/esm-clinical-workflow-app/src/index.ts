@@ -31,6 +31,7 @@ import { registerTriageDashboardExtensionsFromConfig } from './triage/register-t
 import EtlAdminDashboardLink from './admin/etl-admin-dashboard-link.extension';
 import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
 import OrderSheet from './ward/order-sheet.component';
+import AssignQueueRoomModal from './queue-room/assign-queue-room.modal';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
@@ -153,7 +154,7 @@ export const queueTableActionsColumn = getAsyncLifecycle(
   options,
 );
 
-export const assignQueueRoomModal = getAsyncLifecycle(() => import('./queue-room/assign-queue-room.modal'), options);
+export const assignQueueRoomModal = getSyncLifecycle(AssignQueueRoomModal, options);
 
 export const callQueueEntryModal = getAsyncLifecycle(() => import('./queue-room/call-queue-entry.modal'), options);
 
