@@ -1,7 +1,14 @@
 import { useCallback, useMemo } from 'react';
 import { useSWRConfig } from 'swr';
 import useSWRImmutable from 'swr/immutable';
-import { type FetchResponse, openmrsFetch, restBaseUrl, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
+import {
+  type FetchResponse,
+  openmrsFetch,
+  restBaseUrl,
+  useConfig,
+  useFeatureFlag,
+  type Visit,
+} from '@openmrs/esm-framework';
 import {
   type Drug,
   type DosingUnit,
@@ -9,6 +16,7 @@ import {
   type DrugOrderTemplate,
   type OrderTemplate,
 } from '@openmrs/esm-patient-common-lib';
+import { type ConfigObject } from '../../config-schema';
 
 export interface DrugSearchResult {
   uuid: string;
@@ -66,8 +74,9 @@ export const MAX_TEMPLATE_PREFETCH = 15;
  * @returns
  */
 export function useDrugSearch(query: string) {
+  const { maxDrugSearchResults } = useConfig<ConfigObject>();
   const { data, ...rest } = useSWRImmutable<FetchResponse<{ results: Array<DrugSearchResult> }>, Error>(
-    query ? `${restBaseUrl}/drug?q=${query}&v=${drugSearchRepresentation}` : null,
+    query ? `${restBaseUrl}/drug?q=${query}&v=${drugSearchRepresentation}&limit=${maxDrugSearchResults}` : null,
     openmrsFetch,
   );
 

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0",
+    "ethiopiaemrcore": ">=1.0.0-0"
+  },
+  "extensions": [
+    {
+      "name": "elective-surgery-schedule-dashboard-link",
+      "component": "electiveSurgeryScheduleDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "order": 7,
+      "meta": {
+        "name": "elective-surgery-schedule",
+        "title": "Elective Surgery Schedule",
+        "slot": "elective-surgery-schedule-dashboard-slot"
+      },
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "elective-surgery-schedule-dashboard",
+      "component": "electiveSurgeryScheduleDashboard",
+      "slot": "elective-surgery-schedule-dashboard-slot",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "pages": [],
+  "workspaces": [],
+  "workspaces2": [
+    {
+      "name": "record-elective-surgery-contact-workspace",
+      "component": "recordElectiveSurgeryContactWorkspace",
+      "window": "elective-surgery-schedule-form"
+    },
+    {
+      "name": "remove-elective-surgery-patient-workspace",
+      "component": "removeElectiveSurgeryPatientWorkspace",
+      "window": "elective-surgery-schedule-form"
+    },
+    {
+      "name": "return-from-surgical-admission-workspace",
+      "component": "returnFromSurgicalAdmissionWorkspace",
+      "window": "elective-surgery-schedule-form"
+    },
+    {
+      "name": "elective-surgery-admission-request-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "elective-surgery-schedule-form"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "elective-surgery-schedule-form",
+      "group": "elective-surgery-schedule-group",
+      "width": "wider",
+      "canMaximize": true
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "elective-surgery-schedule-group",
+      "overlay": true,
+      "persistence": "closable"
+    }
+  ],
+  "modals": []
+}

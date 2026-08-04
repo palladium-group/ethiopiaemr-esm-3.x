@@ -1,0 +1,60 @@
+.container {
+  padding: 1.5rem;
+}
+
+.header {
+  margin-bottom: 1rem;
+}
+
+.title {
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  color: var(--cds-text-secondary);
+}
+
+.emptyState {
+  margin-top: 1rem;
+}
+
+.emptyState p {
+  color: var(--cds-text-secondary);
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  margin-bottom: 0.75rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.toolbarSearch {
+  flex: 1;
+  min-width: 16rem;
+  max-width: 24rem;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tableContainer {
+  margin-top: 0.5rem;
+}
+
+.emptySection {
+  color: var(--cds-text-secondary);
+  padding: 1rem 0;
+}

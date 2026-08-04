@@ -1,0 +1,225 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.wrapper {
+  background: colors.$white;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+// ── Header card ───────────────────────────────────────────────────────────────
+
+.headerCard {
+  border: 1px solid colors.$gray-20;
+  padding: layout.$spacing-05;
+}
+
+.headerTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: layout.$spacing-05;
+}
+
+.patientInfo {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.patientName {
+  @include type.type-style('heading-04');
+  font-weight: 700;
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.demographics {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.demoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.demoLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.demoValue {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+}
+
+.pipe {
+  color: colors.$gray-30;
+  @include type.type-style('body-compact-01');
+  align-self: flex-end;
+  padding-bottom: 2px;
+}
+
+.badgeSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: layout.$spacing-02;
+  flex-shrink: 0;
+}
+
+.accession {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.procedureSection {
+  border-top: 1px solid colors.$gray-20;
+  padding-top: layout.$spacing-04;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-01;
+}
+
+.procedureLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.procedureName {
+  @include type.type-style('heading-03');
+  font-weight: 600;
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+// ── Report card ───────────────────────────────────────────────────────────────
+
+.reportCard {
+  border: 1px solid colors.$gray-20;
+  padding: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  color: colors.$gray-70;
+}
+
+.sectionTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid colors.$gray-20;
+  margin: 0;
+}
+
+.bodyText {
+  @include type.type-style('body-01');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.richContent {
+  @include type.type-style('body-01');
+  color: colors.$gray-100;
+  line-height: 1.6;
+
+  p {
+    margin: 0 0 layout.$spacing-03;
+    @include type.type-style('body-compact-01');
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  ol,
+  ul {
+    padding-left: layout.$spacing-06;
+    margin-bottom: layout.$spacing-03;
+  }
+
+  li {
+    display: list-item;
+  }
+}
+
+.empty {
+  @include type.type-style('body-01');
+  color: colors.$gray-50;
+  font-style: italic;
+  margin: 0;
+}
+
+// ── Impression block ──────────────────────────────────────────────────────────
+
+.impressionBlock {
+  background: colors.$gray-10;
+  border-left: 3px solid colors.$blue-60;
+  border-radius: 0 4px 4px 0;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.impressionHeader {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  color: colors.$gray-70;
+}
+
+// ── Radiologist ───────────────────────────────────────────────────────────────
+
+.radiologistItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.radiologistLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.radiologistName {
+  @include type.type-style('body-compact-01');
+  font-weight: 600;
+  font-style: italic;
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.radiologistTime {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+}

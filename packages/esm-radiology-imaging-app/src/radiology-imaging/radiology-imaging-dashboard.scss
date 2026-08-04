@@ -1,0 +1,13 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.pageHeader {
+  @include type.type-style('heading-03');
+  padding: layout.$spacing-05 layout.$spacing-05 0;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.content {
+  padding: layout.$spacing-05;
+}

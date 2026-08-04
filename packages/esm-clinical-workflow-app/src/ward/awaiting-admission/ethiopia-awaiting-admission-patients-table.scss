@@ -1,0 +1,33 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  background-color: colors.$gray-10;
+  padding: 0 layout.$spacing-05;
+}
+
+.search {
+  margin: layout.$spacing-05 0;
+
+  input {
+    background-color: $ui-02 !important;
+  }
+}
+
+.expandedActiveVisitRow {
+  td {
+    padding: 0;
+
+    > div {
+      max-height: max-content !important;
+      background-color: $ui-02;
+    }
+  }
+}
+
+.hiddenRow {
+  display: none;
+}

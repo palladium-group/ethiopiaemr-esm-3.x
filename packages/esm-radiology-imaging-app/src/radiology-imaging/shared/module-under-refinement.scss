@@ -1,0 +1,34 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  background: colors.$gray-10;
+  padding: layout.$spacing-09;
+  text-align: center;
+}
+
+.title {
+  @include type.type-style('heading-05');
+  color: colors.$gray-100;
+  margin-bottom: layout.$spacing-05;
+}
+
+.description {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  max-width: 28rem;
+  margin-bottom: layout.$spacing-07;
+}
+
+.actions {
+  display: flex;
+  gap: layout.$spacing-05;
+  flex-wrap: wrap;
+  justify-content: center;
+}

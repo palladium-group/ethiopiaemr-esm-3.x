@@ -19,7 +19,6 @@ import { formatDate, launchWorkspace2, parseDate, useConfig, useLayoutType } fro
 import { type PatientDiagnosis, usePatientDiagnoses } from './diagnoses.resource';
 import { patientDiagnosisIsMain } from './diagnosis-main.utils';
 import { type VisitNoteConfig } from '../config-schema';
-import summaryStyles from '../patient-chart/visit/visits-widget/past-visits-components/visit-summary.scss';
 import styles from './diagnoses-summary.scss';
 import { useActiveVisit } from '../patient-chart/visit/visits-widget/visit.resource';
 
@@ -83,15 +82,27 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
   }, [activeVisit?.uuid, diagnoses]);
 
   if (isLoading) {
-    return <DataTableSkeleton role="progressbar" />;
+    return (
+      <div className={styles.widgetCard}>
+        <DataTableSkeleton role="progressbar" />
+      </div>
+    );
   }
 
   if (error) {
-    return <ErrorState error={error} headerTitle={headerTitle} />;
+    return (
+      <div className={styles.widgetCard}>
+        <ErrorState error={error} headerTitle={headerTitle} />
+      </div>
+    );
   }
 
   if (!diagnoses?.length) {
-    return <EmptyState displayText={displayText} headerTitle={headerTitle} />;
+    return (
+      <div className={styles.widgetCard}>
+        <EmptyState displayText={displayText} headerTitle={headerTitle} />
+      </div>
+    );
   }
 
   const diagnosesByEncounter = diagnoses.reduce((acc, diagnosis) => {
@@ -136,96 +147,99 @@ export default function DiagnosesSummary({ patient }: DiagnosesSummaryProps) {
   };
 
   return (
-    <div>
+    <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
         <span>{isValidating ? <InlineLoading /> : null}</span>
       </CardHeader>
-      <TableContainer>
-        <Table aria-label="diagnoses summary">
-          <TableHead>
-            <TableRow>
-              <TableHeader>{t('diagnosis', 'Diagnosis')}</TableHeader>
-              <TableHeader>{t('diagnosisOrder', 'Order')}</TableHeader>
-              <TableHeader>{t('diagnosisCertainty', 'Certainty')}</TableHeader>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {Array.from(diagnosesByEncounter.entries()).flatMap(([encounterUuid, encounterDiagnoses]) => {
-              const sortedDiagnoses = encounterDiagnoses
-                .slice()
-                .sort((a, b) => a.rank - b.rank || (a.display ?? '').localeCompare(b.display ?? ''));
-              const encounterDateTime = sortedDiagnoses[0]?.encounterDatetime;
-              const encounterObs = sortedDiagnoses[0]?.encounterObs ?? [];
-              const encounterProvider = sortedDiagnoses[0]?.encounterProvider ?? '--';
-              const encounterLocation = sortedDiagnoses[0]?.encounterLocation ?? '--';
-              const encounterNoteText = getEncounterNoteText(encounterObs, encounterNoteTextConceptUuid);
-              const canEditEncounter = encounterUuid === activeEncounterUuid;
-              return [
-                <TableRow key={`encounter-${encounterUuid}`}>
-                  <TableCell colSpan={3}>
-                    <div className={summaryStyles.encounterHeader}>
-                      <div className={summaryStyles.encounterHeaderDetails}>
-                        <span>
-                          {encounterDateTime
-                            ? formatDate(new Date(encounterDateTime), { time: true })
-                            : t('encounterGroupHeaderNoDate', '--')}
-                        </span>
-                        <p className={summaryStyles.encounterMetaText}>
-                          <span>
-                            {t('provider', 'Provider')}: {encounterProvider}
-                          </span>
-                          <span>&nbsp;&nbsp;&nbsp;</span>
-                          <span>
-                            {t('location', 'Location')}: {encounterLocation}
-                          </span>
-                        </p>
-                        {encounterNoteText ? (
-                          <p className={summaryStyles.encounterMetaText}>
-                            {t('visitNote', 'Visit note')}: {encounterNoteText}
-                          </p>
-                        ) : null}
-                      </div>
-                      {canEditEncounter ? (
-                        <OverflowMenu
-                          aria-label={t('actionsMenu', 'Actions menu')}
-                          align="left"
-                          size={isTablet ? 'lg' : 'sm'}
-                          flipped>
-                          <OverflowMenuItem
-                            itemText={t('edit', 'Edit')}
-                            onClick={() =>
-                              launchVisitNoteEditor(encounterUuid, encounterDateTime, sortedDiagnoses, encounterObs)
-                            }
-                          />
-                        </OverflowMenu>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>,
-                ...sortedDiagnoses.map((diagnosis) => {
-                  const isMain = patientDiagnosisIsMain(diagnosis, mainDiagnosisAttributeTypeUuid);
-                  return (
-                    <TableRow key={diagnosis.id}>
-                      <TableCell>
-                        <div className={styles.diagnosisNameCell}>
-                          {isMain ? (
-                            <Tag size="sm" type="green" title={t('mainDiagnosis', 'Main diagnosis')}>
-                              {t('main', 'Main')}
-                            </Tag>
-                          ) : null}
-                          <span>{diagnosis.display ?? '--'}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getDiagnosisOrderLabel(diagnosis.rank, t)}</TableCell>
-                      <TableCell>{getDiagnosisCertaintyLabel(diagnosis.certainty, t)}</TableCell>
+      <div className={styles.encounterList}>
+        {Array.from(diagnosesByEncounter.entries()).map(([encounterUuid, encounterDiagnoses]) => {
+          const sortedDiagnoses = encounterDiagnoses
+            .slice()
+            .sort((a, b) => a.rank - b.rank || (a.display ?? '').localeCompare(b.display ?? ''));
+          const encounterDateTime = sortedDiagnoses[0]?.encounterDatetime;
+          const encounterObs = sortedDiagnoses[0]?.encounterObs ?? [];
+          const encounterProvider = sortedDiagnoses[0]?.encounterProvider ?? '--';
+          const encounterLocation = sortedDiagnoses[0]?.encounterLocation ?? '--';
+          const encounterNoteText = getEncounterNoteText(encounterObs, encounterNoteTextConceptUuid);
+          const canEditEncounter = encounterUuid === activeEncounterUuid;
+
+          return (
+            <section key={encounterUuid} className={styles.encounterSection}>
+              <header className={styles.encounterHeader}>
+                <div className={styles.encounterTitleRow}>
+                  <h4 className={styles.encounterDate}>
+                    {encounterDateTime
+                      ? formatDate(new Date(encounterDateTime), { time: true })
+                      : t('encounterGroupHeaderNoDate', '--')}
+                  </h4>
+                  {canEditEncounter ? (
+                    <OverflowMenu
+                      aria-label={t('actionsMenu', 'Actions menu')}
+                      align="left"
+                      size={isTablet ? 'lg' : 'sm'}
+                      flipped>
+                      <OverflowMenuItem
+                        itemText={t('edit', 'Edit')}
+                        onClick={() =>
+                          launchVisitNoteEditor(encounterUuid, encounterDateTime, sortedDiagnoses, encounterObs)
+                        }
+                      />
+                    </OverflowMenu>
+                  ) : null}
+                </div>
+                <dl className={styles.encounterDetails}>
+                  <div className={styles.encounterDetail}>
+                    <dt>{t('provider', 'Provider')}</dt>
+                    <dd>{encounterProvider}</dd>
+                  </div>
+                  <div className={styles.encounterDetail}>
+                    <dt>{t('location', 'Location')}</dt>
+                    <dd>{encounterLocation}</dd>
+                  </div>
+                </dl>
+                {encounterNoteText ? (
+                  <p className={styles.encounterNote}>
+                    <span className={styles.encounterNoteLabel}>{t('visitNote', 'Visit note')}</span>
+                    {encounterNoteText}
+                  </p>
+                ) : null}
+              </header>
+              <TableContainer>
+                <Table aria-label={t('diagnoses', 'Diagnoses')} className={styles.table} size={isTablet ? 'lg' : 'md'}>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeader>{t('diagnosis', 'Diagnosis')}</TableHeader>
+                      <TableHeader>{t('diagnosisOrder', 'Order')}</TableHeader>
+                      <TableHeader>{t('diagnosisCertainty', 'Certainty')}</TableHeader>
                     </TableRow>
-                  );
-                }),
-              ];
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {sortedDiagnoses.map((diagnosis) => {
+                      const isMain = patientDiagnosisIsMain(diagnosis, mainDiagnosisAttributeTypeUuid);
+                      return (
+                        <TableRow key={diagnosis.id}>
+                          <TableCell>
+                            <div className={styles.diagnosisNameCell}>
+                              {isMain ? (
+                                <Tag size="sm" type="green" title={t('mainDiagnosis', 'Main diagnosis')}>
+                                  {t('main', 'Main')}
+                                </Tag>
+                              ) : null}
+                              <span>{diagnosis.display ?? '--'}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{getDiagnosisOrderLabel(diagnosis.rank, t)}</TableCell>
+                          <TableCell>{getDiagnosisCertaintyLabel(diagnosis.certainty, t)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }

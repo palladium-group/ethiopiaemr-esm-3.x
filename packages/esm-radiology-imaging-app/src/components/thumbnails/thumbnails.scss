@@ -1,0 +1,70 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.tile {
+  padding: 0;
+  min-height: 0;
+}
+
+.imageBox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #000;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skeleton {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.error {
+  @include type.type-style('label-01');
+  color: var(--cds-text-error);
+  text-align: center;
+  padding: 0 layout.$spacing-03;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.label {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.6875rem;
+  padding: layout.$spacing-01 layout.$spacing-02;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.column {
+  margin-bottom: layout.$spacing-05;
+}
+
+.skeletonWrapper {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+}
+
+.skeletonFill {
+  width: 100%;
+  height: 100%;
+}
+
+.empty {
+  color: var(--cds-text-secondary);
+}

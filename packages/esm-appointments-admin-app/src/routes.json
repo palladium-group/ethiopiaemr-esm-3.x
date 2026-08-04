@@ -18,7 +18,16 @@
       "component": "appointmentServiceAdminNavLink",
       "slot": "navbar-items-slot",
       "online": true,
-      "offline": false
+      "offline": false,
+      "meta": {
+        "search": [
+          "appointment",
+          "appointments",
+          "Appointment service admin",
+          "service availability",
+          "weekly availability"
+        ]
+      }
     }
   ],
   "workspaces": [

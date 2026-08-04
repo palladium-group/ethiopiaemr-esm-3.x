@@ -1,0 +1,309 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  margin: layout.$spacing-02 0 layout.$spacing-04;
+}
+
+.sectionTitle {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  text-transform: uppercase;
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-02;
+}
+
+.renalFunctionTestNotification {
+  max-width: none;
+  margin-bottom: 0.25rem;
+}
+
+.statusRequired {
+  @include type.type-style('label-01');
+  color: colors.$red-60;
+  font-weight: 500;
+}
+
+/* ---------- Empty state (no results) ---------- */
+
+.emptyStateBody {
+  padding: layout.$spacing-04;
+}
+
+.emptyStateBox {
+  border: 1px solid colors.$red-40;
+  background-color: colors.$red-10;
+  padding: layout.$spacing-06 layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: layout.$spacing-03;
+}
+
+.emptyStateIcon {
+  width: 2rem;
+  height: 2rem;
+  color: #93000a;
+  flex-shrink: 0;
+}
+
+.emptyStateTitle {
+  @include type.type-style('body-compact-01');
+  font-weight: 700;
+  color: #93000a;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.emptyStateSubtitle {
+  @include type.type-style('body-compact-01');
+  color: #93000a;
+  margin: 0;
+}
+
+.orderLabButton {
+  @include type.type-style('body-compact-01');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: layout.$spacing-03;
+  width: 100%;
+  padding: layout.$spacing-04;
+  background-color: colors.$blue-60;
+  color: colors.$white;
+  border: none;
+  cursor: pointer;
+  font-weight: 400;
+
+  &:hover {
+    background-color: colors.$blue-70;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* ---------- Results card ---------- */
+
+.panelCard {
+  border: 1px solid colors.$gray-20;
+  overflow: hidden;
+  background-color: colors.$white;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  background-color: colors.$gray-10;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.panelTitle {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  text-transform: uppercase;
+  color: colors.$gray-80;
+}
+
+.lastUpdated {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  white-space: nowrap;
+}
+
+/* ---------- Scrollable result list (max 3 rows) ---------- */
+
+.resultList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 7.5rem; // ~3 compact rows
+  overflow-y: auto;
+}
+
+.resultRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: layout.$spacing-02 layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-10;
+  border-left: 3px solid transparent;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.resultInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.testName {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  margin: 0;
+}
+
+.testValue {
+  @include type.type-style('label-01');
+  color: colors.$gray-100;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ---------- Status block (right side of row) ---------- */
+
+.statusBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: layout.$spacing-01;
+  flex-shrink: 0;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
+.statusBadge {
+  @include type.type-style('helper-text-01');
+  display: inline-flex;
+  align-items: center;
+  padding: 0.0625rem 0.375rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.criticalIcon {
+  flex-shrink: 0;
+  fill: colors.$red-50;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.orderTestLink {
+  @include type.type-style('label-01');
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: colors.$blue-60;
+  font-weight: 400;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* ---------- Footer ---------- */
+
+.panelFooter {
+  border-top: 1px solid colors.$gray-20;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  background-color: colors.$white;
+}
+
+.requestLabButton {
+  @include type.type-style('body-compact-01');
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: colors.$blue-60;
+  font-weight: 400;
+  width: 100%;
+  text-align: center;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* ---------- Row status variants ---------- */
+
+.valid {
+  border-left-color: colors.$green-40;
+
+  .statusBadge {
+    border: 1px solid colors.$green-40;
+    background-color: colors.$green-10;
+    color: colors.$green-60;
+  }
+}
+
+.high {
+  border-left-color: colors.$red-40;
+
+  .statusBadge {
+    border: 1px solid colors.$red-40;
+    background-color: colors.$red-10;
+    color: colors.$red-60;
+  }
+
+  .testValue {
+    color: colors.$red-60;
+  }
+}
+
+.low {
+  border-left-color: colors.$orange-40;
+
+  .statusBadge {
+    border: 1px solid colors.$orange-40;
+    background-color: colors.$orange-10;
+    color: colors.$orange-60;
+  }
+
+  .testValue {
+    color: colors.$orange-60;
+  }
+}
+
+.critical {
+  border-left-color: colors.$red-50;
+  background-color: colors.$red-10;
+
+  .statusBadge {
+    background-color: colors.$red-60;
+    color: colors.$white;
+  }
+
+  .testValue {
+    color: colors.$red-60;
+  }
+}
+
+.expired,
+.warning {
+  border-left-color: colors.$gray-30;
+
+  .statusBadge {
+    border: 1px solid colors.$gray-40;
+    background-color: colors.$gray-10;
+    color: colors.$gray-60;
+  }
+}

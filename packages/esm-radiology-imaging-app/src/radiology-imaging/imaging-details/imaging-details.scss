@@ -1,0 +1,67 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  background-color: colors.$white;
+  max-width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.orderDetails {
+  .orderNumber {
+    @include type.type-style('code-01');
+    color: colors.$gray-70;
+    text-transform: uppercase;
+  }
+
+  .radiologyProcedure {
+    @include type.type-style('heading-06');
+    color: colors.$gray-100;
+  }
+}
+.content {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.actions {
+  display: flex;
+  gap: layout.$spacing-02;
+}
+
+.scheduleHint {
+  margin: layout.$spacing-05 0;
+}
+
+.startExamBtn {
+  position: relative;
+
+  .btnLabel {
+    visibility: visible;
+  }
+
+  .btnLabel--hidden {
+    visibility: hidden;
+  }
+
+  .btnLoader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // Prevent the InlineLoading from adding its own margin/padding
+    :global(.cds--inline-loading) {
+      width: auto;
+    }
+  }
+}

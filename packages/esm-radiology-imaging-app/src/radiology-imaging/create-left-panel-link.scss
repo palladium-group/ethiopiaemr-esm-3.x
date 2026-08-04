@@ -1,0 +1,7 @@
+@use '@carbon/layout';
+
+.icon {
+  flex-shrink: 0;
+  margin-right: layout.$spacing-03;
+  vertical-align: middle;
+}

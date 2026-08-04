@@ -1,0 +1,26 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.filterBar {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  gap: layout.$spacing-06;
+  padding: layout.$spacing-04 layout.$spacing-04;
+  background-color: colors.$gray-10;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-01;
+  width: 100%;
+}
+
+.filterLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+  padding-left: layout.$spacing-02;
+}

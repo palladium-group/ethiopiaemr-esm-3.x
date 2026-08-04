@@ -16,11 +16,12 @@ export const useFacilitiesTagged = (locationTags: LocationTagsResponse) => {
 
   const url = tagNames ? `ws/fhir2/R4/Location?_summary=data&_tag=${tagNames}` : null;
 
-  const { data, isLoading, error } = useFhirFetchAll<FHIRLocation>(url);
+  const { data, isLoading, error, mutate } = useFhirFetchAll<FHIRLocation>(url);
 
   return {
     isLoading,
     error,
+    mutate,
     facilityList: data?.map((resource) => ({ resource })) || [],
   };
 };

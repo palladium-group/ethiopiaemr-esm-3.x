@@ -1,0 +1,58 @@
+{
+  "name": "@palladium-ethiopia/esm-login-app",
+  "version": "1.0.0",
+  "license": "MPL-2.0",
+  "description": "The login microfrontend for EthiopiaEMR",
+  "browser": "dist/ethiopia-esm-login-app.js",
+  "main": "src/index.ts",
+  "source": true,
+  "scripts": {
+    "start": "openmrs develop",
+    "serve": "rspack serve --mode=development",
+    "debug": "npm run serve",
+    "test": "cross-env TZ=UTC jest --config jest.config.js --verbose false --passWithNoTests",
+    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js",
+    "coverage": "yarn test --coverage",
+    "build": "rspack --mode=production",
+    "build:development": "rspack --mode=development",
+    "analyze": "rspack --mode=production --env analyze=true",
+    "typescript": "tsc",
+    "lint": "eslint src --ext ts,tsx",
+    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.extension.tsx' 'src/**/*.modal.tsx' 'src/**/*.resource.ts' --config ../../tools/i18next-parser.config.js"
+  },
+  "keywords": [
+    "openmrs",
+    "microfrontends"
+  ],
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palladium-group/ethiopiaemr-esm-3.x.git"
+  },
+  "bugs": {
+    "url": "https://github.com/palladium-group/ethiopiaemr-esm-3.x/issues"
+  },
+  "homepage": "https://github.com/palladium-group/ethiopiaemr-esm-3.x#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.1.1",
+    "lodash-es": "^4.17.15",
+    "react-hook-form": "^7.45.1",
+    "zod": "^3.21.4"
+  },
+  "peerDependencies": {
+    "@carbon/react": "^1.83.0",
+    "@openmrs/esm-framework": "8.x",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
+    "react-i18next": "16.x",
+    "react-router-dom": "6.x",
+    "rxjs": "^6.6.3",
+    "swr": "2.x"
+  }
+}

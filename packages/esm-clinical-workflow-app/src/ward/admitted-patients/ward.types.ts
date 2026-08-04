@@ -42,11 +42,6 @@ export interface BedLayout {
   }>;
 }
 
-export interface InpatientRequest {
-  patient: Patient;
-  visit: Visit;
-}
-
 export interface InpatientAdmission {
   patient: Patient;
   visit: Visit;
@@ -56,10 +51,32 @@ export interface InpatientAdmission {
   currentInpatientRequest?: InpatientRequest | null;
 }
 
+export interface InpatientRequest {
+  patient: Patient;
+  dispositionType: 'ADMIT' | 'TRANSFER' | 'DISCHARGE';
+  dispositionEncounter?: {
+    uuid?: string;
+    encounterDatetime?: string;
+    encounterProviders?: Array<{
+      provider?: { display?: string; person?: { display?: string } };
+    }>;
+    location?: { display?: string };
+  };
+  dispositionLocation?: { display?: string; uuid?: string };
+  visit: Visit;
+}
+
+export interface InpatientRequestResponse {
+  inpatientRequests?: InpatientRequest[];
+  isLoading?: boolean;
+  error?: Error;
+  mutate?: () => void;
+}
+
 export type WardPatient = {
   patient: Patient;
   visit: Visit | null;
-  bed: Bed;
+  bed: Bed | null;
   inpatientAdmission: InpatientAdmission | null;
   inpatientRequest: InpatientRequest | null;
 };
@@ -67,6 +84,7 @@ export type WardPatient = {
 export interface WardPatientGroupDetails {
   bedLayouts?: BedLayout[];
   wardAdmittedPatientsWithBed?: Map<string, InpatientAdmission>;
+  inpatientRequestResponse?: InpatientRequestResponse;
   isLoading?: boolean;
   mutate?: () => void;
 }

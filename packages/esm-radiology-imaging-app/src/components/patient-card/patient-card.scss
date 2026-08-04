@@ -1,0 +1,158 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.compactCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  width: 100%;
+}
+
+.compactPatientInfo {
+  min-width: 0;
+}
+
+.orderStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: layout.$spacing-02 layout.$spacing-04;
+  background-color: colors.$blue-10;
+  white-space: nowrap;
+}
+
+.orderStatusLabel {
+  @include type.type-style('label-01');
+
+  color: colors.$blue-60;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.32px;
+}
+
+.patientCard {
+  background-color: colors.$white;
+  padding: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  height: 100%;
+  position: relative;
+}
+
+.patientInfoContainer {
+  display: flex;
+  flex-direction: row;
+  gap: layout.$spacing-05;
+  align-items: center;
+}
+
+.patientMeta {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  justify-content: space-between;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background-color: colors.$gray-20;
+}
+
+.patientDetails {
+  display: flex;
+  flex-direction: row;
+  gap: layout.$spacing-07;
+  justify-content: space-between;
+}
+
+.patientDetail {
+  display: flex;
+  flex-direction: column;
+}
+
+.detailLabel {
+  @include type.type-style('label-01');
+
+  color: colors.$gray-70;
+}
+
+.detailValue {
+  @include type.type-style('body-01');
+
+  color: colors.$gray-100;
+  text-transform: uppercase;
+}
+
+// ─── Shared ───────────────────────────────────────────────────────────────────
+
+.patientName {
+  @include type.type-style('heading-03');
+
+  color: colors.$gray-100;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.patientIdentifier {
+  @include type.type-style('label-01');
+
+  margin-top: layout.$spacing-01;
+  color: colors.$gray-80;
+  font-family: monospace;
+  letter-spacing: 0.16px;
+}
+
+.identifierLabel {
+  color: colors.$gray-70;
+  font-family: inherit;
+}
+
+.allergiesSection {
+  background-color: #ffdad6;
+  padding: layout.$spacing-04;
+  position: absolute;
+  bottom: layout.$spacing-05;
+  left: layout.$spacing-05;
+  right: layout.$spacing-05;
+}
+
+.allergiesHeader {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-02;
+}
+
+.allergiesIcon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: #93000a;
+}
+
+.allergiesTitle {
+  @include type.type-style('body-compact-01');
+
+  font-weight: 600;
+  color: #93000a;
+}
+
+.allergiesList {
+  @include type.type-style('body-compact-01');
+
+  color: #93000a;
+  margin: 0;
+  padding-left: 1.375rem;
+}
+
+@media (max-width: 42rem) {
+  .compactCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -1,0 +1,55 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  height: 100%;
+  border: 1px solid var(--cds-border-subtle);
+
+  :global(.cds--table-toolbar) {
+    position: relative !important;
+  }
+}
+
+.searchPanel {
+  width: 100%;
+  & form {
+    border: none;
+  }
+}
+
+.searchTitle {
+  @include type.type-style('heading-compact-02');
+  margin-bottom: layout.$spacing-04;
+  color: var(--cds-text-primary);
+}
+
+.ordersPanel {
+  flex: 1;
+  min-height: 0;
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 320px;
+  gap: layout.$spacing-05;
+  background-color: colors.$gray-10;
+}
+
+.placeholderIcon {
+  color: var(--cds-text-placeholder);
+}
+
+.placeholderText {
+  @include type.type-style('body-01');
+  color: var(--cds-text-secondary);
+  text-align: center;
+  max-width: 320px;
+}

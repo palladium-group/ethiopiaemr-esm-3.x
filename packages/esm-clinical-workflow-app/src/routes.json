@@ -140,6 +140,13 @@
       "offline": true
     },
     {
+      "name": "admit-patient-button",
+      "component": "admitPatientActionButton",
+      "slot": "patient-actions-slot",
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "add-patient-to-ward-siderail-button",
       "component": "addPatientToWardSiderailButton",
       "slot": "ward-ui-extension-hidden-slot"
@@ -148,6 +155,11 @@
       "name": "ethiopia-admitted-patients-table",
       "component": "ethiopiaAdmittedPatientsTable",
       "slot": "ward-patients-admitted-slot"
+    },
+    {
+      "name": "ethiopia-awaiting-admission-patients-table",
+      "component": "ethiopiaAwaitingAdmissionPatientsTable",
+      "slot": "ward-patients-awaiting-admission-slot"
     },
     {
       "name": "ethiopiaemr-etl-admin-dashboard-link",

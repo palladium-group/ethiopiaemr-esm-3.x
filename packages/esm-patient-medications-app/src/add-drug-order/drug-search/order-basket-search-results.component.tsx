@@ -1,4 +1,4 @@
-import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
+import React, { type ComponentProps, memo, useCallback, useMemo, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import { Button, ButtonSkeleton, SkeletonText, Tag, Tile } from '@carbon/react';
@@ -34,6 +34,11 @@ import OrderSetReview from './order-set-review.component';
 import { type OrderSetSearchResult, useOrderSetSearch } from './order-set.resource';
 import styles from './order-basket-search-results.scss';
 
+// Shared stable reference for an empty basket. useOrderBasket returns a fresh [] every
+// render when the patient has no medications queued, which would otherwise give each
+// DrugSearchResultItem a new `orders` prop every render and defeat its memo.
+export const EMPTY_ORDERS: Array<DrugOrderBasketItem> = [];
+
 export interface OrderBasketSearchResultsProps {
   patient: fhir.Patient;
   searchTerm: string;
@@ -62,7 +67,7 @@ interface OrderSetSearchResultItemProps {
   onReview: (orderSet: OrderSetSearchResult) => void;
 }
 
-export default function OrderBasketSearchResults({
+function OrderBasketSearchResults({
   searchTerm,
   openOrderForm,
   focusAndClearSearchInput,
@@ -72,7 +77,7 @@ export default function OrderBasketSearchResults({
 }: OrderBasketSearchResultsProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { enableOrderSets } = useConfig<ConfigObject>();
+  const { enableOrderSets, maxDrugSearchResults } = useConfig<ConfigObject>();
   const [selectedOrderSet, setSelectedOrderSet] = useState<OrderSetSearchResult | null>(null);
   const { drugs, isLoading: isLoadingDrugs, error: drugSearchError } = useDrugSearch(searchTerm);
   const {
@@ -86,10 +91,16 @@ export default function OrderBasketSearchResults({
     'medications',
     prepMedicationOrderPostData,
   );
+  // useOrderBasket hands back a brand-new setOrders every render and an empty [] when the
+  // basket has no medications. Wrap both in stable references so passing them to each
+  // DrugSearchResultItem does not defeat that item's memo on every parent re-render.
+  const setOrdersRef = useRef(setOrders);
+  setOrdersRef.current = setOrders;
+  const stableSetOrders = useCallback((value: Array<DrugOrderBasketItem>) => setOrdersRef.current(value), []);
+  const stableOrders = orders.length > 0 ? orders : EMPTY_ORDERS;
   const { data: activeOrders, isLoading: isLoadingActiveOrders } = useActivePatientOrders(patientUuid);
-  const { templateByDrugUuid, error: fetchingDrugOrderTemplatesError } = useDrugTemplates(
-    (drugs ?? []).slice(0, MAX_TEMPLATE_PREFETCH) as unknown as Drug[],
-  );
+  const prefetchDrugs = useMemo(() => (drugs ?? []).slice(0, MAX_TEMPLATE_PREFETCH) as unknown as Drug[], [drugs]);
+  const { templateByDrugUuid, error: fetchingDrugOrderTemplatesError } = useDrugTemplates(prefetchDrugs);
 
   if (!searchTerm) {
     return <div className={styles.container}></div>;
@@ -110,6 +121,7 @@ export default function OrderBasketSearchResults({
   const isLoading = isLoadingDrugs || (enableOrderSets && isLoadingOrderSets);
   const error = drugSearchError ?? (enableOrderSets ? orderSetSearchError : undefined);
   const totalResults = (drugs?.length ?? 0) + (enableOrderSets ? orderSets.length : 0);
+  const isDrugResultsTruncated = (drugs?.length ?? 0) >= maxDrugSearchResults;
 
   if (isLoading) {
     return <DrugSearchSkeleton />;
@@ -166,6 +178,15 @@ export default function OrderBasketSearchResults({
           {t('clearSearchResults', 'Clear Results')}
         </Button>
       </div>
+      {isDrugResultsTruncated ? (
+        <p className={styles.truncationHint}>
+          {t(
+            'drugSearchResultsTruncated',
+            'Showing the first {{limit}} matches. Refine your search to narrow the results.',
+            { limit: maxDrugSearchResults },
+          )}
+        </p>
+      ) : null}
       <div className={styles.resultsContainer}>
         {enableOrderSets && orderSets.length > 0 ? (
           <div className={styles.resultSection}>
@@ -188,8 +209,8 @@ export default function OrderBasketSearchResults({
                 openOrderForm={openOrderForm}
                 visit={visit}
                 closeWorkspace={closeWorkspace}
-                orders={orders}
-                setOrders={setOrders}
+                orders={stableOrders}
+                setOrders={stableSetOrders}
                 activeOrders={activeOrders}
                 isLoadingActiveOrders={isLoadingActiveOrders}
                 templates={templateByDrugUuid?.get(drug.uuid)}
@@ -202,6 +223,8 @@ export default function OrderBasketSearchResults({
     </div>
   );
 }
+
+export default memo(OrderBasketSearchResults);
 
 const OrderSetSearchResultItem: React.FC<OrderSetSearchResultItemProps> = ({ orderSet, onReview }) => {
   const { t } = useTranslation();
@@ -241,7 +264,7 @@ const OrderSetSearchResultItem: React.FC<OrderSetSearchResultItemProps> = ({ ord
   );
 };
 
-export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
+export const DrugSearchResultItem = memo(function DrugSearchResultItem({
   drug,
   openOrderForm,
   visit,
@@ -252,7 +275,7 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
   isLoadingActiveOrders,
   templates,
   fetchingDrugOrderTemplatesError,
-}) => {
+}: DrugSearchResultItemProps) {
   const isTablet = useLayoutType() === 'tablet';
   const drugAlreadyInBasket = useMemo(
     () => orders?.some((order) => ordersEqual(order, getTemplateOrderBasketItem(drug, visit))),
@@ -365,7 +388,7 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
       ))}
     </>
   );
-};
+});
 
 const DrugSearchSkeleton = () => {
   const isTablet = useLayoutType() === 'tablet';
