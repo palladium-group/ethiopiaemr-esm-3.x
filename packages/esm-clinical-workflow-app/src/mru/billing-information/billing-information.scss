@@ -132,6 +132,117 @@
   margin-top: spacing.$spacing-05;
 }
 
+.cbhiSearchSection {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-04;
+}
+
 .cbhiSearchInput {
-  margin-bottom: spacing.$spacing-05;
+  margin-bottom: 0;
+}
+
+.cbhiResultsList {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-03;
+  max-height: 18rem;
+  overflow-y: auto;
+  padding-right: spacing.$spacing-02;
+}
+
+.cbhiResultCard {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-02;
+  width: 100%;
+  text-align: left;
+  border: 1px solid colors.$gray-20;
+  background: colors.$white-0;
+  border-radius: 0.5rem;
+  padding: spacing.$spacing-04;
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+
+  &:hover {
+    border-color: colors.$blue-40;
+    background: colors.$blue-10;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: 2px;
+  }
+}
+
+.cbhiResultCardSelected {
+  border-color: colors.$blue-60;
+  background: colors.$blue-10;
+  box-shadow: inset 0 0 0 1px colors.$blue-60;
+}
+
+.cbhiResultCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: spacing.$spacing-03;
+}
+
+.cbhiResultCardName {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.cbhiResultCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-02 spacing.$spacing-04;
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+}
+
+.cbhiEmptyState {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.cbhiSelectedCard {
+  border: 1px solid colors.$gray-20;
+  border-radius: 0.5rem;
+  padding: spacing.$spacing-04;
+  background: colors.$gray-10;
+}
+
+.cbhiSelectedTitle {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin: 0 0 spacing.$spacing-03;
+}
+
+.cbhiSelectedGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: spacing.$spacing-03;
+
+  @media (min-width: 42rem) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: spacing.$spacing-01;
+  }
+}
+
+.cbhiFieldLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.cbhiFieldValue {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  word-break: break-word;
 }
