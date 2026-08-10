@@ -214,10 +214,18 @@
   background: colors.$gray-10;
 }
 
+.cbhiSelectedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: spacing.$spacing-03;
+  margin-bottom: spacing.$spacing-03;
+}
+
 .cbhiSelectedTitle {
   @include type.type-style('label-01');
   color: colors.$gray-70;
-  margin: 0 0 spacing.$spacing-03;
+  margin: 0;
 }
 
 .cbhiSelectedGrid {

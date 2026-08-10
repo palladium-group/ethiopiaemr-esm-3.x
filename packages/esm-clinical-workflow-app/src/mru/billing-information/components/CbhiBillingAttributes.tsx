@@ -115,22 +115,44 @@ export const CbhiBillingAttributes: React.FC<CbhiBillingAttributesProps> = ({
   }, [attributes]);
 
   const handleMemberSelected = (member: CbhiPersistFields) => {
+    const nextAttributes = { ...attributes };
+
     CBHI_VISIT_ATTRIBUTE_FIELDS.forEach((field) => {
       const value = member[field] ?? '';
-      // Persist with stable field keys on the visit attributes summary
-      setValue(`attributes.${field}`, value, { shouldDirty: true });
+      nextAttributes[field] = value;
 
-      // Also map onto payment-mode attribute types when configured
       const attr = fieldToAttribute.get(field);
       if (attr) {
-        setValue(`attributes.${attr.uuid}`, value, { shouldDirty: true });
+        nextAttributes[attr.uuid] = value;
       }
     });
+
+    setValue('attributes', nextAttributes, { shouldDirty: true });
+  };
+
+  const handleClearSelection = () => {
+    const nextAttributes = { ...attributes };
+
+    CBHI_VISIT_ATTRIBUTE_FIELDS.forEach((field) => {
+      delete nextAttributes[field];
+
+      const attr = fieldToAttribute.get(field);
+      if (attr) {
+        delete nextAttributes[attr.uuid];
+      }
+    });
+
+    setValue('attributes', nextAttributes, { shouldDirty: true });
   };
 
   return (
     <FormGroup className={styles.billingTypeAttributesContainer} legendText={t('billingDetails', 'Billing Details')}>
-      <CbhiMemberSearch t={t} selectedMember={selectedMember} onMemberSelected={handleMemberSelected} />
+      <CbhiMemberSearch
+        t={t}
+        selectedMember={selectedMember}
+        onMemberSelected={handleMemberSelected}
+        onClearSelection={handleClearSelection}
+      />
     </FormGroup>
   );
 };
