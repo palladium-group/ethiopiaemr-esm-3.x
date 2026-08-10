@@ -116,12 +116,6 @@ export const configSchema = {
       paymentAttributesSummary: '3cc0102e-6c1f-41db-af72-4be6aa9eb27a',
     },
   },
-  showMockData: {
-    _type: Type.Boolean,
-    _default: false,
-    _description:
-      'When true, shows mock CBHI search UI that auto-populates CBHI ID and expiry date as read-only. When false, hides the mock search and allows editing those fields.',
-  },
 
   visitTypeUuid: {
     _type: Type.String,
@@ -371,7 +365,6 @@ export type ClinicalWorkflowConfig = {
     creditTypeDetails: string;
     paymentAttributesSummary: string;
   };
-  showMockData: boolean;
   visitTypeUuid: string;
   identifierSourceUuid: string;
   defaultIdentifierTypeUuid: string;
