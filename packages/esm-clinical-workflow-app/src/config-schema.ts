@@ -114,6 +114,14 @@ export const configSchema = {
       creditType: '5cd1eb62-e006-4146-bd22-80bc4d5bd2f7',
       creditTypeDetails: 'd824aa96-d2c7-4a52-aa8d-03f60a516083',
       paymentAttributesSummary: '3cc0102e-6c1f-41db-af72-4be6aa9eb27a',
+      cbhi: {
+        id: 'b4382a14-9d76-4615-87ae-c1457fa541f9',
+        fullName: 'c242e7cf-a8bc-485a-878e-87bdf36575d3',
+        accountNo: '6f5b3f9d-1dc6-4871-be4a-c7c59205ccac',
+        membershipType: '935bb6fd-3aa0-4556-b4ec-8e227811579e',
+        cbhiId: '2333b8ae-732a-4f0f-a192-ae84e1793071',
+        insuredId: '7dc76b96-e889-48b4-aa26-3e2ac0add8d4',
+      },
     },
   },
 
@@ -364,6 +372,14 @@ export type ClinicalWorkflowConfig = {
     creditType: string;
     creditTypeDetails: string;
     paymentAttributesSummary: string;
+    cbhi: {
+      id: string;
+      fullName: string;
+      accountNo: string;
+      membershipType: string;
+      cbhiId: string;
+      insuredId: string;
+    };
   };
   visitTypeUuid: string;
   identifierSourceUuid: string;

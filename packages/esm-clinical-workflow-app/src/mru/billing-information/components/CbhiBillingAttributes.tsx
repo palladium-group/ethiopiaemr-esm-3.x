@@ -2,19 +2,10 @@ import React, { useMemo } from 'react';
 import { FormGroup } from '@carbon/react';
 import type { TFunction } from 'i18next';
 import type { Control, FieldErrors } from 'react-hook-form';
-import type { BillingFormData } from '../billing-information.resource';
+import { CBHI_VISIT_ATTRIBUTE_FIELDS, type BillingFormData } from '../billing-information.resource';
 import styles from '../billing-information.scss';
 import { CbhiMemberSearch } from './CbhiMemberSearch';
 import type { CbhiPersistFields } from '../hooks/useCbhiSearch';
-
-export const CBHI_VISIT_ATTRIBUTE_FIELDS: Array<keyof CbhiPersistFields> = [
-  'id',
-  'fullName',
-  'accountNo',
-  'membershipType',
-  'cbhiId',
-  'insuredId',
-];
 
 type AttributeType = {
   uuid: string;
