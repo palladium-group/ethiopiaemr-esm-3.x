@@ -337,6 +337,26 @@ export const configSchema = {
     _description: 'UUID of the Inpatient Order Sheet form',
     _default: '038fea05-4091-4a08-a24c-5fc7e4d11b82',
   },
+  ipdDischargeEncounterTypeUuid: {
+    _type: Type.UUID,
+    _description: 'IPD Discharge encounter type UUID (doctor clinical discharge form)',
+    _default: '7e618d13-ffdb-4650-9a97-10ccd16ca36d',
+  },
+  nurseDischargeConfirmationEncounterTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Encounter type created when a nurse confirms discharge readiness',
+    _default: '3219a73c-a168-4b5b-85e0-4de306d0aed4',
+  },
+  nurseDischargeConfirmationConceptUuid: {
+    _type: Type.UUID,
+    _description: 'Obs concept for nurse confirmed discharge readiness',
+    _default: 'f41cb314-b8b2-4a84-8071-dcfdabc2a040',
+  },
+  nurseDischargeConfirmationYesConceptUuid: {
+    _type: Type.UUID,
+    _description: 'Coded Yes answer concept stored on nurse discharge confirmation obs',
+    _default: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
 };
 
 export interface PatientTypeConfig {
@@ -400,6 +420,10 @@ export type ClinicalWorkflowConfig = {
   transferDestinationLocationConceptUuid: string;
   recentDiagnosesCount: number;
   inpatientOrderSheetFormUuid: string;
+  ipdDischargeEncounterTypeUuid: string;
+  nurseDischargeConfirmationEncounterTypeUuid: string;
+  nurseDischargeConfirmationConceptUuid: string;
+  nurseDischargeConfirmationYesConceptUuid: string;
 };
 
 export interface VisitNoteConfig {

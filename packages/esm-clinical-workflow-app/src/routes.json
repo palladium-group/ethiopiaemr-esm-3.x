@@ -147,6 +147,13 @@
       "offline": true
     },
     {
+      "name": "confirm-discharge-button",
+      "component": "confirmDischargeActionButton",
+      "slot": "patient-actions-slot",
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "add-patient-to-ward-siderail-button",
       "component": "addPatientToWardSiderailButton",
       "slot": "ward-ui-extension-hidden-slot"
@@ -161,6 +168,12 @@
       "component": "ethiopiaAwaitingAdmissionPatientsTable",
       "slot": "ward-patients-awaiting-admission-slot"
     },
+    {
+      "name": "ethiopia-discharge-in-patients-table",
+      "component": "ethiopiaDischargeInPatientsTable",
+      "slot": "ward-patients-discharge-in-slot"
+    },
+
     {
       "name": "ethiopiaemr-etl-admin-dashboard-link",
       "component": "etlAdminDashboardLink",
@@ -308,6 +321,10 @@
     }
   ],
   "modals": [
+    {
+      "name": "confirm-discharge-dialog",
+      "component": "confirmDischargeDialog"
+    },
     {
       "name": "confirm-transfer-dialog",
       "component": "confirmTransferDialog"

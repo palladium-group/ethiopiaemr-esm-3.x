@@ -46,6 +46,7 @@ export interface InpatientAdmission {
   patient: Patient;
   visit: Visit;
   encounterAssigningToCurrentInpatientLocation?: {
+    uuid?: string;
     encounterDatetime?: string;
   };
   currentInpatientRequest?: InpatientRequest | null;
@@ -97,4 +98,14 @@ export interface WardViewContext {
 export interface WardAppConfigSlice {
   ipdDischargeEncounterTypeUuid: string;
   inpatientDischargeFormUuid: string;
+  dailyBedFeeBillableService: string;
+}
+
+export interface WardPatientGroupDetailsWithAdmissionLocation extends WardPatientGroupDetails {
+  admissionLocationResponse?: {
+    isLoading?: boolean;
+    admissionLocation?: {
+      ward?: { uuid?: string; display?: string };
+    };
+  };
 }
