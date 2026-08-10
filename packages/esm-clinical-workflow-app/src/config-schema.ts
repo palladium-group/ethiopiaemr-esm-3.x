@@ -331,6 +331,11 @@ export const configSchema = {
     _description: 'UUID of the Inpatient Order Sheet form',
     _default: '038fea05-4091-4a08-a24c-5fc7e4d11b82',
   },
+  legacySummaryDisplayEnabled: {
+    _type: Type.Boolean,
+    _default: true,
+    _description: 'When false, hides the Legacy Summary patient chart dashboard tab.',
+  },
 };
 
 export interface PatientTypeConfig {
@@ -393,6 +398,7 @@ export type ClinicalWorkflowConfig = {
   transferDestinationLocationConceptUuid: string;
   recentDiagnosesCount: number;
   inpatientOrderSheetFormUuid: string;
+  legacySummaryDisplayEnabled: boolean;
 };
 
 export interface VisitNoteConfig {

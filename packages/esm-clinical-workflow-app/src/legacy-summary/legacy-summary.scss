@@ -1,0 +1,49 @@
+.legacySummary {
+  padding: 1rem;
+}
+
+.banner {
+  background-color: var(--cds-layer-accent-01, #e0e0e0);
+  border-left: 4px solid var(--cds-support-warning, #f1c21b);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.section {
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.table {
+  width: 100%;
+}
+
+.timelineItem {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--cds-border-subtle-01, #e0e0e0);
+}
+
+.timelineDate {
+  min-width: 6rem;
+  color: var(--cds-text-secondary, #525252);
+  font-size: 0.875rem;
+}
+
+.timelineType {
+  min-width: 5rem;
+  text-transform: capitalize;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.viewToggle {
+  margin-bottom: 1rem;
+}

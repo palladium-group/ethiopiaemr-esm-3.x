@@ -16,6 +16,8 @@ import orderBasketActionButtonExtension from './patient-orders/order-basket-acti
 import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.component';
+import legacySummaryComponent from './legacy-summary/legacy-summary.component';
+import legacySummaryDashboardLinkExtension from './legacy-summary/legacy-summary-dashboard-link.extension';
 import recentDiagnosesWidgetComponent from './patient-notes/recent-diagnoses-widget.component';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
@@ -133,6 +135,10 @@ export const diagnosesDashboardLink =
   );
 
 export const diagnosesDashboard = getSyncLifecycle(diagnosesSummaryComponent, options);
+
+export const legacySummaryDashboardLink = getSyncLifecycle(legacySummaryDashboardLinkExtension, options);
+
+export const legacySummaryDashboard = getSyncLifecycle(legacySummaryComponent, options);
 
 export const pastVisitsDetailOverviewShadow = getSyncLifecycle(pastVisitsOverviewComponent, {
   featureName: 'visits-detail-overview',
