@@ -41,9 +41,7 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
     () =>
       roundCurrency(
         (bill.lineItems ?? [])
-          .filter(
-            (item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED,
-          )
+          .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
           .reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0),
       ),
     [bill.lineItems],
@@ -147,10 +145,7 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
           {unpaidLineItemsTotal <= 0 && (
             <InlineNotification
               title={t('noUnpaidLineItems', 'No unpaid line items')}
-              subtitle={t(
-                'noUnpaidLineItemsSubtitle',
-                'There are no unpaid line items remaining on this bill.',
-              )}
+              subtitle={t('noUnpaidLineItemsSubtitle', 'There are no unpaid line items remaining on this bill.')}
               lowContrast
               kind="info"
             />

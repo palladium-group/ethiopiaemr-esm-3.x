@@ -235,13 +235,9 @@ export type LineItemPaymentPayload = {
   lineItemsToMarkPaid: string[];
 };
 
-export const getPayableLineItemUuids = (
-  lineItems: Array<Pick<LineItem, 'uuid' | 'paymentStatus'>>,
-): string[] =>
+export const getPayableLineItemUuids = (lineItems: Array<Pick<LineItem, 'uuid' | 'paymentStatus'>>): string[] =>
   lineItems
-    .filter(
-      (item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED,
-    )
+    .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
     .map((item) => item.uuid);
 
 export const createLineItemPaymentPayload = ({
@@ -256,8 +252,7 @@ export const createLineItemPaymentPayload = ({
   lineItemUuids: string[];
 }): LineItemPaymentPayload => {
   const tendered = parseFloat(Number(amount).toFixed(2));
-  const hasReference =
-    referenceCode !== undefined && referenceCode !== null && String(referenceCode).trim() !== '';
+  const hasReference = referenceCode !== undefined && referenceCode !== null && String(referenceCode).trim() !== '';
   const firstAttributeTypeUuid = method?.attributeTypes?.[0]?.uuid;
 
   return {

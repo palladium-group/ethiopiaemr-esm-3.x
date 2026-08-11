@@ -39,11 +39,9 @@ export const createPaymentSchema = (
         .positive(t('amountTenderedPositive', 'Amount tendered must be positive'))
         .refine(
           (value) => expectedAmount > 0 && roundCurrency(value) === roundCurrency(expectedAmount),
-          t(
-            'amountMustEqualUnpaidTotal',
-            'Amount tendered must equal the unpaid line items total ({{amount}})',
-            { amount: roundCurrency(expectedAmount) },
-          ),
+          t('amountMustEqualUnpaidTotal', 'Amount tendered must equal the unpaid line items total ({{amount}})', {
+            amount: roundCurrency(expectedAmount),
+          }),
         ),
       attributes: z.record(z.string(), z.string()).optional(),
     })

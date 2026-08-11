@@ -164,14 +164,11 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
   const roundCurrency = (value: number) => parseFloat(Number(value).toFixed(2));
   const isExactSelectedPayment =
-    selectedLineItemsAmountDue > 0 &&
-    roundCurrency(totalAmountTendered) === roundCurrency(selectedLineItemsAmountDue);
+    selectedLineItemsAmountDue > 0 && roundCurrency(totalAmountTendered) === roundCurrency(selectedLineItemsAmountDue);
   const hasAmountPaidExceeded =
-    selectedLineItemsAmountDue > 0 &&
-    roundCurrency(totalAmountTendered) > roundCurrency(selectedLineItemsAmountDue);
+    selectedLineItemsAmountDue > 0 && roundCurrency(totalAmountTendered) > roundCurrency(selectedLineItemsAmountDue);
   const isPaymentIncomplete =
-    selectedLineItemsAmountDue > 0 &&
-    roundCurrency(totalAmountTendered) < roundCurrency(selectedLineItemsAmountDue);
+    selectedLineItemsAmountDue > 0 && roundCurrency(totalAmountTendered) < roundCurrency(selectedLineItemsAmountDue);
 
   const handleProcessPayment = async (): Promise<boolean> => {
     if (!isExactSelectedPayment) {
@@ -239,13 +236,9 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
     showSnackbar({
       title: t('partialBillPayment', 'Partial bill payment'),
-      subtitle: t(
-        'partialBillPaymentSubtitle',
-        'Some payments were saved before an error occurred: {{error}}',
-        {
-          error: extractErrorMessagesFromResponse(failureError?.responseBody),
-        },
-      ),
+      subtitle: t('partialBillPaymentSubtitle', 'Some payments were saved before an error occurred: {{error}}', {
+        error: extractErrorMessagesFromResponse(failureError?.responseBody),
+      }),
       kind: 'warning',
       timeoutInMs: 5000,
     });
