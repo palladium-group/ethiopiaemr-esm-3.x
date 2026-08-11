@@ -1,12 +1,10 @@
 import { Button, Popover, PopoverContent } from '@carbon/react';
 import { Close, Printer, Wallet, FolderOpen, BaggageClaim } from '@carbon/react/icons';
 import {
-  launchWorkspace,
   restBaseUrl,
   showModal,
   UserHasAccess,
   useFeatureFlag,
-  useVisit,
   useVisitContextStore,
   defaultVisitCustomRepresentation,
   navigate,
@@ -25,7 +23,6 @@ import { spaBasePath } from '../constants';
 import { useCheckShareGnum } from './invoice.resource';
 import styles from './invoice.scss';
 import startCase from 'lodash-es/startCase';
-import { useCurrencyFormatting } from '../helpers/currency';
 import { Permissions } from '../permission/permissions.constants';
 
 interface InvoiceActionsProps {
@@ -36,7 +33,6 @@ interface InvoiceActionsProps {
 
 export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: InvoiceActionsProps) {
   const { t } = useTranslation();
-  const { format: formatCurrency } = useCurrencyFormatting();
 
   const [isOpen, setIsOpen] = useState(false);
   const { billUuid, patientUuid } = useParams();
@@ -240,24 +236,6 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
           </Button>
         </UserHasAccess>
       )}
-      <UserHasAccess privilege={Permissions.ProcessPayment}>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={Wallet}
-          iconDescription="Add"
-          tooltipPosition="right"
-          onClick={() =>
-            launchWorkspace('payment-workspace', {
-              bill,
-              workspaceTitle: t('additionalPayment', 'Additional Payment (Balance {{billBalance}})', {
-                billBalance: formatCurrency(bill.balance),
-              }),
-            })
-          }>
-          {t('additionalPayment', 'Additional Payment')}
-        </Button>
-      </UserHasAccess>
 
       {bill?.balance !== 0 && billableLineItems.length > 0 && (
         <Button
