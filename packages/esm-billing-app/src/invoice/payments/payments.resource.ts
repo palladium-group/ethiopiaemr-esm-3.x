@@ -1,6 +1,7 @@
 import useSWR from 'swr';
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, OpenmrsResource, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { BillingConfig } from '../../config-schema';
+import { LineItemPaymentPayload } from './utils';
 
 type PaymentMethod = {
   uuid: string;
@@ -62,4 +63,25 @@ export const usePaymentModes = () => {
 export const checkPaymentStatus = (transactionId: string) => {
   const url = `${restBaseUrl}/rmsdataexchange/api/rmsmpesachecker?transactionId=${transactionId}`;
   return openmrsFetch<PaymentStatusResponse>(url);
+};
+
+export interface PaymentResponse {
+  uuid: string;
+  instanceType: OpenmrsResource;
+  attributes: Array<{ uuid: string; value: string; attributeType?: OpenmrsResource }>;
+  amount: number;
+  amountTendered: number;
+  item?: unknown;
+  dateCreated?: number;
+  voided?: boolean;
+  resourceVersion?: string;
+}
+
+export const makePayment = (billUuid: string, paymentPayload: LineItemPaymentPayload) => {
+  const url = `${restBaseUrl}/cashier/bill/${billUuid}/payment`;
+  return openmrsFetch<PaymentResponse>(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: paymentPayload,
+  });
 };

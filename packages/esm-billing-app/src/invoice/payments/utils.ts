@@ -1,4 +1,4 @@
-import { PaymentStatus } from '../../types';
+import { LineItem, PaymentMethod, PaymentStatus } from '../../types';
 
 /**
  * Checks if a specific billable item exists within a collection of billable items
@@ -224,5 +224,45 @@ export const createPaymentPayload = (
     payments: consolidatedPayments,
     patient: patientUuid,
     status: selectedBillableItems?.length > 0 ? overallBillStatus : initialPaymentStatus,
+  };
+};
+
+export type LineItemPaymentPayload = {
+  instanceType: string;
+  amount: number;
+  amountTendered: number;
+  attributes: Array<{ attributeType: string; value: string }>;
+  lineItemsToMarkPaid: string[];
+};
+
+export const getPayableLineItemUuids = (lineItems: Array<Pick<LineItem, 'uuid' | 'paymentStatus'>>): string[] =>
+  lineItems
+    .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
+    .map((item) => item.uuid);
+
+export const createLineItemPaymentPayload = ({
+  method,
+  amount,
+  referenceCode,
+  lineItemUuids,
+}: {
+  method: PaymentMethod;
+  amount: number;
+  referenceCode?: string | number;
+  lineItemUuids: string[];
+}): LineItemPaymentPayload => {
+  const tendered = parseFloat(Number(amount).toFixed(2));
+  const hasReference = referenceCode !== undefined && referenceCode !== null && String(referenceCode).trim() !== '';
+  const firstAttributeTypeUuid = method?.attributeTypes?.[0]?.uuid;
+
+  return {
+    instanceType: method.uuid,
+    amount: tendered,
+    amountTendered: tendered,
+    attributes:
+      hasReference && firstAttributeTypeUuid
+        ? [{ attributeType: firstAttributeTypeUuid, value: String(referenceCode) }]
+        : [],
+    lineItemsToMarkPaid: lineItemUuids,
   };
 };

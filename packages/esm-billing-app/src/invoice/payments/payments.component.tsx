@@ -16,15 +16,15 @@ import { FormProvider, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import { z } from 'zod';
-import { processBillPayment, usePaymentModes } from '../../billing.resource';
-import { useClockInStatus } from '../../bill-administration/payment-points/use-clock-in-status';
+import { usePaymentModes } from '../../billing.resource';
 import { LineItem, PaymentFormValue, PaymentStatus, type MappedBill } from '../../types';
 import { computeWaivedAmount, extractErrorMessagesFromResponse } from '../../utils';
 import { InvoiceBreakDown } from './invoice-breakdown/invoice-breakdown.component';
 import PaymentForm from './payment-form/payment-form.component';
 import PaymentHistory from './payment-history/payment-history.component';
 import styles from './payments.scss';
-import { createPaymentPayload } from './utils';
+import { createLineItemPaymentPayload, getPayableLineItemUuids } from './utils';
+import { makePayment } from './payments.resource';
 import { usePaymentSchema } from '../../hooks/usePaymentSchema';
 import { useCurrencyFormatting } from '../../helpers/currency';
 import useBillableServices from '../../hooks/useBillableServices';
@@ -44,7 +44,6 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
   const { visitAttributeTypes } = useConfig<BillingConfig>();
 
   const paymentSchema = usePaymentSchema(bill);
-  const { globalActiveSheet } = useClockInStatus();
   const { activeVisit } = useVisit(bill.patientUuid);
   const activeVisitPaymentMethod = activeVisit?.attributes?.find(
     (attribute) => attribute.attributeType.uuid === visitAttributeTypes.paymentMethods,
@@ -163,36 +162,70 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
       to: window.getOpenmrsSpaBase() + 'home/billing',
     });
 
-  const handleProcessPayment = async (): Promise<boolean> => {
-    const { remove } = formArrayMethods;
-    const paymentPayload = createPaymentPayload(
-      bill,
-      bill.patientUuid,
-      formValues,
-      amountDue,
-      selectedLineItems,
-      globalActiveSheet,
-    );
+  const roundCurrency = (value: number) => parseFloat(Number(value).toFixed(2));
+  const isExactSelectedPayment =
+    selectedLineItemsAmountDue > 0 && roundCurrency(totalAmountTendered) === roundCurrency(selectedLineItemsAmountDue);
+  const hasAmountPaidExceeded =
+    selectedLineItemsAmountDue > 0 && roundCurrency(totalAmountTendered) > roundCurrency(selectedLineItemsAmountDue);
+  const isPaymentIncomplete =
+    selectedLineItemsAmountDue > 0 && roundCurrency(totalAmountTendered) < roundCurrency(selectedLineItemsAmountDue);
 
-    try {
-      await processBillPayment(paymentPayload, bill.uuid);
+  const handleProcessPayment = async (): Promise<boolean> => {
+    if (!isExactSelectedPayment) {
+      return false;
+    }
+
+    const { remove } = formArrayMethods;
+    const lineItemUuids = getPayableLineItemUuids(selectedLineItems);
+    const createdUuids: string[] = [];
+    let failedAtIndex: number | null = null;
+    let failureError: any = null;
+
+    const rows = (formValues ?? []).filter((row) => row?.method?.uuid && Number(row.amount) > 0);
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const paymentPayload = createLineItemPaymentPayload({
+        method: row.method,
+        amount: Number(row.amount),
+        referenceCode: row.referenceCode,
+        lineItemUuids,
+      });
+
+      try {
+        const response = await makePayment(bill.uuid, paymentPayload);
+        if (!response.ok || !response.data?.uuid) {
+          throw response;
+        }
+        createdUuids.push(response.data.uuid);
+      } catch (error) {
+        failedAtIndex = i;
+        failureError = error;
+        break;
+      }
+    }
+
+    const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
+    mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
+
+    if (failedAtIndex === null) {
       remove();
       showSnackbar({
         title: t('billPayment', 'Bill payment'),
-        subtitle: 'Bill payment processing has been successful',
+        subtitle: t('billPaymentSuccessful', 'Bill payment processing has been successful'),
         kind: 'success',
         timeoutInMs: 3000,
       });
-      const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
-      mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
       return true;
-    } catch (error) {
+    }
+
+    if (createdUuids.length === 0) {
       setIsProcessing(false);
       setShowConfirmModal(false);
       showSnackbar({
         title: t('failedBillPayment', 'Bill payment failed'),
         subtitle: `An unexpected error occurred while processing your bill payment. Please contact the system administrator and provide them with the following error details: ${extractErrorMessagesFromResponse(
-          error.responseBody,
+          failureError?.responseBody,
         )}`,
         kind: 'error',
         timeoutInMs: 3000,
@@ -200,6 +233,17 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
       });
       return false;
     }
+
+    showSnackbar({
+      title: t('partialBillPayment', 'Partial bill payment'),
+      subtitle: t('partialBillPaymentSubtitle', 'Some payments were saved before an error occurred: {{error}}', {
+        error: extractErrorMessagesFromResponse(failureError?.responseBody),
+      }),
+      kind: 'warning',
+      timeoutInMs: 5000,
+    });
+    remove();
+    return true;
   };
 
   const handleConfirmPayment = async () => {
@@ -213,13 +257,6 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
   const amountDueDisplay = (amount: number) => (amount < 0 ? 'Client balance' : 'Amount Due');
 
-  const isFullyPaid = totalAmountTendered >= selectedLineItemsAmountDue;
-  const hasAmountPaidExceeded =
-    formValues.some((item) => item.amount !== 0) &&
-    totalAmountTendered > selectedLineItemsAmountDue &&
-    bill.lineItems.length > 1;
-  const isPaymentInvalid = !isFullyPaid && formValues.some((item) => item.amount !== 0) && bill.lineItems.length > 1;
-
   return (
     <FormProvider {...methods}>
       <div className={styles.wrapper}>
@@ -229,37 +266,6 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
           </CardHeader>
           <div>
             {bill && <PaymentHistory bill={bill} />}
-            {isPaymentInvalid && (
-              <InlineNotification
-                title={t('incompletePayment', 'Incomplete payment')}
-                subtitle={t(
-                  'incompletePaymentSubtitle',
-                  'Please ensure all selected line items are fully paid, Total amount expected is {{selectedLineItemsAmountDue}}',
-                  {
-                    selectedLineItemsAmountDue: formatCurrency(selectedLineItemsAmountDue),
-                  },
-                )}
-                lowContrast
-                kind="error"
-                className={styles.paymentError}
-              />
-            )}
-            {hasAmountPaidExceeded && (
-              <InlineNotification
-                title={t('overPayment', 'Over payment')}
-                subtitle={t(
-                  'overPaymentSubtitle',
-                  'Amount paid {{totalAmountTendered}} should not be greater than amount due {{selectedLineItemsAmountDue}} for selected line items',
-                  {
-                    totalAmountTendered: formatCurrency(totalAmountTendered),
-                    selectedLineItemsAmountDue: formatCurrency(selectedLineItemsAmountDue),
-                  },
-                )}
-                lowContrast
-                kind="warning"
-                className={styles.paymentError}
-              />
-            )}
             <PaymentForm {...formArrayMethods} disablePayment={amountDue <= 0} amountDue={amountDue} />
           </div>
         </div>
@@ -287,13 +293,46 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
                 disabled={
                   !formValues?.length ||
                   !methods.formState.isValid ||
-                  hasAmountPaidExceeded ||
+                  !isExactSelectedPayment ||
                   selectedLineItemsAmountDue <= 0
                 }>
                 {t('processPayment', 'Process Payment')}
               </Button>
             </UserHasAccess>
           </div>
+          {isPaymentIncomplete && (
+            <InlineNotification
+              title={t('incompletePayment', 'Incomplete payment')}
+              subtitle={t(
+                'incompletePaymentSubtitle',
+                'Please ensure all selected line items are fully paid, Total amount expected is {{selectedLineItemsAmountDue}}',
+                {
+                  selectedLineItemsAmountDue: formatCurrency(selectedLineItemsAmountDue),
+                },
+              )}
+              lowContrast
+              kind="error"
+              hideCloseButton
+              className={styles.paymentError}
+            />
+          )}
+          {hasAmountPaidExceeded && (
+            <InlineNotification
+              title={t('overPayment', 'Over payment')}
+              subtitle={t(
+                'overPaymentSubtitle',
+                'Amount paid {{totalAmountTendered}} should not be greater than amount due {{selectedLineItemsAmountDue}} for selected line items',
+                {
+                  totalAmountTendered: formatCurrency(totalAmountTendered),
+                  selectedLineItemsAmountDue: formatCurrency(selectedLineItemsAmountDue),
+                },
+              )}
+              lowContrast
+              kind="warning"
+              hideCloseButton
+              className={styles.paymentError}
+            />
+          )}
         </div>
       </div>
 
