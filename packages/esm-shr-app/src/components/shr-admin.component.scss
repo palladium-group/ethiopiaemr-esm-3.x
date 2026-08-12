@@ -1,0 +1,235 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+/* Deliberately mirrors esm-etl-app's admin page: same spacing scale, same tile
+   treatment, same header rhythm. The two pages sit side by side in the admin
+   section and should read as one product. */
+
+.container {
+  padding: layout.$spacing-06 layout.$spacing-07;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.header {
+  margin-bottom: layout.$spacing-06;
+}
+
+.title {
+  @include type.type-style('heading-04');
+  color: colors.$gray-100;
+  margin: 0 0 layout.$spacing-03;
+}
+
+.description {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+  max-width: 50rem;
+}
+
+/* ── Hero status strip ────────────────────────────────────── */
+.heroStrip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.metricTile {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05 layout.$spacing-06;
+  min-height: 5rem;
+}
+
+.metricIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metricBody {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.metricLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.32px;
+}
+
+.metricValue {
+  @include type.type-style('heading-03');
+  color: colors.$gray-100;
+}
+
+/* ── Status breakdown chips ───────────────────────────────── */
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  align-items: center;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+  background: colors.$gray-10;
+  border-radius: 2px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
+/* A zero count is information — "nothing failed" — so it stays visible but recedes. */
+.chipZero .chipCount {
+  color: colors.$gray-50;
+  font-weight: 400;
+}
+
+.chipCount {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-100;
+}
+
+/* ── Action card ──────────────────────────────────────────── */
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+}
+
+.actionCard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-06;
+  border-left: 3px solid colors.$blue-60;
+}
+
+.actionCardHeader {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.actionCardTitle {
+  @include type.type-style('heading-02');
+  color: colors.$gray-100;
+  margin: 0;
+  flex: 1;
+}
+
+.actionCardBody {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+  flex: 1;
+}
+
+/* ── Notification ─────────────────────────────────────────── */
+.notification {
+  margin-bottom: layout.$spacing-06;
+  max-width: 100%;
+}
+
+/* ── Outbox table ─────────────────────────────────────────── */
+.statusSection {
+  margin-top: layout.$spacing-03;
+}
+
+.tableToolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-04;
+}
+
+.filterDropdown {
+  min-width: 16rem;
+}
+
+.tableContainer {
+  background: colors.$white-0;
+}
+
+.resourceType {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  display: block;
+}
+
+/* The outbox id matters only when reporting a problem, so it is present but quiet. */
+.resourceId {
+  font-family: 'IBM Plex Mono', monospace;
+  @include type.type-style('code-01');
+  color: colors.$gray-60;
+}
+
+.relativeTime {
+  color: colors.$gray-100;
+  cursor: default;
+}
+
+/* Errors from OpenFn and the SHR run to ~300 characters. Clamping to two lines keeps
+   row heights uniform across a full page of records; the full text is in the tooltip. */
+.errorText {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  @include type.type-style('label-01');
+  color: colors.$red-60;
+  cursor: default;
+  max-width: 28rem;
+}
+
+.noError {
+  color: colors.$gray-50;
+}
+
+.pagination {
+  border-top: none;
+}
+
+.emptyTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-09;
+  text-align: center;
+}
+
+.empty {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  margin: 0;
+}
+
+.scheduleNote {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  margin-top: layout.$spacing-05;
+}
+
+/* ── Icon colors ──────────────────────────────────────────── */
+.iconHealthy {
+  fill: colors.$green-50;
+}
+
+.iconWarning {
+  fill: colors.$red-50;
+}
+
+.iconNeutral {
+  fill: colors.$gray-60;
+}
