@@ -77,6 +77,25 @@
       }
     },
     {
+      "name": "legacy-summary-dashboard",
+      "component": "legacySummaryDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "meta": {
+        "slot": "patient-chart-legacy-summary-dashboard-slot",
+        "path": "legacy-summary",
+        "hideDashboardTitle": true
+      },
+      "order": 9
+    },
+    {
+      "name": "legacy-summary-panel",
+      "component": "legacySummaryDashboard",
+      "slot": "patient-chart-legacy-summary-dashboard-slot",
+      "meta": {
+        "fullWidth": false
+      }
+    },
+    {
       "name": "queue-table-transfer-column",
       "component": "queueTableTransferColumn",
       "slot": "queue-table-transfer-status-slot"

@@ -16,6 +16,8 @@ import orderBasketActionButtonExtension from './patient-orders/order-basket-acti
 import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.component';
+import legacySummaryComponent from './legacy-summary/legacy-summary.component';
+import legacySummaryDashboardLinkExtension from './legacy-summary/legacy-summary-dashboard-link.extension';
 import recentDiagnosesWidgetComponent from './patient-notes/recent-diagnoses-widget.component';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
@@ -33,6 +35,7 @@ import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 import EtlAdminDashboardLink from './admin/etl-admin-dashboard-link.extension';
 import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
+import AssignQueueRoomModal from './queue-room/assign-queue-room.modal';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
@@ -137,6 +140,10 @@ export const diagnosesDashboardLink =
 
 export const diagnosesDashboard = getSyncLifecycle(diagnosesSummaryComponent, options);
 
+export const legacySummaryDashboardLink = getSyncLifecycle(legacySummaryDashboardLinkExtension, options);
+
+export const legacySummaryDashboard = getSyncLifecycle(legacySummaryComponent, options);
+
 export const pastVisitsDetailOverviewShadow = getSyncLifecycle(pastVisitsOverviewComponent, {
   featureName: 'visits-detail-overview',
   moduleName,
@@ -157,7 +164,7 @@ export const queueTableActionsColumn = getAsyncLifecycle(
   options,
 );
 
-export const assignQueueRoomModal = getAsyncLifecycle(() => import('./queue-room/assign-queue-room.modal'), options);
+export const assignQueueRoomModal = getSyncLifecycle(AssignQueueRoomModal, options);
 
 export const callQueueEntryModal = getAsyncLifecycle(() => import('./queue-room/call-queue-entry.modal'), options);
 

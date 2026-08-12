@@ -1,43 +1,69 @@
-import { useEffect, useState } from 'react';
-import { cbhiMockData, type CbhiRecord } from '../cbhi-mock-data';
+import { openmrsFetch, restBaseUrl, useDebounce } from '@openmrs/esm-framework';
+import useSWR from 'swr';
 
-// Placeholder URL for the future CBHI search API.
-// When the API is ready, replace the implementation inside this hook
-// with an openmrsFetch call that uses this URL.
-export const CBHI_SEARCH_API_URL = '/cbhi/search';
+export type CbhiEligibilityMember = {
+  id: string;
+  fullName: string;
+  accountNo: string | null;
+  membershipType: string | null;
+  cbhiId: string;
+  insuredId: string | null;
+  gender?: string | null;
+  age?: number | null;
+  status?: string | null;
+  relationshipType?: string | null;
+  firstName?: string | null;
+  fathersName?: string | null;
+  grandFathersName?: string | null;
+};
+
+export type CbhiEligibilityPage = {
+  content: CbhiEligibilityMember[];
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  empty?: boolean;
+};
+
+export type CbhiEligibilityApiResponse = {
+  data: CbhiEligibilityPage;
+  message: string | null;
+  success: boolean;
+  notFound?: boolean;
+  serviceUnavailable?: boolean;
+};
+
+export type CbhiPersistFields = Pick<
+  CbhiEligibilityMember,
+  'id' | 'fullName' | 'accountNo' | 'membershipType' | 'cbhiId' | 'insuredId'
+>;
 
 export type UseCbhiSearchResult = {
-  results: CbhiRecord[];
+  results: CbhiEligibilityMember[];
   isLoading: boolean;
+  error: Error | undefined;
 };
 
 export const useCbhiSearch = (searchTerm: string): UseCbhiSearchResult => {
-  const [results, setResults] = useState<CbhiRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const debouncedSearchTerm = useDebounce(searchTerm.trim(), 300);
+  const shouldSearch = debouncedSearchTerm.length >= 2;
 
-  useEffect(() => {
-    const trimmed = searchTerm.trim();
+  const url = shouldSearch
+    ? `${restBaseUrl}/ethiopiaemrcustommodule/cbhi/eligibility?${new URLSearchParams({
+        searchTerm: debouncedSearchTerm,
+        page: '1',
+        limit: '25',
+        sortBy: 'id',
+        sortDirection: 'desc',
+      }).toString()}`
+    : null;
 
-    if (!trimmed || trimmed.length < 3) {
-      setResults([]);
-      setIsLoading(false);
-      return;
-    }
+  const { data, error, isLoading } = useSWR<{ data: CbhiEligibilityApiResponse }>(url, openmrsFetch);
 
-    setIsLoading(true);
-
-    // Simulate async API behavior so that swapping in the real API
-    // later does not affect the rest of the UI.
-    const handle = setTimeout(() => {
-      const lower = trimmed.toLowerCase();
-      const filtered = cbhiMockData.filter((record) => record.identification_number.toLowerCase().includes(lower));
-
-      setResults(filtered);
-      setIsLoading(false);
-    }, 200);
-
-    return () => clearTimeout(handle);
-  }, [searchTerm]);
-
-  return { results, isLoading };
+  return {
+    results: data?.data?.data?.content ?? [],
+    isLoading: Boolean(shouldSearch && isLoading),
+    error,
+  };
 };

@@ -205,21 +205,24 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             />
           )}
 
-          {/* Default attribute types for other billing types */}
+          {/* CBHI: always show search when CBHI payment method is selected */}
+          {selectedBillingType && !isCreditType && selectedBillingType.name?.toLowerCase() === 'cbhi' && (
+            <CbhiBillingAttributes
+              control={control}
+              errors={errors}
+              t={t}
+              attributeTypes={selectedBillingType.attributeTypes || []}
+              attributes={attributes}
+              setValue={setValue}
+            />
+          )}
+
+          {/* Default attribute types for other non-credit billing types */}
           {selectedBillingType &&
             !isCreditType &&
+            selectedBillingType.name?.toLowerCase() !== 'cbhi' &&
             selectedBillingType.attributeTypes &&
-            selectedBillingType.attributeTypes.length > 0 &&
-            (selectedBillingType.name?.toLowerCase() === 'cbhi' ? (
-              <CbhiBillingAttributes
-                control={control}
-                errors={errors}
-                t={t}
-                attributeTypes={selectedBillingType.attributeTypes}
-                attributes={attributes}
-                setValue={setValue}
-              />
-            ) : (
+            selectedBillingType.attributeTypes.length > 0 && (
               <BillingTypeAttributes
                 control={control}
                 errors={errors}
@@ -228,7 +231,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
                 attributes={attributes}
                 setValue={setValue}
               />
-            ))}
+            )}
 
           {/* Billable Items Selection */}
           <BillableItemsSelection
@@ -253,33 +256,12 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
               (isEditMode ? isSubmitting : false) ||
               (() => {
                 const isCbhiBillingType = selectedBillingType?.name?.toLowerCase() === 'cbhi';
-                if (!isCbhiBillingType || !selectedBillingType?.attributeTypes) {
+                if (!isCbhiBillingType) {
                   return false;
                 }
 
-                const lowerNameIncludes = (attr: { name: string }, term: string) =>
-                  attr.name?.toLowerCase().includes(term.toLowerCase());
-
-                const cbhiIdAttr =
-                  selectedBillingType.attributeTypes.find(
-                    (a) =>
-                      lowerNameIncludes(a, 'cbhi') && (lowerNameIncludes(a, 'id') || lowerNameIncludes(a, 'number')),
-                  ) || selectedBillingType.attributeTypes[0];
-
-                const cbhiExpiryAttr =
-                  selectedBillingType.attributeTypes.find(
-                    (a) =>
-                      lowerNameIncludes(a, 'expiry') ||
-                      lowerNameIncludes(a, 'expiration') ||
-                      lowerNameIncludes(a, 'end'),
-                  ) ||
-                  selectedBillingType.attributeTypes.find((a) => a.uuid !== cbhiIdAttr?.uuid) ||
-                  selectedBillingType.attributeTypes[0];
-
-                const cbhiIdValue = attributes?.[cbhiIdAttr.uuid];
-                const cbhiExpiryValue = attributes?.[cbhiExpiryAttr.uuid];
-
-                return !cbhiIdValue || !cbhiExpiryValue;
+                const cbhiIdValue = attributes?.cbhiId;
+                return cbhiIdValue === undefined || cbhiIdValue === null || String(cbhiIdValue).trim() === '';
               })()
             }
             className={styles.button}
