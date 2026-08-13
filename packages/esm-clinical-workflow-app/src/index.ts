@@ -34,6 +34,7 @@ import ImmunizationRegisterActionButton from './patient-immunization/immunizatio
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 import EtlAdminDashboardLink from './admin/etl-admin-dashboard-link.extension';
+import ShrAdminDashboardLink from './admin/shr-admin-dashboard-link.extension';
 import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
 import AssignQueueRoomModal from './queue-room/assign-queue-room.modal';
 
@@ -243,6 +244,8 @@ export const ethiopiaAdmitPatientFormWorkspace = getAsyncLifecycle(
 );
 
 export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, options);
+
+export const shrAdminDashboardLink = getSyncLifecycle(ShrAdminDashboardLink, options);
 
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
 export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);

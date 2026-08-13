@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "ethiopiaemr-module-shr": ">=1.0.2"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "shr-admin",
+      "online": true,
+      "privilege": "Manage SHR Outbox"
+    }
+  ]
+}

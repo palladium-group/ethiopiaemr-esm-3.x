@@ -3902,6 +3902,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-shr-app@workspace:packages/esm-shr-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-shr-app@workspace:packages/esm-shr-app"
+  peerDependencies:
+    "@carbon/react": ^1.x
+    "@openmrs/esm-framework": 8.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 11.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-surgery-schedule-app@workspace:packages/esm-surgery-schedule-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-surgery-schedule-app@workspace:packages/esm-surgery-schedule-app"
