@@ -29,6 +29,7 @@ import ImmunizationRegisterActionButton from './patient-immunization/immunizatio
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 import EtlAdminDashboardLink from './admin/etl-admin-dashboard-link.extension';
+import ShrAdminDashboardLink from './admin/shr-admin-dashboard-link.extension';
 import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
 import OrderSheet from './ward/order-sheet.component';
 
@@ -212,6 +213,8 @@ export const ethiopiaAwaitingAdmissionPatientsTable = getAsyncLifecycle(
 export const ethiopiaBedSwapWorkspace = getAsyncLifecycle(() => import('./ward/bed-swap/bed-swap.workspace'), options);
 
 export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, options);
+
+export const shrAdminDashboardLink = getSyncLifecycle(ShrAdminDashboardLink, options);
 
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
 export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);

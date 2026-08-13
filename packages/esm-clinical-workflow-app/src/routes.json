@@ -178,6 +178,16 @@
       }
     },
     {
+      "name": "ethiopiaemr-shr-admin-dashboard-link",
+      "component": "shrAdminDashboardLink",
+      "slot": "navbar-items-slot",
+      "online": true,
+      "offline": false,
+      "meta": {
+        "search": ["shr", "SHR Admin", "Shared Health Record", "outbox"]
+      }
+    },
+    {
       "name": "ethiopiaemr-reports-dashboard-link",
       "component": "reportsDashboardLink",
       "slot": "navbar-items-slot",
