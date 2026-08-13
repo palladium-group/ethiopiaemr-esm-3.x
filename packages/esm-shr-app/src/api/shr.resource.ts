@@ -76,7 +76,9 @@ export function useShrOutbox(status: string, offset: number, limit: number, refr
   const { data, error, isLoading, isValidating, mutate } = useSWR<FetchResponse<ShrOutboxListResponse>, Error>(
     buildListUrl(status, offset, limit),
     openmrsFetch,
-    { refreshInterval },
+    // keepPreviousData holds the last page on screen while a filter or page change loads, so the
+    // overview strip and chips do not flicker out on every key change.
+    { refreshInterval, keepPreviousData: true },
   );
 
   // The controller answers 200 with {"status":"error"} for a refused privilege or a bad filter,
@@ -87,7 +89,9 @@ export function useShrOutbox(status: string, offset: number, limit: number, refr
 
   return {
     outbox: body && body.status === 'success' ? body : null,
-    isLoading,
+    // SWR flags isLoading on every key change even while keepPreviousData serves the old page;
+    // only "loading with nothing to show" should blank the UI.
+    isLoading: isLoading && !body,
     isValidating,
     error: error ?? bodyError,
     mutate,

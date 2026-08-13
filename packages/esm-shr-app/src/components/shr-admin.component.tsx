@@ -386,7 +386,7 @@ const ShrAdmin: React.FC = () => {
                 titleText={t('filterByStatus', 'Status')}
                 label={statusLabels[filter]}
                 items={[ALL, ...STATUSES]}
-                itemToString={(item: string) => statusLabels[item] ?? item}
+                itemToString={(item: string | null) => (item ? statusLabels[item] ?? item : '')}
                 selectedItem={filter}
                 onChange={({ selectedItem }: { selectedItem: string }) => {
                   setFilter(selectedItem);

@@ -95,11 +95,11 @@ const EthiopiaAwaitingAdmissionPatientsTable = () => {
   }
 
   if (error) {
-    return <ErrorState error={error} headerTitle={t('awaitingAdmision', 'Awaiting Admission')} />;
+    return <ErrorState error={error} headerTitle={t('awaitingAdmission', 'Awaiting Admission')} />;
   }
 
   if (!inpatientRequests?.length) {
-    return <EmptyState message={t('noPatientInAdmisionQueue', 'No patients in admission queue')} />;
+    return <EmptyState message={t('noPatientInAdmissionQueue', 'No patients in admission queue')} />;
   }
 
   return (
@@ -113,7 +113,7 @@ const EthiopiaAwaitingAdmissionPatientsTable = () => {
       <DataTable rows={tableRows} headers={headers} isSortable useZebraStyles>
         {({ rows, headers, getHeaderProps, getRowProps, getTableProps, getExpandHeaderProps, getExpandedRowProps }) => (
           <TableContainer>
-            <Table {...getTableProps()} aria-label={t('awaitingAdmision', 'Awaiting Admission')}>
+            <Table {...getTableProps()} aria-label={t('awaitingAdmission', 'Awaiting Admission')}>
               <TableHead>
                 <TableRow>
                   <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
