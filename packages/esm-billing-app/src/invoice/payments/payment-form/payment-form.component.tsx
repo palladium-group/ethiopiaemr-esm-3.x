@@ -90,6 +90,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ disablePayment, amountDue, ap
             render={({ field }) => (
               <NumberInput
                 {...field}
+                style={{ paddingRight: '3rem' }}
                 id="paymentAmount"
                 onChange={(e, { value }) => field.onChange(Number(value))}
                 invalid={!!errors?.payment?.[index]?.amount}

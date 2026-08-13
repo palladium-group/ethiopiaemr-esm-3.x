@@ -16,22 +16,27 @@ import orderBasketActionButtonExtension from './patient-orders/order-basket-acti
 import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.component';
+import legacySummaryComponent from './legacy-summary/legacy-summary.component';
+import legacySummaryDashboardLinkExtension from './legacy-summary/legacy-summary-dashboard-link.extension';
 import recentDiagnosesWidgetComponent from './patient-notes/recent-diagnoses-widget.component';
 import patientTransferActionButtonExtension from './patient-transfer/patient-transfer-action-button.extension';
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
 import admitPatientActionButtonComponent from './patient-chart/admit-patient-action-button.component';
+import confirmDischargeActionButtonComponent from './patient-chart/confirm-discharge-action-button.component';
 import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { subscribeAdmittedPatientsSlotSync } from './ward/admitted-patients/sync-admitted-patients-slot';
+import { registerAdmitWorkspaceOverride } from './ward/admit-to-inpatient/register-admit-workspace-override';
 import { subscribeAwaitingAdmissionSlotSync } from './ward/awaiting-admission/sync-awaiting-admission-slot';
+import { subscribeDischargeInSlotSync } from './ward/discharge-in/sync-discharge-in-slot';
 import ImmunizationRegisterActionButton from './patient-immunization/immunization-register-action-button.component';
 import { configSchema, type ClinicalWorkflowConfig } from './config-schema';
 import { registerTriageDashboardExtensionsFromConfig } from './triage/register-triage-dashboard-extensions';
 import EtlAdminDashboardLink from './admin/etl-admin-dashboard-link.extension';
 import ShrAdminDashboardLink from './admin/shr-admin-dashboard-link.extension';
 import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
-import OrderSheet from './ward/order-sheet.component';
+import AssignQueueRoomModal from './queue-room/assign-queue-room.modal';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
@@ -68,7 +73,9 @@ export function startupApp() {
   workspace2Store.subscribe(removeCoreButton);
 
   subscribeAdmittedPatientsSlotSync();
+  registerAdmitWorkspaceOverride();
   subscribeAwaitingAdmissionSlotSync();
+  subscribeDischargeInSlotSync();
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
@@ -134,6 +141,10 @@ export const diagnosesDashboardLink =
 
 export const diagnosesDashboard = getSyncLifecycle(diagnosesSummaryComponent, options);
 
+export const legacySummaryDashboardLink = getSyncLifecycle(legacySummaryDashboardLinkExtension, options);
+
+export const legacySummaryDashboard = getSyncLifecycle(legacySummaryComponent, options);
+
 export const pastVisitsDetailOverviewShadow = getSyncLifecycle(pastVisitsOverviewComponent, {
   featureName: 'visits-detail-overview',
   moduleName,
@@ -154,7 +165,7 @@ export const queueTableActionsColumn = getAsyncLifecycle(
   options,
 );
 
-export const assignQueueRoomModal = getAsyncLifecycle(() => import('./queue-room/assign-queue-room.modal'), options);
+export const assignQueueRoomModal = getSyncLifecycle(AssignQueueRoomModal, options);
 
 export const callQueueEntryModal = getAsyncLifecycle(() => import('./queue-room/call-queue-entry.modal'), options);
 
@@ -193,6 +204,16 @@ export const admitPatientActionButton = getSyncLifecycle(admitPatientActionButto
   moduleName,
 });
 
+export const confirmDischargeActionButton = getSyncLifecycle(confirmDischargeActionButtonComponent, {
+  featureName: 'patient-action-confirm-discharge',
+  moduleName,
+});
+
+export const confirmDischargeDialog = getAsyncLifecycle(
+  () => import('./ward/discharge-confirmation/confirm-discharge-dialog.modal'),
+  options,
+);
+
 export const finishServiceButton = getSyncLifecycle(FinishServiceButton, {
   featureName: 'finish-service-button',
   moduleName,
@@ -210,7 +231,17 @@ export const ethiopiaAwaitingAdmissionPatientsTable = getAsyncLifecycle(
   options,
 );
 
+export const ethiopiaDischargeInPatientsTable = getAsyncLifecycle(
+  () => import('./ward/discharge-in/ethiopia-discharge-in-patients-table.component'),
+  options,
+);
+
 export const ethiopiaBedSwapWorkspace = getAsyncLifecycle(() => import('./ward/bed-swap/bed-swap.workspace'), options);
+
+export const ethiopiaAdmitPatientFormWorkspace = getAsyncLifecycle(
+  () => import('./ward/admit-to-inpatient/ethiopia-admit-patient-form.workspace'),
+  options,
+);
 
 export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, options);
 
@@ -218,5 +249,3 @@ export const shrAdminDashboardLink = getSyncLifecycle(ShrAdminDashboardLink, opt
 
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
 export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);
-
-export const orderSheet = getSyncLifecycle(OrderSheet, options);

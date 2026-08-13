@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { UseFormSetValue } from 'react-hook-form';
-import type { BillingFormData } from '../billing-information.resource';
+import {
+  CBHI_VISIT_ATTRIBUTE_FIELDS,
+  type BillingFormData,
+  type CbhiVisitAttributeField,
+} from '../billing-information.resource';
 import type { ClinicalWorkflowConfig } from '../../../config-schema';
 
 type VisitAttribute = {
@@ -81,6 +85,20 @@ export const usePopulateBillingFormFromVisit = ({
       // Skip creditType as it's already handled above
       if (attrTypeUuid !== billingVisitAttributeTypes.creditType) {
         setValue(`attributes.${attrTypeUuid}`, value, { shouldDirty: false });
+      }
+    });
+
+    // Prefer independent CBHI visit attributes (for reporting) over any legacy summary values
+    const cbhiAttributeTypes = billingVisitAttributeTypes.cbhi || {};
+    CBHI_VISIT_ATTRIBUTE_FIELDS.forEach((field: CbhiVisitAttributeField) => {
+      const attributeTypeUuid = cbhiAttributeTypes[field];
+      if (!attributeTypeUuid) {
+        return;
+      }
+
+      const visitAttribute = activeVisit.attributes?.find((attr) => attr.attributeType.uuid === attributeTypeUuid);
+      if (visitAttribute?.value !== undefined && visitAttribute.value !== null && visitAttribute.value !== '') {
+        setValue(`attributes.${field}`, visitAttribute.value, { shouldDirty: false });
       }
     });
 

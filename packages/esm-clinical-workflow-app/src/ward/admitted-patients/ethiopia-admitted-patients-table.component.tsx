@@ -102,22 +102,11 @@ const EthiopiaAdmittedPatientsTable = () => {
                 })
               }
             />
-            <OverflowMenuItem
-              itemText={t('discharge', 'Discharge')}
-              onClick={() => {
-                launchWorkspace2('patient-discharge-workspace', {
-                  wardPatient: patient,
-                  patientUuid: patient.patient.uuid,
-                  formUuid: config.inpatientDischargeFormUuid,
-                  dischargePatientOnSuccesfullSubmission: false,
-                });
-              }}
-            />
           </OverflowMenu>
         ),
       };
     });
-  }, [results, config, t]);
+  }, [results, t]);
 
   if (isLoading) {
     return <DataTableSkeleton />;

@@ -114,13 +114,15 @@ export const configSchema = {
       creditType: '5cd1eb62-e006-4146-bd22-80bc4d5bd2f7',
       creditTypeDetails: 'd824aa96-d2c7-4a52-aa8d-03f60a516083',
       paymentAttributesSummary: '3cc0102e-6c1f-41db-af72-4be6aa9eb27a',
+      cbhi: {
+        id: 'b4382a14-9d76-4615-87ae-c1457fa541f9',
+        fullName: 'c242e7cf-a8bc-485a-878e-87bdf36575d3',
+        accountNo: '6f5b3f9d-1dc6-4871-be4a-c7c59205ccac',
+        membershipType: '935bb6fd-3aa0-4556-b4ec-8e227811579e',
+        cbhiId: '2333b8ae-732a-4f0f-a192-ae84e1793071',
+        insuredId: '7dc76b96-e889-48b4-aa26-3e2ac0add8d4',
+      },
     },
-  },
-  showMockData: {
-    _type: Type.Boolean,
-    _default: false,
-    _description:
-      'When true, shows mock CBHI search UI that auto-populates CBHI ID and expiry date as read-only. When false, hides the mock search and allows editing those fields.',
   },
 
   visitTypeUuid: {
@@ -337,6 +339,31 @@ export const configSchema = {
     _description: 'UUID of the Inpatient Order Sheet form',
     _default: '038fea05-4091-4a08-a24c-5fc7e4d11b82',
   },
+  ipdDischargeEncounterTypeUuid: {
+    _type: Type.UUID,
+    _description: 'IPD Discharge encounter type UUID (doctor clinical discharge form)',
+    _default: '7e618d13-ffdb-4650-9a97-10ccd16ca36d',
+  },
+  nurseDischargeConfirmationEncounterTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Encounter type created when a nurse confirms discharge readiness',
+    _default: '3219a73c-a168-4b5b-85e0-4de306d0aed4',
+  },
+  nurseDischargeConfirmationConceptUuid: {
+    _type: Type.UUID,
+    _description: 'Obs concept for nurse confirmed discharge readiness',
+    _default: 'f41cb314-b8b2-4a84-8071-dcfdabc2a040',
+  },
+  nurseDischargeConfirmationYesConceptUuid: {
+    _type: Type.UUID,
+    _description: 'Coded Yes answer concept stored on nurse discharge confirmation obs',
+    _default: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
+  legacySummaryDisplayEnabled: {
+    _type: Type.Boolean,
+    _default: true,
+    _description: 'When false, hides the Legacy Summary patient chart dashboard tab.',
+  },
 };
 
 export interface PatientTypeConfig {
@@ -370,8 +397,15 @@ export type ClinicalWorkflowConfig = {
     creditType: string;
     creditTypeDetails: string;
     paymentAttributesSummary: string;
+    cbhi: {
+      id: string;
+      fullName: string;
+      accountNo: string;
+      membershipType: string;
+      cbhiId: string;
+      insuredId: string;
+    };
   };
-  showMockData: boolean;
   visitTypeUuid: string;
   identifierSourceUuid: string;
   defaultIdentifierTypeUuid: string;
@@ -400,6 +434,11 @@ export type ClinicalWorkflowConfig = {
   transferDestinationLocationConceptUuid: string;
   recentDiagnosesCount: number;
   inpatientOrderSheetFormUuid: string;
+  ipdDischargeEncounterTypeUuid: string;
+  nurseDischargeConfirmationEncounterTypeUuid: string;
+  nurseDischargeConfirmationConceptUuid: string;
+  nurseDischargeConfirmationYesConceptUuid: string;
+  legacySummaryDisplayEnabled: boolean;
 };
 
 export interface VisitNoteConfig {

@@ -2,7 +2,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-export const createPaymentSchema = (t: (key: string, defaultValue?: string) => string, billBalance: number) =>
+const roundCurrency = (value: number) => parseFloat(Number(value).toFixed(2));
+
+export const createPaymentSchema = (
+  t: (key: string, defaultValue?: string, options?: Record<string, unknown>) => string,
+  expectedAmount: number,
+) =>
   z
     .object({
       instanceType: z
@@ -27,14 +32,21 @@ export const createPaymentSchema = (t: (key: string, defaultValue?: string) => s
         })
         .optional(),
       amountTendered: z
-        .number()
+        .number({
+          required_error: t('amountTenderedRequired', 'Amount tendered is required'),
+          invalid_type_error: t('amountTenderedRequired', 'Amount tendered is required'),
+        })
         .positive(t('amountTenderedPositive', 'Amount tendered must be positive'))
-        .max(billBalance, t('amountTenderedExceedsBalance', 'Amount tendered cannot exceed bill balance')),
+        .refine(
+          (value) => expectedAmount > 0 && roundCurrency(value) === roundCurrency(expectedAmount),
+          t('amountMustEqualUnpaidTotal', 'Amount tendered must equal the unpaid line items total ({{amount}})', {
+            amount: roundCurrency(expectedAmount),
+          }),
+        ),
       attributes: z.record(z.string(), z.string()).optional(),
     })
     .refine(
       (data) => {
-        // Check if all required attributes have values
         if (!data.instanceType?.attributeTypes) {
           return true;
         }
@@ -56,13 +68,17 @@ export const createPaymentSchema = (t: (key: string, defaultValue?: string) => s
       },
     );
 
-export const usePaymentForm = (t: (key: string, defaultValue?: string) => string, billBalance: number) => {
-  const paymentSchema = createPaymentSchema(t, billBalance);
+export const usePaymentForm = (
+  t: (key: string, defaultValue?: string, options?: Record<string, unknown>) => string,
+  expectedAmount: number,
+) => {
+  const paymentSchema = createPaymentSchema(t, expectedAmount);
 
   type PaymentFormData = z.infer<typeof paymentSchema>;
 
   const formMethods = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
+    mode: 'onChange',
     defaultValues: {
       instanceType: undefined,
       amountTendered: undefined,

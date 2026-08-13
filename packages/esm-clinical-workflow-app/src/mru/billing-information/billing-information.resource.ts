@@ -119,6 +119,28 @@ export const createBillingFormSchema = (
 
 export type BillingFormData = z.infer<ReturnType<typeof createBillingFormSchema>>;
 
+export const CBHI_VISIT_ATTRIBUTE_FIELDS = [
+  'id',
+  'fullName',
+  'accountNo',
+  'membershipType',
+  'cbhiId',
+  'insuredId',
+] as const;
+
+export type CbhiVisitAttributeField = (typeof CBHI_VISIT_ATTRIBUTE_FIELDS)[number];
+
+export type BillingVisitAttributeTypesMap = {
+  paymentMethod: string;
+  creditType?: string;
+  creditTypeDetails?: string;
+  paymentAttributesSummary?: string;
+  cbhi?: Partial<Record<CbhiVisitAttributeField, string>>;
+};
+
+const hasAttributeValue = (value: unknown) =>
+  value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '');
+
 const transformFormObjectToVisitAttributes = (
   formObject: Record<string, any>,
   visitAttributeTypeUuidsMap: Record<string, string>,
@@ -151,10 +173,7 @@ const transformFormObjectToVisitAttributes = (
 
 export const createBillingInformationVisitAttribute = (
   billingFormData: BillingFormData,
-  visitAttributeTypeUuidsMap: {
-    paymentMethod: string;
-    paymentAttributesSummary?: string;
-  },
+  visitAttributeTypeUuidsMap: BillingVisitAttributeTypesMap,
 ) => {
   const { billingTypeUuid, attributes } = billingFormData;
 
@@ -168,20 +187,39 @@ export const createBillingInformationVisitAttribute = (
     });
   }
 
-  // Save sub attributes (from attributes object) as a stringified object under the paymentAttributesSummary key
-  // Format: {attributeUuid: value}
-  // Only includes sub attributes, not the main paymentMethod attribute
+  const cbhiAttributeTypes = visitAttributeTypeUuidsMap.cbhi || {};
+  const cbhiFieldKeys = new Set<string>(CBHI_VISIT_ATTRIBUTE_FIELDS);
+  const configuredCbhiAttributeUuids = new Set(
+    Object.values(cbhiAttributeTypes).filter((uuid): uuid is string => Boolean(uuid)),
+  );
+
+  // Persist CBHI fields as independent visit attributes for reporting
+  CBHI_VISIT_ATTRIBUTE_FIELDS.forEach((field) => {
+    const attributeTypeUuid = cbhiAttributeTypes[field];
+    const value = attributes?.[field];
+    if (attributeTypeUuid && hasAttributeValue(value)) {
+      visitAttributePayload.push({
+        attributeType: attributeTypeUuid,
+        value: String(value),
+      });
+    }
+  });
+
+  // Save remaining sub attributes as a stringified object under paymentAttributesSummary.
+  // CBHI fields are excluded so they are not duplicated inside the summary blob.
   if (visitAttributeTypeUuidsMap.paymentAttributesSummary && attributes) {
     const paymentAttributesObject: Record<string, any> = {};
 
-    // Add sub attributes from the attributes object using their UUIDs as keys
     Object.entries(attributes).forEach(([attrTypeUuid, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        paymentAttributesObject[attrTypeUuid] = value;
+      if (!hasAttributeValue(value)) {
+        return;
       }
+      if (cbhiFieldKeys.has(attrTypeUuid) || configuredCbhiAttributeUuids.has(attrTypeUuid)) {
+        return;
+      }
+      paymentAttributesObject[attrTypeUuid] = value;
     });
 
-    // Only add the summary if there are sub attributes to save
     if (Object.keys(paymentAttributesObject).length > 0) {
       visitAttributePayload.push({
         attributeType: visitAttributeTypeUuidsMap.paymentAttributesSummary,
@@ -216,13 +254,17 @@ export type VisitAttribute = {
   value: string;
 };
 
+type VisitAttributePayloadItem = {
+  attributeType: { uuid: string } | string;
+  value: string;
+};
+
 /**
- * Creates or updates visit attributes with billing information
- * If attributes already exist, uses the update endpoint for each attribute
- * Otherwise, uses the create endpoint
+ * Creates or updates visit attributes with billing information in a single request.
+ * Existing attributes are referenced by uuid; new ones are created via attributeType.
  */
 export const updateVisitWithBillingInformation = async (
-  visitAttributePayload: Array<{ attributeType: { uuid: string } | string; value: string }>,
+  visitAttributePayload: VisitAttributePayloadItem[],
   visitUuid: string,
   existingVisitAttributes?: VisitAttribute[],
 ) => {
@@ -230,50 +272,32 @@ export const updateVisitWithBillingInformation = async (
     throw new Error('Visit UUID is required');
   }
 
-  // If we have existing attributes, update them individually
-  if (existingVisitAttributes && existingVisitAttributes.length > 0) {
-    const updatePromises: Promise<any>[] = [];
+  const attributes = visitAttributePayload.map((payload) => {
+    const attributeTypeUuid =
+      typeof payload.attributeType === 'string' ? payload.attributeType : payload.attributeType.uuid;
 
-    for (const payload of visitAttributePayload) {
-      const attributeTypeUuid =
-        typeof payload.attributeType === 'string' ? payload.attributeType : payload.attributeType.uuid;
+    const existingAttribute = existingVisitAttributes?.find((attr) => attr.attributeType.uuid === attributeTypeUuid);
 
-      // Find existing attribute with matching attribute type
-      const existingAttribute = existingVisitAttributes.find((attr) => attr.attributeType.uuid === attributeTypeUuid);
-
-      if (existingAttribute) {
-        // Update existing attribute
-        updatePromises.push(updateVisitAttribute(visitUuid, existingAttribute.uuid, payload.value));
-      } else {
-        // Create new attribute using the original endpoint
-        updatePromises.push(
-          openmrsFetch(`${restBaseUrl}/visit/${visitUuid}`, {
-            method: 'POST',
-            headers: {
-              'Content-type': 'application/json',
-            },
-            body: {
-              attributes: [payload],
-            },
-          }),
-        );
-      }
+    if (existingAttribute) {
+      return {
+        uuid: existingAttribute.uuid,
+        value: payload.value,
+      };
     }
 
-    // Wait for all updates to complete
-    const results = await Promise.all(updatePromises);
-    // Return the first successful response (they should all succeed or all fail)
-    return results[0];
-  }
+    return {
+      attributeType: attributeTypeUuid,
+      value: payload.value,
+    };
+  });
 
-  // No existing attributes, use the create endpoint
   return openmrsFetch(`${restBaseUrl}/visit/${visitUuid}`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
     },
     body: {
-      attributes: visitAttributePayload,
+      attributes,
     },
   });
 };

@@ -8,3 +8,4 @@ export { useBillingFormHandlers } from './useBillingFormHandlers';
 export { useBillableServices } from './useBillableServices';
 export { useCashPoints } from './useCashPoints';
 export { useCbhiSearch } from './useCbhiSearch';
+export type { CbhiEligibilityMember, CbhiPersistFields } from './useCbhiSearch';
