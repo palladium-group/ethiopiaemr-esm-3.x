@@ -78,8 +78,9 @@ const ShrAdmin: React.FC = () => {
   const unmountRef = useRef<AbortController>(new AbortController());
 
   useEffect(() => {
+    const controller = unmountRef.current;
     return () => {
-      unmountRef.current.abort();
+      controller.abort();
     };
   }, []);
 
