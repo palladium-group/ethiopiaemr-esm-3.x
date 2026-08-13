@@ -5,9 +5,11 @@ import useSWRImmutable from 'swr/immutable';
 interface EmrApiConfigurationResponse {
   bedAssignmentEncounterType: OpenmrsResource;
   clinicianEncounterRole: OpenmrsResource;
+  exitFromInpatientEncounterType?: OpenmrsResource;
 }
 
-const customRep = 'custom:bedAssignmentEncounterType:(uuid),clinicianEncounterRole:(uuid)';
+const customRep =
+  'custom:bedAssignmentEncounterType:(uuid),clinicianEncounterRole:(uuid),exitFromInpatientEncounterType:(uuid,display)';
 
 export function useEmrConfiguration() {
   const swrData = useSWRImmutable<FetchResponse<EmrApiConfigurationResponse>>(

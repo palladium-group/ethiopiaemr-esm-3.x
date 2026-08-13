@@ -2,7 +2,8 @@
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
     "fhir2": ">=1.2",
-    "webservices.rest": ">=2.2.0"
+    "webservices.rest": ">=2.2.0",
+    "ethiopiaemrcore": ">=1.0.0"
   },
   "pages": [],
   "extensions": [
@@ -22,13 +23,6 @@
       "name": "ewf-mru-dashboard",
       "component": "mruDashboard",
       "slot": "mru-dashboard-slot",
-      "online": true,
-      "offline": false
-    },
-    {
-      "name": "order-sheet",
-      "component": "orderSheet",
-      "slot": "ewf-admissions-dashboard-slot",
       "online": true,
       "offline": false
     },
@@ -172,6 +166,13 @@
       "offline": true
     },
     {
+      "name": "confirm-discharge-button",
+      "component": "confirmDischargeActionButton",
+      "slot": "patient-actions-slot",
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "add-patient-to-ward-siderail-button",
       "component": "addPatientToWardSiderailButton",
       "slot": "ward-ui-extension-hidden-slot"
@@ -186,6 +187,12 @@
       "component": "ethiopiaAwaitingAdmissionPatientsTable",
       "slot": "ward-patients-awaiting-admission-slot"
     },
+    {
+      "name": "ethiopia-discharge-in-patients-table",
+      "component": "ethiopiaDischargeInPatientsTable",
+      "slot": "ward-patients-discharge-in-slot"
+    },
+
     {
       "name": "ethiopiaemr-etl-admin-dashboard-link",
       "component": "etlAdminDashboardLink",
@@ -232,6 +239,12 @@
       "component": "billingInformationWorkspace",
       "title": "Billing Information Workspace",
       "type": "clinical-form"
+    },
+    {
+      "name": "admit-patient-form-workspace",
+      "component": "ethiopiaAdmitPatientFormWorkspace",
+      "title": "admissionRequests",
+      "type": "admission-requests"
     }
   ],
   "workspaces2": [
@@ -246,6 +259,11 @@
       "window": "patient-transfer"
     },
     {
+      "name": "ward-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "ward-form-entry-workspace-window"
+    },
+    {
       "name": "visit-notes-form-shadow-workspace",
       "component": "visitNotesFormWorkspace",
       "window": "visit-note-shadow"
@@ -253,6 +271,11 @@
     {
       "name": "ethiopia-bed-swap-workspace",
       "component": "ethiopiaBedSwapWorkspace",
+      "window": "kenyaemr-esm-ward-window"
+    },
+    {
+      "name": "admit-patient-form-workspace",
+      "component": "ethiopiaAdmitPatientFormWorkspace",
       "window": "kenyaemr-esm-ward-window"
     }
   ],
@@ -288,6 +311,22 @@
       "order": 4,
       "width": "wider",
       "canMaximize": true
+    },
+    {
+      "name": "ward-form-entry-workspace-window",
+      "group": "patient-chart",
+      "width": "wider"
+    },
+    {
+      "name": "kenyaemr-esm-ward-window",
+      "group": "kenyaemr-esm-ward-group",
+      "canMaximize": true
+    },
+    {
+      "name": "kenyaemr-form-entry-window",
+      "group": "kenyaemr-esm-ward-group",
+      "canMaximize": true,
+      "width": "extra-wide"
     }
   ],
   "workspaceGroups2": [
@@ -295,9 +334,16 @@
       "name": "clinical-workflow-group",
       "overlay": true,
       "persistence": "closable"
+    },
+    {
+      "name": "kenyaemr-esm-ward-group"
     }
   ],
   "modals": [
+    {
+      "name": "confirm-discharge-dialog",
+      "component": "confirmDischargeDialog"
+    },
     {
       "name": "confirm-transfer-dialog",
       "component": "confirmTransferDialog"
