@@ -7,7 +7,8 @@
     {
       "component": "root",
       "route": "shr-admin",
-      "online": true
+      "online": true,
+      "privilege": "Manage SHR Outbox"
     }
   ]
 }

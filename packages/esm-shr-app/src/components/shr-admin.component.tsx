@@ -23,7 +23,12 @@ import {
 import { CheckmarkFilled, WarningAltFilled, Time, Renew, Send, DataTable as DataTableIcon } from '@carbon/react/icons';
 import {
   extractErrorMessage,
+  isAbortError,
+  isTimeoutError,
+  pendingCount,
   retryRow,
+  SHR_OPERATION_TIMEOUT_MS,
+  SHR_SYNC_BATCH_LIMIT,
   syncPending,
   useShrOutbox,
   type ShrOutboxRow,
@@ -75,12 +80,19 @@ const ShrAdmin: React.FC = () => {
   const [notification, setNotification] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
 
   const busy = syncing || retryingId !== null;
-  const unmountRef = useRef<AbortController>(new AbortController());
+
+  // Created on first use rather than with `useRef(new AbortController())`, which would allocate a
+  // controller on every render only to discard it.
+  const unmountRef = useRef<AbortController | null>(null);
+  const abortController = useCallback(() => (unmountRef.current ??= new AbortController()), []);
 
   useEffect(() => {
-    const controller = unmountRef.current;
     return () => {
-      controller.abort();
+      // Abort in-flight requests and drop the controller. Dropping it matters: under StrictMode
+      // the component remounts after this cleanup, and a retained already-aborted controller
+      // would silently kill every request the remounted component makes.
+      unmountRef.current?.abort();
+      unmountRef.current = null;
     };
   }, []);
 
@@ -89,6 +101,13 @@ const ShrAdmin: React.FC = () => {
   const { outbox, isLoading, error, mutate } = useShrOutbox(filter, (page - 1) * pageSize, pageSize, busy ? 0 : 30_000);
 
   const unknownError = t('unknownError', 'Unknown error');
+
+  // A timeout is not a failure of the records themselves — whatever the server already pushed stands.
+  const timedOutMessage = t(
+    'operationTimedOut',
+    'The request was stopped after {{minutes}} minutes. Records already sent are unaffected — refresh to see where the queue stands.',
+    { minutes: SHR_OPERATION_TIMEOUT_MS / 60_000 },
+  );
 
   const statusLabels = useMemo<Record<string, string>>(
     () => ({
@@ -103,10 +122,13 @@ const ShrAdmin: React.FC = () => {
   );
 
   const handleSync = useCallback(async () => {
+    // Capture the signal for this request: the unmount cleanup drops the controller from the ref,
+    // so by the time `finally` runs the ref may hold a different (or no) controller.
+    const signal = abortController().signal;
     setSyncing(true);
     setNotification(null);
     try {
-      const result = await syncPending(unmountRef.current.signal);
+      const result = await syncPending(signal);
       if (result.status === 'success') {
         setNotification({ kind: 'success', message: result.message ?? t('syncDone', 'Sync complete.') });
       } else {
@@ -116,27 +138,30 @@ const ShrAdmin: React.FC = () => {
         });
       }
     } catch (e) {
-      if (e instanceof Error && e.name === 'AbortError') {
+      if (isAbortError(e)) {
         return;
       }
       setNotification({
         kind: 'error',
-        message: t('syncError', 'Sync failed: {{message}}', { message: extractErrorMessage(e) ?? unknownError }),
+        message: isTimeoutError(e)
+          ? timedOutMessage
+          : t('syncError', 'Sync failed: {{message}}', { message: extractErrorMessage(e) ?? unknownError }),
       });
     } finally {
-      if (!unmountRef.current.signal.aborted) {
+      if (!signal.aborted) {
         setSyncing(false);
         mutate();
       }
     }
-  }, [t, mutate, unknownError]);
+  }, [t, mutate, unknownError, timedOutMessage, abortController]);
 
   const handleRetry = useCallback(
     async (outboxId: number) => {
+      const signal = abortController().signal;
       setRetryingId(outboxId);
       setNotification(null);
       try {
-        const result = await retryRow(outboxId, unmountRef.current.signal);
+        const result = await retryRow(outboxId, signal);
         if (result.status === 'success') {
           setNotification({
             kind: 'success',
@@ -149,35 +174,56 @@ const ShrAdmin: React.FC = () => {
           });
         }
       } catch (e) {
-        if (e instanceof Error && e.name === 'AbortError') {
+        if (isAbortError(e)) {
           return;
         }
         setNotification({
           kind: 'error',
-          message: t('retryError', 'Retry failed: {{message}}', { message: extractErrorMessage(e) ?? unknownError }),
+          message: isTimeoutError(e)
+            ? timedOutMessage
+            : t('retryError', 'Retry failed: {{message}}', { message: extractErrorMessage(e) ?? unknownError }),
         });
       } finally {
-        if (!unmountRef.current.signal.aborted) {
+        if (!signal.aborted) {
           setRetryingId(null);
           mutate();
         }
       }
     },
-    [t, mutate, unknownError],
+    [t, mutate, unknownError, timedOutMessage, abortController],
   );
 
-  const counts = outbox?.counts ?? {};
-  const rows: Array<ShrOutboxRow> = outbox?.rows ?? [];
+  const counts = useMemo(() => outbox?.counts ?? {}, [outbox]);
+  const rows = useMemo<Array<ShrOutboxRow>>(() => outbox?.rows ?? [], [outbox]);
 
   const overview = useMemo(() => {
-    const pending = counts['PENDING'] ?? 0;
+    // `counts` is documented as outbox-wide rather than scoped to the active filter, which is what
+    // lets the chips and the sync action stay meaningful while a filter is applied. Where that
+    // assumption cannot be checked — a status the server omitted — the count is unknown, not zero.
+    const pending = pendingCount(outbox?.counts);
     const failed = (counts['FAILED'] ?? 0) + (counts['DEAD_LETTER'] ?? 0);
+    const submitted = counts['SUBMITTED'] ?? 0;
     const total = outbox?.grandTotal ?? 0;
-    return { pending, failed, total, healthy: total > 0 && failed === 0 && pending === 0 };
+    return {
+      pending: pending ?? 0,
+      pendingKnown: pending !== undefined,
+      failed,
+      submitted,
+      total,
+      // SUBMITTED is handed to OpenFn, not delivered — a queue of them is in flight, not healthy.
+      healthy: total > 0 && failed === 0 && pending === 0 && submitted === 0,
+    };
   }, [counts, outbox]);
 
-  // Newest activity in the queue, as a human-readable "x minutes ago".
+  // Newest activity in the queue, as a human-readable "x minutes ago". Rows come back newest
+  // first, so the first unfiltered page genuinely contains the queue's most recent change; any
+  // other view is a slice whose maximum says nothing about the queue as a whole, and the metric
+  // shows a dash rather than a stale-looking guess.
+  const lastActivityKnown = filter === ALL && page === 1;
   const lastActivity = useMemo(() => {
+    if (!lastActivityKnown) {
+      return null;
+    }
     return rows.reduce<dayjs.Dayjs | null>((acc, r) => {
       const raw = r.dateChanged ?? r.dateCreated;
       if (!raw) {
@@ -189,7 +235,7 @@ const ShrAdmin: React.FC = () => {
       }
       return !acc || parsed.isAfter(acc) ? parsed : acc;
     }, null);
-  }, [rows]);
+  }, [rows, lastActivityKnown]);
 
   return (
     <div className={styles.container}>
@@ -225,7 +271,11 @@ const ShrAdmin: React.FC = () => {
                   ? t('nNeedAttention', '{{count}} need attention', { count: overview.failed })
                   : overview.pending > 0
                   ? t('nWaiting', '{{count}} waiting', { count: overview.pending })
-                  : t('allSent', 'All sent')}
+                  : overview.submitted > 0
+                  ? t('nAwaitingConfirmation', '{{count}} awaiting confirmation', { count: overview.submitted })
+                  : overview.pendingKnown
+                  ? t('allSent', 'All sent')
+                  : t('healthUnknown', 'Not reported')}
               </span>
             </div>
           </Tile>
@@ -236,7 +286,9 @@ const ShrAdmin: React.FC = () => {
             </div>
             <div className={styles.metricBody}>
               <span className={styles.metricLabel}>{t('lastActivity', 'Last activity')}</span>
-              <span className={styles.metricValue}>{lastActivity ? lastActivity.fromNow() : t('never', 'Never')}</span>
+              <span className={styles.metricValue}>
+                {lastActivity ? lastActivity.fromNow() : lastActivityKnown ? t('never', 'Never') : '—'}
+              </span>
             </div>
           </Tile>
 
@@ -277,7 +329,8 @@ const ShrAdmin: React.FC = () => {
             <Send size={20} className={styles.iconNeutral} />
             <h3 className={styles.actionCardTitle}>{t('sendQueued', 'Send queued records')}</h3>
             <Tag type="blue" size="sm">
-              {t('upToN', 'Up to {{count}} at a time', { count: 50 })}
+              {/* A fixed batch size, not a quantity of anything — interpolated, never pluralised. */}
+              {t('upToN', 'Up to {{limit}} at a time', { limit: SHR_SYNC_BATCH_LIMIT })}
             </Tag>
           </div>
           <p className={styles.actionCardBody}>
@@ -286,11 +339,13 @@ const ShrAdmin: React.FC = () => {
               'Sends records that are waiting, without waiting for the scheduled task. Records are handed to OpenFn, which delivers them to the SHR — their status becomes Sent once delivery is confirmed.',
             )}
           </p>
+          {/* Disabled only on a count the server actually reported as zero — an unreported PENDING
+              count is unknown, and locking the button on it would strand a real backlog. */}
           <Button
             kind="primary"
             size="md"
             renderIcon={Send}
-            disabled={busy || (overview.pending === 0 && !isLoading)}
+            disabled={busy || (overview.pendingKnown && overview.pending === 0)}
             onClick={handleSync}>
             {syncing ? <InlineLoading description={t('sending', 'Sending…')} /> : t('sendNow', 'Send now')}
           </Button>

@@ -24,6 +24,8 @@ The app wraps three `ShrOutboxAdminController` endpoints, all of which require t
 
 Nobody holds `Manage SHR Outbox` by default. Grant it to the appropriate role, or every request returns `{"status":"error"}` and the page shows a permission message.
 
+The same privilege gates the frontend, following the pattern in `esm-admin-app`: it is declared on the page and on the nav tile extension in `routes.json`, and `Root` redirects an authenticated user without it back to `home` rather than letting them sit on a page whose every request will be refused. The privilege string lives in `src/permissions.constants.ts`.
+
 ## Distro configuration
 
 Registered in the distro's `frontend/spa-assemble-config.json`:
