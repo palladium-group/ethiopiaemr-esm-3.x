@@ -18,7 +18,8 @@ const toPersistFields = (member: CbhiEligibilityMember): CbhiPersistFields => ({
   accountNo: member.accountNo,
   membershipType: member.membershipType,
   cbhiId: member.cbhiId,
-  insuredId: member.insuredId,
+  // BE always sends insuredId as null; store eligibility id on the insuredId attribute
+  insuredId: member.id,
 });
 
 const ResultCard: React.FC<{
