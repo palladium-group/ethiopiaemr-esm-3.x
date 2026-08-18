@@ -71,6 +71,17 @@ export const configSchema = {
       'Optional default location UUID pre-selected in the appointment scheduling form. Falls back to the session location when not set.',
     _default: '',
   },
+  enforceBillPayment: {
+    _type: Type.Boolean,
+    _default: true,
+    _description:
+      'When true, Start Exam and PACS worklist creation are blocked until the cashier bill line item for the order is PAID or EXEMPTED.',
+  },
+  billingStatusQueryUrl: {
+    _type: Type.String,
+    _default: '${restBaseUrl}/cashier/billLineItem?orderUuid=${orderUuid}&v=full',
+    _description: 'URL to query cashier bill line item payment status for a radiology order.',
+  },
 };
 
 export type RadiologyConfig = {
@@ -88,4 +99,6 @@ export type RadiologyConfig = {
     labResultValidityPeriodInDays: number;
   }[];
   radiologyAppointmentLocationUuid: string;
+  enforceBillPayment: boolean;
+  billingStatusQueryUrl: string;
 };

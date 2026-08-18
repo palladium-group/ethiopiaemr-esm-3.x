@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useOrder } from '../../resources/hooks/useOrders';
-import { Button, InlineLoading, InlineNotification } from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { ArrowLeft, Calendar, CheckmarkFilled, Play } from '@carbon/react/icons';
 import styles from './imaging-details.scss';
 import OrderProgress from './order-progress/order-progress.component';
@@ -11,6 +11,7 @@ import PatientCard from '../../components/patient-card/patient-card.component';
 import ClinicalHistory from './clinical-history/clinical-history.component';
 import ImagingSeriesPanel from './imaging-series/imaging-series-panel.component';
 import { useSendToWorklist } from '../../resources/hooks/useSendToWorklist';
+import { useOrderPaymentStatus } from '../../resources/hooks/useOrderPaymentStatus';
 import { useSWRConfig } from 'swr';
 import PreliminaryReportExpandedContent from '../reports/preliminary-report-expanded-content.component';
 import { useRadiologyPrivileges } from '../../resources/hooks/useRadiologyPrivileges';
@@ -27,7 +28,19 @@ const ImagingDetails: React.FC = () => {
       revalidate: true,
     }),
   );
-  const { canStartExam, canAddPreliminaryReport, canScheduleAppointment } = useRadiologyPrivileges();
+  const {
+    canStartExam: hasStartExamPrivilege,
+    canAddPreliminaryReport,
+    canScheduleAppointment,
+  } = useRadiologyPrivileges();
+  const {
+    isLoading: isPaymentLoading,
+    error: paymentStatusError,
+    paymentStatus,
+    isUnpaid,
+    hasPaymentStatusError,
+    canCreateWorklist,
+  } = useOrderPaymentStatus(orderUuid);
   const { scheduleAppointment, isScheduling } = useScheduleAppointment(() => {
     orderMutate();
     mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/order`), undefined, {
@@ -81,6 +94,20 @@ const ImagingDetails: React.FC = () => {
     canScheduleAppointment && order.fulfillerStatus !== 'IN_PROGRESS' && order.fulfillerStatus !== 'COMPLETED';
   const showScheduleButton = canShowScheduleActions && !order.scheduledDate;
   const showRescheduleButton = canShowScheduleActions && Boolean(order.scheduledDate);
+  const paymentBlocksStartExam = !isInProgress && (isPaymentLoading || isUnpaid || hasPaymentStatusError);
+  const showUnpaidNotification = showStartExam && hasStartExamPrivilege && isUnpaid;
+  const showPaymentStatusError = showStartExam && hasStartExamPrivilege && hasPaymentStatusError;
+  const paymentStatusNormalized = paymentStatus?.toUpperCase();
+  const paymentTagType =
+    paymentStatusNormalized === 'PAID' ? 'green' : paymentStatusNormalized === 'EXEMPTED' ? 'blue' : 'red';
+  const paymentTagLabel =
+    paymentStatusNormalized === 'PAID'
+      ? t('paid', 'Paid')
+      : paymentStatusNormalized === 'EXEMPTED'
+      ? t('exempted', 'Exempted')
+      : t('unpaid', 'Unpaid');
+  const paymentErrorMessage =
+    paymentStatusError instanceof Error ? paymentStatusError.message : String(paymentStatusError ?? '');
 
   return (
     <div className={styles.container}>
@@ -89,7 +116,14 @@ const ImagingDetails: React.FC = () => {
           <div className={styles.orderNumber}>
             {t('orderNumber', 'Order Number')}: {order?.orderNumber}
           </div>
-          <div className={styles.radiologyProcedure}>{order?.concept?.display}</div>
+          <div className={styles.procedureRow}>
+            <div className={styles.radiologyProcedure}>{order?.concept?.display}</div>
+            {!isPaymentLoading && !hasPaymentStatusError && (
+              <Tag size="sm" type={paymentTagType}>
+                {paymentTagLabel}
+              </Tag>
+            )}
+          </div>
         </div>
         <div className={styles.actions}>
           <Button kind="tertiary" renderIcon={ArrowLeft} onClick={() => navigate(-1)}>
@@ -113,12 +147,12 @@ const ImagingDetails: React.FC = () => {
               {t('rescheduleAppointment', 'Reschedule')}
             </Button>
           )}
-          {showStartExam && canStartExam && (
+          {showStartExam && hasStartExamPrivilege && (
             <Button
               renderIcon={isSending ? undefined : startExamIcon}
               kind="primary"
               onClick={() => sendToWorklist(order)}
-              disabled={isSending || isInProgress}
+              disabled={isSending || isInProgress || paymentBlocksStartExam}
               className={styles.startExamBtn}>
               <span className={isSending ? styles['btnLabel--hidden'] : styles.btnLabel}>
                 {isInProgress ? t('activeExam', 'Active Exam') : t('startExam', 'Start Exam')}
@@ -138,7 +172,36 @@ const ImagingDetails: React.FC = () => {
         </div>
       </div>
 
-      {!order.scheduledDate && showStartExam && canStartExam && (
+      {showPaymentStatusError && (
+        <InlineNotification
+          className={styles.scheduleHint}
+          kind="error"
+          lowContrast
+          hideCloseButton
+          subtitle={t(
+            'paymentStatusCheckErrorSubtitle',
+            'Could not confirm whether this order has been paid. {{errorMessage}}',
+            { errorMessage: paymentErrorMessage },
+          )}
+          title={t('paymentStatusCheckError', 'Failed to verify payment status')}
+        />
+      )}
+
+      {showUnpaidNotification && (
+        <InlineNotification
+          className={styles.scheduleHint}
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          subtitle={t(
+            'paymentRequiredBeforeExamSubtitle',
+            'This order cannot be added to the worklist until the bill line item is paid or exempted.',
+          )}
+          title={t('paymentRequiredBeforeExam', 'Payment required before starting the exam')}
+        />
+      )}
+
+      {!order.scheduledDate && showStartExam && hasStartExamPrivilege && canCreateWorklist && !isInProgress && (
         <InlineNotification
           className={styles.scheduleHint}
           kind="info"

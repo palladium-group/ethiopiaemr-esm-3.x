@@ -5,6 +5,7 @@ import { type RadiologyConfig } from '../../config-schema';
 import { type RadiologyOrder } from '../../radiology-imaging/types';
 import { updateOrderFulfillmentStatus } from './useOrders';
 import { createPACSWorkListEntry } from '../pacs.resource';
+import { ensureOrderPaymentAllowsWorklist, UnpaidOrderError } from '../cashier.resource';
 
 export function useSendToWorklist(mutate: () => void) {
   const { t } = useTranslation();
@@ -14,6 +15,36 @@ export function useSendToWorklist(mutate: () => void) {
   const sendToWorklist = useCallback(
     async (order: RadiologyOrder) => {
       setIsSending(true);
+
+      try {
+        await ensureOrderPaymentAllowsWorklist(order.uuid, config);
+      } catch (error) {
+        setIsSending(false);
+        if (error instanceof UnpaidOrderError) {
+          showSnackbar({
+            title: t('paymentRequiredBeforeExam', 'Payment required before starting the exam'),
+            subtitle: t(
+              'paymentRequiredBeforeExamSubtitle',
+              'This order cannot be added to the worklist until the bill line item is paid or exempted.',
+            ),
+            kind: 'error',
+            isLowContrast: false,
+          });
+        } else {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          showSnackbar({
+            title: t('paymentStatusCheckError', 'Failed to verify payment status'),
+            subtitle: t(
+              'paymentStatusCheckErrorSubtitle',
+              'Could not confirm whether this order has been paid. {{errorMessage}}',
+              { errorMessage },
+            ),
+            kind: 'error',
+            isLowContrast: false,
+          });
+        }
+        return;
+      }
 
       const [statusResult, pacsResult] = await Promise.allSettled([
         updateOrderFulfillmentStatus(order.uuid, 'IN_PROGRESS'),

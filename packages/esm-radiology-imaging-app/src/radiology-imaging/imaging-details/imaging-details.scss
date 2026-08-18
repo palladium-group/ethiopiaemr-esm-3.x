@@ -21,6 +21,12 @@
     text-transform: uppercase;
   }
 
+  .procedureRow {
+    display: flex;
+    align-items: center;
+    gap: layout.$spacing-03;
+  }
+
   .radiologyProcedure {
     @include type.type-style('heading-06');
     color: colors.$gray-100;

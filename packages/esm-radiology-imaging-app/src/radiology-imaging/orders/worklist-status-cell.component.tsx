@@ -5,7 +5,9 @@ import { useConfig, showSnackbar } from '@openmrs/esm-framework';
 import { useSWRConfig } from 'swr';
 import { useTranslation } from 'react-i18next';
 import { useWorklistCheck, worklistCheckKey } from '../../resources/hooks/useWorklistCheck';
+import { useOrderPaymentStatus } from '../../resources/hooks/useOrderPaymentStatus';
 import { createPACSWorkListEntry } from '../../resources/pacs.resource';
+import { ensureOrderPaymentAllowsWorklist, UnpaidOrderError } from '../../resources/cashier.resource';
 import type { RadiologyOrder } from '../types';
 import type { RadiologyConfig } from '../../config-schema';
 
@@ -19,8 +21,15 @@ const WorklistStatusCell: React.FC<WorklistStatusCellProps> = ({ order }) => {
   const { mutate } = useSWRConfig();
   const [isAdding, setIsAdding] = useState(false);
   const { data, isLoading } = useWorklistCheck(order.orderNumber);
+  const {
+    isLoading: isPaymentLoading,
+    error: paymentStatusError,
+    canCreateWorklist,
+    isUnpaid,
+    hasPaymentStatusError,
+  } = useOrderPaymentStatus(order.uuid);
 
-  if (isLoading) {
+  if (isLoading || isPaymentLoading) {
     return <InlineLoading />;
   }
 
@@ -37,6 +46,36 @@ const WorklistStatusCell: React.FC<WorklistStatusCellProps> = ({ order }) => {
   const handleAdd = async () => {
     setIsAdding(true);
     try {
+      await ensureOrderPaymentAllowsWorklist(order.uuid, config);
+    } catch (error) {
+      setIsAdding(false);
+      if (error instanceof UnpaidOrderError) {
+        showSnackbar({
+          title: t('paymentRequiredBeforeExam', 'Payment required before starting the exam'),
+          subtitle: t(
+            'paymentRequiredBeforeExamSubtitle',
+            'This order cannot be added to the worklist until the bill line item is paid or exempted.',
+          ),
+          kind: 'error',
+          isLowContrast: false,
+        });
+      } else {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        showSnackbar({
+          title: t('paymentStatusCheckError', 'Failed to verify payment status'),
+          subtitle: t(
+            'paymentStatusCheckErrorSubtitle',
+            'Could not confirm whether this order has been paid. {{errorMessage}}',
+            { errorMessage },
+          ),
+          kind: 'error',
+          isLowContrast: false,
+        });
+      }
+      return;
+    }
+
+    try {
       await createPACSWorkListEntry(order, config);
       await mutate(worklistCheckKey(order.orderNumber));
       showSnackbar({ title: t('worklistCreated', 'Added to worklist'), kind: 'success', isLowContrast: true });
@@ -51,9 +90,26 @@ const WorklistStatusCell: React.FC<WorklistStatusCellProps> = ({ order }) => {
     }
   };
 
+  const paymentErrorMessage =
+    paymentStatusError instanceof Error ? paymentStatusError.message : String(paymentStatusError ?? '');
+
   return (
-    <Button size="sm" kind="ghost" renderIcon={isAdding ? undefined : Add} onClick={handleAdd} disabled={isAdding}>
-      {isAdding ? <InlineLoading description={t('adding', 'Adding...')} /> : t('addToWorklist', 'Add to worklist')}
+    <Button
+      size="sm"
+      kind="ghost"
+      renderIcon={isAdding || !canCreateWorklist ? undefined : Add}
+      onClick={handleAdd}
+      disabled={isAdding || !canCreateWorklist}
+      title={hasPaymentStatusError ? paymentErrorMessage : undefined}>
+      {isAdding ? (
+        <InlineLoading description={t('adding', 'Adding...')} />
+      ) : hasPaymentStatusError ? (
+        t('paymentStatusUnavailable', 'Unable to verify payment')
+      ) : isUnpaid ? (
+        t('unpaidBill', 'Unpaid')
+      ) : (
+        t('addToWorklist', 'Add to worklist')
+      )}
     </Button>
   );
 };
