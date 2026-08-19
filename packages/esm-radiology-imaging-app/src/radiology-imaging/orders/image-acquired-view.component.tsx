@@ -82,7 +82,7 @@ const ImageAcquiredView: React.FC = () => {
       <div className={styles.container}>
         <RadiologyEmptyState
           description={t('noImageAcquiredOrders', 'No image acquired orders')}
-          filters={DEFAULT_FILTERS}
+          filters={filters}
           onFiltersChange={setFilters}
           showStatusFilter={false}
           onClearFilters={() => setFilters(DEFAULT_FILTERS)}
