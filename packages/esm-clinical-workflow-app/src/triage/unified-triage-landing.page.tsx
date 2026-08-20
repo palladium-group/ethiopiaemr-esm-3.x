@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, InlineNotification } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
@@ -14,7 +14,7 @@ import type { ClinicalWorkflowConfig } from '../config-schema';
 import PatientBanner from './patient-banner.component';
 import { useStartVisitAndLaunchTriageForm } from './useStartVisitAndLaunchTriageForm';
 import VisitsTable from '../patient-scoreboard/visits-table/visits-table.component';
-import { useActiveVisits } from '../patient-scoreboard/hooks/useVisitList';
+import { useTriageActiveVisits } from './use-triage-active-visits';
 import { DEFAULT_PAGE_SIZE } from '../constants';
 import styles from './triage-dashboard.scss';
 import { Permissions } from '../permission/permissions.constants';
@@ -52,6 +52,10 @@ export default function UnifiedTriageDashboardPage() {
     [triageDefinitions, triageId],
   );
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [triageId]);
+
   const startIndex = (currentPage - 1) * pageSize;
   const paginationParams = {
     startIndex,
@@ -62,7 +66,7 @@ export default function UnifiedTriageDashboardPage() {
     visits: activeVisits,
     isLoading: isLoadingVisits,
     count: activeCount,
-  } = useActiveVisits(patientUuid ? { skip: true } : paginationParams);
+  } = useTriageActiveVisits(triageId, patientUuid ? { skip: true } : paginationParams);
 
   const handlePaginationChange = ({ page, pageSize: newPageSize }: { page: number; pageSize: number }) => {
     setCurrentPage(page);
@@ -77,7 +81,7 @@ export default function UnifiedTriageDashboardPage() {
       workspaceTitle: t('newPatient', 'New Patient'),
       onPatientRegistered: (uuid: string) => {
         if (variantConfig.formUuid && variantConfig.name) {
-          handleStartVisitAndLaunchTriageForm(uuid, variantConfig.formUuid, variantConfig.name);
+          handleStartVisitAndLaunchTriageForm(uuid, variantConfig.formUuid, variantConfig.name, variantConfig.id);
         }
       },
     });

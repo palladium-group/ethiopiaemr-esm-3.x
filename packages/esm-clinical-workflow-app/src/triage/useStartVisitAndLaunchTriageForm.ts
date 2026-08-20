@@ -12,7 +12,12 @@ import {
   Visit,
 } from '@openmrs/esm-framework';
 
-import { createVisitForPatient, getCurrentVisitForPatient, invalidateVisitCache } from './triage.resource';
+import {
+  createVisitForPatient,
+  ensureTriageVisitAttribute,
+  getCurrentVisitForPatient,
+  invalidateVisitCache,
+} from './triage.resource';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 
 /**
@@ -82,20 +87,25 @@ export const launchTriageFormWorkspace = (
 };
 
 interface UseStartVisitAndLaunchTriageFormReturn {
-  handleStartVisitAndLaunchTriageForm: (patientUuid: string, formUuid: string, formName: string) => Promise<void>;
+  handleStartVisitAndLaunchTriageForm: (
+    patientUuid: string,
+    formUuid: string,
+    formName: string,
+    triageId: string,
+  ) => Promise<void>;
   isLoading: boolean;
   error: Error | null;
 }
 
 export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriageFormReturn => {
   const { t } = useTranslation();
-  const { visitTypeUuid } = useConfig<ClinicalWorkflowConfig>();
+  const { visitTypeUuid, triageVisitAttributeTypeUuid } = useConfig<ClinicalWorkflowConfig>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { sessionLocation } = useSession();
 
   const handleStartVisitAndLaunchTriageForm = useCallback(
-    async (patientUuid: string, formUuid: string, formName: string) => {
+    async (patientUuid: string, formUuid: string, formName: string, triageId: string) => {
       if (!patientUuid?.trim()) {
         const validationError = new Error('Patient UUID is required');
         setError(validationError);
@@ -132,6 +142,18 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
         return;
       }
 
+      if (!triageId?.trim()) {
+        const validationError = new Error('Triage ID is required');
+        setError(validationError);
+        showSnackbar({
+          title: t('triageDashboardError', 'Error'),
+          kind: 'error',
+          subtitle: t('triageDashboardInvalidTriageId', 'Invalid triage identifier'),
+          isLowContrast: true,
+        });
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
 
@@ -145,7 +167,10 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
 
         let visit = await getCurrentVisitForPatient(patientUuid);
         if (!visit) {
-          const visitResponse = await createVisitForPatient(patientUuid, visitTypeUuid, sessionLocation.uuid);
+          const visitResponse = await createVisitForPatient(patientUuid, visitTypeUuid, sessionLocation.uuid, {
+            attributeTypeUuid: triageVisitAttributeTypeUuid,
+            triageId,
+          });
 
           if (!visitResponse.ok) {
             throw new Error(
@@ -159,6 +184,8 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
           if (!visit) {
             throw new Error('Failed to retrieve newly created visit');
           }
+        } else {
+          await ensureTriageVisitAttribute(visit, triageVisitAttributeTypeUuid, triageId);
         }
 
         // Ensure visit-dependent UI (e.g., PatientBanner) sees the latest active visit
@@ -182,7 +209,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
         setIsLoading(false);
       }
     },
-    [t, visitTypeUuid, sessionLocation],
+    [t, visitTypeUuid, triageVisitAttributeTypeUuid, sessionLocation],
   );
 
   return {
