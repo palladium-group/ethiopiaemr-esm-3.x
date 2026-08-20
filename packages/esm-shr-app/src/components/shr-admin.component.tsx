@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import utc from 'dayjs/plugin/utc';
 import {
   Button,
   DataTableSkeleton,
@@ -37,9 +38,27 @@ import {
 import styles from './shr-admin.component.scss';
 
 dayjs.extend(relativeTime);
+dayjs.extend(utc);
 
 const PAGE_SIZE = 20;
 const ALL = 'ALL';
+
+/**
+ * Parse an outbox timestamp, which the module serialises as `YYYY-MM-DD HH:mm:ss` with NO timezone
+ * offset, and the OpenMRS backend runs in UTC.
+ *
+ * Plain `dayjs(raw)` reads an offsetless string as LOCAL time, so in Ethiopia (UTC+3) a row queued a
+ * moment ago parsed as three hours in the future and rendered as "3 hours ago" the instant it was
+ * created. Parsing as UTC and converting back to local fixes both the relative time and the absolute
+ * time shown in the tooltip.
+ */
+const parseOutboxTime = (raw?: string | null): dayjs.Dayjs | null => {
+  if (!raw) {
+    return null;
+  }
+  const parsed = dayjs.utc(raw).local();
+  return parsed.isValid() ? parsed : null;
+};
 
 /** Lifecycle order, so the chips read left-to-right as a record's journey. */
 const STATUSES: Array<ShrOutboxStatus> = ['PENDING', 'SUBMITTED', 'SENT', 'FAILED', 'DEAD_LETTER'];
@@ -225,12 +244,8 @@ const ShrAdmin: React.FC = () => {
       return null;
     }
     return rows.reduce<dayjs.Dayjs | null>((acc, r) => {
-      const raw = r.dateChanged ?? r.dateCreated;
-      if (!raw) {
-        return acc;
-      }
-      const parsed = dayjs(raw);
-      if (!parsed.isValid()) {
+      const parsed = parseOutboxTime(r.dateChanged ?? r.dateCreated);
+      if (!parsed) {
         return acc;
       }
       return !acc || parsed.isAfter(acc) ? parsed : acc;
@@ -428,7 +443,7 @@ const ShrAdmin: React.FC = () => {
                     <TableBody>
                       {rows.map((row) => {
                         const { type: tagType, icon: StatusIcon } = statusPresentation(row.status);
-                        const created = row.dateCreated ? dayjs(row.dateCreated) : null;
+                        const created = parseOutboxTime(row.dateCreated);
                         return (
                           <TableRow key={row.outboxId}>
                             <TableCell>
@@ -443,7 +458,7 @@ const ShrAdmin: React.FC = () => {
                             </TableCell>
                             <TableCell>{row.retryCount}</TableCell>
                             <TableCell>
-                              {created && created.isValid() ? (
+                              {created ? (
                                 <DefinitionTooltip definition={created.format('DD MMM YYYY, HH:mm:ss')} openOnHover>
                                   <span className={styles.relativeTime}>{created.fromNow()}</span>
                                 </DefinitionTooltip>
