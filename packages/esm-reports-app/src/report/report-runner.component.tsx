@@ -1,15 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import {
-  Button,
-  DatePicker,
-  DatePickerInput,
-  InlineLoading,
-  InlineNotification,
-  Layer,
-  TextInput,
-} from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, Layer, TextInput } from '@carbon/react';
+import { OpenmrsDatePicker } from '@openmrs/esm-framework';
 import { useReportDefinition } from '../api/reports.resource';
 import { runReport, fetchFeederDatasetNames, downloadReportDesign, type ReportDataSet } from '../api/report-request';
 import ReportResults from './report-results.component';
@@ -146,34 +139,18 @@ const ReportRunner: React.FC = () => {
         <div className={styles.fields}>
           {params.map((param) =>
             isDateParam(param.type) ? (
-              <DatePicker
+              /* Same date picker the rest of the EMR uses (e.g. the registration date of
+                 birth field), so report dates follow whatever calendar the deployment is
+                 configured for. The picker hands back a plain JS Date, which we store as
+                 a Gregorian ISO string for the backend. */
+              <OpenmrsDatePicker
                 key={param.name}
-                datePickerType="single"
-                dateFormat="Y-m-d"
+                id={`param-${param.name}`}
+                labelText={param.label}
                 className={styles.field}
-                onChange={(dates: Array<Date>) => {
-                  // Carbon's single DatePicker fires onChange with an empty array when it
-                  // closes without a (re)selection — e.g. when focus moves to the other
-                  // date field. Treat that as "no change" so it doesn't clobber a value the
-                  // user already picked. An explicit clear is handled via the input's
-                  // onChange below.
-                  const d = dates?.[0];
-                  if (d) {
-                    setParam(param.name, formatIsoDate(d));
-                  }
-                }}>
-                <DatePickerInput
-                  id={`param-${param.name}`}
-                  labelText={param.label}
-                  placeholder="yyyy-mm-dd"
-                  size="md"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    if (!e.target.value) {
-                      setParam(param.name, '');
-                    }
-                  }}
-                />
-              </DatePicker>
+                value={paramValues[param.name] || null}
+                onChange={(date) => setParam(param.name, date ? formatIsoDate(date) : '')}
+              />
             ) : (
               <TextInput
                 key={param.name}
