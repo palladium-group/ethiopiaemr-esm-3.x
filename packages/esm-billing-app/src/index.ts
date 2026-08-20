@@ -57,6 +57,7 @@ import OrderActionButton from './billable-services/billable-orders/order-actions
 import ClaimsManagementOverview from './claims/claims-management/main/claims-overview-main.component';
 import { ManageClaimRequest } from './claims/claims-management/table/manage-claim-request.modal';
 import InitiatePaymentDialog from './invoice/payments/initiate-payment/initiate-payment.component';
+import EthSwitchPaymentDialog from './invoice/payments/ethswitch-payment/ethswitch-payment.component';
 import VisitAttributeTags from './invoice/payments/visit-tags/visit-attribute.component';
 import DeletePaymentModeModal from './bill-administration/payment-modes/delete-payment-mode.modal';
 import PaymentModeWorkspace from './bill-administration/payment-modes/payment-mode.workspace';
@@ -121,6 +122,7 @@ export const benefitsPreAuthForm = getSyncLifecycle(BenefitPreAuthForm, options)
 export const requirePaymentModal = getSyncLifecycle(RequirePaymentModal, options);
 export const visitAttributeTags = getSyncLifecycle(VisitAttributeTags, options);
 export const initiatePaymentDialog = getSyncLifecycle(InitiatePaymentDialog, options);
+export const ethSwitchPaymentDialog = getSyncLifecycle(EthSwitchPaymentDialog, options);
 export const paymentModeWorkspace = getSyncLifecycle(PaymentModeWorkspace, options);
 export const deletePaymentModeModal = getSyncLifecycle(DeletePaymentModeModal, options);
 export const paymentWorkspace = getSyncLifecycle(PaymentWorkspace, options);
