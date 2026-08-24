@@ -9,7 +9,7 @@ export enum Permissions {
   DeleteEncounter = 'o3: Delete Encounters',
 
   // Visit Note permissions
-  ViewVisitNote = 'o3: View Visit Notes',
+  ViewVisitNote = 'o3: View Patient Chart Notes Dashboard',
   AddVisitNote = 'o3: Add Visit Notes',
   EditVisitNote = 'o3: Edit Visit Notes',
   DeleteVisitNote = 'o3: Delete Visit Notes',
@@ -42,5 +42,5 @@ export enum Permissions {
   ViewWardDashboard = 'o3: View Ward Dashboard',
 
   // Clinical Forms Permissions
-  ViewClinicalForms = 'o3: View Patient Forms',
+  ViewClinicalForms = 'o3: View Patient Chart Forms Dashboard',
 }
