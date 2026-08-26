@@ -269,11 +269,6 @@
       "window": "patient-transfer"
     },
     {
-      "name": "ward-form-entry-workspace",
-      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
-      "window": "ward-form-entry-workspace-window"
-    },
-    {
       "name": "visit-notes-form-shadow-workspace",
       "component": "visitNotesFormWorkspace",
       "window": "visit-note-shadow"
@@ -281,11 +276,6 @@
     {
       "name": "ethiopia-bed-swap-workspace",
       "component": "ethiopiaBedSwapWorkspace",
-      "window": "kenyaemr-esm-ward-window"
-    },
-    {
-      "name": "admit-patient-form-workspace",
-      "component": "ethiopiaAdmitPatientFormWorkspace",
       "window": "kenyaemr-esm-ward-window"
     }
   ],
@@ -321,22 +311,6 @@
       "order": 4,
       "width": "wider",
       "canMaximize": true
-    },
-    {
-      "name": "ward-form-entry-workspace-window",
-      "group": "patient-chart",
-      "width": "wider"
-    },
-    {
-      "name": "kenyaemr-esm-ward-window",
-      "group": "kenyaemr-esm-ward-group",
-      "canMaximize": true
-    },
-    {
-      "name": "kenyaemr-form-entry-window",
-      "group": "kenyaemr-esm-ward-group",
-      "canMaximize": true,
-      "width": "extra-wide"
     }
   ],
   "workspaceGroups2": [
@@ -344,9 +318,6 @@
       "name": "clinical-workflow-group",
       "overlay": true,
       "persistence": "closable"
-    },
-    {
-      "name": "kenyaemr-esm-ward-group"
     }
   ],
   "modals": [
