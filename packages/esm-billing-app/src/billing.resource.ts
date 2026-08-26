@@ -44,7 +44,8 @@ export const mapBillProperties = (bill: PatientInvoice): MappedBill => {
     display: bill?.display,
     totalAmount: bill?.lineItems?.map((item) => item?.price * item?.quantity).reduce((prev, curr) => prev + curr, 0),
     tenderedAmount: bill?.payments?.map((item) => item?.amountTendered).reduce((prev, curr) => prev + curr, 0),
-    referenceCodes: bill?.payments?.map((payment) =>
+    referenceCodes: bill?.payments
+      ?.map((payment) =>
         payment.attributes
           .filter((attr) => attr.attributeType.description === 'Reference Number')
           .map((attr) => {
