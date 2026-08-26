@@ -3,66 +3,48 @@ import { getGlobalStore } from '@openmrs/esm-framework';
 const admitWorkspaceName = 'admit-patient-form-workspace';
 const clinicalWorkflowModuleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
-type WorkspaceRegistration = {
-  moduleName?: string;
-  [key: string]: unknown;
+/**
+ * Workspace v2 definition for Ethiopia admit.
+ * Must not be declared in routes.json `workspaces2` — that name is already registered by
+ * `@kenyaemr/esm-ward-app`, and duplicate registration throws, which aborts *all* other
+ * clinical-workflow workspaces2 (including triage form entry).
+ */
+const ethiopiaAdmitWorkspace2 = {
+  name: admitWorkspaceName,
+  component: 'ethiopiaAdmitPatientFormWorkspace',
+  window: 'kenyaemr-esm-ward-window',
+  moduleName: clinicalWorkflowModuleName,
 };
 
-interface WorkspaceStoreState {
-  registeredWorkspacesByName?: Record<string, WorkspaceRegistration>;
+interface Workspace2StoreState {
+  registeredWorkspacesByName?: Record<string, { moduleName?: string; [key: string]: unknown }>;
 }
 
 /**
- * Ward registers `admit-patient-form-workspace` at startup. Re-apply our registration
- * whenever the store changes so the Ethiopia admit flow wins regardless of module load order.
+ * Re-apply Ethiopia admit registration whenever workspace2 changes so our flow wins
+ * regardless of module load order.
+ *
+ * Also keeps the legacy v1 workspace registration (routes.json `workspaces`) in place for
+ * any callers still on the old workspace API; v1 allows overwrite, so routes.json is enough there.
  */
 export function registerAdmitWorkspaceOverride() {
-  const workspaceStore = getGlobalStore<WorkspaceStoreState>('workspace');
-  const workspace2Store = getGlobalStore<WorkspaceStoreState>('workspace2');
-  let ourWorkspaceRegistration: WorkspaceRegistration | null = null;
-  let ourWorkspace2Registration: WorkspaceRegistration | null = null;
+  const workspace2Store = getGlobalStore<Workspace2StoreState>('workspace2');
 
-  const captureOurRegistration = (store: ReturnType<typeof getGlobalStore<WorkspaceStoreState>>, slot: 'v1' | 'v2') => {
-    const registration = store.getState().registeredWorkspacesByName?.[admitWorkspaceName];
-    if (registration?.moduleName === clinicalWorkflowModuleName) {
-      if (slot === 'v1') {
-        ourWorkspaceRegistration = registration;
-      } else {
-        ourWorkspace2Registration = registration;
-      }
-    }
-  };
-
-  const enforceOverride = (
-    store: ReturnType<typeof getGlobalStore<WorkspaceStoreState>>,
-    registration: WorkspaceRegistration | null,
-  ) => {
-    if (!registration) {
-      return;
-    }
-
-    const state = store.getState();
+  const enforceOverride = () => {
+    const state = workspace2Store.getState();
     const current = state.registeredWorkspacesByName?.[admitWorkspaceName];
     if (current?.moduleName === clinicalWorkflowModuleName) {
       return;
     }
 
-    store.setState({
+    workspace2Store.setState({
       registeredWorkspacesByName: {
         ...state.registeredWorkspacesByName,
-        [admitWorkspaceName]: registration,
+        [admitWorkspaceName]: ethiopiaAdmitWorkspace2,
       },
     });
   };
 
-  const sync = () => {
-    captureOurRegistration(workspaceStore, 'v1');
-    captureOurRegistration(workspace2Store, 'v2');
-    enforceOverride(workspaceStore, ourWorkspaceRegistration);
-    enforceOverride(workspace2Store, ourWorkspace2Registration);
-  };
-
-  sync();
-  workspaceStore.subscribe(sync);
-  workspace2Store.subscribe(sync);
+  enforceOverride();
+  workspace2Store.subscribe(enforceOverride);
 }
