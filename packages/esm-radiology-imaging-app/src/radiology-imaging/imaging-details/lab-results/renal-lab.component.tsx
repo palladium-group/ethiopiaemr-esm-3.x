@@ -1,11 +1,20 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { Microscope, WarningFilled } from '@carbon/react/icons';
-import { formatDate, launchWorkspace2, showSnackbar, useConfig, usePatient, useVisit } from '@openmrs/esm-framework';
+import {
+  fetchCurrentPatient,
+  formatDate,
+  launchWorkspace2,
+  showSnackbar,
+  useConfig,
+  useVisit,
+} from '@openmrs/esm-framework';
 import { type RadiologyConfig } from '../../../config-schema';
 import { type ImagingOrderBasketItem } from '../../../types';
 import { useLatestRenalFunctionPanel } from '../../../resources/hooks/useRenalLabResults';
+import { type RenalLabOrderBasketWindowProps } from './renal-lab-order-basket.workspace';
 import styles from './renal-warning.scss';
 
 type RenalWarningProps = {
@@ -101,7 +110,13 @@ function normalizeStatus(interpretationClass: string): RenalResultStatus {
 
 const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConceptUuid, validityPeriodInDays }) => {
   const { t } = useTranslation();
-  const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
+  // Avoid usePatient here: on radiology routes it clears the patient UUID on every
+  // single-spa navigation because getPatientUuidFromUrl() returns undefined.
+  const {
+    data: patient,
+    isLoading: isPatientLoading,
+    error: patientError,
+  } = useSWR(patientUuid ? ['patient', patientUuid] : null, () => fetchCurrentPatient(patientUuid));
   const { activeVisit, mutate: mutateVisitContext } = useVisit(patientUuid);
   const { interpretedResults, isLoading, error, lastResultDate } = useLatestRenalFunctionPanel(
     patientUuid,
@@ -143,18 +158,27 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
       });
       return;
     }
-    launchWorkspace2(
-      'imaging-renal-order-basket-workspace',
+
+    if (!patient) {
+      showSnackbar({
+        title: t('errorLoadingPatient', 'Error loading patient'),
+        subtitle: patientError?.message ?? t('tryPlacingTheOrderAgain', 'Please try placing the order again.'),
+        kind: 'error',
+      });
+      return;
+    }
+
+    launchWorkspace2<object, RenalLabOrderBasketWindowProps, object>(
+      'imaging-renal-lab-order-basket',
+      {},
       { patient, patientUuid, visitContext: activeVisit, mutateVisitContext },
-      {
-        patient,
-        patientUuid,
-        visitContext: activeVisit,
-        mutateVisitContext,
-        labOrderWorkspaceName: 'imaging-renal-add-lab-order-workspace',
-        visibleOrderPanels: ['imaging-renal-add-lab-order-workspace'],
-      },
-    );
+    ).catch((error: Error) => {
+      showSnackbar({
+        title: t('errorPlacingOrder', 'Could not place the order'),
+        subtitle: error?.message ?? t('tryPlacingTheOrderAgain', 'Please try placing the order again.'),
+        kind: 'error',
+      });
+    });
   }
 
   if (!interpretedResults.length) {
@@ -190,7 +214,11 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
           </div>
         </div>
         <div className={styles.panelFooter}>
-          <button type="button" className={styles.orderLabButton} disabled={isPatientLoading} onClick={handleOrderTest}>
+          <button
+            type="button"
+            className={styles.orderLabButton}
+            disabled={isPatientLoading || !patient}
+            onClick={handleOrderTest}>
             <Microscope size={16} />
             {t('orderLabTest', 'Order lab test')}
           </button>
@@ -233,7 +261,7 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
                   <button
                     type="button"
                     className={styles.orderTestLink}
-                    disabled={isPatientLoading}
+                    disabled={isPatientLoading || !patient}
                     onClick={handleOrderTest}>
                     {t('orderTest', 'Order Test')}
                   </button>

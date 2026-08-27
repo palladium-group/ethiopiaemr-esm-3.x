@@ -82,6 +82,12 @@ export const configSchema = {
     _default: '${restBaseUrl}/cashier/billLineItem?orderUuid=${orderUuid}&v=full',
     _description: 'URL to query cashier bill line item payment status for a radiology order.',
   },
+  orderEncounterType: {
+    _type: Type.UUID,
+    _description:
+      'Encounter type used when signing lab orders from the renal function basket. Must match @openmrs/esm-patient-orders-app orderEncounterType.',
+    _default: '39da3525-afe4-45ff-8977-c53b7b359158',
+  },
 };
 
 export type RadiologyConfig = {
@@ -101,4 +107,5 @@ export type RadiologyConfig = {
   radiologyAppointmentLocationUuid: string;
   enforceBillPayment: boolean;
   billingStatusQueryUrl: string;
+  orderEncounterType: string;
 };
