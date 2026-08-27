@@ -1,1 +1,1 @@
-module.exports = require('openmrs/default-rspack-config');
+module.exports = require('../../tools/rspack.config.js');

@@ -28,7 +28,7 @@ jobs:
       - name: Setup Node.js & Yarn cache
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           cache: 'yarn'
 
       # Cache Turborepo’s local cache folder
@@ -84,7 +84,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           registry-url: "https://registry.npmjs.org"
           cache: 'yarn'
 
@@ -130,7 +130,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           registry-url: "https://registry.npmjs.org"
           cache: 'yarn'
 

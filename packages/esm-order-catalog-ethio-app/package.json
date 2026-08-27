@@ -32,10 +32,10 @@
   },
   "dependencies": {
     "@carbon/react": "^1.83.0",
-    "@openmrs/esm-patient-common-lib": "^12.0.2-pre.10146"
+    "@openmrs/esm-patient-common-lib": "12.2.1"
   },
   "peerDependencies": {
-    "@openmrs/esm-framework": "9.x",
+    "@openmrs/esm-framework": "10.x",
     "@openmrs/esm-patient-common-lib": "12.x",
     "dayjs": "1.x",
     "react": "18.x",
@@ -45,7 +45,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@openmrs/esm-patient-common-lib": "^12.0.2-pre.10146",
+    "@openmrs/esm-patient-common-lib": "12.2.1",
     "webpack": "^5.99.9"
   }
 }
