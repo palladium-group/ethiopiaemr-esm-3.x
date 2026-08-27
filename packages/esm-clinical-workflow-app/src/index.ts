@@ -167,6 +167,11 @@ export const queueTableActionsColumn = getAsyncLifecycle(
 
 export const assignQueueRoomModal = getSyncLifecycle(AssignQueueRoomModal, options);
 
+export const triageQueueAssignmentModal = getAsyncLifecycle(
+  () => import('./triage/triage-queue-assignment.modal'),
+  options,
+);
+
 export const callQueueEntryModal = getAsyncLifecycle(() => import('./queue-room/call-queue-entry.modal'), options);
 
 export const serviceQueuesDashboardShell = getAsyncLifecycle(

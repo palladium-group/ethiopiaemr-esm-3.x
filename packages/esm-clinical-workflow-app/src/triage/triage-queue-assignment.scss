@@ -1,0 +1,6 @@
+@use '@carbon/layout';
+
+.modalBody {
+  min-height: layout.$spacing-10;
+  padding-bottom: layout.$spacing-05;
+}

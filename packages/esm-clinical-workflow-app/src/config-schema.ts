@@ -152,6 +152,11 @@ export const configSchema = {
       'Visit attribute type UUID that stores the triage definition id on visits created from a triage page.',
     _default: 'c1f592f3-3c6e-44c9-ac2d-ddab90f705ba',
   },
+  assignedQueueVisitAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Visit attribute type UUID that stores the queue location assigned after triage.',
+    _default: 'b8d2e4f1-6c3a-4e9b-a1f7-5d0c8e2b9473',
+  },
   identifierSourceUuid: {
     _type: Type.String,
     _description: 'Identifier source UUID',
@@ -399,6 +404,7 @@ export type ClinicalWorkflowConfig = {
   finishedServiceQueueStatusUuid: string;
   visitQueueNumberAttributeTypeUuid: string;
   triageVisitAttributeTypeUuid: string;
+  assignedQueueVisitAttributeTypeUuid: string;
   billingVisitAttributeTypes: {
     paymentMethod: string;
     creditType: string;
