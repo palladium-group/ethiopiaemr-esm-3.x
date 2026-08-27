@@ -340,6 +340,10 @@
     {
       "name": "call-queue-entry-modal",
       "component": "callQueueEntryModal"
+    },
+    {
+      "name": "triage-queue-assignment-modal",
+      "component": "triageQueueAssignmentModal"
     }
   ]
 }
