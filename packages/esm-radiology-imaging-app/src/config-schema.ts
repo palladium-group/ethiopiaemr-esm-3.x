@@ -45,7 +45,7 @@ export const configSchema = {
   renalFunctionTestConceptUuid: {
     _type: Type.ConceptUuid,
     _description: 'The UUID of the Renal Function Test Concept.',
-    _default: '164068AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    _default: '161488AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
   radiologyOrdersRequiringRenalFunctionCheck: {
     _type: Type.Array,
