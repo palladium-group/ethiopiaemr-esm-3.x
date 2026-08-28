@@ -8,6 +8,12 @@ import { runReport, fetchFeederDatasetNames, downloadReportDesign, type ReportDa
 import ReportResults from './report-results.component';
 import styles from './report-runner.component.scss';
 
+// The conventional names for a report's date-range pair, matched case-insensitively
+// and tolerant of a separator (`start_date`, `begin-date`). A report whose bounds are
+// named otherwise simply goes unconstrained.
+const START_PARAM_PATTERN = /^(start|begin)[_-]?(date)?$/i;
+const END_PARAM_PATTERN = /^(end|stop)[_-]?(date)?$/i;
+
 const ReportRunner: React.FC = () => {
   const { t } = useTranslation();
   const { reportUuid } = useParams<{ reportUuid: string }>();
@@ -54,25 +60,21 @@ const ReportRunner: React.FC = () => {
   // Detected by name so any report using the conventional start/end date pair gets
   // the range constraint below; reports without one are unaffected.
   const startParam = useMemo(
-    () => params.find((p) => isDateParam(p.type) && /^start(date)?$/i.test(p.name))?.name,
+    () => params.find((p) => isDateParam(p.type) && START_PARAM_PATTERN.test(p.name))?.name,
     [params, isDateParam],
   );
   const endParam = useMemo(
-    () => params.find((p) => isDateParam(p.type) && /^end(date)?$/i.test(p.name))?.name,
+    () => params.find((p) => isDateParam(p.type) && END_PARAM_PATTERN.test(p.name))?.name,
     [params, isDateParam],
   );
 
-  /** Parses a yyyy-MM-dd value as local midnight, which `new Date(s)` would read as UTC. */
-  const parseIsoDate = useCallback((value: string | undefined): Date | null => {
-    if (!value) {
-      return null;
-    }
-    const [y, m, d] = value.split('-').map(Number);
-    return Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d) ? new Date(y, m - 1, d) : null;
-  }, []);
-
-  const startDateValue = startParam ? parseIsoDate(paramValues[startParam]) : null;
-  const endDateValue = endParam ? parseIsoDate(paramValues[endParam]) : null;
+  // Memoized on the raw string, not recomputed per render: OpenmrsDatePicker keys
+  // its own `minDate` memo off object identity, so a fresh Date each render would
+  // churn the constraint all the way down into the underlying calendar.
+  const startRaw = startParam ? paramValues[startParam] : undefined;
+  const endRaw = endParam ? paramValues[endParam] : undefined;
+  const startDateValue = useMemo(() => parseIsoDate(startRaw), [startRaw]);
+  const endDateValue = useMemo(() => parseIsoDate(endRaw), [endRaw]);
   const endBeforeStart = startDateValue !== null && endDateValue !== null && endDateValue < startDateValue;
 
   const handleRun = useCallback(async () => {
@@ -115,6 +117,15 @@ const ReportRunner: React.FC = () => {
         setStatus({ text: t('fillAllFields', 'Please fill in all required fields.'), kind: 'error' });
         return;
       }
+      // Same range guard as handleRun: a design render of an inverted range is just
+      // as empty as an on-screen one, and just as unexplained.
+      if (endBeforeStart) {
+        setStatus({
+          text: t('endDateBeforeStartDate', 'End date must be on or after the begin date.'),
+          kind: 'error',
+        });
+        return;
+      }
       downloadAbortRef.current?.abort();
       const controller = new AbortController();
       downloadAbortRef.current = controller;
@@ -132,7 +143,7 @@ const ReportRunner: React.FC = () => {
         setDownloadingUuid(null);
       }
     },
-    [reportUuid, allFilled, paramValues, t],
+    [reportUuid, allFilled, endBeforeStart, paramValues, t],
   );
 
   if (isLoading) {
@@ -174,11 +185,14 @@ const ReportRunner: React.FC = () => {
                 labelText={param.label}
                 className={styles.field}
                 value={paramValues[param.name] || null}
-                /* Only the end date is bounded. Capping the begin date at the current
+                /* Only the end date is bounded. Capping the start date at the current
                    end date would strand the user in the period they just ran, since
-                   advancing to a later one sets the begin date first. */
+                   advancing to a later one sets the start date first. */
                 minDate={param.name === endParam ? startDateValue ?? undefined : undefined}
-                invalid={param.name === endParam && endBeforeStart}
+                /* Left undefined rather than false when the range is fine: the picker
+                   resolves `invalid ?? isInvalid`, so an explicit false would suppress
+                   its own validity signal on every date field. */
+                invalid={param.name === endParam && endBeforeStart ? true : undefined}
                 invalidText={t('endDateBeforeStartDate', 'End date must be on or after the begin date.')}
                 onChange={(date) => setParam(param.name, date ? formatIsoDate(date) : '')}
               />
@@ -204,7 +218,7 @@ const ReportRunner: React.FC = () => {
             <Button
               key={design.uuid}
               kind="tertiary"
-              disabled={downloadingUuid !== null}
+              disabled={downloadingUuid !== null || endBeforeStart}
               onClick={() => handleDownload(design.uuid)}>
               {downloadingUuid === design.uuid ? (
                 <InlineLoading description={t('generatingDownload', 'Generating…')} />
@@ -230,6 +244,20 @@ const ReportRunner: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * Parses a yyyy-MM-dd value as local midnight, which `new Date(s)` would read as
+ * UTC. Rejects anything that isn't three numbers; a value that parses but doesn't
+ * exist (2025-02-30) still rolls over, which is harmless here since date params
+ * only ever come from the picker.
+ */
+function parseIsoDate(value: string | undefined): Date | null {
+  if (!value) {
+    return null;
+  }
+  const [y, m, d] = value.split('-').map(Number);
+  return Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d) ? new Date(y, m - 1, d) : null;
+}
 
 function formatIsoDate(date: Date): string {
   const y = date.getFullYear();
