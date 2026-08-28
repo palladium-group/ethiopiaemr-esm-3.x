@@ -15,19 +15,16 @@ import styles from './report-results.component.scss';
 
 interface ReportResultsProps {
   dataSets: Array<ReportDataSet>;
-  /**
-   * Names of datasets that exist only to feed a ReportDesign template (derived
-   * from each design's `repeatingSections`), and so should not be shown on
-   * screen. Authoritative signal — not a name heuristic.
-   */
+  /** Names of datasets that only feed a ReportDesign template, so are not displayed. */
   feederDatasets: Set<string>;
 }
 
 /**
- * Renders run-report results, one table per (visible) dataset. Columns are
- * rendered in the dataset's server-declared order (`ds.columns`, i.e. the SQL
- * SELECT order), so no per-report column-order config is needed. Template feeder
- * datasets (named in a ReportDesign's `repeatingSections`) are hidden.
+ * Renders report results as one table per visible dataset, in the server-declared
+ * column order. Feeder datasets are hidden.
+ *
+ * A blank-named dataset is treated as a banner: rendered without a heading and
+ * sized to its content rather than the full width.
  */
 const ReportResults: React.FC<ReportResultsProps> = ({ dataSets, feederDatasets }) => {
   const { t } = useTranslation();
@@ -37,21 +34,31 @@ const ReportResults: React.FC<ReportResultsProps> = ({ dataSets, feederDatasets 
     return <p className={styles.empty}>{t('noData', 'No data returned.')}</p>;
   }
 
+  // When a banner comes first, the following dataset's title is hoisted above it
+  // so both sit under one heading.
+  const leadsWithBanner = visible.length > 0 && visible[0].name.trim() === '';
+  const hoistedTitle = leadsWithBanner ? visible.find((ds) => ds.name.trim() !== '')?.name : undefined;
+
   return (
     <div className={styles.results}>
+      {hoistedTitle && <h4 className={styles.dsTitle}>{hoistedTitle}</h4>}
       {visible.map((ds, idx) => {
+        // Blank name => a banner dataset: no heading, and shrink-wrapped below.
+        const isBanner = ds.name.trim() === '';
+        // The hoisted title is already rendered above; don't repeat it.
+        const showTitle = !isBanner && ds.name !== hoistedTitle;
+
         if (ds.rows.length === 0) {
           return (
             <div key={`${ds.name}-${idx}`}>
-              <h4 className={styles.dsTitle}>{ds.name}</h4>
+              {showTitle && <h4 className={styles.dsTitle}>{ds.name}</h4>}
               <p className={styles.empty}>{t('noRows', 'No rows.')}</p>
             </div>
           );
         }
 
-        // Render in the server-declared SELECT order (`ds.columns`). Append any
-        // keys present in the data but not declared, so a column is never
-        // silently dropped; fall back to row keys entirely if metadata is absent.
+        // Undeclared keys are appended rather than dropped, and row keys are used
+        // outright when the dataset declares no columns.
         const rowKeys = Object.keys(ds.rows[0]);
         const columns =
           ds.columns.length > 0 ? [...ds.columns, ...rowKeys.filter((k) => !ds.columns.includes(k))] : rowKeys;
@@ -66,8 +73,8 @@ const ReportResults: React.FC<ReportResultsProps> = ({ dataSets, feederDatasets 
         });
 
         return (
-          <div key={`${ds.name}-${idx}`} className={styles.dataset}>
-            <h4 className={styles.dsTitle}>{ds.name}</h4>
+          <div key={`${ds.name}-${idx}`} className={`${styles.dataset} ${isBanner ? styles.banner : ''}`}>
+            {showTitle && <h4 className={styles.dsTitle}>{ds.name}</h4>}
             <DataTable
               rows={tableRows as Array<{ id: string } & Record<string, string>>}
               headers={headers}
@@ -77,18 +84,21 @@ const ReportResults: React.FC<ReportResultsProps> = ({ dataSets, feederDatasets 
                 <TableContainer>
                   <div className={styles.scroll}>
                     <Table {...getTableProps()}>
-                      <TableHead>
-                        <TableRow>
-                          {hdrs.map((header) => {
-                            const { key, ...rest } = getHeaderProps({ header });
-                            return (
-                              <TableHeader key={header.key} {...rest}>
-                                {header.header}
-                              </TableHeader>
-                            );
-                          })}
-                        </TableRow>
-                      </TableHead>
+                      {/* Banner rows label themselves, so no header row. */}
+                      {!isBanner && (
+                        <TableHead>
+                          <TableRow>
+                            {hdrs.map((header) => {
+                              const { key, ...rest } = getHeaderProps({ header });
+                              return (
+                                <TableHeader key={header.key} {...rest}>
+                                  {header.header}
+                                </TableHeader>
+                              );
+                            })}
+                          </TableRow>
+                        </TableHead>
+                      )}
                       <TableBody>
                         {rows.map((row) => (
                           <TableRow key={row.id}>

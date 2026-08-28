@@ -21,9 +21,8 @@ const ReportRunner: React.FC = () => {
   const [status, setStatus] = useState<{ text: string; kind: 'success' | 'error' } | null>(null);
   const downloadAbortRef = useRef<AbortController | null>(null);
 
-  // When the component is reused for a different report (route param change),
-  // clear the previous report's results/status so they don't linger over the new
-  // report, and abort any in-flight download poll on change or unmount.
+  // Clear the previous report's results when the route changes, and abort any
+  // in-flight download poll.
   useEffect(() => {
     setResults(null);
     setFeederDatasets(new Set());
@@ -44,9 +43,7 @@ const ReportRunner: React.FC = () => {
     setParamValues((prev) => ({ ...prev, [name]: value }));
   }, []);
 
-  // The backend reports a parameter's type as its fully-qualified Java class name
-  // (e.g. "java.util.Date"), while older/other sources may send a bare "date".
-  // Normalize so any Date-like type renders the Carbon date picker.
+  /** True for either form the backend may report: "java.util.Date" or a bare "date". */
   const isDateParam = useCallback((type: string | undefined | null) => {
     if (!type) {
       return false;
@@ -54,17 +51,47 @@ const ReportRunner: React.FC = () => {
     return type === 'date' || type.toLowerCase().endsWith('.date') || type.toLowerCase() === 'date';
   }, []);
 
+  // Detected by name so any report using the conventional start/end date pair gets
+  // the range constraint below; reports without one are unaffected.
+  const startParam = useMemo(
+    () => params.find((p) => isDateParam(p.type) && /^start(date)?$/i.test(p.name))?.name,
+    [params, isDateParam],
+  );
+  const endParam = useMemo(
+    () => params.find((p) => isDateParam(p.type) && /^end(date)?$/i.test(p.name))?.name,
+    [params, isDateParam],
+  );
+
+  /** Parses a yyyy-MM-dd value as local midnight, which `new Date(s)` would read as UTC. */
+  const parseIsoDate = useCallback((value: string | undefined): Date | null => {
+    if (!value) {
+      return null;
+    }
+    const [y, m, d] = value.split('-').map(Number);
+    return Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d) ? new Date(y, m - 1, d) : null;
+  }, []);
+
+  const startDateValue = startParam ? parseIsoDate(paramValues[startParam]) : null;
+  const endDateValue = endParam ? parseIsoDate(paramValues[endParam]) : null;
+  const endBeforeStart = startDateValue !== null && endDateValue !== null && endDateValue < startDateValue;
+
   const handleRun = useCallback(async () => {
     if (!reportUuid || !allFilled) {
       setStatus({ text: t('fillAllFields', 'Please fill in all required fields.'), kind: 'error' });
       return;
     }
+    // Backstop for the calendar's minDate, which a typed-in value bypasses.
+    if (endBeforeStart) {
+      setStatus({
+        text: t('endDateBeforeStartDate', 'End date must be on or after the begin date.'),
+        kind: 'error',
+      });
+      return;
+    }
     setRunning(true);
     setStatus({ text: t('running', 'Running report, please wait…'), kind: 'success' });
     try {
-      // Run the report and resolve its template-feeder datasets in parallel; the
-      // feeder list (from ReportDesign repeatingSections) decides which datasets
-      // are hidden from the on-screen tables.
+      // Run in parallel: the feeder list decides which datasets stay hidden.
       const [dataSets, feeders] = await Promise.all([
         runReport(reportUuid, paramValues),
         fetchFeederDatasetNames(reportUuid),
@@ -80,7 +107,7 @@ const ReportRunner: React.FC = () => {
     } finally {
       setRunning(false);
     }
-  }, [reportUuid, allFilled, paramValues, t]);
+  }, [reportUuid, allFilled, endBeforeStart, paramValues, t]);
 
   const handleDownload = useCallback(
     async (designUuid: string) => {
@@ -139,16 +166,20 @@ const ReportRunner: React.FC = () => {
         <div className={styles.fields}>
           {params.map((param) =>
             isDateParam(param.type) ? (
-              /* Same date picker the rest of the EMR uses (e.g. the registration date of
-                 birth field), so report dates follow whatever calendar the deployment is
-                 configured for. The picker hands back a plain JS Date, which we store as
-                 a Gregorian ISO string for the backend. */
+              /* The shared EMR picker, so dates follow the deployment's configured
+                 calendar. It returns a JS Date, stored here as a Gregorian ISO string. */
               <OpenmrsDatePicker
                 key={param.name}
                 id={`param-${param.name}`}
                 labelText={param.label}
                 className={styles.field}
                 value={paramValues[param.name] || null}
+                /* Only the end date is bounded. Capping the begin date at the current
+                   end date would strand the user in the period they just ran, since
+                   advancing to a later one sets the begin date first. */
+                minDate={param.name === endParam ? startDateValue ?? undefined : undefined}
+                invalid={param.name === endParam && endBeforeStart}
+                invalidText={t('endDateBeforeStartDate', 'End date must be on or after the begin date.')}
                 onChange={(date) => setParam(param.name, date ? formatIsoDate(date) : '')}
               />
             ) : (
@@ -166,7 +197,7 @@ const ReportRunner: React.FC = () => {
         </div>
 
         <div className={styles.actions}>
-          <Button kind="primary" disabled={running || !allFilled} onClick={handleRun}>
+          <Button kind="primary" disabled={running || !allFilled || endBeforeStart} onClick={handleRun}>
             {running ? <InlineLoading description={t('running', 'Running…')} /> : t('runReport', 'Run Report')}
           </Button>
           {reportDefinition.designs.map((design) => (
