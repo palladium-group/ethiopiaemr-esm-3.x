@@ -19,6 +19,33 @@
   width: 100%;
 }
 
+// Sizes a banner to its content. inline-block shrink-wraps the wrapper, which
+// would otherwise fill the row even once the table itself shrinks; !important is
+// needed to beat Carbon's own width rules.
+.banner {
+  display: inline-block;
+  max-width: 100%;
+
+  .scroll {
+    width: auto;
+  }
+
+  :global(.cds--data-table-container),
+  :global(.cds--data-table) {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  // Shrink both columns to their content; the trailing cell would otherwise
+  // absorb whatever width is left in the row.
+  :global(.cds--data-table td),
+  :global(.cds--data-table th) {
+    width: 1%;
+    white-space: nowrap;
+  }
+}
+
 .empty {
   @include type.type-style('body-compact-01');
   color: var(--cds-text-secondary, #525252);

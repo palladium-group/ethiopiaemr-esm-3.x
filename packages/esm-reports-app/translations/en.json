@@ -2,6 +2,7 @@
   "download": "Download",
   "downloadFailed": "Download failed.",
   "downloadReady": "Download ready.",
+  "endDateBeforeStartDate": "End date must be on or after the begin date.",
   "errorLoadingReport": "Could not load this report.",
   "errorLoadingReports": "Could not load the report list.",
   "ethiopiaEmrReports": "EthiopiaEMR Reports",
