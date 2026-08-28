@@ -25,6 +25,12 @@
   font-weight: 500;
 }
 
+.statusPending {
+  @include type.type-style('label-01');
+  color: colors.$blue-60;
+  font-weight: 500;
+}
+
 /* ---------- Empty state (no results) ---------- */
 
 .emptyStateBody {
@@ -42,11 +48,20 @@
   gap: layout.$spacing-03;
 }
 
+.emptyStateBoxInfo {
+  border-color: colors.$blue-40;
+  background-color: colors.$blue-10;
+}
+
 .emptyStateIcon {
   width: 2rem;
   height: 2rem;
   color: #93000a;
   flex-shrink: 0;
+}
+
+.emptyStateIconInfo {
+  color: colors.$blue-60;
 }
 
 .emptyStateTitle {
@@ -57,10 +72,18 @@
   margin: 0;
 }
 
+.emptyStateTitleInfo {
+  color: colors.$blue-70;
+}
+
 .emptyStateSubtitle {
   @include type.type-style('body-compact-01');
   color: #93000a;
   margin: 0;
+}
+
+.emptyStateSubtitleInfo {
+  color: colors.$blue-70;
 }
 
 .orderLabButton {

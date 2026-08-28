@@ -150,6 +150,16 @@
       "name": "radiology-report-workspace",
       "window": "radiology-imaging-workspace-window",
       "component": "preliminaryWorkspace"
+    },
+    {
+      "name": "imaging-renal-lab-order-basket",
+      "window": "radiology-renal-lab-order-window",
+      "component": "renalLabOrderBasketWorkspace"
+    },
+    {
+      "name": "imaging-renal-add-lab-order",
+      "window": "radiology-renal-lab-order-window",
+      "component": "@openmrs/esm-patient-tests-app#exportedAddLabOrderWorkspace"
     }
   ],
   "workspaceWindows2":[
@@ -158,11 +168,22 @@
       "group": "radiology-imaging-group",
       "canMaximize": true,
       "width":"wider"
+    },
+    {
+      "name": "radiology-renal-lab-order-window",
+      "group": "radiology-renal-lab-order-group",
+      "canMaximize": true
     }
   ],
   "workspaceGroups2":[
     {
       "name": "radiology-imaging-group",
+      "scopePattern": "radiology-imaging"
+    },
+    {
+      "name": "radiology-renal-lab-order-group",
+      "overlay": true,
+      "persistence": "closable",
       "scopePattern": "radiology-imaging"
     }
   ]

@@ -45,7 +45,13 @@ export const configSchema = {
   renalFunctionTestConceptUuid: {
     _type: Type.ConceptUuid,
     _description: 'The UUID of the Renal Function Test Concept.',
-    _default: '164068AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    _default: '161488AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
+  labOrderTypeUuid: {
+    _type: Type.UUID,
+    _description:
+      'OpenMRS lab/test order type UUID used to detect already-placed renal function lab orders. Must match @openmrs/esm-patient-tests-app orders.labOrderTypeUuid.',
+    _default: '52a447d3-a64a-11e3-9aeb-50e549534c5e',
   },
   radiologyOrdersRequiringRenalFunctionCheck: {
     _type: Type.Array,
@@ -82,6 +88,12 @@ export const configSchema = {
     _default: '${restBaseUrl}/cashier/billLineItem?orderUuid=${orderUuid}&v=full',
     _description: 'URL to query cashier bill line item payment status for a radiology order.',
   },
+  orderEncounterType: {
+    _type: Type.UUID,
+    _description:
+      'Encounter type used when signing lab orders from the renal function basket. Must match @openmrs/esm-patient-orders-app orderEncounterType.',
+    _default: '39da3525-afe4-45ff-8977-c53b7b359158',
+  },
 };
 
 export type RadiologyConfig = {
@@ -94,6 +106,7 @@ export type RadiologyConfig = {
   scheduledStationAETitle: string;
   worklistWriterBaseUrl: string;
   renalFunctionTestConceptUuid: string;
+  labOrderTypeUuid: string;
   radiologyOrdersRequiringRenalFunctionCheck: {
     procedureConceptUuid: string;
     labResultValidityPeriodInDays: number;
@@ -101,4 +114,5 @@ export type RadiologyConfig = {
   radiologyAppointmentLocationUuid: string;
   enforceBillPayment: boolean;
   billingStatusQueryUrl: string;
+  orderEncounterType: string;
 };
