@@ -21,7 +21,8 @@
 
 // Sizes a banner to its content. inline-block shrink-wraps the wrapper, which
 // would otherwise fill the row even once the table itself shrinks; !important is
-// needed to beat Carbon's own width rules.
+// needed to beat Carbon's own width rules. Two adjacent banners would share a line
+// where they fit — fine for the one-banner shape this is built for.
 .banner {
   display: inline-block;
   max-width: 100%;
