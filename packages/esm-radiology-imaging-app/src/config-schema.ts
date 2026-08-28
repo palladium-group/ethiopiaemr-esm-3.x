@@ -47,6 +47,12 @@ export const configSchema = {
     _description: 'The UUID of the Renal Function Test Concept.',
     _default: '161488AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
+  labOrderTypeUuid: {
+    _type: Type.UUID,
+    _description:
+      'OpenMRS lab/test order type UUID used to detect already-placed renal function lab orders. Must match @openmrs/esm-patient-tests-app orders.labOrderTypeUuid.',
+    _default: '52a447d3-a64a-11e3-9aeb-50e549534c5e',
+  },
   radiologyOrdersRequiringRenalFunctionCheck: {
     _type: Type.Array,
     _description:
@@ -100,6 +106,7 @@ export type RadiologyConfig = {
   scheduledStationAETitle: string;
   worklistWriterBaseUrl: string;
   renalFunctionTestConceptUuid: string;
+  labOrderTypeUuid: string;
   radiologyOrdersRequiringRenalFunctionCheck: {
     procedureConceptUuid: string;
     labResultValidityPeriodInDays: number;

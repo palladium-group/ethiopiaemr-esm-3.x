@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import { InlineNotification, SkeletonText } from '@carbon/react';
-import { Microscope, WarningFilled } from '@carbon/react/icons';
+import { Information, Microscope, WarningFilled } from '@carbon/react/icons';
 import {
   fetchCurrentPatient,
   formatDate,
@@ -14,6 +14,7 @@ import {
 import { type RadiologyConfig } from '../../../config-schema';
 import { type ImagingOrderBasketItem } from '../../../types';
 import { useLatestRenalFunctionPanel } from '../../../resources/hooks/useRenalLabResults';
+import { usePendingRenalLabOrder } from '../../../resources/hooks/usePendingRenalLabOrder';
 import { type RenalLabOrderBasketWindowProps } from './renal-lab-order-basket.workspace';
 import styles from './renal-warning.scss';
 
@@ -39,6 +40,7 @@ const RenalWarning: React.FC<RenalWarningProps> = ({ order, patient }) => {
         patientUuid={patient.id}
         testConceptUuid={renalFunctionTestConceptUuid}
         validityPeriodInDays={matchedConfig.labResultValidityPeriodInDays}
+        radiologyOrderDateActivated={null}
       />
     </div>
   );
@@ -49,9 +51,14 @@ export default RenalWarning;
 type RenalWarningForOrderProps = {
   conceptUuid: string;
   patientUuid: string;
+  radiologyOrderDateActivated?: string | null;
 };
 
-export const RenalWarningForOrder: React.FC<RenalWarningForOrderProps> = ({ conceptUuid, patientUuid }) => {
+export const RenalWarningForOrder: React.FC<RenalWarningForOrderProps> = ({
+  conceptUuid,
+  patientUuid,
+  radiologyOrderDateActivated,
+}) => {
   const { radiologyOrdersRequiringRenalFunctionCheck, renalFunctionTestConceptUuid } = useConfig<RadiologyConfig>();
 
   const matchedConfig = radiologyOrdersRequiringRenalFunctionCheck.find(
@@ -68,6 +75,7 @@ export const RenalWarningForOrder: React.FC<RenalWarningForOrderProps> = ({ conc
         patientUuid={patientUuid}
         testConceptUuid={renalFunctionTestConceptUuid}
         validityPeriodInDays={matchedConfig.labResultValidityPeriodInDays}
+        radiologyOrderDateActivated={radiologyOrderDateActivated}
       />
     </div>
   );
@@ -77,6 +85,7 @@ type RenalLabResultsProps = {
   patientUuid: string;
   testConceptUuid: string;
   validityPeriodInDays: number;
+  radiologyOrderDateActivated?: string | null;
 };
 
 type RenalResultStatus = 'valid' | 'high' | 'low' | 'critical' | 'expired' | 'warning';
@@ -108,7 +117,12 @@ function normalizeStatus(interpretationClass: string): RenalResultStatus {
   }
 }
 
-const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConceptUuid, validityPeriodInDays }) => {
+const RenalLabResults: React.FC<RenalLabResultsProps> = ({
+  patientUuid,
+  testConceptUuid,
+  validityPeriodInDays,
+  radiologyOrderDateActivated,
+}) => {
   const { t } = useTranslation();
   // Avoid usePatient here: on radiology routes it clears the patient UUID on every
   // single-spa navigation because getPatientUuidFromUrl() returns undefined.
@@ -123,10 +137,15 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
     testConceptUuid,
     validityPeriodInDays,
   );
+  const {
+    hasPendingOrder,
+    isLoading: isLoadingPendingOrder,
+    pendingOrder,
+  } = usePendingRenalLabOrder(patientUuid, testConceptUuid, radiologyOrderDateActivated);
 
   const sectionTitle = <p className={styles.sectionTitle}>{t('renalFunctionResults', 'Renal function results')}</p>;
 
-  if (isLoading) {
+  if (isLoading || isLoadingPendingOrder) {
     return (
       <>
         {sectionTitle}
@@ -172,16 +191,51 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
       'imaging-renal-lab-order-basket',
       {},
       { patient, patientUuid, visitContext: activeVisit, mutateVisitContext },
-    ).catch((error: Error) => {
+    ).catch((launchError: Error) => {
       showSnackbar({
         title: t('errorPlacingOrder', 'Could not place the order'),
-        subtitle: error?.message ?? t('tryPlacingTheOrderAgain', 'Please try placing the order again.'),
+        subtitle: launchError?.message ?? t('tryPlacingTheOrderAgain', 'Please try placing the order again.'),
         kind: 'error',
       });
     });
   }
 
   if (!interpretedResults.length) {
+    if (hasPendingOrder) {
+      const orderedOn = pendingOrder?.dateActivated
+        ? formatDate(new Date(pendingOrder.dateActivated), { noToday: true })
+        : null;
+
+      return (
+        <div className={styles.panelCard}>
+          <div className={styles.panelHeader}>
+            <p className={styles.panelTitle}>{t('renalFunctionPanel', 'Renal function panel')}</p>
+            <p className={styles.statusPending}>{t('statusPendingResults', 'Status: Pending results')}</p>
+          </div>
+          <div className={styles.emptyStateBody}>
+            <div className={`${styles.emptyStateBox} ${styles.emptyStateBoxInfo}`} role="status">
+              <Information size={32} className={`${styles.emptyStateIcon} ${styles.emptyStateIconInfo}`} />
+              <p className={`${styles.emptyStateTitle} ${styles.emptyStateTitleInfo}`}>
+                {t('renalResultsPendingTitle', 'Renal function test ordered')}
+              </p>
+              <p className={`${styles.emptyStateSubtitle} ${styles.emptyStateSubtitleInfo}`}>
+                {orderedOn
+                  ? t(
+                      'renalResultsPendingSubtitleWithDate',
+                      'A renal function panel was ordered on {{date}}. Results are not available yet.',
+                      { date: orderedOn },
+                    )
+                  : t(
+                      'renalResultsPendingSubtitle',
+                      'A renal function panel has already been ordered. Results are not available yet.',
+                    )}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const lastDoneText = lastResultDate
       ? t('renalResultsLastDone', 'Last result: {{date}} (valid for {{validityDuration}} day(s)).', {
           date: formatDate(new Date(lastResultDate), { noToday: true }),
@@ -257,7 +311,7 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
                     <span className={styles.statusLabel}>{view.interpretation}</span>
                   </span>
                 </div>
-                {status === 'expired' && (
+                {status === 'expired' && !hasPendingOrder && (
                   <button
                     type="button"
                     className={styles.orderTestLink}
