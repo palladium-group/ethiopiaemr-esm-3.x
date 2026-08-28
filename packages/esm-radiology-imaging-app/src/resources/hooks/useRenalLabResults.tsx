@@ -186,6 +186,17 @@ function useRenalPanelSetMembers(panelConceptUuid: string) {
   };
 }
 
+/**
+ * Observations per set member. Enough to cover a member being drawn more than once on the
+ * latest day without letting a frequently-measured analyte crowd the others out.
+ */
+const OBSERVATIONS_PER_MEMBER = 5;
+
+async function fetchObservationsPerMember(urls: Array<string>): Promise<Array<FhirObservation>> {
+  const bundles = await Promise.all(urls.map((url) => openmrsFetch<FhirBundle>(url)));
+  return bundles.flatMap(({ data }) => (data?.entry ?? []).map((entry) => entry.resource));
+}
+
 export function useLatestRenalFunctionPanel(
   patientUuid: string,
   panelConceptUuid: string,
@@ -195,7 +206,6 @@ export function useLatestRenalFunctionPanel(
   const { setMembers, error: conceptError, isLoading: isLoadingConcepts } = useRenalPanelSetMembers(panelConceptUuid);
 
   const memberUuids = useMemo(() => new Set(setMembers.map((member) => member.uuid)), [setMembers]);
-  const memberCodeParam = setMembers.map((member) => member.uuid).join(',');
 
   const since = useMemo(() => {
     const date = new Date();
@@ -204,41 +214,43 @@ export function useLatestRenalFunctionPanel(
     return date;
   }, [validityPeriodInDays]);
 
-  // Fetch enough observations to cover one full panel draw (and history for lastResultDate).
+  // One date-bounded request per set member. A single combined query would be truncated by
+  // _count, so an analyte measured more often than the rest can hide the other members.
   // Results are stored under set-member concepts, not the panel concept itself.
-  const observationsUrl =
-    patientUuid && memberCodeParam
-      ? `${fhirBaseUrl}/Observation` +
+  const observationUrls = useMemo(() => {
+    if (!patientUuid || !setMembers.length) {
+      return null;
+    }
+
+    const sinceParam = toDateKey(since.toISOString());
+
+    return setMembers.map(
+      (member) =>
+        `${fhirBaseUrl}/Observation` +
         `?patient=${patientUuid}` +
-        `&code=${memberCodeParam}` +
+        `&code=${member.uuid}` +
+        `&date=ge${sinceParam}` +
         `&_sort=-date` +
-        `&_count=${Math.max(setMembers.length * 5, 20)}`
-      : null;
+        `&_count=${OBSERVATIONS_PER_MEMBER}`,
+    );
+  }, [patientUuid, setMembers, since]);
 
   const {
-    data,
+    data: allObservations,
     error: observationsError,
     isLoading: isLoadingObservations,
-  } = useSWR<{ data: FhirBundle }>(observationsUrl, openmrsFetch);
-
-  const allObservations = useMemo(() => (data?.data?.entry ?? []).map((entry) => entry.resource), [data]);
+  } = useSWR(observationUrls, fetchObservationsPerMember);
 
   const members = useMemo(
-    () => selectLatestPanelDraw(allObservations, memberUuids, since),
+    () => selectLatestPanelDraw(allObservations ?? [], memberUuids, since),
     [allObservations, memberUuids, since],
   );
 
   const interpretedResults = useMemo(() => mapMembersToRenalResults(members, t), [members, t]);
 
-  const lastResultDate = useMemo(() => {
-    const memberObservations = allObservations.filter((obs) => {
-      const conceptUuid = getObservationConceptUuid(obs);
-      return Boolean(conceptUuid && memberUuids.has(conceptUuid));
-    });
-    return getLatestObservationDate(memberObservations);
-  }, [allObservations, memberUuids]);
+  const resultDate = useMemo(() => getLatestObservationDate(members), [members]);
 
-  const isLoading = isLoadingConcepts || Boolean(observationsUrl && isLoadingObservations);
+  const isLoading = isLoadingConcepts || Boolean(observationUrls && isLoadingObservations);
   const error = conceptError ?? observationsError;
   const hasValidResult = members.length > 0;
 
@@ -249,6 +261,6 @@ export function useLatestRenalFunctionPanel(
     isLoading,
     error,
     interpretedResults,
-    lastResultDate,
+    resultDate,
   };
 }

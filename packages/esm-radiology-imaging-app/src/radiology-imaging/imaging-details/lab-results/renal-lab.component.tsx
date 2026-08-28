@@ -132,7 +132,7 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({
     error: patientError,
   } = useSWR(patientUuid ? ['patient', patientUuid] : null, () => fetchCurrentPatient(patientUuid));
   const { activeVisit, mutate: mutateVisitContext } = useVisit(patientUuid);
-  const { interpretedResults, isLoading, error, lastResultDate } = useLatestRenalFunctionPanel(
+  const { interpretedResults, isLoading, error, resultDate } = useLatestRenalFunctionPanel(
     patientUuid,
     testConceptUuid,
     validityPeriodInDays,
@@ -236,12 +236,11 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({
       );
     }
 
-    const lastDoneText = lastResultDate
-      ? t('renalResultsLastDone', 'Last result: {{date}} (valid for {{validityDuration}} day(s)).', {
-          date: formatDate(new Date(lastResultDate), { noToday: true }),
-          validityDuration: validityPeriodInDays,
-        })
-      : t('renalResultsNoneOnFile', 'No previous result on file.');
+    const validityText = t(
+      'renalResultsNoneWithinValidity',
+      'No result on file from the last {{validityDuration}} day(s).',
+      { validityDuration: validityPeriodInDays },
+    );
 
     return (
       <div className={styles.panelCard}>
@@ -263,7 +262,7 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({
             </svg>
             <p className={styles.emptyStateTitle}>{t('renalResultsRequiredTitle', 'Renal function test required')}</p>
             <p className={styles.emptyStateSubtitle}>
-              {t('renalResultsRequiredSubtitle', 'A recent RFT is required before ordering this test.')} {lastDoneText}
+              {t('renalResultsRequiredSubtitle', 'A recent RFT is required before ordering this test.')} {validityText}
             </p>
           </div>
         </div>
@@ -285,10 +284,10 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({
     <div className={styles.panelCard}>
       <div className={styles.panelHeader}>
         <p className={styles.panelTitle}>{t('renalFunctionPanel', 'Renal function panel')}</p>
-        {lastResultDate && (
+        {resultDate && (
           <p className={styles.lastUpdated}>
             {t('updated', 'Updated: {{date}}', {
-              date: formatDate(new Date(lastResultDate), { noToday: true, time: false }),
+              date: formatDate(new Date(resultDate), { noToday: true, time: false }),
             })}
           </p>
         )}
