@@ -81,6 +81,14 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
     });
   };
 
+  const handleEthSwitchPayment = () => {
+    const dispose = showModal('ethswitch-payment-modal', {
+      closeModal: () => dispose(),
+      bill: bill,
+      selectedLineItems,
+    });
+  };
+
   const mutateClaimForm = async () => {
     const activeVisitUrlSuffix = `?patient=${patientUuid}&v=${defaultVisitCustomRepresentation}&includeInactive=false`;
     const retrospectiveVisitUuid = patientUuid && visitStorePatientUuid == patientUuid ? manuallySetVisitUuid : null;
@@ -238,18 +246,32 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
       )}
 
       {bill?.balance !== 0 && billableLineItems.length > 0 && (
-        <Button
-          onClick={handleBillPayment}
-          disabled={
-            bill?.balance === 0 ||
-            selectedLineItems?.filter((item) => item.paymentStatus === PaymentStatus.PENDING).length === 0
-          }
-          size="sm"
-          renderIcon={Wallet}
-          iconDescription="Add"
-          tooltipPosition="left">
-          {t('telebirrPayment', 'Telebirr Payment')}
-        </Button>
+        <>
+          <Button
+            onClick={handleBillPayment}
+            disabled={
+              bill?.balance === 0 ||
+              selectedLineItems?.filter((item) => item.paymentStatus === PaymentStatus.PENDING).length === 0
+            }
+            size="sm"
+            renderIcon={Wallet}
+            iconDescription="Add"
+            tooltipPosition="left">
+            {t('telebirrPayment', 'Telebirr Payment')}
+          </Button>
+          <Button
+            onClick={handleEthSwitchPayment}
+            disabled={
+              bill?.balance === 0 ||
+              selectedLineItems?.filter((item) => item.paymentStatus === PaymentStatus.PENDING).length === 0
+            }
+            size="sm"
+            renderIcon={Wallet}
+            iconDescription="Add"
+            tooltipPosition="left">
+            {t('ethSwitchPayment', 'EthSwitch Payment')}
+          </Button>
+        </>
       )}
 
       {isProcessClaimsFormEnabled && isInsurancePayment(bill?.payments) && (

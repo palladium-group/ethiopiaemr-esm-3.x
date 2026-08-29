@@ -111,6 +111,10 @@
       "component": "initiatePaymentDialog"
     },
     {
+      "name": "ethswitch-payment-modal",
+      "component": "ethSwitchPaymentDialog"
+    },
+    {
       "name": "delete-billableservice-modal",
       "component": "deleteBillableServiceModal"
     },
