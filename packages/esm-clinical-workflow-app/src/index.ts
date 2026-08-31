@@ -23,6 +23,7 @@ import patientTransferActionButtonExtension from './patient-transfer/patient-tra
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
 import admitPatientActionButtonComponent from './patient-chart/admit-patient-action-button.component';
+import admissionDischargeActionButtonComponent from './patient-chart/admission-discharge-action-button.component';
 import confirmDischargeActionButtonComponent from './patient-chart/confirm-discharge-action-button.component';
 import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
@@ -211,6 +212,11 @@ export const admitPatientActionButton = getSyncLifecycle(admitPatientActionButto
 
 export const confirmDischargeActionButton = getSyncLifecycle(confirmDischargeActionButtonComponent, {
   featureName: 'patient-action-confirm-discharge',
+  moduleName,
+});
+
+export const admissionDischargeActionButton = getSyncLifecycle(admissionDischargeActionButtonComponent, {
+  featureName: 'patient-action-admission-discharge',
   moduleName,
 });
 
