@@ -105,6 +105,11 @@ export const radiologyAppointmentWorkspace = getAsyncLifecycle(
   options,
 );
 
+export const renalLabOrderBasketWorkspace = getAsyncLifecycle(
+  () => import('./radiology-imaging/imaging-details/lab-results/renal-lab-order-basket.workspace'),
+  options,
+);
+
 export const rejectPreliminaryReportModal = getAsyncLifecycle(
   () => import('./radiology-imaging/reports/reject-report-modal.component'),
   options,
