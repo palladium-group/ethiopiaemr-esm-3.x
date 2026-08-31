@@ -350,6 +350,21 @@ export const configSchema = {
     _description: 'UUID of the Inpatient Order Sheet form',
     _default: '038fea05-4091-4a08-a24c-5fc7e4d11b82',
   },
+  inPatientVisitTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Visit type UUID for inpatient visits; used to enable discharge actions',
+    _default: 'a73e2ac6-263b-47fc-99fc-e0f2c09fc914',
+  },
+  inpatientDischargeFormUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the Admission Discharge (IPD Discharge) form opened from the patient chart',
+    _default: 'ea36f403-c2d3-42e7-93d1-af5cf59d6f22',
+  },
+  inpatientDischargeFormName: {
+    _type: Type.String,
+    _description: 'Display name for the Admission Discharge form workspace title',
+    _default: 'Admission Discharge',
+  },
   ipdDischargeEncounterTypeUuid: {
     _type: Type.UUID,
     _description: 'IPD Discharge encounter type UUID (doctor clinical discharge form)',
@@ -447,6 +462,9 @@ export type ClinicalWorkflowConfig = {
   transferDestinationLocationConceptUuid: string;
   recentDiagnosesCount: number;
   inpatientOrderSheetFormUuid: string;
+  inPatientVisitTypeUuid: string;
+  inpatientDischargeFormUuid: string;
+  inpatientDischargeFormName: string;
   ipdDischargeEncounterTypeUuid: string;
   nurseDischargeConfirmationEncounterTypeUuid: string;
   nurseDischargeConfirmationConceptUuid: string;
