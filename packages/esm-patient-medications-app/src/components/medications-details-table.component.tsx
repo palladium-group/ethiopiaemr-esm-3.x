@@ -49,6 +49,8 @@ import {
   useLayoutType,
   usePagination,
   UserIcon,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { buildMedicationOrder } from '../api';
 import { type AddDrugOrderWorkspaceProps } from '../add-drug-order/add-drug-order.workspace';
@@ -58,6 +60,7 @@ import { type ReturnedPrescriptionBasketItem } from '../types';
 import { type DtpReturnReason, useDtpReturnObs } from '../utils/dtp-return-obs';
 import { useFailedPrescriptionSync } from '../utils/failed-prescription-sync';
 import styles from './medications-details-table.scss';
+import { PatientMedicationsPermissions } from '../permissions.constants';
 
 export interface MedicationsDetailsTableProps {
   isValidating?: boolean;
@@ -294,6 +297,11 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
   const contentToPrintRef = useRef(null);
   const { excludePatientIdentifierCodeTypes } = useConfig<StyleguideConfigObject>();
   const [isPrinting, setIsPrinting] = useState(false);
+  const session = useSession();
+  const canManageMedications = userHasAccess(
+    PatientMedicationsPermissions.ManagePatientMedications,
+    session?.user ?? { privileges: [], roles: [] },
+  );
 
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(patient, 'medications');
   const { results, goTo, currentPage } = usePagination(medications, pageSize);
@@ -608,7 +616,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
               {t('print', 'Print')}
             </Button>
           )}
-          {showAddButton ?? true ? (
+          {showAddButton && canManageMedications ? (
             <Button
               kind="ghost"
               renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
@@ -699,6 +707,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                                 </div>
                                 {!isPrinting &&
                                   encounterUuid &&
+                                  canManageMedications &&
                                   ((isReturnedGroup && showResendPrescriptionButton) ||
                                     (!isReturnedGroup && showRenewButton)) && (
                                     <Button
@@ -745,7 +754,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                           </TableCell>
                         ))}
 
-                        {!isPrinting && (
+                        {!isPrinting && canManageMedications && (
                           <TableCell className="cds--table-column-menu">
                             <OrderBasketItemActions
                               patient={patient}
