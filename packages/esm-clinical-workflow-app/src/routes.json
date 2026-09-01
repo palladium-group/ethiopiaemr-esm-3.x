@@ -333,6 +333,10 @@
       "component": "confirmDischargeDialog"
     },
     {
+      "name": "generate-bed-fee-bill-dialog",
+      "component": "generateBedFeeBillDialog"
+    },
+    {
       "name": "confirm-transfer-dialog",
       "component": "confirmTransferDialog"
     },

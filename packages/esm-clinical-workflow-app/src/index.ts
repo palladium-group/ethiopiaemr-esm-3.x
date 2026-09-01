@@ -225,6 +225,11 @@ export const confirmDischargeDialog = getAsyncLifecycle(
   options,
 );
 
+export const generateBedFeeBillDialog = getAsyncLifecycle(
+  () => import('./ward/bed-fee/generate-bed-fee-bill.modal'),
+  options,
+);
+
 export const finishServiceButton = getSyncLifecycle(FinishServiceButton, {
   featureName: 'finish-service-button',
   moduleName,

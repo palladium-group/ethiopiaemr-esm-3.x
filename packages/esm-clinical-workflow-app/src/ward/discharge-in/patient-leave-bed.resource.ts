@@ -101,16 +101,18 @@ export enum PaymentStatus {
   PENDING = 'PENDING',
 }
 
+type BillLineItem = {
+  uuid: string;
+  paymentStatus: string;
+  itemOrServiceConceptUuid: string;
+  quantity: number;
+  dateCreated?: string;
+};
+
 type Bill = OpenmrsResource & {
   voided: boolean;
   patient: OpenmrsResource;
-  lineItems: Array<{
-    uuid: string;
-    paymentStatus: string;
-    itemOrServiceConceptUuid: string;
-    quantity: number;
-    dateCreated?: string;
-  }>;
+  lineItems: Array<BillLineItem>;
 };
 
 export const usePatientBills = (patientUuid: string, startingDate?: Date | null, endDate?: Date | null) => {
@@ -123,7 +125,7 @@ export const usePatientBills = (patientUuid: string, startingDate?: Date | null,
   });
 
   const url = patientUuid ? `${restBaseUrl}/cashier/bill?v=${rep}&patientUuid=${patientUuid}` : null;
-  const { data, isLoading, error } = useSWR<FetchResponse<{ results: Array<Bill> }>>(url, openmrsFetch);
+  const { data, isLoading, error, mutate } = useSWR<FetchResponse<{ results: Array<Bill> }>>(url, openmrsFetch);
 
   const bills = useMemo(
     () => (data?.data?.results ?? []).filter((bill) => !bill.voided && bill.patient?.uuid === patientUuid),
@@ -135,35 +137,42 @@ export const usePatientBills = (patientUuid: string, startingDate?: Date | null,
     [bills],
   );
 
+  /** Number of bed fee days already billed within this ward stay. */
+  const bedFeeDaysBilled = useMemo(() => {
+    const bedFeeLineItems = bills.reduce<Array<BillLineItem>>((prev, curr) => {
+      const matching = (curr.lineItems ?? []).filter(
+        (item) => item.itemOrServiceConceptUuid === dailyBedFeeBillableService,
+      );
+      prev.push(...matching);
+      return prev;
+    }, []);
+
+    // Bed fees are often raised after the discharge date, so the window extends to now to keep
+    // those line items in scope while still excluding fees from an earlier admission.
+    const scopeEnd = endDate ? Math.max(endDate.getTime(), Date.now()) : null;
+
+    const scopedItems =
+      startingDate && scopeEnd
+        ? bedFeeLineItems.filter((item) => {
+            if (!item.dateCreated) {
+              return true;
+            }
+            const created = new Date(item.dateCreated).getTime();
+            return created >= startingDate.getTime() && created <= scopeEnd;
+          })
+        : bedFeeLineItems;
+
+    return scopedItems.reduce((prev, curr) => prev + (curr.quantity ?? 0), 0);
+  }, [bills, dailyBedFeeBillableService, endDate, startingDate]);
+
   const dailyBedFeeSettled = useCallback(
     (daysInWard?: number) => {
       if (!daysInWard || daysInWard <= 0) {
         return true;
       }
-
-      const allBedFeeLineItems = bills.reduce<Bill['lineItems']>((prev, curr) => {
-        const matching = (curr.lineItems ?? []).filter(
-          (item) => item.itemOrServiceConceptUuid === dailyBedFeeBillableService,
-        );
-        prev.push(...matching);
-        return prev;
-      }, []);
-
-      const scopedItems =
-        startingDate && endDate
-          ? allBedFeeLineItems.filter((item) => {
-              if (!item.dateCreated) {
-                return true;
-              }
-              const created = new Date(item.dateCreated).getTime();
-              return created >= startingDate.getTime() && created <= endDate.getTime();
-            })
-          : allBedFeeLineItems;
-
-      const totalQuantity = scopedItems.reduce((prev, curr) => prev + (curr.quantity ?? 0), 0);
-      return totalQuantity >= daysInWard;
+      return bedFeeDaysBilled >= daysInWard;
     },
-    [bills, dailyBedFeeBillableService, endDate, startingDate],
+    [bedFeeDaysBilled],
   );
 
   return {
@@ -171,6 +180,8 @@ export const usePatientBills = (patientUuid: string, startingDate?: Date | null,
     isLoading,
     bills,
     pendingBills,
+    bedFeeDaysBilled,
     dailyBedFeeSettled,
+    mutate,
   };
 };
