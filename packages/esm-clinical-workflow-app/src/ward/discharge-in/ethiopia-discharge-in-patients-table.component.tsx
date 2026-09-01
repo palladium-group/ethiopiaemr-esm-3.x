@@ -23,7 +23,9 @@ import { EmptyState } from '../admitted-patients/empty-state.component';
 import { HyperLinkPatientCell } from '../admitted-patients/patient-cells';
 import type { WardPatient, WardViewContext } from '../admitted-patients/ward.types';
 import { useEmrConfiguration } from '../bed-swap/useEmrConfiguration';
+import { useWardLocation } from '../bed-swap/useWardLocation';
 import {
+  GenerateBedFeeBillAction,
   NurseDischargeConfirmationStatus,
   PatientBillStatus,
   UnAssignPatientBedAction,
@@ -37,6 +39,7 @@ const EthiopiaDischargeInPatientsTable = () => {
   const { bedLayouts, wardAdmittedPatientsWithBed, isLoading } = wardPatientGroupDetails ?? {};
   const { emrConfiguration, isLoadingEmrConfiguration } = useEmrConfiguration();
   const { handleLeaveBed } = usePatientLeaveBed();
+  const { location: wardLocation } = useWardLocation();
   const config = useConfig<ClinicalWorkflowConfig>();
 
   const headers = [
@@ -133,6 +136,13 @@ const EthiopiaDischargeInPatientsTable = () => {
         action: (
           <OverflowMenu size="sm" flipped>
             <OverflowMenuItem itemText={t('goToBilling', 'Go to Billing')} onClick={() => {}} />
+            <GenerateBedFeeBillAction
+              patientUuid={patient.patient.uuid}
+              encounterDatetime={encounterAssigningToCurrentInpatientLocation?.encounterDatetime}
+              visit={visit}
+              patientName={patient.patient?.person?.display}
+              bedTypeName={patient.bed?.bedType?.displayName ?? patient.bed?.bedType?.name}
+            />
             <UnAssignPatientBedAction
               patientUuid={patient.patient.uuid}
               encounterDatetime={encounterAssigningToCurrentInpatientLocation?.encounterDatetime}
@@ -142,14 +152,19 @@ const EthiopiaDischargeInPatientsTable = () => {
                 if (!patient.visit || !emrConfiguration?.exitFromInpatientEncounterType) {
                   return;
                 }
-                await handleLeaveBed(patient, emrConfiguration as unknown as Record<string, unknown>, patient.visit);
+                await handleLeaveBed(
+                  patient,
+                  emrConfiguration as unknown as Record<string, unknown>,
+                  patient.visit,
+                  wardLocation,
+                );
               }}
             />
           </OverflowMenu>
         ),
       };
     });
-  }, [emrConfiguration, handleLeaveBed, isLoading, isLoadingEmrConfiguration, results, t]);
+  }, [emrConfiguration, handleLeaveBed, isLoading, isLoadingEmrConfiguration, results, t, wardLocation]);
 
   if (!patients.length) {
     return <EmptyState message={t('noDischargeInpatients', 'No Discharge in patients')} />;

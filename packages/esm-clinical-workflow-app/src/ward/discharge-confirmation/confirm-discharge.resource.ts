@@ -51,7 +51,8 @@ export function createNurseDischargeConfirmationEncounter(params: {
 }
 
 const visitEncountersRep =
-  'custom:(uuid,encounters:(uuid,encounterType:(uuid),encounterDatetime,obs:(uuid,concept:(uuid),value:(uuid))))';
+  'custom:(uuid,attributes:(uuid,attributeType:(uuid),value),' +
+  'encounters:(uuid,encounterType:(uuid),encounterDatetime,obs:(uuid,concept:(uuid),value:(uuid))))';
 
 export function useVisitWithEncounters(visitUuid: string | null | undefined) {
   const url = visitUuid ? `${restBaseUrl}/visit/${visitUuid}?v=${visitEncountersRep}` : null;
