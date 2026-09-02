@@ -26,6 +26,12 @@ export const configSchema = {
     _description:
       'Automatically show the capacity overlay beside the community appointment booking form when the form opens, and keep it in sync as fields change.',
   },
+  defaultAllDayToggleOff: {
+    _type: Type.Boolean,
+    _default: true,
+    _description:
+      'Switch the booking form "All day" toggle off when the form opens. The community form otherwise defaults it to on wherever all-day appointments are allowed.',
+  },
 };
 
 export interface ConfigObject {
@@ -33,4 +39,5 @@ export interface ConfigObject {
   warnThresholdPercent: number;
   countStatuses: Array<string>;
   autoOpenOnBookingForm: boolean;
+  defaultAllDayToggleOff: boolean;
 }
