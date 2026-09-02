@@ -97,6 +97,7 @@ export function registerAppointmentQuotaFormSync() {
     warnThresholdPercent: 80,
     countStatuses: [],
     autoOpenOnBookingForm: true,
+    defaultAllDayToggleOff: true,
   };
   let lastUpdateKey = '';
   let syncInFlight = false;

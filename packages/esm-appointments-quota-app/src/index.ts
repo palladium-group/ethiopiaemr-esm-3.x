@@ -2,6 +2,7 @@ import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import { moduleName } from './constants';
 import { registerAppointmentQuotaFormSync } from './quota/register-quota-form-sync';
+import { registerBookingFormAllDayDefault } from './booking-form/register-all-day-default';
 import { mountQuotaOverlay } from './overlay/mount-quota-overlay';
 
 import CheckAvailabilityButtonExtension from './extensions/check-availability-button.extension';
@@ -23,6 +24,7 @@ defineConfigSchema(moduleName, configSchema);
 
 export function startupApp() {
   registerAppointmentQuotaFormSync();
+  registerBookingFormAllDayDefault();
   mountQuotaOverlay();
 }
 
