@@ -17,5 +17,9 @@
   "running": "Running…",
   "runReport": "Run Report",
   "selectAReport": "Select a report",
-  "selectAReportToBegin": "Select a report from the menu on the left to get started."
+  "selectAReportToBegin": "Select a report from the menu on the left to get started.",
+  "selectAtLeastOneMonth": "Please select at least one month.",
+  "selectFiscalYear": "Select a fiscal year",
+  "selectFiscalYearFirst": "Select a fiscal year first",
+  "selectMonths": "Select one or more months"
 }
