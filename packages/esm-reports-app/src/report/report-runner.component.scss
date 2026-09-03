@@ -24,12 +24,27 @@
 .fields {
   display: flex;
   flex-wrap: wrap;
-  gap: layout.$spacing-05;
+  /* Fields size to their content rather than sharing the row, so a two-field
+     filter doesn't stretch each half across the page. */
+  align-items: flex-start;
+  justify-content: flex-start;
+  /* Column gap is the wider step: side-by-side fields need more separation than
+     stacked ones, which only need to clear each other's labels. */
+  column-gap: layout.$spacing-09;
+  row-gap: layout.$spacing-05;
   margin-bottom: layout.$spacing-05;
 }
 
+/* flex-grow 0: without it a flex child fills the remaining row width. */
 .field {
-  min-width: 12rem;
+  flex: 0 0 auto;
+  width: 14rem;
+}
+
+/* Wider than a plain field: month labels are long and several sit side by side. */
+.monthField {
+  flex: 0 0 auto;
+  width: 22rem;
 }
 
 .actions {
