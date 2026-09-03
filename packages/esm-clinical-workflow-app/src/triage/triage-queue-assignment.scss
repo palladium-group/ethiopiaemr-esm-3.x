@@ -1,6 +1,157 @@
+@use '@carbon/styles/scss/spacing';
+@use '@carbon/type';
 @use '@carbon/layout';
+@use '@carbon/colors';
+
+:global(.cds--modal-container) {
+  overflow: visible !important;
+}
+
+:global(.cds--modal-content) {
+  overflow: visible !important;
+}
 
 .modalBody {
-  min-height: layout.$spacing-10;
-  padding-bottom: layout.$spacing-05;
+  overflow: visible !important;
+  min-height: 16rem;
+  padding-bottom: spacing.$spacing-07;
+}
+
+.locationFormGroup {
+  overflow: visible;
+  position: relative;
+}
+
+.customDropdownContainer {
+  position: relative;
+  width: 100%;
+}
+
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 2.5rem;
+  padding: 0 spacing.$spacing-04;
+  background-color: colors.$gray-10;
+  border: 1px solid transparent;
+  border-bottom: 1px solid colors.$gray-50;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 150ms ease, border-color 150ms ease;
+
+  &:hover {
+    background-color: colors.$gray-20;
+  }
+
+  &:focus-visible,
+  &.dropdownTriggerOpen {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: -2px;
+    background-color: colors.$gray-20;
+  }
+}
+
+.dropdownPlaceholder {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-60;
+}
+
+.dropdownSelectedText {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownTriggerRight {
+  display: flex;
+  align-items: center;
+  gap: spacing.$spacing-03;
+  margin-left: spacing.$spacing-03;
+  flex-shrink: 0;
+}
+
+.dropdownChevron {
+  color: colors.$gray-70;
+  transition: transform 150ms ease;
+  flex-shrink: 0;
+}
+
+.dropdownChevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background-color: colors.$white-0;
+  border: 1px solid colors.$gray-30;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+  margin-top: 1px;
+}
+
+.dropdownSearchContainer {
+  padding: spacing.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
+  background-color: colors.$gray-10;
+}
+
+.dropdownList {
+  max-height: 14rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: spacing.$spacing-03 spacing.$spacing-04;
+  background: none;
+  border: none;
+  border-bottom: 1px solid colors.$gray-10;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: colors.$blue-10;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: -2px;
+  }
+}
+
+.dropdownItemSelected {
+  background-color: colors.$blue-10;
+  border-left: 3px solid colors.$blue-60;
+}
+
+.dropdownItemName {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownEmpty {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+  padding: spacing.$spacing-04;
+  text-align: center;
 }

@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
   Form,
   FormGroup,
+  InlineLoading,
   InlineNotification,
   ModalBody,
   ModalFooter,
@@ -11,19 +12,21 @@ import {
   RadioButton,
   RadioButtonGroup,
   RadioButtonSkeleton,
+  Search,
   Select,
   SelectItem,
   SelectSkeleton,
   Stack,
+  Tag,
 } from '@carbon/react';
-import { ResponsiveWrapper, showSnackbar, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
+import { ChevronDown } from '@carbon/react/icons';
+import { showSnackbar, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 import { useMutateQueueEntries, useQueueLocations, useQueues } from '../queue-room/queue-entries.resource';
 import {
   getErrorMessage,
   isDuplicateQueueEntryError,
   postQueueEntry,
-  queueOptionLabel,
   setAssignedQueueVisitAttribute,
   useTriageAssignmentCounts,
 } from './triage-queue-assignment.resource';
@@ -71,18 +74,60 @@ const TriageQueueAssignmentModal: React.FC<TriageQueueAssignmentModalProps> = ({
   const { byLocationUuid, isLoading: isLoadingCounts } = useTriageAssignmentCounts(triageId, queueLocationUuids);
 
   const [queueLocation, setQueueLocation] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [queueService, setQueueService] = useState('');
   const [priority, setPriority] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const { queues, isLoading: isLoadingQueues } = useQueues(queueLocation);
   const assignmentQueues = queues as AssignmentQueue[];
+
+  const selectedLocation = useMemo(
+    () => queueLocations.find((location) => location.id === queueLocation),
+    [queueLocations, queueLocation],
+  );
+  const selectedCount = selectedLocation?.id ? byLocationUuid[selectedLocation.id] ?? 0 : 0;
+
+  const filteredLocations = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) {
+      return queueLocations;
+    }
+    return queueLocations.filter((location) => (location.name ?? location.id ?? '').toLowerCase().includes(term));
+  }, [searchTerm, queueLocations]);
 
   const selectedQueue = useMemo(
     () => assignmentQueues.find((queue) => queue.uuid === queueService),
     [assignmentQueues, queueService],
   );
   const priorities = useMemo(() => selectedQueue?.allowedPriorities ?? [], [selectedQueue?.allowedPriorities]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDropdownOpen]);
 
   useEffect(() => {
     if (queueLocation || !sessionLocation?.uuid || !queueLocations.length) {
@@ -170,28 +215,106 @@ const TriageQueueAssignmentModal: React.FC<TriageQueueAssignmentModalProps> = ({
       <ModalHeader closeModal={closeModal} title={t('addPatientToQueue', 'Add patient to queue')} />
       <ModalBody className={styles.modalBody}>
         <Stack gap={5}>
-          <ResponsiveWrapper>
-            <FormGroup legendText={t('queueLocation', 'Queue location')}>
-              {isLoadingQueueLocations || isLoadingCounts ? (
-                <SelectSkeleton />
-              ) : (
-                <Select
-                  id="triage-queue-location"
-                  labelText=""
-                  value={queueLocation}
-                  onChange={(event) => setQueueLocation(event.target.value)}>
-                  <SelectItem text={t('selectQueueLocation', 'Select a queue location')} value="" />
-                  {queueLocations.map((location) => (
-                    <SelectItem
-                      key={location.id}
-                      text={queueOptionLabel(location.name ?? location.id ?? '', byLocationUuid[location.id ?? ''])}
-                      value={location.id ?? ''}
-                    />
-                  ))}
-                </Select>
-              )}
-            </FormGroup>
-          </ResponsiveWrapper>
+          <FormGroup className={styles.locationFormGroup} legendText={t('queueLocation', 'Queue location')}>
+            {isLoadingQueueLocations || isLoadingCounts ? (
+              <InlineLoading description={t('loadingQueueLocations', 'Loading queue locations...')} />
+            ) : (
+              <div ref={dropdownRef} className={styles.customDropdownContainer}>
+                <button
+                  type="button"
+                  id="triage-queue-location-trigger"
+                  className={`${styles.dropdownTrigger} ${isDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                  onClick={() => setIsDropdownOpen((prev) => !prev)}
+                  aria-haspopup="listbox"
+                  aria-expanded={isDropdownOpen}>
+                  {selectedLocation ? (
+                    <>
+                      <span className={styles.dropdownSelectedText}>
+                        {selectedLocation.name ?? selectedLocation.id}
+                      </span>
+                      <div className={styles.dropdownTriggerRight}>
+                        <Tag size="sm" type={selectedCount > 0 ? 'blue' : 'gray'}>
+                          {selectedCount}{' '}
+                          {selectedCount === 1
+                            ? t('patientAssigned', 'patient assigned')
+                            : t('patientsAssigned', 'patients assigned')}
+                        </Tag>
+                        <ChevronDown
+                          size={16}
+                          className={`${styles.dropdownChevron} ${isDropdownOpen ? styles.dropdownChevronOpen : ''}`}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className={styles.dropdownPlaceholder}>
+                        {t('selectQueueLocation', 'Select a queue location')}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`${styles.dropdownChevron} ${isDropdownOpen ? styles.dropdownChevronOpen : ''}`}
+                      />
+                    </>
+                  )}
+                </button>
+
+                {isDropdownOpen && (
+                  <div className={styles.dropdownMenu}>
+                    {queueLocations.length > 5 && (
+                      <div className={styles.dropdownSearchContainer}>
+                        <Search
+                          id="triage-queue-location-filter"
+                          labelText={t('filterQueueLocations', 'Filter queue locations')}
+                          placeholder={t('searchQueueLocationPlaceholder', 'Search location...')}
+                          value={searchTerm}
+                          onChange={(event) => setSearchTerm(event.target.value ?? '')}
+                          onClear={() => setSearchTerm('')}
+                          size="sm"
+                          autoFocus
+                        />
+                      </div>
+                    )}
+                    <div
+                      className={styles.dropdownList}
+                      role="listbox"
+                      aria-label={t('queueLocationOptions', 'Queue location options')}>
+                      {filteredLocations.length === 0 ? (
+                        <div className={styles.dropdownEmpty}>
+                          {t('noQueueLocationsFound', 'No queue locations found')}
+                        </div>
+                      ) : (
+                        filteredLocations.map((location) => {
+                          const count = byLocationUuid[location.id ?? ''] ?? 0;
+                          const isSelected = location.id === queueLocation;
+                          return (
+                            <button
+                              key={location.id}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              className={`${styles.dropdownItem} ${isSelected ? styles.dropdownItemSelected : ''}`}
+                              onClick={() => {
+                                setQueueLocation(location.id ?? '');
+                                setIsDropdownOpen(false);
+                                setSearchTerm('');
+                              }}>
+                              <span className={styles.dropdownItemName}>{location.name ?? location.id}</span>
+                              <Tag size="sm" type={count > 0 ? 'blue' : 'gray'}>
+                                {count}{' '}
+                                {count === 1
+                                  ? t('patientAssigned', 'patient assigned')
+                                  : t('patientsAssigned', 'patients assigned')}
+                              </Tag>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </FormGroup>
 
           {queueLocation ? (
             <FormGroup legendText={t('service', 'Service')}>
