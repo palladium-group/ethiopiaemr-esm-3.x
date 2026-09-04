@@ -237,12 +237,40 @@ describe('submitEthSwitchPayment retry initiate only', () => {
     expect(mockedOpenmrsFetch.mock.calls[0][0]).toBe(ETHSWITCH_ORDER_URL);
     expect(mockedOpenmrsFetch.mock.calls[1][0]).toBe(ETHSWITCH_INITIATE_URL);
 
-    await expect(submitEthSwitchPayment(payload, 'MON-123')).resolves.toEqual({ merchantOrderNumber: 'MON-123' });
+    await expect(submitEthSwitchPayment(payload, 'MON-123')).resolves.toEqual({
+      merchantOrderNumber: 'MON-123',
+      qrCode: undefined,
+      qrCodeData: undefined,
+    });
 
     expect(mockedOpenmrsFetch).toHaveBeenCalledTimes(3);
     expect(mockedOpenmrsFetch.mock.calls[2][0]).toBe(ETHSWITCH_INITIATE_URL);
     expect(mockedOpenmrsFetch.mock.calls.map((call) => call[0])).not.toContain(ETHSWITCH_STATUS_URL);
     expect(mockedOpenmrsFetch.mock.calls.filter((call) => call[0] === ETHSWITCH_ORDER_URL)).toHaveLength(1);
+  });
+
+  it('returns qr payload from initiate for QR payments', async () => {
+    mockedOpenmrsFetch.mockResolvedValueOnce({ data: orderResponse } as never).mockResolvedValueOnce({
+      data: {
+        ...orderResponse,
+        status: 'INITIATED',
+        qrCode: 'jpeg-base64',
+        qrCodeData: '000201010211',
+      },
+    } as never);
+
+    await expect(
+      submitEthSwitchPayment({
+        ...orderPayload,
+        payerName: 'John Doe',
+        payerDfs: 'AXUMETAA',
+        paymentMethod: 'QR',
+      }),
+    ).resolves.toEqual({
+      merchantOrderNumber: 'MON-123',
+      qrCode: 'jpeg-base64',
+      qrCodeData: '000201010211',
+    });
   });
 });
 

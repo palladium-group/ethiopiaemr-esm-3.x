@@ -61,6 +61,7 @@ const EthSwitchPaymentDialog: React.FC<EthSwitchPaymentDialogProps> = ({ closeMo
   const [isLoading, setIsLoading] = useState(false);
   const [merchantOrderNumber, setMerchantOrderNumber] = useState<string | null>(null);
   const [hasInitiated, setHasInitiated] = useState(false);
+  const [qrCode, setQrCode] = useState<string | null>(null);
   const [{ requestStatus }, pollingTrigger] = useEthSwitchRequestStatus(setNotification, closeModal, bill);
 
   const isWaitingForPayment = requestStatus === 'INITIATED';
@@ -124,6 +125,7 @@ const EthSwitchPaymentDialog: React.FC<EthSwitchPaymentDialogProps> = ({ closeMo
 
       setMerchantOrderNumber(result.merchantOrderNumber);
       setHasInitiated(true);
+      setQrCode(result.qrCode?.trim() || null);
       setNotification({
         message: t('ethSwitchPaymentInitiated', 'EthSwitch payment initiated successfully'),
         type: 'success',
@@ -167,16 +169,36 @@ const EthSwitchPaymentDialog: React.FC<EthSwitchPaymentDialogProps> = ({ closeMo
           {banksErrorMessage && <InlineNotification kind="error" title={banksErrorMessage} hideCloseButton />}
           {isWaitingForPayment && (
             <section className={styles.waitingSection} aria-live="polite">
-              <Loading className={styles.waitingSpinner} withOverlay={false} small />
-              <p className={styles.waitingText}>
-                {t('waitingForEthSwitchStatus', 'Waiting for EthSwitch payment confirmation...')}
-              </p>
-              <p className={styles.waitingHint}>
-                {t(
-                  'approvePaymentOnBankApp',
-                  'Please ask the patient to approve the payment in their bank or wallet app.',
-                )}
-              </p>
+              {qrCode ? (
+                <>
+                  <img
+                    className={styles.qrImage}
+                    src={qrCode.startsWith('data:') ? qrCode : `data:image/jpeg;base64,${qrCode}`}
+                    alt={t('ethSwitchQrCodeAlt', 'EthSwitch payment QR code')}
+                  />
+                  <p className={styles.waitingText}>
+                    {t('scanEthSwitchQrCode', 'Ask the patient to scan this QR code with their bank or wallet app.')}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Loading className={styles.waitingSpinner} withOverlay={false} small />
+                  <p className={styles.waitingText}>
+                    {t('waitingForEthSwitchStatus', 'Waiting for EthSwitch payment confirmation...')}
+                  </p>
+                  <p className={styles.waitingHint}>
+                    {t(
+                      'approvePaymentOnBankApp',
+                      'Please ask the patient to approve the payment in their bank or wallet app.',
+                    )}
+                  </p>
+                </>
+              )}
+              {qrCode && (
+                <p className={styles.waitingHint}>
+                  {t('waitingForEthSwitchStatus', 'Waiting for EthSwitch payment confirmation...')}
+                </p>
+              )}
             </section>
           )}
           <section className={styles.section}>

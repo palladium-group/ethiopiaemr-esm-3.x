@@ -178,6 +178,8 @@
   "ethSwitchPayment": "EthSwitch Payment",
   "ethSwitchPaymentConfirmationTimedOut": "Payment confirmation timed out. If the patient approved the payment in their bank or wallet app, do not retry; refresh the bill or contact the administrator.",
   "ethSwitchPaymentInitiated": "EthSwitch payment initiated successfully",
+  "ethSwitchQrCodeAlt": "EthSwitch payment QR code",
+  "scanEthSwitchQrCode": "Ask the patient to scan this QR code with their bank or wallet app.",
   "exemptedBills": "Exempted Bills",
   "exemptionCategory": "Exemption category",
   "exportCsv": "Export CSV",
