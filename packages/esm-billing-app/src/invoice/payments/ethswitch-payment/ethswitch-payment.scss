@@ -40,6 +40,15 @@
   margin: 0;
 }
 
+.qrImage {
+  width: 14rem;
+  height: 14rem;
+  object-fit: contain;
+  background: colors.$white;
+  border: 1px solid colors.$gray-20;
+  padding: spacing.$spacing-03;
+}
+
 .sectionTitle {
   @include type.type-style('heading-compact-02');
   color: $text-02;

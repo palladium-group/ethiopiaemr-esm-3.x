@@ -178,6 +178,8 @@
   "ethSwitchPayment": "EthSwitch ክፍያ",
   "ethSwitchPaymentConfirmationTimedOut": "የክፍያ ማረጋገጫ ጊዜው አልቋል። ታካሚው ክፍያውን በባንክ ወይም በዋሌት መተግበሪያቸው ካፀደቁ፣ እንደገና አይሞክሩ፤ ሂሳቡን ያድሱ ወይም አስተዳዳሪውን ያግኙ።",
   "ethSwitchPaymentInitiated": "የEthSwitch ክፍያ በተሳካ ሁኔታ ተጀምሯል",
+  "ethSwitchQrCodeAlt": "የEthSwitch ክፍያ QR ኮድ",
+  "scanEthSwitchQrCode": "ታካሚው ይህንን QR ኮድ በባንክ ወይም በዋሌት መተግበሪያቸው እንዲቃኙ ይጠይቁ።",
   "exemptedBills": "Exempted Bills",
   "exemptionCategory": "የነጻነት ምድብ",
   "exportCsv": "Export CSV",

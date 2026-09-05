@@ -48,6 +48,8 @@ interface EthSwitchInitiateResponse {
   merchantOrderNumber: string;
   paymentRequestId: string;
   status: EthSwitchIntentStatus;
+  qrCode?: string | null;
+  qrCodeData?: string | null;
 }
 
 interface EthSwitchStatusResponse {
@@ -226,7 +228,7 @@ export const initiateEthSwitchPayment = async (
 export const submitEthSwitchPayment = async (
   payload: EthSwitchSubmitPayload,
   existingMerchantOrderNumber?: string | null,
-): Promise<{ merchantOrderNumber: string }> => {
+): Promise<{ merchantOrderNumber: string; qrCode?: string | null; qrCodeData?: string | null }> => {
   let merchantOrderNumber = existingMerchantOrderNumber ?? null;
 
   try {
@@ -239,7 +241,7 @@ export const submitEthSwitchPayment = async (
       merchantOrderNumber = order.merchantOrderNumber;
     }
 
-    await initiateEthSwitchPayment({
+    const initiateResult = await initiateEthSwitchPayment({
       merchantOrderNumber,
       payerName: payload.payerName,
       accountNumber: payload.accountNumber,
@@ -247,7 +249,11 @@ export const submitEthSwitchPayment = async (
       paymentMethod: payload.paymentMethod,
     });
 
-    return { merchantOrderNumber };
+    return {
+      merchantOrderNumber,
+      qrCode: initiateResult.qrCode,
+      qrCodeData: initiateResult.qrCodeData,
+    };
   } catch (err) {
     throw new EthSwitchPaymentError(
       getEthSwitchErrorMessage(err, 'Unable to initiate EthSwitch payment, please try again later.'),
