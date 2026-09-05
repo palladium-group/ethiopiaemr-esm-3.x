@@ -1,0 +1,55 @@
+{
+  "name": "@palladium-ethiopia/esm-pathology-app",
+  "version": "1.0.0",
+  "description": "Pathology ordering and results microfrontend for OpenMRS 3 (integrates with the OpenELIS pathology workflow)",
+  "keywords": [
+    "openmrs",
+    "ethiopiaemr",
+    "pathology",
+    "openelis"
+  ],
+  "homepage": "https://github.com/palladium-group/ethiopiaemr-esm-3.x#readme",
+  "bugs": {
+    "url": "https://github.com/palladium-group/ethiopiaemr-esm-3.x/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palladium-group/ethiopiaemr-esm-3.x.git"
+  },
+  "license": "MPL-2.0",
+  "main": "src/index.ts",
+  "source": true,
+  "browser": "dist/esm-pathology-app.js",
+  "scripts": {
+    "analyze": "rspack --mode=production --env analyze=true",
+    "build": "rspack --mode=production",
+    "coverage": "yarn test --coverage",
+    "debug": "yarn serve",
+    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.workspace.tsx' 'src/index.ts' --config ../../tools/i18next-parser.config.js",
+    "lint": "cross-env eslint src --ext ts,tsx",
+    "serve": "rspack serve --mode=development",
+    "start": "openmrs develop",
+    "test": "cross-env TZ=UTC jest --config jest.config.js --verbose false --passWithNoTests --color",
+    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
+    "typescript": "tsc"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "dependencies": {
+    "@carbon/react": "^1.83.0"
+  },
+  "peerDependencies": {
+    "@openmrs/esm-framework": "8.x",
+    "@openmrs/esm-patient-common-lib": "12.x",
+    "dayjs": "1.x",
+    "react": "18.x",
+    "react-i18next": "16.x",
+    "react-router-dom": "6.x",
+    "rxjs": "6.x",
+    "swr": "2.x"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

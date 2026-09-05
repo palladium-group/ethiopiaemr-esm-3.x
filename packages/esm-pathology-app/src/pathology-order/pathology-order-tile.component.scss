@@ -1,0 +1,22 @@
+.tile {
+  margin-bottom: 0.5rem;
+  border-left: 4px solid var(--brand-03, #7bc1ff);
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.iconAndLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.heading {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}

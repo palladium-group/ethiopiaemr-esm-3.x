@@ -1,0 +1,15 @@
+{
+  "cannotOpenPathologyForm": "Cannot open the pathology order form",
+  "date": "Date",
+  "diagnosisConclusion": "Diagnosis / conclusion",
+  "newPathologyOrder": "New order",
+  "Pathology Results": "Pathology Results",
+  "pathologyFormNotConfigured": "No pathology order form has been configured.",
+  "pathologyOrderForm": "Pathology order form",
+  "pathologyOrders": "Pathology orders",
+  "pathologyResults": "Pathology Results",
+  "pathologyResultsLower": "pathology results",
+  "refreshing": "Refreshing...",
+  "report": "Report",
+  "status": "Status"
+}
