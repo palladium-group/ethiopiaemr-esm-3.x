@@ -22,6 +22,12 @@ export const pathologyOrderTile = getAsyncLifecycle(
   options,
 );
 
+// Tile rendered in `special-orders-slot`; opens the configured cytology order form in the O3 form engine.
+export const cytologyOrderTile = getAsyncLifecycle(
+  () => import('./pathology-order/cytology-order-tile.component'),
+  options,
+);
+
 // Dedicated "Pathology Results" patient-chart dashboard: left-nav link + a widget listing the
 // pathology DiagnosticReports returned from OpenELIS (the generic Results viewer can't surface them).
 export const pathologyResultsDashboardLink =
