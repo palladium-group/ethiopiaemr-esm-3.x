@@ -1,7 +1,12 @@
 {
+  "cannotOpenCytologyForm": "Cannot open the cytology order form",
   "cannotOpenPathologyForm": "Cannot open the pathology order form",
+  "cytologyFormNotConfigured": "No cytology order form has been configured.",
+  "cytologyOrderForm": "Cytology order form",
+  "cytologyOrders": "Cytology orders",
   "date": "Date",
   "diagnosisConclusion": "Diagnosis / conclusion",
+  "newCytologyOrder": "New order",
   "newPathologyOrder": "New order",
   "Pathology Results": "Pathology Results",
   "pathologyFormNotConfigured": "No pathology order form has been configured.",
