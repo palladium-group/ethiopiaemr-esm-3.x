@@ -1,6 +1,4 @@
 {
-  "action": "Action",
-  "actions": "Actions",
   "allSent": "All sent",
   "allStatuses": "All statuses",
   "attempts": "Attempts",
@@ -17,7 +15,6 @@
   "never": "Never",
   "noRecords": "No records",
   "operation": "Operation",
-  "operationTimedOut": "The request was stopped after {{minutes}} minutes. Records already sent are unaffected — refresh to see where the queue stands.",
   "outbox": "Outbox",
   "outboxDesc": "Records queued for the Shared Health Record, newest first.",
   "outboxEmpty": "No records in the outbox.",
@@ -30,15 +27,7 @@
   "recordType": "Record",
   "recordsQueued": "Records in outbox",
   "refresh": "Refresh",
-  "retry": "Retry",
-  "retryDone": "Record {{id}} requeued.",
-  "retryError": "Retry failed: {{message}}",
-  "retrying": "Retrying…",
-  "sendNow": "Send now",
-  "sendQueued": "Send queued records",
-  "sendQueuedHelp": "Sends records that are waiting, without waiting for the scheduled task. Records are handed to OpenFn, which delivers them to the SHR — their status becomes Sent once delivery is confirmed.",
-  "sending": "Sending…",
-  "shrAdminDescription": "Clinical records captured here are queued and sent to the national Shared Health Record by a scheduled task. Use this page to send queued records immediately and to retry records that failed.",
+  "shrAdminDescription": "Clinical records captured here are queued and sent to the national Shared Health Record on a schedule. Use this page to see what is queued, what has been sent, and what failed.",
   "shrAdministration": "Shared Health Record Administration",
   "shrScheduleNote": "Records are also sent automatically by the SHR Sync Task, on the interval configured in Administration → Manage Scheduler.",
   "status": "Status",
@@ -47,9 +36,5 @@
   "statusFailed": "Failed",
   "statusPending": "Pending",
   "statusSent": "Sent",
-  "statusSubmitted": "Submitted",
-  "syncDone": "Sync complete.",
-  "syncError": "Sync failed: {{message}}",
-  "unknownError": "Unknown error",
-  "upToN": "Up to {{limit}} at a time"
+  "statusSubmitted": "Submitted"
 }
