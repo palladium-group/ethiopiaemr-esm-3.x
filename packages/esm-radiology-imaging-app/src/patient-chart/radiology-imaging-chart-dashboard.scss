@@ -1,0 +1,67 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.dashboard {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  align-self: stretch;
+  justify-self: start;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+}
+
+/* Contained tabs sit on the white card; keep panels white too */
+.dashboard :global(.cds--tabs) {
+  background-color: colors.$white;
+}
+
+.dashboard :global(.cds--tab-content) {
+  padding: layout.$spacing-05;
+  background-color: colors.$white;
+}
+
+.tableSection {
+  background-color: colors.$white;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: layout.$spacing-03;
+}
+
+.sectionTitle {
+  @include type.type-style('heading-compact-01');
+  margin: 0;
+  color: colors.$gray-100;
+}
+
+.expandedRow {
+  td {
+    padding: 0;
+  }
+}
+
+.expandedContent {
+  padding: layout.$spacing-05;
+  background-color: colors.$white;
+  ;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.procedureReport {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.emptyExpanded {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin: layout.$spacing-05;
+}

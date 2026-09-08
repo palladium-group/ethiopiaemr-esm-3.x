@@ -7,6 +7,24 @@
   },
   "extensions": [
     {
+      "name": "patient-chart-radiology-imaging-dashboard-link",
+      "component": "patientChartRadiologyImagingDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 12,
+      "meta": {
+        "slot": "patient-chart-radiology-imaging-dashboard-slot",
+        "path": "radiology-and-imaging"
+      }
+    },
+    {
+      "name": "patient-chart-radiology-imaging-dashboard",
+      "component": "patientChartRadiologyImagingDashboard",
+      "slot": "patient-chart-radiology-imaging-dashboard-slot",
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
       "name": "radiology-imaging-nav-link",
       "slot": "navbar-items-slot",
       "component": "radiologyImagingNavLink",

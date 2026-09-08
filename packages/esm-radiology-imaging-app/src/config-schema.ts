@@ -14,7 +14,7 @@ export const configSchema = {
   radiologyOrderTypeUuid: {
     _type: Type.UUID,
     _description: "UUID for the 'Radiology' order type",
-    _default: 'b4a7c280-369e-4d12-9ce8-18e36783fed6',
+    _default: '958a28d5-a6d5-11f1-930f-0a90f5e4f35d',
   },
   pacsBaseUrl: {
     _type: Type.String,
