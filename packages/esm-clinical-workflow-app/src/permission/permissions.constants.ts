@@ -43,4 +43,7 @@ export enum Permissions {
 
   // Clinical Forms Permissions
   ViewClinicalForms = 'o3: View Patient Chart Forms Dashboard',
+
+  // Service Queue Permissions
+  ClearAllQueueEntries = 'o3: Delete All Queue Entries',
 }

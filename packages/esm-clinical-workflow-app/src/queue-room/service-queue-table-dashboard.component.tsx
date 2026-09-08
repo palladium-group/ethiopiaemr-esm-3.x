@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, DataTableSkeleton, Dropdown, Layer, TableToolbarSearch } from '@carbon/react';
-import { isDesktop, showModal, showSnackbar, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { isDesktop, showModal, showSnackbar, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
 import { useServiceQueueEntries } from './service-queue-entries.resource';
 import ServiceQueueTable, { filterServiceQueueEntriesBySearch } from './service-queue-table.component';
@@ -19,6 +19,7 @@ import AddPatientToQueueButton from './add-patient-to-queue-button.component';
 import { updateSelectedQueueStatus, useServiceQueuesFilterState } from './service-queues-store.util';
 import styles from './service-queue-table-dashboard.scss';
 import tableStyles from './service-queue-table.scss';
+import { Permissions } from '../permission/permissions.constants';
 
 const ALL_LOCATIONS_ID = 'all';
 
@@ -35,6 +36,8 @@ interface RoomFilterOption {
 function ClearQueueEntriesButton({ queueEntries }: { queueEntries: QueueEntry[] }) {
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const session = useSession();
+  const canClearAllQueueEntries = userHasAccess(Permissions.ClearAllQueueEntries, session?.user as any);
 
   const launchClearAllQueueEntriesModal = useCallback(() => {
     const dispose = showModal('clear-all-queue-entries-modal', {
@@ -42,6 +45,11 @@ function ClearQueueEntriesButton({ queueEntries }: { queueEntries: QueueEntry[] 
       queueEntries,
     });
   }, [queueEntries]);
+
+  // If user does not have permission to clear all queue entries, return null
+  if (!canClearAllQueueEntries) {
+    return null;
+  }
 
   return (
     <Button
