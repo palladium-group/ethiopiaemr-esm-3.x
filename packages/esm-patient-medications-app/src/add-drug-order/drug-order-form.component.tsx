@@ -379,7 +379,7 @@ export function DrugOrderForm({
         numRefills: 0,
         indication: data.indication,
         frequency: data.frequency,
-        startDate: data.startDate,
+        scheduledDate: data.startDate,
         action: initialOrderBasketItem?.action ?? 'NEW',
         commonMedicationName: data.drug.display,
         display: data.drug.display,

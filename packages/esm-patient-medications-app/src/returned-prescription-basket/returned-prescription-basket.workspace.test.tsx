@@ -111,6 +111,7 @@ const defaultWorkspaceProps: PatientWorkspace2DefinitionProps<{}, OrderBasketWin
   windowProps: { encounterUuid },
   windowName: 'order-basket',
   isRootWorkspace: false,
+  showActionMenu: false,
   groupProps: {
     patient: mockFhirPatient,
     patientUuid: mockPatient.id,

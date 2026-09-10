@@ -124,7 +124,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
       expect.objectContaining({
         ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[2], null),
         isOrderIncomplete: true,
-        startDate: expect.any(Date),
+        scheduledDate: expect.any(Date),
       }),
     ]);
     expect(mockCloseWorkspace).toHaveBeenCalled();
@@ -174,7 +174,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
             undefined,
             mockDrugOrderTemplateApiData[mockDrugSearchResultApiData[0].uuid][0],
           ),
-          startDate: expect.any(Date),
+          scheduledDate: expect.any(Date),
           indication: 'Hypertension',
         }),
       ]),
@@ -288,6 +288,7 @@ function renderAddDrugOrderWorkspace(order = null) {
       }}
       windowName={''}
       isRootWorkspace={false}
+      showActionMenu={false}
     />,
   );
 }
