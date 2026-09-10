@@ -2,9 +2,11 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Tile } from '@carbon/react';
 import { Microscope } from '@carbon/react/icons';
-import { AddIcon, showSnackbar, useConfig, useLayoutType, type Visit } from '@openmrs/esm-framework';
+import { AddIcon, showSnackbar, useConfig, useLayoutType, useSession, type Visit } from '@openmrs/esm-framework';
 import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import { type PathologyConfig } from '../config-schema';
+import { SPECIAL_ORDER_FORM_ENTRY_WORKSPACE } from '../constants';
+import { buildSpecialOrderFormLaunchProps } from './special-order-form-launch.resource';
 import styles from './pathology-order-tile.component.scss';
 
 interface PathologyOrderTileProps {
@@ -14,15 +16,15 @@ interface PathologyOrderTileProps {
 }
 
 /**
- * Tile contributed to `special-orders-slot`. Opens the configured pathology order form in the O3
- * form engine; submitting that form saves the pathology order together with the observations the
- * OpenELIS pathology workflow needs as a single encounter, which lab-on-fhir then pushes onwards.
+ * Tile contributed to `special-orders-slot`. Opens the Pathology request form for clinical context;
+ * after save, creates the fixed Histopathology examination TestOrder on that encounter.
  */
 const PathologyOrderTile: React.FC<PathologyOrderTileProps> = ({ patientUuid, patient, visitContext }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { pathologyFormUuid } = useConfig<PathologyConfig>();
-  const launchPathologyForm = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
+  const session = useSession();
+  const { pathologyFormUuid, pathologyOrderConceptUuid, careSettingUuid } = useConfig<PathologyConfig>();
+  const launchSpecialOrderForm = useLaunchWorkspaceRequiringVisit(patientUuid, SPECIAL_ORDER_FORM_ENTRY_WORKSPACE);
 
   const openPathologyOrderForm = useCallback(() => {
     if (!pathologyFormUuid) {
@@ -34,16 +36,37 @@ const PathologyOrderTile: React.FC<PathologyOrderTileProps> = ({ patientUuid, pa
       return;
     }
 
-    launchPathologyForm(
-      {
-        workspaceTitle: t('pathologyOrderForm', 'Pathology order form'),
-        form: { uuid: pathologyFormUuid },
-        encounterUuid: '',
-      },
-      {},
+    if (!patientUuid) {
+      return;
+    }
+
+    const workspaceProps = buildSpecialOrderFormLaunchProps({
+      kind: 'pathology',
+      formUuid: pathologyFormUuid,
+      orderConceptUuid: pathologyOrderConceptUuid,
+      careSettingUuid,
+      patientUuid,
+      visitContext,
+      ordererUuid: session?.currentProvider?.uuid,
+      t,
+    });
+
+    launchSpecialOrderForm(
+      workspaceProps,
+      { patient, patientUuid, visitContext },
       { patient, patientUuid, visitContext },
     );
-  }, [launchPathologyForm, pathologyFormUuid, patient, patientUuid, visitContext, t]);
+  }, [
+    careSettingUuid,
+    launchSpecialOrderForm,
+    pathologyFormUuid,
+    pathologyOrderConceptUuid,
+    patient,
+    patientUuid,
+    session?.currentProvider?.uuid,
+    t,
+    visitContext,
+  ]);
 
   if (!patientUuid) {
     return null;
