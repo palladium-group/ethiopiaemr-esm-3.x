@@ -28,8 +28,8 @@ export const cytologyOrderTile = getAsyncLifecycle(
   options,
 );
 
-// Dedicated "Pathology Results" patient-chart dashboard: left-nav link + a widget listing the
-// pathology DiagnosticReports returned from OpenELIS (the generic Results viewer can't surface them).
+// Dedicated "Pathology Results" patient-chart dashboard: left-nav link + observations for members of
+// the Pathology/Cytology Result Form concept sets (LIS-synced and future result-form fields).
 export const pathologyResultsDashboardLink =
   // t('Pathology Results', 'Pathology Results')
   getSyncLifecycle(createDashboardLink({ ...pathologyResultsDashboardMeta }), options);

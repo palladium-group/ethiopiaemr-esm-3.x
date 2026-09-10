@@ -30,12 +30,17 @@ export const configSchema = {
     _description: 'Care setting UUID used when creating the fixed special-order TestOrder (Outpatient by default).',
     _default: '6f0c9a92-6f24-11e3-af88-005056821db0',
   },
-  pathologyResultLoincCodes: {
-    _type: Type.Array,
-    _elements: { _type: Type.String },
+  pathologyResultConceptSetUuid: {
+    _type: Type.UUID,
     _description:
-      'LOINC code(s) whose returned DiagnosticReports are listed on the Pathology Results patient-chart dashboard (histopathology + cytology).',
-    _default: ['11529-5', '33716-2'],
+      'Concept set (Pathology Result Form) whose members are the pathology result fields rendered on the Pathology Results dashboard.',
+    _default: 'c4000010-4444-4a2b-8c3d-0e1f2a3b4c10',
+  },
+  cytologyResultConceptSetUuid: {
+    _type: Type.UUID,
+    _description:
+      'Concept set (Cytology Result Form) whose members are the cytology result fields rendered on the Pathology Results dashboard.',
+    _default: 'c4000020-4444-4a2b-8c3d-0e1f2a3b4c20',
   },
 };
 
@@ -45,5 +50,6 @@ export interface PathologyConfig {
   pathologyOrderConceptUuid: string;
   cytologyOrderConceptUuid: string;
   careSettingUuid: string;
-  pathologyResultLoincCodes: Array<string>;
+  pathologyResultConceptSetUuid: string;
+  cytologyResultConceptSetUuid: string;
 }

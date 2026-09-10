@@ -18,6 +18,8 @@
   "pathologyResultsLower": "pathology results",
   "refreshing": "Refreshing...",
   "report": "Report",
+  "resultField": "Result field",
+  "resultValue": "Value",
   "specialOrderCreatedSubtitle": "The request details were saved and the lab order was sent.",
   "specialOrderMissingEncounter": "The request form was saved, but no encounter was returned. The lab order was not created.",
   "specialOrderOrderCreateFailed": "The request details were saved, but creating the lab order failed. Please try again or contact support.",
