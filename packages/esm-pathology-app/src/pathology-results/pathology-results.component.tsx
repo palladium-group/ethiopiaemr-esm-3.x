@@ -15,7 +15,7 @@ import {
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import { formatDatetime, parseDate, useConfig } from '@openmrs/esm-framework';
 import { type PathologyConfig } from '../config-schema';
-import { usePathologyReports } from './pathology-results.resource';
+import { usePathologyResultObservations, useResultConceptSetMembers } from './pathology-results.resource';
 
 interface PathologyResultsProps {
   patient?: fhir.Patient;
@@ -24,38 +24,42 @@ interface PathologyResultsProps {
 
 const PathologyResults: React.FC<PathologyResultsProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
-  const { pathologyResultLoincCodes } = useConfig<PathologyConfig>();
+  const { pathologyResultConceptSetUuid, cytologyResultConceptSetUuid } = useConfig<PathologyConfig>();
   const resolvedPatientUuid = patientUuid ?? patient?.id;
-  const { reports, error, isLoading, isValidating } = usePathologyReports(
-    resolvedPatientUuid,
-    pathologyResultLoincCodes,
-  );
+  const {
+    members,
+    error: conceptSetError,
+    isLoading: isLoadingConceptSets,
+  } = useResultConceptSetMembers([pathologyResultConceptSetUuid, cytologyResultConceptSetUuid]);
+  const { observations, error, isLoading, isValidating } = usePathologyResultObservations(resolvedPatientUuid, members);
 
   const title = t('pathologyResults', 'Pathology Results');
+  const combinedError = conceptSetError || error;
+  const combinedLoading = isLoadingConceptSets || isLoading;
 
-  if (isLoading) {
+  if (combinedLoading) {
     return <DataTableSkeleton role="progressbar" compact zebra />;
   }
-  if (error) {
-    return <ErrorState error={error} headerTitle={title} />;
+  if (combinedError) {
+    return <ErrorState error={combinedError} headerTitle={title} />;
   }
-  if (!reports.length) {
+  if (!observations.length) {
     return <EmptyState displayText={t('pathologyResultsLower', 'pathology results')} headerTitle={title} />;
   }
 
   const headers = [
     { key: 'issued', header: t('date', 'Date') },
-    { key: 'code', header: t('report', 'Report') },
-    { key: 'diagnosis', header: t('diagnosisConclusion', 'Diagnosis / conclusion') },
+    { key: 'field', header: t('resultField', 'Result field') },
+    { key: 'value', header: t('resultValue', 'Value') },
     { key: 'status', header: t('status', 'Status') },
   ];
 
-  const rows = reports.map((report) => ({
-    id: report.id,
-    issued: report.issued ? formatDatetime(parseDate(report.issued)) : '—',
-    code: report.code,
-    diagnosis: report.diagnosis,
-    status: report.status,
+  const rows = observations.map((observation) => ({
+    id: observation.id,
+    issued: observation.issued ? formatDatetime(parseDate(observation.issued)) : '—',
+    field: observation.field,
+    value: observation.value,
+    status: observation.status || '—',
   }));
 
   return (
