@@ -36,5 +36,20 @@
         "fullWidth": false
       }
     }
+  ],
+  "workspaces2": [
+    {
+      "name": "special-order-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "special-order-form"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "special-order-form",
+      "group": "patient-chart",
+      "width": "wider",
+      "canMaximize": true
+    }
   ]
 }

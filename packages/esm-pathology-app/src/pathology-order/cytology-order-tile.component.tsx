@@ -2,9 +2,11 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Tile } from '@carbon/react';
 import { Microscope } from '@carbon/react/icons';
-import { AddIcon, showSnackbar, useConfig, useLayoutType, type Visit } from '@openmrs/esm-framework';
+import { AddIcon, showSnackbar, useConfig, useLayoutType, useSession, type Visit } from '@openmrs/esm-framework';
 import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import { type PathologyConfig } from '../config-schema';
+import { SPECIAL_ORDER_FORM_ENTRY_WORKSPACE } from '../constants';
+import { buildSpecialOrderFormLaunchProps } from './special-order-form-launch.resource';
 import styles from './pathology-order-tile.component.scss';
 
 interface CytologyOrderTileProps {
@@ -14,15 +16,15 @@ interface CytologyOrderTileProps {
 }
 
 /**
- * Tile contributed to `special-orders-slot`. Opens the configured cytology order form in the O3
- * form engine; submitting that form saves the cytology order together with the observations the
- * OpenELIS cytology workflow needs as a single encounter, which lab-on-fhir then pushes onwards.
+ * Tile contributed to `special-orders-slot`. Opens the Cytology request form for clinical context;
+ * after save, creates the fixed Cytology examination TestOrder on that encounter.
  */
 const CytologyOrderTile: React.FC<CytologyOrderTileProps> = ({ patientUuid, patient, visitContext }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { cytologyFormUuid } = useConfig<PathologyConfig>();
-  const launchCytologyForm = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
+  const session = useSession();
+  const { cytologyFormUuid, cytologyOrderConceptUuid, careSettingUuid } = useConfig<PathologyConfig>();
+  const launchSpecialOrderForm = useLaunchWorkspaceRequiringVisit(patientUuid, SPECIAL_ORDER_FORM_ENTRY_WORKSPACE);
 
   const openCytologyOrderForm = useCallback(() => {
     if (!cytologyFormUuid) {
@@ -34,16 +36,37 @@ const CytologyOrderTile: React.FC<CytologyOrderTileProps> = ({ patientUuid, pati
       return;
     }
 
-    launchCytologyForm(
-      {
-        workspaceTitle: t('cytologyOrderForm', 'Cytology order form'),
-        form: { uuid: cytologyFormUuid },
-        encounterUuid: '',
-      },
-      {},
+    if (!patientUuid) {
+      return;
+    }
+
+    const workspaceProps = buildSpecialOrderFormLaunchProps({
+      kind: 'cytology',
+      formUuid: cytologyFormUuid,
+      orderConceptUuid: cytologyOrderConceptUuid,
+      careSettingUuid,
+      patientUuid,
+      visitContext,
+      ordererUuid: session?.currentProvider?.uuid,
+      t,
+    });
+
+    launchSpecialOrderForm(
+      workspaceProps,
+      { patient, patientUuid, visitContext },
       { patient, patientUuid, visitContext },
     );
-  }, [launchCytologyForm, cytologyFormUuid, patient, patientUuid, visitContext, t]);
+  }, [
+    careSettingUuid,
+    cytologyFormUuid,
+    cytologyOrderConceptUuid,
+    launchSpecialOrderForm,
+    patient,
+    patientUuid,
+    session?.currentProvider?.uuid,
+    t,
+    visitContext,
+  ]);
 
   if (!patientUuid) {
     return null;
