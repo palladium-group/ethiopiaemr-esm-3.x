@@ -1,29 +1,61 @@
 import { Type } from '@openmrs/esm-framework';
 
+/** Existing Pathology Request Form UUID — reused by Biopsy/ PAP Smear and Morphology- for now. */
+const PATHOLOGY_REQUEST_FORM_UUID = 'a2b3c4d5-2222-4a2b-8c3d-0e1f2a3b4c5d';
+/** Existing Cytology Request Form UUID — used by FNAC/Cytology for now. */
+const CYTOLOGY_REQUEST_FORM_UUID = 'a3b4c5d6-3333-4a2b-8c3d-0e1f2a3b4c5d';
+const HISTOPATHOLOGY_ORDER_CONCEPT_UUID = 'b1a7f0c2-9d34-4e51-8a26-1c2d3e4f5a60';
+const CYTOLOGY_ORDER_CONCEPT_UUID = 'b2a8f1c3-9e45-4f62-9b37-2d3e4f5a6b71';
+
 export const configSchema = {
-  pathologyFormUuid: {
-    _type: Type.UUID,
+  /**
+   * Bahmni-style "Type of Sample" choices under Pathology Orders.
+   * Each option opens its form and creates the mapped fixed TestOrder after save.
+   * Three forms are assumed; Biopsy/ PAP Smear and Morphology- share the pathology
+   * form + histopathology order UUIDs until dedicated Morphology metadata exists.
+   */
+  pathologyTypeOfSampleOptions: {
+    _type: Type.Array,
     _description:
-      'UUID of the O3 form-engine Pathology Request Form (clinical context only). The Histopathology TestOrder is created after form save.',
-    _default: 'a2b3c4d5-2222-4a2b-8c3d-0e1f2a3b4c5d',
-  },
-  cytologyFormUuid: {
-    _type: Type.UUID,
-    _description:
-      'UUID of the O3 form-engine Cytology Request Form (clinical context only). The Cytology TestOrder is created after form save.',
-    _default: 'a3b4c5d6-3333-4a2b-8c3d-0e1f2a3b4c5d',
-  },
-  pathologyOrderConceptUuid: {
-    _type: Type.UUID,
-    _description:
-      'Concept UUID of the fixed Histopathology examination TestOrder created after the Pathology request form is saved.',
-    _default: 'b1a7f0c2-9d34-4e51-8a26-1c2d3e4f5a60',
-  },
-  cytologyOrderConceptUuid: {
-    _type: Type.UUID,
-    _description:
-      'Concept UUID of the fixed Cytology examination TestOrder created after the Cytology request form is saved.',
-    _default: 'b2a8f1c3-9e45-4f62-9b37-2d3e4f5a6b71',
+      'Type of Sample options under Pathology Orders. Labels match the legacy Special Orders UI. Each entry has its own formUuid (three forms conceptually); orderConceptUuid selects the fixed TestOrder created after save.',
+    _elements: {
+      id: {
+        _type: Type.String,
+        _description: 'Stable id for the option (used in code, not shown to the user).',
+      },
+      label: {
+        _type: Type.String,
+        _description: 'Display label for Type of Sample (e.g. FNAC/Cytology).',
+      },
+      formUuid: {
+        _type: Type.UUID,
+        _description: 'O3 form-engine form opened for this Type of Sample.',
+      },
+      orderConceptUuid: {
+        _type: Type.UUID,
+        _description: 'Concept UUID of the fixed TestOrder created after this form is saved.',
+      },
+    },
+    _default: [
+      {
+        id: 'fnac-cytology',
+        label: 'FNAC/Cytology',
+        formUuid: CYTOLOGY_REQUEST_FORM_UUID,
+        orderConceptUuid: CYTOLOGY_ORDER_CONCEPT_UUID,
+      },
+      {
+        id: 'biopsy-pap-smear',
+        label: 'Biopsy/ PAP Smear',
+        formUuid: PATHOLOGY_REQUEST_FORM_UUID,
+        orderConceptUuid: HISTOPATHOLOGY_ORDER_CONCEPT_UUID,
+      },
+      {
+        id: 'morphology',
+        label: 'Morphology-',
+        formUuid: PATHOLOGY_REQUEST_FORM_UUID,
+        orderConceptUuid: HISTOPATHOLOGY_ORDER_CONCEPT_UUID,
+      },
+    ],
   },
   careSettingUuid: {
     _type: Type.UUID,
@@ -44,11 +76,15 @@ export const configSchema = {
   },
 };
 
+export type PathologyTypeOfSampleOption = {
+  id: string;
+  label: string;
+  formUuid: string;
+  orderConceptUuid: string;
+};
+
 export interface PathologyConfig {
-  pathologyFormUuid: string;
-  cytologyFormUuid: string;
-  pathologyOrderConceptUuid: string;
-  cytologyOrderConceptUuid: string;
+  pathologyTypeOfSampleOptions: Array<PathologyTypeOfSampleOption>;
   careSettingUuid: string;
   pathologyResultConceptSetUuid: string;
   cytologyResultConceptSetUuid: string;

@@ -16,15 +16,15 @@ export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
 
-// Tile rendered in `special-orders-slot`; opens the configured pathology order form in the O3 form engine.
+/** Tile on `special-orders-slot` → Pathology Orders (Type of Sample chooser). */
 export const pathologyOrderTile = getAsyncLifecycle(
   () => import('./pathology-order/pathology-order-tile.component'),
   options,
 );
 
-// Tile rendered in `special-orders-slot`; opens the configured cytology order form in the O3 form engine.
-export const cytologyOrderTile = getAsyncLifecycle(
-  () => import('./pathology-order/cytology-order-tile.component'),
+/** Type of Sample chooser; opens the mapped request form for the selected option. */
+export const pathologyOrderWorkspace = getAsyncLifecycle(
+  () => import('./pathology-order/pathology-order.workspace'),
   options,
 );
 

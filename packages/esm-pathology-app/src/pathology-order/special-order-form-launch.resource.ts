@@ -2,10 +2,9 @@ import type { TFunction } from 'i18next';
 import { showSnackbar, type Encounter, type Visit } from '@openmrs/esm-framework';
 import { createFixedTestOrder } from './create-fixed-test-order.resource';
 
-export type SpecialOrderLaunchKind = 'pathology' | 'cytology';
-
 export type BuildSpecialOrderFormLaunchPropsArgs = {
-  kind: SpecialOrderLaunchKind;
+  /** Display name for this Type of Sample (e.g. FNAC/Cytology). */
+  typeOfSampleLabel: string;
   formUuid: string;
   orderConceptUuid: string;
   careSettingUuid: string;
@@ -20,7 +19,7 @@ export type BuildSpecialOrderFormLaunchPropsArgs = {
  * After the Ampath form saves the Lab Order encounter + context obs, creates the fixed TestOrder.
  */
 export function buildSpecialOrderFormLaunchProps({
-  kind,
+  typeOfSampleLabel,
   formUuid,
   orderConceptUuid,
   careSettingUuid,
@@ -29,11 +28,6 @@ export function buildSpecialOrderFormLaunchProps({
   ordererUuid,
   t,
 }: BuildSpecialOrderFormLaunchPropsArgs) {
-  const workspaceTitle =
-    kind === 'pathology'
-      ? t('pathologyOrderForm', 'Pathology order form')
-      : t('cytologyOrderForm', 'Cytology order form');
-
   const handlePostResponse = async (savedEncounter: Encounter) => {
     if (!savedEncounter?.uuid) {
       showSnackbar({
@@ -69,11 +63,10 @@ export function buildSpecialOrderFormLaunchProps({
       });
       showSnackbar({
         kind: 'success',
-        title:
-          kind === 'pathology'
-            ? t('pathologyOrderCreated', 'Pathology order created')
-            : t('cytologyOrderCreated', 'Cytology order created'),
-        subtitle: t('specialOrderCreatedSubtitle', 'The request details were saved and the lab order was sent.'),
+        title: t('pathologyOrderCreated', 'Pathology order created'),
+        subtitle: t('specialOrderCreatedSubtitle', 'The request details were saved and the lab order was sent.', {
+          typeOfSample: typeOfSampleLabel,
+        }),
         isLowContrast: true,
       });
     } catch (error) {
@@ -90,7 +83,7 @@ export function buildSpecialOrderFormLaunchProps({
   };
 
   return {
-    workspaceTitle,
+    workspaceTitle: typeOfSampleLabel,
     form: {
       uuid: formUuid,
       visitUuid: visitContext?.uuid,

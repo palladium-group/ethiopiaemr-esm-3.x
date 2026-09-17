@@ -12,12 +12,6 @@
       "order": 1
     },
     {
-      "name": "cytology-order-tile",
-      "component": "cytologyOrderTile",
-      "slot": "special-orders-slot",
-      "order": 2
-    },
-    {
       "name": "pathology-results-dashboard-link",
       "component": "pathologyResultsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
@@ -38,6 +32,11 @@
     }
   ],
   "workspaces2": [
+    {
+      "name": "pathology-order-workspace",
+      "component": "pathologyOrderWorkspace",
+      "window": "special-order-form"
+    },
     {
       "name": "special-order-form-entry-workspace",
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",

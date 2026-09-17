@@ -2,11 +2,9 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Tile } from '@carbon/react';
 import { Microscope } from '@carbon/react/icons';
-import { AddIcon, showSnackbar, useConfig, useLayoutType, useSession, type Visit } from '@openmrs/esm-framework';
+import { AddIcon, useLayoutType, type Visit } from '@openmrs/esm-framework';
 import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
-import { type PathologyConfig } from '../config-schema';
-import { SPECIAL_ORDER_FORM_ENTRY_WORKSPACE } from '../constants';
-import { buildSpecialOrderFormLaunchProps } from './special-order-form-launch.resource';
+import { PATHOLOGY_ORDER_WORKSPACE } from '../constants';
 import styles from './pathology-order-tile.component.scss';
 
 interface PathologyOrderTileProps {
@@ -16,57 +14,25 @@ interface PathologyOrderTileProps {
 }
 
 /**
- * Tile contributed to `special-orders-slot`. Opens the Pathology request form for clinical context;
- * after save, creates the fixed Histopathology examination TestOrder on that encounter.
+ * Tile on `special-orders-slot`. Opens the Pathology Orders workspace where the clinician
+ * picks Type of Sample (FNAC/Cytology, Biopsy/ PAP Smear, Morphology-) and fills the matching form.
  */
 const PathologyOrderTile: React.FC<PathologyOrderTileProps> = ({ patientUuid, patient, visitContext }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const session = useSession();
-  const { pathologyFormUuid, pathologyOrderConceptUuid, careSettingUuid } = useConfig<PathologyConfig>();
-  const launchSpecialOrderForm = useLaunchWorkspaceRequiringVisit(patientUuid, SPECIAL_ORDER_FORM_ENTRY_WORKSPACE);
+  const launchPathologyOrderWorkspace = useLaunchWorkspaceRequiringVisit(patientUuid, PATHOLOGY_ORDER_WORKSPACE);
 
-  const openPathologyOrderForm = useCallback(() => {
-    if (!pathologyFormUuid) {
-      showSnackbar({
-        kind: 'error',
-        title: t('cannotOpenPathologyForm', 'Cannot open the pathology order form'),
-        subtitle: t('pathologyFormNotConfigured', 'No pathology order form has been configured.'),
-      });
-      return;
-    }
-
+  const openPathologyOrders = useCallback(() => {
     if (!patientUuid) {
       return;
     }
 
-    const workspaceProps = buildSpecialOrderFormLaunchProps({
-      kind: 'pathology',
-      formUuid: pathologyFormUuid,
-      orderConceptUuid: pathologyOrderConceptUuid,
-      careSettingUuid,
-      patientUuid,
-      visitContext,
-      ordererUuid: session?.currentProvider?.uuid,
-      t,
-    });
-
-    launchSpecialOrderForm(
-      workspaceProps,
+    launchPathologyOrderWorkspace(
+      { patientUuid, patient, visitContext },
       { patient, patientUuid, visitContext },
       { patient, patientUuid, visitContext },
     );
-  }, [
-    careSettingUuid,
-    launchSpecialOrderForm,
-    pathologyFormUuid,
-    pathologyOrderConceptUuid,
-    patient,
-    patientUuid,
-    session?.currentProvider?.uuid,
-    t,
-    visitContext,
-  ]);
+  }, [launchPathologyOrderWorkspace, patient, patientUuid, visitContext]);
 
   if (!patientUuid) {
     return null;
@@ -83,7 +49,7 @@ const PathologyOrderTile: React.FC<PathologyOrderTileProps> = ({ patientUuid, pa
           kind="ghost"
           size={isTablet ? 'md' : 'sm'}
           renderIcon={(props) => <AddIcon size={16} {...props} />}
-          onClick={openPathologyOrderForm}>
+          onClick={openPathologyOrders}>
           {t('newPathologyOrder', 'New order')}
         </Button>
       </div>
