@@ -238,6 +238,12 @@
       "offline": false
     },
     {
+      "name": "order-basket-diagnosis-banner",
+      "component": "orderBasketDiagnosisBanner",
+      "slot": "order-basket-slot",
+      "order": 0
+    },
+    {
       "name": "immunization-register-action-button",
       "component": "immunizationRegisterActionButton",
       "slot": "patient-chart-immunizations-dashboard-slot"
