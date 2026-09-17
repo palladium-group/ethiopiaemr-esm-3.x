@@ -56,6 +56,7 @@ import {
 import { useMainDiagnosisCandidates } from './main-diagnosis-candidate.resource';
 import {
   collectVisitPrimaryConceptUuids,
+  getActiveVisitWithEncountersSwrKey,
   useActiveVisitWithEncounters,
   visitHasMainDiagnosisOnOtherEncounter,
 } from './visit-main-diagnosis.resource';
@@ -600,6 +601,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
         }
 
         invalidateVisitAndEncounterData(globalMutate, patientUuid);
+        if (activeVisit?.uuid) {
+          globalMutate(getActiveVisitWithEncountersSwrKey(patientUuid, activeVisit.uuid));
+        }
         mutateVisitNotes();
         if (images?.length) {
           mutateAttachments();
