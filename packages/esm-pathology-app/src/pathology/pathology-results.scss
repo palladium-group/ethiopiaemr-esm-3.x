@@ -1,0 +1,18 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.widgetCard {
+  border: 1px solid colors.$gray-20;
+  background-color: colors.$white;
+  width: 100%;
+}
+
+.encounterHeaderCell {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  background-color: colors.$gray-10;
+  font-weight: 700;
+  letter-spacing: 0.04rem;
+  padding: layout.$spacing-03 layout.$spacing-05 !important;
+}

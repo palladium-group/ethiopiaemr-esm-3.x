@@ -10,10 +10,19 @@ export type ResultConceptMember = {
 export type PathologyResultObservation = {
   id: string;
   issued: string;
-  status: string;
   field: string;
   conceptUuid: string;
   value: string;
+  encounterUuid: string;
+  encounterDisplay: string;
+  encounterDatetime: string;
+};
+
+export type PathologyResultEncounterGroup = {
+  encounterUuid: string;
+  encounterDisplay: string;
+  encounterDatetime: string;
+  observations: Array<PathologyResultObservation>;
 };
 
 type ConceptSetResponse = {
@@ -29,7 +38,11 @@ type ObsResponse = {
     obsDatetime?: string;
     value?: string | number | boolean | { display?: string; uuid?: string };
     concept?: { uuid: string; display?: string };
-    status?: string;
+    encounter?: {
+      uuid?: string;
+      display?: string;
+      encounterDatetime?: string;
+    };
   }>;
 };
 
@@ -62,7 +75,7 @@ export function useResultConceptSetMembers(conceptSetUuids: Array<string>) {
 }
 
 /**
- * Fetches patient Observations for the given result-form concept-set members.
+ * Fetches patient Observations for the given result-form concept-set members, grouped by encounter.
  */
 export function usePathologyResultObservations(patientUuid: string, members: Array<ResultConceptMember>) {
   const conceptUuids = useMemo(
@@ -89,26 +102,65 @@ export function usePathologyResultObservations(patientUuid: string, members: Arr
       conceptUuids.map(async (conceptUuid) => {
         const response = await openmrsFetch<ObsResponse>(
           `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}` +
-            `&v=custom:(uuid,display,obsDatetime,value,status,concept:(uuid,display))`,
+            `&v=custom:(uuid,display,obsDatetime,value,concept:(uuid,display),encounter:(uuid,display,encounterDatetime))`,
         );
-        return (response.data?.results ?? []).map((obs) => ({
-          id: obs.uuid,
-          issued: obs.obsDatetime || '',
-          status: obs.status || '',
-          field: displayByConcept[conceptUuid] || obs.concept?.display || 'Result',
-          conceptUuid,
-          value: formatRestObsValue(obs.value),
-        }));
+        return (response.data?.results ?? []).map((obs) => {
+          const encounterUuid = obs.encounter?.uuid || '';
+          const encounterDatetime = obs.encounter?.encounterDatetime || obs.obsDatetime || '';
+          return {
+            id: obs.uuid,
+            issued: obs.obsDatetime || '',
+            field: displayByConcept[conceptUuid] || obs.concept?.display || 'Result',
+            conceptUuid,
+            value: formatRestObsValue(obs.value),
+            encounterUuid,
+            encounterDisplay: obs.encounter?.display || '',
+            encounterDatetime,
+          };
+        });
       }),
     );
 
-    return bundles
-      .flat()
-      .filter((row) => Boolean(row.value))
-      .sort((a, b) => (b.issued || '').localeCompare(a.issued || ''));
+    return bundles.flat().filter((row) => Boolean(row.value));
   });
 
-  return { observations: data ?? [], error, isLoading, isValidating };
+  const encounterGroups = useMemo(() => groupObservationsByEncounter(data ?? []), [data]);
+
+  return {
+    observations: data ?? [],
+    encounterGroups,
+    error,
+    isLoading,
+    isValidating,
+  };
+}
+
+function groupObservationsByEncounter(
+  observations: Array<PathologyResultObservation>,
+): Array<PathologyResultEncounterGroup> {
+  const groups = new Map<string, PathologyResultEncounterGroup>();
+
+  for (const observation of observations) {
+    const groupKey = observation.encounterUuid || `obs:${observation.id}`;
+    const existing = groups.get(groupKey);
+    if (existing) {
+      existing.observations.push(observation);
+      continue;
+    }
+    groups.set(groupKey, {
+      encounterUuid: observation.encounterUuid,
+      encounterDisplay: observation.encounterDisplay,
+      encounterDatetime: observation.encounterDatetime || observation.issued,
+      observations: [observation],
+    });
+  }
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      observations: [...group.observations].sort((a, b) => (a.field || '').localeCompare(b.field || '')),
+    }))
+    .sort((a, b) => (b.encounterDatetime || '').localeCompare(a.encounterDatetime || ''));
 }
 
 function formatRestObsValue(

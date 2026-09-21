@@ -12,22 +12,23 @@
       "order": 1
     },
     {
-      "name": "pathology-results-dashboard-link",
-      "component": "pathologyResultsDashboardLink",
+      "name": "pathology-dashboard-link",
+      "component": "pathologyDashboardLink",
       "slot": "patient-chart-dashboard-slot",
       "order": 18,
       "meta": {
-        "slot": "patient-chart-pathology-results-dashboard-slot",
-        "path": "pathology-results",
-        "title": "Pathology Results"
+        "slot": "patient-chart-pathology-dashboard-slot",
+        "path": "pathology",
+        "title": "Pathology",
+        "hideDashboardTitle": true
       }
     },
     {
-      "name": "pathology-results-dashboard",
-      "component": "pathologyResults",
-      "slot": "patient-chart-pathology-results-dashboard-slot",
+      "name": "pathology-dashboard",
+      "component": "pathologyDashboard",
+      "slot": "patient-chart-pathology-dashboard-slot",
       "meta": {
-        "fullWidth": false
+        "fullWidth": true
       }
     }
   ],

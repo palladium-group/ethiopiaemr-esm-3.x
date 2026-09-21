@@ -6,7 +6,7 @@ import {
   useLaunchWorkspaceRequiringVisit,
   type PatientWorkspace2DefinitionProps,
 } from '@openmrs/esm-patient-common-lib';
-import { type PathologyConfig, type PathologyTypeOfSampleOption } from '../config-schema';
+import { type PathologyConfig, type PathologyRequestFormOption } from '../config-schema';
 import { SPECIAL_ORDER_FORM_ENTRY_WORKSPACE } from '../constants';
 import { buildSpecialOrderFormLaunchProps } from './special-order-form-launch.resource';
 import styles from './pathology-order.workspace.scss';
@@ -21,27 +21,26 @@ export type PathologyOrderWorkspaceProps = PatientWorkspace2DefinitionProps<
 >;
 
 /**
- * Pathology Orders workspace: Bahmni-style Type of Sample chooser.
- * Clicking a type opens that option's request form immediately; after save a fixed TestOrder is created.
+ * Pathology Orders workspace: choose a request form (sample type), then open it and create a fixed TestOrder after save.
  */
 export default function PathologyOrderWorkspace({ groupProps, workspaceProps }: PathologyOrderWorkspaceProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const { pathologyTypeOfSampleOptions, careSettingUuid } = useConfig<PathologyConfig>();
+  const { pathologyRequestForms, careSettingUuid } = useConfig<PathologyConfig>();
   const patientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid ?? groupProps?.patient?.id;
   const patient = workspaceProps?.patient ?? groupProps?.patient;
   const visitContext = workspaceProps?.visitContext ?? groupProps?.visitContext;
   const launchSpecialOrderForm = useLaunchWorkspaceRequiringVisit(patientUuid, SPECIAL_ORDER_FORM_ENTRY_WORKSPACE);
 
   const options = useMemo(
-    () => pathologyTypeOfSampleOptions?.filter((option) => option?.id && option?.formUuid) ?? [],
-    [pathologyTypeOfSampleOptions],
+    () => pathologyRequestForms?.filter((option) => option?.id && option?.formUuid) ?? [],
+    [pathologyRequestForms],
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const openFormForOption = useCallback(
-    (option: PathologyTypeOfSampleOption) => {
+    (option: PathologyRequestFormOption) => {
       if (!patientUuid) {
         return;
       }
@@ -101,7 +100,7 @@ export default function PathologyOrderWorkspace({ groupProps, workspaceProps }: 
           </div>
         ) : (
           <p className={styles.empty}>
-            {t('noTypeOfSampleConfigured', 'No Type of Sample options have been configured for Pathology orders.')}
+            {t('noPathologyRequestFormsConfigured', 'No pathology request forms have been configured.')}
           </p>
         )}
       </div>

@@ -9,15 +9,13 @@ const CYTOLOGY_ORDER_CONCEPT_UUID = 'b2a8f1c3-9e45-4f62-9b37-2d3e4f5a6b71';
 
 export const configSchema = {
   /**
-   * Bahmni-style "Type of Sample" choices under Pathology Orders.
-   * Each option opens its form and creates the mapped fixed TestOrder after save.
-   * Three forms are assumed; Biopsy/ PAP Smear and Morphology- share the pathology
-   * form + histopathology order UUIDs until dedicated Morphology metadata exists.
+   * Pathology/cytology request form entries used for order entry and the Orders list.
+   * Each entry maps a sample-type label to a request form and the fixed TestOrder created after save.
    */
-  pathologyTypeOfSampleOptions: {
+  pathologyRequestForms: {
     _type: Type.Array,
     _description:
-      'Type of Sample options under Pathology Orders. Labels match the legacy Special Orders UI. Each entry has its own formUuid (three forms conceptually); orderConceptUuid selects the fixed TestOrder created after save.',
+      'Request forms available under Pathology Orders. Each entry has a formUuid and orderConceptUuid for the fixed TestOrder created after save.',
     _elements: {
       id: {
         _type: Type.String,
@@ -25,11 +23,11 @@ export const configSchema = {
       },
       label: {
         _type: Type.String,
-        _description: 'Display label for Type of Sample (e.g. FNAC/Cytology).',
+        _description: 'Display label (e.g. FNAC/Cytology).',
       },
       formUuid: {
         _type: Type.UUID,
-        _description: 'O3 form-engine form opened for this Type of Sample.',
+        _description: 'O3 form-engine form opened for this option.',
       },
       orderConceptUuid: {
         _type: Type.UUID,
@@ -76,7 +74,7 @@ export const configSchema = {
   },
 };
 
-export type PathologyTypeOfSampleOption = {
+export type PathologyRequestFormOption = {
   id: string;
   label: string;
   formUuid: string;
@@ -84,7 +82,7 @@ export type PathologyTypeOfSampleOption = {
 };
 
 export interface PathologyConfig {
-  pathologyTypeOfSampleOptions: Array<PathologyTypeOfSampleOption>;
+  pathologyRequestForms: Array<PathologyRequestFormOption>;
   careSettingUuid: string;
   pathologyResultConceptSetUuid: string;
   cytologyResultConceptSetUuid: string;
