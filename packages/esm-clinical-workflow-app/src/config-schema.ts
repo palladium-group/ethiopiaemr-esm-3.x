@@ -262,6 +262,12 @@ export const configSchema = {
     _default: true,
     _description: 'Indicates whether a primary diagnosis is required when submitting a visit note',
   },
+  showOrderBasketDiagnosisBanner: {
+    _type: Type.Boolean,
+    _default: true,
+    _description:
+      'When true, shows a warning banner in the order basket if the active visit has no primary (rank 1) diagnosis. Order save enforcement is controlled only by the ethiopiaemrcore backend global properties.',
+  },
   visitNoteConfig: notesConfigSchema,
   disableEmptyTabs: {
     _type: Type.Boolean,
@@ -470,6 +476,7 @@ export type ClinicalWorkflowConfig = {
   nurseDischargeConfirmationConceptUuid: string;
   nurseDischargeConfirmationYesConceptUuid: string;
   legacySummaryDisplayEnabled: boolean;
+  showOrderBasketDiagnosisBanner: boolean;
 };
 
 export interface VisitNoteConfig {
