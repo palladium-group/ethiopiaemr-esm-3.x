@@ -2,9 +2,12 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
+export type ResultKind = 'pathology' | 'cytology';
+
 export type ResultConceptMember = {
   uuid: string;
   display: string;
+  resultKind: ResultKind;
 };
 
 export type PathologyResultObservation = {
@@ -16,12 +19,14 @@ export type PathologyResultObservation = {
   encounterUuid: string;
   encounterDisplay: string;
   encounterDatetime: string;
+  resultKind: ResultKind;
 };
 
 export type PathologyResultEncounterGroup = {
   encounterUuid: string;
   encounterDisplay: string;
   encounterDatetime: string;
+  resultKind: ResultKind;
   observations: Array<PathologyResultObservation>;
 };
 
@@ -46,24 +51,34 @@ type ObsResponse = {
   }>;
 };
 
+type ResultConceptSetInput = {
+  uuid: string;
+  resultKind: ResultKind;
+};
+
 /**
- * Loads members of pathology/cytology result-form concept sets.
- * The dashboard renders observations for these members (no per-field LOINC list in the frontend).
+ * Loads members of pathology/cytology result-form concept sets, tagged by result kind.
  */
-export function useResultConceptSetMembers(conceptSetUuids: Array<string>) {
-  const uuids = (conceptSetUuids ?? []).filter(Boolean);
-  const key = uuids.length ? ['special-order-result-concept-sets', ...uuids].join('|') : null;
+export function useResultConceptSetMembers(conceptSets: Array<ResultConceptSetInput>) {
+  const sets = (conceptSets ?? []).filter((set) => set?.uuid);
+  const key = sets.length
+    ? ['special-order-result-concept-sets', ...sets.map((set) => `${set.resultKind}:${set.uuid}`)].join('|')
+    : null;
 
   const { data, error, isLoading } = useSWR<Array<ResultConceptMember>>(key, async () => {
     const membersByUuid = new Map<string, ResultConceptMember>();
     await Promise.all(
-      uuids.map(async (conceptSetUuid) => {
+      sets.map(async ({ uuid: conceptSetUuid, resultKind }) => {
         const response = await openmrsFetch<ConceptSetResponse>(
           `${restBaseUrl}/concept/${conceptSetUuid}?v=custom:(uuid,display,setMembers:(uuid,display))`,
         );
         for (const member of response.data?.setMembers ?? []) {
           if (member?.uuid) {
-            membersByUuid.set(member.uuid, { uuid: member.uuid, display: member.display || member.uuid });
+            membersByUuid.set(member.uuid, {
+              uuid: member.uuid,
+              display: member.display || member.uuid,
+              resultKind,
+            });
           }
         }
       }),
@@ -86,10 +101,10 @@ export function usePathologyResultObservations(patientUuid: string, members: Arr
         .sort(),
     [members],
   );
-  const displayByConcept = useMemo(() => {
-    const map: Record<string, string> = {};
+  const memberByConcept = useMemo(() => {
+    const map = new Map<string, ResultConceptMember>();
     for (const member of members) {
-      map[member.uuid] = member.display;
+      map.set(member.uuid, member);
     }
     return map;
   }, [members]);
@@ -100,9 +115,11 @@ export function usePathologyResultObservations(patientUuid: string, members: Arr
   const { data, error, isLoading, isValidating } = useSWR<Array<PathologyResultObservation>>(key, async () => {
     const bundles = await Promise.all(
       conceptUuids.map(async (conceptUuid) => {
+        const member = memberByConcept.get(conceptUuid);
         const response = await openmrsFetch<ObsResponse>(
           `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}` +
-            `&v=custom:(uuid,display,obsDatetime,value,concept:(uuid,display),encounter:(uuid,display,encounterDatetime))`,
+            `&v=custom:(uuid,display,obsDatetime,value,concept:(uuid,display),` +
+            `encounter:(uuid,display,encounterDatetime))`,
         );
         return (response.data?.results ?? []).map((obs) => {
           const encounterUuid = obs.encounter?.uuid || '';
@@ -110,12 +127,13 @@ export function usePathologyResultObservations(patientUuid: string, members: Arr
           return {
             id: obs.uuid,
             issued: obs.obsDatetime || '',
-            field: displayByConcept[conceptUuid] || obs.concept?.display || 'Result',
+            field: member?.display || obs.concept?.display || 'Result',
             conceptUuid,
             value: formatRestObsValue(obs.value),
             encounterUuid,
             encounterDisplay: obs.encounter?.display || '',
             encounterDatetime,
+            resultKind: member?.resultKind ?? 'pathology',
           };
         });
       }),
@@ -135,6 +153,12 @@ export function usePathologyResultObservations(patientUuid: string, members: Arr
   };
 }
 
+function resolveResultKind(observations: Array<PathologyResultObservation>): ResultKind {
+  const pathologyCount = observations.filter((obs) => obs.resultKind === 'pathology').length;
+  const cytologyCount = observations.filter((obs) => obs.resultKind === 'cytology').length;
+  return cytologyCount > pathologyCount ? 'cytology' : 'pathology';
+}
+
 function groupObservationsByEncounter(
   observations: Array<PathologyResultObservation>,
 ): Array<PathologyResultEncounterGroup> {
@@ -145,12 +169,14 @@ function groupObservationsByEncounter(
     const existing = groups.get(groupKey);
     if (existing) {
       existing.observations.push(observation);
+      existing.resultKind = resolveResultKind(existing.observations);
       continue;
     }
     groups.set(groupKey, {
       encounterUuid: observation.encounterUuid,
       encounterDisplay: observation.encounterDisplay,
       encounterDatetime: observation.encounterDatetime || observation.issued,
+      resultKind: observation.resultKind,
       observations: [observation],
     });
   }
@@ -159,6 +185,7 @@ function groupObservationsByEncounter(
     .map((group) => ({
       ...group,
       observations: [...group.observations].sort((a, b) => (a.field || '').localeCompare(b.field || '')),
+      resultKind: resolveResultKind(group.observations),
     }))
     .sort((a, b) => (b.encounterDatetime || '').localeCompare(a.encounterDatetime || ''));
 }

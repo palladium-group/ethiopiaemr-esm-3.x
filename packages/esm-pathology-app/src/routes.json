@@ -20,7 +20,8 @@
         "slot": "patient-chart-pathology-dashboard-slot",
         "path": "pathology",
         "title": "Pathology",
-        "hideDashboardTitle": true
+        "hideDashboardTitle": true,
+        "layoutMode": "anchored"
       }
     },
     {

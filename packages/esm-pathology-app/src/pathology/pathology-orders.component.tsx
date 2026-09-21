@@ -97,7 +97,7 @@ const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid,
       <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'} useZebraStyles>
         {({ rows, getRowProps, getTableProps, expandRow }) => (
           <TableContainer className={styles.tableContainer}>
-            <ExpandDefaultRow expandRow={expandRow} rowId={rows[rows.length - 1]?.id} />
+            <ExpandDefaultRow expandRow={expandRow} rowId={rows[0]?.id} />
             <Table {...getTableProps()}>
               <TableBody>
                 {rows.map((row) => {
@@ -112,8 +112,8 @@ const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid,
                       <TableExpandRow {...getRowProps({ row })}>
                         <TableCell>
                           <span className={styles.encounterSummary}>
-                            <span className={styles.encounterDate}>{datetime}</span>
                             <span className={styles.encounterFormName}>{formName}</span>
+                            <span className={styles.encounterDate}>{datetime}</span>
                           </span>
                         </TableCell>
                       </TableExpandRow>
