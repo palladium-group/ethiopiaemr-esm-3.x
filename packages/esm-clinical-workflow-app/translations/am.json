@@ -62,7 +62,8 @@
   "dateQueued": "Date Queued",
   "dateRequested": "Date requested",
   "days": "Days",
-  "daysInWard": "Days In Ward",
+  "daysInQueue": "Days in queue",
+  "daysInWard": "በዋርድ የቆዩበት ጊዜ",
   "deleteThisEncounter": "Delete this encounter",
   "diagnoses": "Diagnoses",
   "Diagnoses": "Diagnoses",
@@ -83,7 +84,6 @@
   "discontinued": "Discontinued",
   "dose": "Dose",
   "dosingInstructions": "Dosing Instructions",
-  "durationOnWard": "Duration on ward",
   "edit": "Edit",
   "editBillingInformation": "Edit Billing Information",
   "editPatientInformation": "Edit Patient Information",
@@ -368,6 +368,5 @@
   "searchInpatients": "የውስጥ ታካሚዎችን ፈልግ",
   "dischargeInPatients": "የሚለቀቁ ታካሚዎች",
   "billStatus": "የሂሳብ ሁኔታ",
-  "durationOnWard": "በዋርድ የቆዩበት ጊዜ",
   "goToBilling": "ወደ ክፍያ ሂድ"
 }

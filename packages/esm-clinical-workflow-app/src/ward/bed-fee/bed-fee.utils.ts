@@ -1,5 +1,6 @@
 import type { Visit } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
+import { countInclusiveDays } from '../stay-duration.utils';
 import type { BillableService, ServicePrice } from './bed-fee.resource';
 
 export interface BedStayWindow {
@@ -24,7 +25,7 @@ export function getBedStayWindow(
   const billEnd = dischargeDate?.isValid() ? dischargeDate.endOf('day') : dayjs().endOf('day');
 
   return {
-    daysInWard: billStart ? Math.abs(billEnd.startOf('day').diff(billStart, 'days')) + 1 : 0,
+    daysInWard: countInclusiveDays(admissionDatetime, ipdDischargeDatetime) ?? 0,
     billStartDate: billStart?.toDate() ?? null,
     billEndDate: billEnd.toDate(),
   };

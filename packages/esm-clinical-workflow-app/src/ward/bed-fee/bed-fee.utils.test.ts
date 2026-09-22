@@ -15,11 +15,11 @@ const BED_FEE_CONCEPT = 'daily-bed-fee-concept';
 
 describe('getBedStayWindow', () => {
   it('counts the admission and discharge day, so a same-day stay is one day', () => {
-    expect(getBedStayWindow('2026-08-20T09:00:00.000+0300', '2026-08-20T18:00:00.000+0300').daysInWard).toBe(1);
+    expect(getBedStayWindow('2026-08-20T06:00:00.000Z', '2026-08-20T15:00:00.000Z').daysInWard).toBe(1);
   });
 
   it('counts inclusive calendar days across a multi-day stay', () => {
-    expect(getBedStayWindow('2026-08-20T23:00:00.000+0300', '2026-08-24T01:00:00.000+0300').daysInWard).toBe(5);
+    expect(getBedStayWindow('2026-08-20T12:00:00.000Z', '2026-08-24T12:00:00.000Z').daysInWard).toBe(5);
   });
 
   it('bills up to today when the patient has no discharge encounter yet', () => {

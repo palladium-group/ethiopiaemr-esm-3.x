@@ -14,7 +14,6 @@ import {
 } from '@carbon/react';
 import { formatDatetime, parseDate, useAppContext, useConfig, usePagination } from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
-import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ClinicalWorkflowConfig } from '../../config-schema';
@@ -22,8 +21,10 @@ import { getOpenmrsId, bedLayoutToBed } from '../admitted-patients/admitted-pati
 import { EmptyState } from '../admitted-patients/empty-state.component';
 import { HyperLinkPatientCell } from '../admitted-patients/patient-cells';
 import type { WardPatient, WardViewContext } from '../admitted-patients/ward.types';
+import { findEncounterDatetimeByType } from '../bed-fee/bed-fee.utils';
 import { useEmrConfiguration } from '../bed-swap/useEmrConfiguration';
 import { useWardLocation } from '../bed-swap/useWardLocation';
+import { countInclusiveDays } from '../stay-duration.utils';
 import {
   GenerateBedFeeBillAction,
   NurseDischargeConfirmationStatus,
@@ -49,7 +50,7 @@ const EthiopiaDischargeInPatientsTable = () => {
     { key: 'gender', header: t('gender', 'Gender') },
     { key: 'age', header: t('age', 'Age') },
     { key: 'bedNumber', header: t('bedNumber', 'Bed Number') },
-    { key: 'daysAdmitted', header: t('durationOnWard', 'Duration on Ward') },
+    { key: 'daysAdmitted', header: t('daysInWard', 'Days in ward') },
     { key: 'billStatus', header: t('billStatus', 'Bill Status') },
     { key: 'nurseConfirmation', header: t('nurseConfirmation', 'Nurse confirmation') },
     { key: 'action', header: t('action', 'Action') },
@@ -106,13 +107,11 @@ const EthiopiaDischargeInPatientsTable = () => {
       const admissionDate = encounterAssigningToCurrentInpatientLocation?.encounterDatetime
         ? formatDatetime(parseDate(encounterAssigningToCurrentInpatientLocation.encounterDatetime))
         : '--';
-      const daysAdmitted = encounterAssigningToCurrentInpatientLocation?.encounterDatetime
-        ? Math.abs(
-            dayjs(encounterAssigningToCurrentInpatientLocation.encounterDatetime)
-              .startOf('day')
-              .diff(dayjs().startOf('day'), 'days'),
-          ) + 1
-        : '--';
+      const daysAdmitted =
+        countInclusiveDays(
+          encounterAssigningToCurrentInpatientLocation?.encounterDatetime,
+          findEncounterDatetimeByType(visit, config.ipdDischargeEncounterTypeUuid),
+        ) ?? '--';
 
       return {
         id: patient.patient?.uuid ?? index.toString(),
@@ -164,7 +163,16 @@ const EthiopiaDischargeInPatientsTable = () => {
         ),
       };
     });
-  }, [emrConfiguration, handleLeaveBed, isLoading, isLoadingEmrConfiguration, results, t, wardLocation]);
+  }, [
+    config.ipdDischargeEncounterTypeUuid,
+    emrConfiguration,
+    handleLeaveBed,
+    isLoading,
+    isLoadingEmrConfiguration,
+    results,
+    t,
+    wardLocation,
+  ]);
 
   if (!patients.length) {
     return <EmptyState message={t('noDischargeInpatients', 'No Discharge in patients')} />;

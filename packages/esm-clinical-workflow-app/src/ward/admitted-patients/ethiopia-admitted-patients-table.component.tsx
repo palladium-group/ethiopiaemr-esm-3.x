@@ -22,9 +22,9 @@ import {
   usePagination,
 } from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
-import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { countInclusiveDays } from '../stay-duration.utils';
 import { getOpenmrsId } from './admitted-patients.utils';
 import { buildWardPatients } from './build-ward-patients';
 import { EmptyState } from './empty-state.component';
@@ -44,7 +44,7 @@ const EthiopiaAdmittedPatientsTable = () => {
     { key: 'gender', header: t('gender', 'Gender') },
     { key: 'age', header: t('age', 'Age') },
     { key: 'bedNumber', header: t('bedNumber', 'Bed Number') },
-    { key: 'daysAdmitted', header: t('daysInWard', 'Days In Ward') },
+    { key: 'daysAdmitted', header: t('daysInWard', 'Days in ward') },
     { key: 'action', header: t('action', 'Action') },
   ];
 
@@ -63,11 +63,7 @@ const EthiopiaAdmittedPatientsTable = () => {
       const admissionDate = encounterAssigningToCurrentInpatientLocation?.encounterDatetime
         ? formatDatetime(parseDate(encounterAssigningToCurrentInpatientLocation.encounterDatetime))
         : '--';
-      const encounterDate = encounterAssigningToCurrentInpatientLocation?.encounterDatetime;
-      const daysAdmitted =
-        encounterDate && dayjs(encounterDate).isValid()
-          ? Math.abs(dayjs().startOf('day').diff(dayjs(encounterDate).startOf('day'), 'days'))
-          : '--';
+      const daysAdmitted = countInclusiveDays(encounterAssigningToCurrentInpatientLocation?.encounterDatetime) ?? '--';
 
       return {
         id: patient.patient?.uuid ?? index.toString(),
