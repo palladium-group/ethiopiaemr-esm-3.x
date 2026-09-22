@@ -16,13 +16,13 @@ import {
 } from '@carbon/react';
 import { ErrorState, formatDatetime, parseDate, useAppContext, usePagination } from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
-import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getOpenmrsId } from '../admitted-patients/admitted-patients.utils';
 import { EmptyState } from '../admitted-patients/empty-state.component';
 import { HyperLinkPatientCell } from '../admitted-patients/patient-cells';
 import type { InpatientRequest, WardViewContext } from '../admitted-patients/ward.types';
+import { countInclusiveDays } from '../stay-duration.utils';
 import AwaitingAdmissionExpandedRow from './awaiting-admission-expanded-row.component';
 import WardAdmissionRequestActions from './ward-admission-request-actions.component';
 import styles from './ethiopia-awaiting-admission-patients-table.scss';
@@ -41,7 +41,7 @@ const EthiopiaAwaitingAdmissionPatientsTable = () => {
     { key: 'gender', header: t('gender', 'Gender') },
     { key: 'age', header: t('age', 'Age') },
     { key: 'bedNumber', header: t('bedNumber', 'Bed Number') },
-    { key: 'daysAdmitted', header: t('durationOnWard', 'Duration on ward') },
+    { key: 'daysAdmitted', header: t('daysInQueue', 'Days in queue') },
     { key: 'action', header: t('action', 'Action') },
   ];
 
@@ -67,11 +67,7 @@ const EthiopiaAwaitingAdmissionPatientsTable = () => {
       const admissionDate = request.dispositionEncounter?.encounterDatetime
         ? formatDatetime(parseDate(request.dispositionEncounter.encounterDatetime))
         : '--';
-      const encounterDate = request.dispositionEncounter?.encounterDatetime;
-      const daysInQueue =
-        encounterDate && dayjs(encounterDate).isValid()
-          ? Math.abs(dayjs().startOf('day').diff(dayjs(encounterDate).startOf('day'), 'days'))
-          : '--';
+      const daysInQueue = countInclusiveDays(request.dispositionEncounter?.encounterDatetime) ?? '--';
       const rowId = request.patient?.uuid ?? index.toString();
 
       return {
