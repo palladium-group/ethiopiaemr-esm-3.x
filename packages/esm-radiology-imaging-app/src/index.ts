@@ -10,14 +10,14 @@ import {
   Send,
   TaskComplete,
 } from '@carbon/react/icons';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 import { configSchema } from './config-schema';
+import { dashboardMeta, moduleName } from './dashboard.meta';
 import { createHomeDashboardLink } from './radiology-imaging/create-dashboard-link.component';
 import { createLeftPanelLink } from './radiology-imaging/create-left-panel-link.component';
 
-const moduleName = '@palladium-ethiopia/esm-radiology-imaging-app';
-
 const options = {
-  featureName: 'root-world',
+  featureName: 'radiology-imaging',
   moduleName,
 };
 
@@ -26,6 +26,20 @@ export const importTranslation = require.context('../translations', false, /.jso
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
+
+// Patient chart — Radiology and Imaging dashboard
+// t('Radiology and Imaging', 'Radiology and Imaging')
+export const patientChartRadiologyImagingDashboardLink = getSyncLifecycle(
+  createDashboardLink({
+    ...dashboardMeta,
+  }),
+  options,
+);
+
+export const patientChartRadiologyImagingDashboard = getAsyncLifecycle(
+  () => import('./patient-chart/radiology-imaging-chart-dashboard.component'),
+  options,
+);
 
 // Radiology Imaging — page root
 export const radiologyImagingRoot = getAsyncLifecycle(

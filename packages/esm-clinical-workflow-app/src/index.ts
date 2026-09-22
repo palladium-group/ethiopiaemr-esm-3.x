@@ -13,6 +13,8 @@ import { spaBasePath } from './constants';
 import BillingInformationWorkspace from './mru/billing-information/billing-information.workspace';
 import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component';
 import orderBasketActionButtonExtension from './patient-orders/order-basket-action-button/order-basket-action-button.component';
+import orderBasketDiagnosisBannerExtension from './patient-orders/order-basket-diagnosis-banner.extension';
+import { provideOrderBasketErrorTitle } from './patient-orders/provide-order-basket-error-title';
 import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.component';
@@ -48,6 +50,8 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+
+  provideOrderBasketErrorTitle();
 
   getConfig(moduleName)
     .then((cfg) => {
@@ -110,6 +114,8 @@ export const patientScoreboardLink = getSyncLifecycle(
 export const patientScoreboard = getSyncLifecycle(PatientScoreboard, options);
 
 export const orderBasketActionButton = getSyncLifecycle(orderBasketActionButtonExtension, options);
+
+export const orderBasketDiagnosisBanner = getSyncLifecycle(orderBasketDiagnosisBannerExtension, options);
 
 export const clinicalFormsActionButton = getSyncLifecycle(clinicalFormsActionButtonExtension, options);
 

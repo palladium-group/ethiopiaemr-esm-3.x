@@ -160,7 +160,7 @@ export const configSchema = {
   identifierSourceUuid: {
     _type: Type.String,
     _description: 'Identifier source UUID',
-    _default: 'fb034aac-2353-4940-abe2-7bc94e7c1e71',
+    _default: '0b5ddb77-7df8-4a9b-8e9c-ecd8a264729f',
   },
   defaultIdentifierTypeUuid: {
     _type: Type.String,
@@ -261,6 +261,12 @@ export const configSchema = {
     _type: Type.Boolean,
     _default: true,
     _description: 'Indicates whether a primary diagnosis is required when submitting a visit note',
+  },
+  showOrderBasketDiagnosisBanner: {
+    _type: Type.Boolean,
+    _default: true,
+    _description:
+      'When true, shows a warning banner in the order basket if the active visit has no primary (rank 1) diagnosis. Order save enforcement is controlled only by the ethiopiaemrcore backend global properties.',
   },
   visitNoteConfig: notesConfigSchema,
   disableEmptyTabs: {
@@ -470,6 +476,7 @@ export type ClinicalWorkflowConfig = {
   nurseDischargeConfirmationConceptUuid: string;
   nurseDischargeConfirmationYesConceptUuid: string;
   legacySummaryDisplayEnabled: boolean;
+  showOrderBasketDiagnosisBanner: boolean;
 };
 
 export interface VisitNoteConfig {

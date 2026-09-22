@@ -160,3 +160,130 @@ describe('ReportRunner date range constraint', () => {
     expect(screen.getByRole('button', { name: /run report/i })).toBeEnabled();
   });
 });
+
+/** The aggregate report, filtered by Ethiopian fiscal year and month. */
+const aggregateDefinition = {
+  uuid: 'report-uuid',
+  name: 'EPI Aggregate Reporting Form',
+  description: null,
+  indicator: true,
+  parameters: [
+    { name: 'fiscalYear', label: 'Fiscal Year', type: 'java.lang.String' },
+    { name: 'months', label: 'Month(s)', type: 'java.lang.String' },
+  ],
+  designs: [{ uuid: 'design-uuid', name: 'Excel' }],
+};
+
+async function chooseFiscalYear(year: string) {
+  await userEvent.click(screen.getByRole('combobox', { name: /fiscal year/i }));
+  await userEvent.click(await screen.findByRole('option', { name: year }));
+}
+
+async function chooseMonths(...labels: Array<string>) {
+  await userEvent.click(screen.getByRole('combobox', { name: /month/i }));
+  for (const label of labels) {
+    await userEvent.click(await screen.findByRole('option', { name: label }));
+  }
+}
+
+describe('ReportRunner Ethiopian period filter', () => {
+  beforeEach(() => {
+    mockUseReportDefinition.mockReturnValue({
+      reportDefinition: aggregateDefinition,
+      isLoading: false,
+      error: undefined,
+    } as any);
+  });
+
+  it('shows dropdowns rather than date pickers', () => {
+    render(<ReportRunner />);
+
+    expect(screen.getByRole('combobox', { name: /fiscal year/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Start Date')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('End Date')).not.toBeInTheDocument();
+  });
+
+  it('blocks running until a month is picked', async () => {
+    render(<ReportRunner />);
+
+    expect(screen.getByRole('button', { name: /run report/i })).toBeDisabled();
+
+    await chooseFiscalYear('2019');
+    expect(screen.getByRole('button', { name: /run report/i })).toBeDisabled();
+
+    await chooseMonths('Hamle 2018');
+    expect(screen.getByRole('button', { name: /run report/i })).toBeEnabled();
+  });
+
+  /** Carbon sorts by label unless told otherwise, which would read Ginbot, Hamle, Hidar… */
+  it('lists the months chronologically, not alphabetically', async () => {
+    render(<ReportRunner />);
+
+    await chooseFiscalYear('2019');
+    await userEvent.click(screen.getByRole('combobox', { name: /month/i }));
+
+    const listed = (await screen.findAllByRole('option')).map((o) => o.textContent);
+    expect(listed).toEqual([
+      'Hamle 2018',
+      'Nehase 2018',
+      'Meskerem 2019',
+      'Tikimt 2019',
+      'Hidar 2019',
+      'Tahsas 2019',
+      'Tir 2019',
+      'Yekatit 2019',
+      'Megabit 2019',
+      'Miyazia 2019',
+      'Ginbot 2019',
+      'Sene 2019',
+    ]);
+  });
+
+  it('offers only the chosen fiscal year’s months', async () => {
+    render(<ReportRunner />);
+
+    await chooseFiscalYear('2019');
+    await userEvent.click(screen.getByRole('combobox', { name: /month/i }));
+
+    expect(await screen.findByRole('option', { name: 'Hamle 2018' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Sene 2019' })).toBeInTheDocument();
+    // Belongs to FY 2020, so it must not be selectable here.
+    expect(screen.queryByRole('option', { name: 'Hamle 2019' })).not.toBeInTheDocument();
+  });
+
+  it('sends several months as one comma-separated value', async () => {
+    render(<ReportRunner />);
+
+    await chooseFiscalYear('2019');
+    await chooseMonths('Hamle 2018', 'Nehase 2018');
+    await userEvent.click(screen.getByRole('button', { name: /run report/i }));
+
+    expect(mockRunReport).toHaveBeenCalledWith('report-uuid', {
+      fiscalYear: '2019',
+      months: 'Hamle 2018,Nehase 2018',
+    });
+  });
+
+  it('sends months in fiscal-year order however they were ticked', async () => {
+    render(<ReportRunner />);
+
+    await chooseFiscalYear('2019');
+    await chooseMonths('Meskerem 2019', 'Hamle 2018');
+    await userEvent.click(screen.getByRole('button', { name: /run report/i }));
+
+    expect(mockRunReport).toHaveBeenCalledWith('report-uuid', {
+      fiscalYear: '2019',
+      months: 'Hamle 2018,Meskerem 2019',
+    });
+  });
+
+  it('clears the months when the fiscal year changes', async () => {
+    render(<ReportRunner />);
+
+    await chooseFiscalYear('2019');
+    await chooseMonths('Hamle 2018');
+    await chooseFiscalYear('2020');
+
+    expect(screen.getByRole('button', { name: /run report/i })).toBeDisabled();
+  });
+});

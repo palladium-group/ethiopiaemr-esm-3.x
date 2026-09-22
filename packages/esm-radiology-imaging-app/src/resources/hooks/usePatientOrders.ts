@@ -6,8 +6,11 @@ import { type RadiologyOrder } from '../../radiology-imaging/types';
 const customRepresentation =
   'custom:(uuid,orderNumber,patient:(uuid,display,identifiers,person:(uuid,display,age,gender,birthdate)),' +
   'concept:(uuid,display,conceptClass),action,careSetting,orderer:ref,urgency,instructions,' +
-  'orderReasonNonCoded,orderReason,bodySite,laterality,commentToFulfiller,procedures,display,' +
-  'fulfillerStatus,dateStopped,scheduledDate,dateActivated,fulfillerComment,encounter)';
+  'orderReasonNonCoded,orderReason,bodySite,laterality,commentToFulfiller,' +
+  'procedures:(uuid,status,preliminaryReport,impressions,procedureReport,reportType,' +
+  'preliminaryReportEnteredBy:ref,preliminaryReportApprovedBy:ref),' +
+  'display,fulfillerStatus,dateStopped,scheduledDate,dateActivated,fulfillerComment,' +
+  'encounter:(uuid,display,location:(uuid,display)))';
 
 const urgencyPriority: Record<string, number> = { STAT: 1, ON_SCHEDULED_DATE: 2, ROUTINE: 3 };
 
@@ -24,7 +27,7 @@ export function usePatientOrders(patientUuid: string | null) {
       )}`
     : null;
 
-  const { data, isLoading, error } = useSWR<OrdersResponse>(url, (path: string) =>
+  const { data, isLoading, error, mutate, isValidating } = useSWR<OrdersResponse>(url, (path: string) =>
     openmrsFetch<OrdersResponse>(path).then((res) => res.data),
   );
 
@@ -33,5 +36,5 @@ export function usePatientOrders(patientUuid: string | null) {
       (urgencyPriority[a.urgency] ?? Number.MAX_SAFE_INTEGER) - (urgencyPriority[b.urgency] ?? Number.MAX_SAFE_INTEGER),
   );
 
-  return { orders, isLoading, error };
+  return { orders, isLoading, error, mutate, isValidating };
 }

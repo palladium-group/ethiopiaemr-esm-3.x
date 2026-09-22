@@ -84,7 +84,7 @@ export function formatDicomPatientName(displayName: string): string {
     return parts[0];
   }
   const [first, ...rest] = parts;
-  return `${rest.join(' ')}^${first}`;
+  return `${rest.join(' ')} ${first}`;
 }
 
 // ─── Patient identifier ────────────────────────────────────────────────────────
