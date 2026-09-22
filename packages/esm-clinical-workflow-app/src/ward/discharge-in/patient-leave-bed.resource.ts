@@ -116,9 +116,9 @@ type Bill = OpenmrsResource & {
 };
 
 export const usePatientBills = (patientUuid: string, startingDate?: Date | null, endDate?: Date | null) => {
-  const rep =
-    'custom:(uuid,display,voided,voidReason,dateCreated,status,patient:(uuid,display),' +
-    'lineItems:(uuid,paymentStatus,billableService,itemOrServiceConceptUuid,quantity,dateCreated))';
+  // Nested lineItems:(…) custom props are ignored by the cashier REST resource and return only
+  // uuid/display/voided. Request bare lineItems so quantity, paymentStatus, and concept UUIDs load.
+  const rep = 'custom:(uuid,display,voided,voidReason,dateCreated,status,patient:(uuid,display),lineItems)';
 
   const { dailyBedFeeBillableService } = useConfig<WardAppConfigSlice>({
     externalModuleName: '@kenyaemr/esm-ward-app',

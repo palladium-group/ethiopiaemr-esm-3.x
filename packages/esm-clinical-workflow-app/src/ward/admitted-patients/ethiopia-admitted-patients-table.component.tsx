@@ -52,17 +52,23 @@ const EthiopiaAdmittedPatientsTable = () => {
 
   const [pageSize, setPageSize] = useState(5);
   const searchResults = useMemo(() => {
-    return patients?.filter((pat) => pat?.patient?.person?.display?.toLowerCase().includes(search.toLowerCase()));
+    const query = search.toLowerCase();
+    return patients.filter((pat) => pat?.patient?.person?.display?.toLowerCase().includes(query));
   }, [patients, search]);
   const { paginated, results, totalPages, currentPage, goTo } = usePagination(searchResults, pageSize);
-  const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
+  const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results?.length ?? 0);
   const tableRows = useMemo(() => {
-    return results.map((patient, index) => {
+    return (results ?? []).map((patient, index) => {
       const { encounterAssigningToCurrentInpatientLocation } = patient.inpatientAdmission ?? {};
 
-      const admissionDate = encounterAssigningToCurrentInpatientLocation?.encounterDatetime
-        ? formatDatetime(parseDate(encounterAssigningToCurrentInpatientLocation.encounterDatetime))
-        : '--';
+      let admissionDate = '--';
+      try {
+        if (encounterAssigningToCurrentInpatientLocation?.encounterDatetime) {
+          admissionDate = formatDatetime(parseDate(encounterAssigningToCurrentInpatientLocation.encounterDatetime));
+        }
+      } catch {
+        admissionDate = '--';
+      }
       const daysAdmitted = countInclusiveDays(encounterAssigningToCurrentInpatientLocation?.encounterDatetime) ?? '--';
 
       return {

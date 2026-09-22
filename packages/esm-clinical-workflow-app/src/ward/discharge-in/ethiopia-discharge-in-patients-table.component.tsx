@@ -61,7 +61,7 @@ const EthiopiaDischargeInPatientsTable = () => {
       bedLayouts
         ?.map((bedLayout) => {
           const bed = bedLayoutToBed(bedLayout);
-          const wardPatients: WardPatient[] = bedLayout.patients.map((patient): WardPatient => {
+          const wardPatients: WardPatient[] = (bedLayout.patients ?? []).map((patient): WardPatient => {
             const inpatientAdmission = wardAdmittedPatientsWithBed?.get(patient.uuid);
             if (inpatientAdmission) {
               const { patient: admittedPatient, visit, currentInpatientRequest } = inpatientAdmission;
@@ -94,19 +94,23 @@ const EthiopiaDischargeInPatientsTable = () => {
 
   const [pageSize, setPageSize] = useState(5);
   const searchResults = useMemo(() => {
-    return patients?.filter((patient) =>
-      patient?.patient?.person?.display?.toLowerCase().includes(search.toLowerCase()),
-    );
+    const query = search.toLowerCase();
+    return patients.filter((patient) => patient?.patient?.person?.display?.toLowerCase().includes(query));
   }, [patients, search]);
   const { paginated, results, totalPages, currentPage, goTo } = usePagination(searchResults, pageSize);
-  const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
+  const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results?.length ?? 0);
 
   const tableRows = useMemo(() => {
-    return results.map((patient, index) => {
+    return (results ?? []).map((patient, index) => {
       const { encounterAssigningToCurrentInpatientLocation, visit } = patient.inpatientAdmission ?? {};
-      const admissionDate = encounterAssigningToCurrentInpatientLocation?.encounterDatetime
-        ? formatDatetime(parseDate(encounterAssigningToCurrentInpatientLocation.encounterDatetime))
-        : '--';
+      let admissionDate = '--';
+      try {
+        if (encounterAssigningToCurrentInpatientLocation?.encounterDatetime) {
+          admissionDate = formatDatetime(parseDate(encounterAssigningToCurrentInpatientLocation.encounterDatetime));
+        }
+      } catch {
+        admissionDate = '--';
+      }
       const daysAdmitted =
         countInclusiveDays(
           encounterAssigningToCurrentInpatientLocation?.encounterDatetime,
@@ -124,15 +128,17 @@ const EthiopiaDischargeInPatientsTable = () => {
         age: patient.patient?.person?.age ?? '--',
         bedNumber: patient.bed?.bedNumber ?? '--',
         daysAdmitted,
-        billStatus: (
+        billStatus: patient.patient?.uuid ? (
           <PatientBillStatus
             patientUuid={patient.patient.uuid}
             encounterDatetime={encounterAssigningToCurrentInpatientLocation?.encounterDatetime}
             visit={visit}
           />
+        ) : (
+          '--'
         ),
         nurseConfirmation: <NurseDischargeConfirmationStatus visit={visit} />,
-        action: (
+        action: patient.patient?.uuid ? (
           <OverflowMenu size="sm" flipped>
             <OverflowMenuItem itemText={t('goToBilling', 'Go to Billing')} onClick={() => {}} />
             <GenerateBedFeeBillAction
@@ -160,6 +166,8 @@ const EthiopiaDischargeInPatientsTable = () => {
               }}
             />
           </OverflowMenu>
+        ) : (
+          '--'
         ),
       };
     });
