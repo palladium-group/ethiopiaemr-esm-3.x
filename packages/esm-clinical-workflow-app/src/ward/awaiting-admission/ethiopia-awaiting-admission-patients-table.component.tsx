@@ -46,27 +46,33 @@ const EthiopiaAwaitingAdmissionPatientsTable = () => {
   ];
 
   const searchResults = useMemo(() => {
-    return inpatientRequests?.filter((request) =>
-      request?.patient?.person?.display?.toLowerCase().includes(search.toLowerCase()),
+    const query = search.toLowerCase();
+    return (inpatientRequests ?? []).filter((request) =>
+      request?.patient?.person?.display?.toLowerCase().includes(query),
     );
   }, [inpatientRequests, search]);
 
-  const { paginated, results, totalPages, currentPage, goTo } = usePagination(searchResults ?? [], pageSize);
-  const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
+  const { paginated, results, totalPages, currentPage, goTo } = usePagination(searchResults, pageSize);
+  const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results?.length ?? 0);
 
   const requestsByRowId = useMemo(() => {
     const map = new Map<string, InpatientRequest>();
-    results.forEach((request, index) => {
+    (results ?? []).forEach((request, index) => {
       map.set(request.patient?.uuid ?? index.toString(), request);
     });
     return map;
   }, [results]);
 
   const tableRows = useMemo(() => {
-    return results.map((request, index) => {
-      const admissionDate = request.dispositionEncounter?.encounterDatetime
-        ? formatDatetime(parseDate(request.dispositionEncounter.encounterDatetime))
-        : '--';
+    return (results ?? []).map((request, index) => {
+      let admissionDate = '--';
+      try {
+        if (request.dispositionEncounter?.encounterDatetime) {
+          admissionDate = formatDatetime(parseDate(request.dispositionEncounter.encounterDatetime));
+        }
+      } catch {
+        admissionDate = '--';
+      }
       const daysInQueue = countInclusiveDays(request.dispositionEncounter?.encounterDatetime) ?? '--';
       const rowId = request.patient?.uuid ?? index.toString();
 

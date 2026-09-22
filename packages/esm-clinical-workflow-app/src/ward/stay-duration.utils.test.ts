@@ -1,26 +1,35 @@
-import dayjs from 'dayjs';
 import { countInclusiveDays } from './stay-duration.utils';
+
+function localIsoAt(year: number, monthIndex: number, day: number, hour = 12): string {
+  return new Date(year, monthIndex, day, hour, 0, 0, 0).toISOString();
+}
 
 describe('countInclusiveDays', () => {
   it('counts the first day, so a same-day stay is one day', () => {
-    expect(countInclusiveDays('2026-08-20T06:00:00.000Z', '2026-08-20T15:00:00.000Z')).toBe(1);
+    expect(countInclusiveDays(localIsoAt(2026, 7, 20, 6), localIsoAt(2026, 7, 20, 15))).toBe(1);
   });
 
   it('counts a patient admitted today as being in bed for a day', () => {
-    expect(countInclusiveDays(dayjs().hour(9).toISOString())).toBe(1);
+    const now = new Date();
+    expect(countInclusiveDays(localIsoAt(now.getFullYear(), now.getMonth(), now.getDate(), 9))).toBe(1);
   });
 
   it('counts both ends of a multi-day stay', () => {
-    expect(countInclusiveDays('2026-08-20T12:00:00.000Z', '2026-08-24T12:00:00.000Z')).toBe(5);
+    expect(countInclusiveDays(localIsoAt(2026, 7, 20, 12), localIsoAt(2026, 7, 24, 12))).toBe(5);
   });
 
   it('counts up to today while the patient has no discharge', () => {
-    expect(countInclusiveDays(dayjs().subtract(3, 'day').toISOString())).toBe(4);
+    const start = new Date();
+    start.setDate(start.getDate() - 3);
+    expect(countInclusiveDays(start.toISOString())).toBe(4);
   });
 
   it('stops counting at the discharge rather than running on to today', () => {
-    const admission = dayjs().subtract(5, 'day');
-    expect(countInclusiveDays(admission.toISOString(), admission.add(1, 'day').toISOString())).toBe(2);
+    const admission = new Date();
+    admission.setDate(admission.getDate() - 5);
+    const discharge = new Date(admission);
+    discharge.setDate(discharge.getDate() + 1);
+    expect(countInclusiveDays(admission.toISOString(), discharge.toISOString())).toBe(2);
   });
 
   it('returns null when the start is missing or unparseable', () => {
@@ -31,10 +40,14 @@ describe('countInclusiveDays', () => {
   });
 
   it('returns null rather than a positive count when the start is in the future', () => {
-    expect(countInclusiveDays(dayjs().add(3, 'day').toISOString())).toBeNull();
+    const future = new Date();
+    future.setDate(future.getDate() + 3);
+    expect(countInclusiveDays(future.toISOString())).toBeNull();
   });
 
   it('falls back to today when the end is unparseable', () => {
-    expect(countInclusiveDays(dayjs().subtract(1, 'day').toISOString(), 'not-a-date')).toBe(2);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    expect(countInclusiveDays(yesterday.toISOString(), 'not-a-date')).toBe(2);
   });
 });
