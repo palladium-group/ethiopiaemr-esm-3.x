@@ -21,7 +21,8 @@ export type PathologyOrderWorkspaceProps = PatientWorkspace2DefinitionProps<
 >;
 
 /**
- * Pathology Orders workspace: choose a request form (sample type), then open it and create a fixed TestOrder after save.
+ * Pathology Orders workspace: choose a service area, then open its request form.
+ * The form Sample type answer selects which TestOrder is created after save.
  */
 export default function PathologyOrderWorkspace({ groupProps, workspaceProps }: PathologyOrderWorkspaceProps) {
   const { t } = useTranslation();
@@ -57,9 +58,10 @@ export default function PathologyOrderWorkspace({ groupProps, workspaceProps }: 
       setSelectedId(option.id);
 
       const workspaceLaunchProps = buildSpecialOrderFormLaunchProps({
-        typeOfSampleLabel: option.label,
+        serviceAreaLabel: option.label,
         formUuid: option.formUuid,
-        orderConceptUuid: option.orderConceptUuid,
+        sampleTypeConceptUuid: option.sampleTypeConceptUuid,
+        sampleTypeToOrderConcept: option.sampleTypeToOrderConcept ?? [],
         careSettingUuid,
         patientUuid,
         visitContext,
@@ -79,9 +81,9 @@ export default function PathologyOrderWorkspace({ groupProps, workspaceProps }: 
   return (
     <Workspace2 title={t('pathologyOrders', 'Pathology orders')}>
       <div className={styles.container}>
-        <p className={styles.sectionLabel}>{t('typeOfSample', 'Type of Sample')} *</p>
+        <p className={styles.sectionLabel}>{t('serviceArea', 'Service area')} *</p>
         {options.length > 0 ? (
-          <div className={styles.typeOfSampleSwitcher} role="group" aria-label={t('typeOfSample', 'Type of Sample')}>
+          <div className={styles.typeOfSampleSwitcher} role="group" aria-label={t('serviceArea', 'Service area')}>
             {options.map((option) => {
               const selected = selectedId === option.id;
               return (

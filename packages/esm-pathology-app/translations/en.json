@@ -1,7 +1,6 @@
 {
   "cannotOpenPathologyForm": "Cannot open the pathology order form",
   "cytologyResultsTitle": "Cytology Results",
-  "date": "Date",
   "newPathologyOrder": "New order",
   "noObservationsFound": "No observations found",
   "noPathologyRequestFormsConfigured": "No pathology request forms have been configured.",
@@ -14,10 +13,8 @@
   "pathologyResultsTitle": "Pathology Results",
   "recordOrders": "Record Orders",
   "refreshing": "Refreshing...",
-  "resultField": "Result field",
   "results": "Results",
-  "resultValue": "Value",
+  "serviceArea": "Service area",
   "typeOfSample": "Type of Sample",
-  "unknownEncounter": "Unknown encounter",
   "unknownForm": "Unknown form"
 }

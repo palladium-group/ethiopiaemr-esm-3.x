@@ -1,21 +1,36 @@
 import { Type } from '@openmrs/esm-framework';
 
-/** Existing Pathology Request Form UUID — reused by Biopsy/ PAP Smear and Morphology- for now. */
-const PATHOLOGY_REQUEST_FORM_UUID = 'a2b3c4d5-2222-4a2b-8c3d-0e1f2a3b4c5d';
-/** Existing Cytology Request Form UUID — used by FNAC/Cytology for now. */
-const CYTOLOGY_REQUEST_FORM_UUID = 'a3b4c5d6-3333-4a2b-8c3d-0e1f2a3b4c5d';
+/** Histopathology Request Form UUID. */
+const HISTOPATHOLOGY_REQUEST_FORM_UUID = 'a2b3c4d5-2222-4a2b-8c3d-0e1f2a3b4c5d';
+/** Cytopathology Request Form UUID. */
+const CYTOPATHOLOGY_REQUEST_FORM_UUID = 'a3b4c5d6-3333-4a2b-8c3d-0e1f2a3b4c5d';
+
+const HISTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID = 'c2000010-2222-4a2b-8c3d-0e1f2a3b4c10';
+const CYTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID = 'c3000010-3333-4a2b-8c3d-0e1f2a3b4c10';
+
+const BIOPSY_ANSWER_UUID = 'c2000001-2222-4a2b-8c3d-0e1f2a3b4c01';
+const MORPHOLOGY_ANSWER_UUID = 'c2000002-2222-4a2b-8c3d-0e1f2a3b4c02';
+const FNAC_ANSWER_UUID = 'c3000001-3333-4a2b-8c3d-0e1f2a3b4c01';
+const FLUID_ANSWER_UUID = 'c3000002-3333-4a2b-8c3d-0e1f2a3b4c02';
+const PAP_ANSWER_UUID = 'c3000003-3333-4a2b-8c3d-0e1f2a3b4c03';
+const IMAGE_GUIDED_FNAC_ANSWER_UUID = 'c3000004-3333-4a2b-8c3d-0e1f2a3b4c04';
+
 const HISTOPATHOLOGY_ORDER_CONCEPT_UUID = 'b1a7f0c2-9d34-4e51-8a26-1c2d3e4f5a60';
-const CYTOLOGY_ORDER_CONCEPT_UUID = 'b2a8f1c3-9e45-4f62-9b37-2d3e4f5a6b71';
+const MORPHOLOGY_ORDER_CONCEPT_UUID = 'b1a7f0c3-9d34-4e51-8a26-1c2d3e4f5a61';
+const FNAC_ORDER_CONCEPT_UUID = 'b2a8f1c3-9e45-4f62-9b37-2d3e4f5a6b71';
+const IMAGE_GUIDED_FNAC_ORDER_CONCEPT_UUID = 'b2a8f1c4-9e45-4f62-9b37-2d3e4f5a6b72';
+const FLUID_ORDER_CONCEPT_UUID = 'b2a8f1c5-9e45-4f62-9b37-2d3e4f5a6b73';
+const PAP_ORDER_CONCEPT_UUID = 'b2a8f1c6-9e45-4f62-9b37-2d3e4f5a6b74';
 
 export const configSchema = {
   /**
-   * Pathology/cytology request form entries used for order entry and the Orders list.
-   * Each entry maps a sample-type label to a request form and the fixed TestOrder created after save.
+   * Service-area entries for the Pathology Orders workspace picker.
+   * Each entry opens one request form; the form Sample type answer selects the TestOrder via sampleTypeToOrderConcept.
    */
   pathologyRequestForms: {
     _type: Type.Array,
     _description:
-      'Request forms available under Pathology Orders. Each entry has a formUuid and orderConceptUuid for the fixed TestOrder created after save.',
+      'Service areas under Pathology Orders. Each entry opens a request form; Sample type on the form maps to the fixed TestOrder concept.',
     _elements: {
       id: {
         _type: Type.String,
@@ -23,35 +38,54 @@ export const configSchema = {
       },
       label: {
         _type: Type.String,
-        _description: 'Display label (e.g. FNAC/Cytology).',
+        _description: 'Service-area display label (e.g. Histopathology).',
       },
       formUuid: {
         _type: Type.UUID,
-        _description: 'O3 form-engine form opened for this option.',
+        _description: 'O3 form-engine form opened for this service area.',
       },
-      orderConceptUuid: {
+      sampleTypeConceptUuid: {
         _type: Type.UUID,
-        _description: 'Concept UUID of the fixed TestOrder created after this form is saved.',
+        _description: 'Concept UUID of the Sample type question on the form.',
+      },
+      sampleTypeToOrderConcept: {
+        _type: Type.Array,
+        _default: [],
+        _description: 'Maps each Sample type answer concept to the TestOrder concept created after save.',
+        _elements: {
+          answerConceptUuid: {
+            _type: Type.UUID,
+            _description: 'UUID of a Sample type answer concept.',
+          },
+          orderConceptUuid: {
+            _type: Type.UUID,
+            _description: 'Concept UUID of the TestOrder created when that answer is selected.',
+          },
+        },
       },
     },
     _default: [
       {
-        id: 'fnac-cytology',
-        label: 'FNAC/Cytology',
-        formUuid: CYTOLOGY_REQUEST_FORM_UUID,
-        orderConceptUuid: CYTOLOGY_ORDER_CONCEPT_UUID,
+        id: 'histopathology',
+        label: 'Histopathology',
+        formUuid: HISTOPATHOLOGY_REQUEST_FORM_UUID,
+        sampleTypeConceptUuid: HISTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID,
+        sampleTypeToOrderConcept: [
+          { answerConceptUuid: BIOPSY_ANSWER_UUID, orderConceptUuid: HISTOPATHOLOGY_ORDER_CONCEPT_UUID },
+          { answerConceptUuid: MORPHOLOGY_ANSWER_UUID, orderConceptUuid: MORPHOLOGY_ORDER_CONCEPT_UUID },
+        ],
       },
       {
-        id: 'biopsy-pap-smear',
-        label: 'Biopsy/ PAP Smear',
-        formUuid: PATHOLOGY_REQUEST_FORM_UUID,
-        orderConceptUuid: HISTOPATHOLOGY_ORDER_CONCEPT_UUID,
-      },
-      {
-        id: 'morphology',
-        label: 'Morphology-',
-        formUuid: PATHOLOGY_REQUEST_FORM_UUID,
-        orderConceptUuid: HISTOPATHOLOGY_ORDER_CONCEPT_UUID,
+        id: 'cytopathology',
+        label: 'Cytopathology',
+        formUuid: CYTOPATHOLOGY_REQUEST_FORM_UUID,
+        sampleTypeConceptUuid: CYTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID,
+        sampleTypeToOrderConcept: [
+          { answerConceptUuid: FNAC_ANSWER_UUID, orderConceptUuid: FNAC_ORDER_CONCEPT_UUID },
+          { answerConceptUuid: IMAGE_GUIDED_FNAC_ANSWER_UUID, orderConceptUuid: IMAGE_GUIDED_FNAC_ORDER_CONCEPT_UUID },
+          { answerConceptUuid: FLUID_ANSWER_UUID, orderConceptUuid: FLUID_ORDER_CONCEPT_UUID },
+          { answerConceptUuid: PAP_ANSWER_UUID, orderConceptUuid: PAP_ORDER_CONCEPT_UUID },
+        ],
       },
     ],
   },
@@ -74,11 +108,17 @@ export const configSchema = {
   },
 };
 
+export type SampleTypeOrderMapping = {
+  answerConceptUuid: string;
+  orderConceptUuid: string;
+};
+
 export type PathologyRequestFormOption = {
   id: string;
   label: string;
   formUuid: string;
-  orderConceptUuid: string;
+  sampleTypeConceptUuid: string;
+  sampleTypeToOrderConcept: Array<SampleTypeOrderMapping>;
 };
 
 export interface PathologyConfig {

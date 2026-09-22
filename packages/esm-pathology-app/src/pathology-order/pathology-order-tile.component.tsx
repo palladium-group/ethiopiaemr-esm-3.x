@@ -15,7 +15,7 @@ interface PathologyOrderTileProps {
 
 /**
  * Tile on `special-orders-slot`. Opens the Pathology Orders workspace where the clinician
- * picks Type of Sample (FNAC/Cytology, Biopsy/ PAP Smear, Morphology-) and fills the matching form.
+ * picks a service area (Histopathology / Cytopathology) and fills the matching request form.
  */
 const PathologyOrderTile: React.FC<PathologyOrderTileProps> = ({ patientUuid, patient, visitContext }) => {
   const { t } = useTranslation();
