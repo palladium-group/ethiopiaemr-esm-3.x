@@ -187,7 +187,16 @@ function groupObservationsByEncounter(
       observations: [...group.observations].sort((a, b) => (a.field || '').localeCompare(b.field || '')),
       resultKind: resolveResultKind(group.observations),
     }))
-    .sort((a, b) => (b.encounterDatetime || '').localeCompare(a.encounterDatetime || ''));
+    .sort((a, b) => encounterDatetimeMs(b.encounterDatetime) - encounterDatetimeMs(a.encounterDatetime));
+}
+
+/** Newest encounters first; invalid/missing datetimes sort last. */
+function encounterDatetimeMs(value: string | undefined): number {
+  if (!value) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? Number.NEGATIVE_INFINITY : ms;
 }
 
 function formatRestObsValue(

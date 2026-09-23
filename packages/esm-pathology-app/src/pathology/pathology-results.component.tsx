@@ -27,12 +27,13 @@ interface PathologyResultsProps {
 }
 
 const ExpandDefaultRow: React.FC<{ expandRow: (rowId: string) => void; rowId?: string }> = ({ expandRow, rowId }) => {
-  const didExpand = useRef(false);
+  const expandedRowId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (rowId && !didExpand.current) {
+    // Carbon's expandRow toggles; only expand once per target so the most-recent row stays open.
+    if (rowId && expandedRowId.current !== rowId) {
       expandRow(rowId);
-      didExpand.current = true;
+      expandedRowId.current = rowId;
     }
   }, [expandRow, rowId]);
 
@@ -95,10 +96,12 @@ const PathologyResults: React.FC<PathologyResultsProps> = ({ patient, patientUui
   }
 
   const headers = [{ key: 'summary', header: '' }];
+  // encounterGroups is already newest-first; expand that most-recent encounter by default.
   const rows = encounterGroups.map((group) => ({
     id: group.encounterUuid || group.observations[0]?.id,
     summary: '',
   }));
+  const mostRecentRowId = rows[0]?.id;
 
   return (
     <div className={styles.container}>
@@ -108,7 +111,7 @@ const PathologyResults: React.FC<PathologyResultsProps> = ({ patient, patientUui
       <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'} useZebraStyles>
         {({ rows, getRowProps, getTableProps, expandRow }) => (
           <TableContainer className={styles.tableContainer}>
-            <ExpandDefaultRow expandRow={expandRow} rowId={rows[0]?.id} />
+            <ExpandDefaultRow expandRow={expandRow} rowId={mostRecentRowId} />
             <Table {...getTableProps()}>
               <TableBody>
                 {rows.map((row) => {

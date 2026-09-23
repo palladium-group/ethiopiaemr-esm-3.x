@@ -1,7 +1,6 @@
 {
   "cannotOpenPathologyForm": "የፓቶሎጂ ትእዛዝ ቅጽ መክፈት አልተቻለም",
   "cytologyResultsTitle": "የሳይቶሎጂ ውጤቶች",
-  "date": "ቀን",
   "newPathologyOrder": "አዲስ ትእዛዝ",
   "noObservationsFound": "ምንም ምልከታ አልተገኘም",
   "noPathologyRequestFormsConfigured": "ምንም የፓቶሎጂ ጥያቄ ቅጾች አልተዋቀሩም።",
@@ -14,11 +13,7 @@
   "pathologyResultsTitle": "የፓቶሎጂ ውጤቶች",
   "recordOrders": "ትእዛዞችን መዝግብ",
   "refreshing": "በማደስ ላይ...",
-  "resultField": "የውጤት መስክ",
   "results": "ውጤቶች",
-  "resultValue": "እሴት",
   "serviceArea": "የአገልግሎት አካባቢ",
-  "typeOfSample": "የናሙና አይነት",
-  "unknownEncounter": "ያልታወቀ ግንኙነት",
   "unknownForm": "ያልታወቀ ቅጽ"
 }
