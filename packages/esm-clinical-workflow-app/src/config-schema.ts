@@ -106,6 +106,12 @@ export const configSchema = {
       },
     },
   },
+  allowCbhiManualEntry: {
+    _type: Type.Boolean,
+    _description:
+      'Allow CBHI manual entry of CBHI ID and Expiry Date instead of online search in MRU billing information.',
+    _default: false,
+  },
   billingVisitAttributeTypes: {
     _type: Type.Object,
     _description: 'Visit attribute type UUIDs for billing information',
@@ -426,6 +432,7 @@ export type ClinicalWorkflowConfig = {
   visitQueueNumberAttributeTypeUuid: string;
   triageVisitAttributeTypeUuid: string;
   assignedQueueVisitAttributeTypeUuid: string;
+  allowCbhiManualEntry: boolean;
   billingVisitAttributeTypes: {
     paymentMethod: string;
     creditType: string;
