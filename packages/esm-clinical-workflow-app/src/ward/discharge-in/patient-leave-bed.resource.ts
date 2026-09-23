@@ -46,17 +46,15 @@ export const usePatientLeaveBed = () => {
   const { wardPatientGroupDetails } = useAppContext<WardViewContext>('ward-view-context') ?? {};
   const session = useSession();
 
-  const handleLeaveBed = async (
-    wardPatient: WardPatient,
-    emrConfiguration: Record<string, unknown>,
-    visit: Visit,
-    wardLocation?: OpenmrsResource,
-  ) => {
+  const handleLeaveBed = async (wardPatient: WardPatient, emrConfiguration: Record<string, unknown>, visit: Visit) => {
     try {
+      // Keep this at the session location, not the ward: the KenyaEMR ward app's Discharged tab
+      // lists exit encounters at the ward location and crashes on patients whose display name
+      // lacks an "OpenMRS ID" identifier, which blanks the whole ward page.
       const encounterPayload = createDischargeEncounterPayload(
         wardPatient.patient.uuid,
         emrConfiguration.exitFromInpatientEncounterType as OpenmrsResource,
-        wardLocation ?? (session?.sessionLocation as OpenmrsResource),
+        session?.sessionLocation as OpenmrsResource,
         session?.currentProvider as OpenmrsResource,
         visit.uuid,
         emrConfiguration.clinicianEncounterRole as OpenmrsResource,
