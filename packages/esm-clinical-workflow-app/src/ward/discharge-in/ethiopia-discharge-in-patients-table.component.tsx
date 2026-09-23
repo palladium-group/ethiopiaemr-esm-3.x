@@ -23,7 +23,6 @@ import { HyperLinkPatientCell } from '../admitted-patients/patient-cells';
 import type { WardPatient, WardViewContext } from '../admitted-patients/ward.types';
 import { findEncounterDatetimeByType } from '../bed-fee/bed-fee.utils';
 import { useEmrConfiguration } from '../bed-swap/useEmrConfiguration';
-import { useWardLocation } from '../bed-swap/useWardLocation';
 import { countInclusiveDays } from '../stay-duration.utils';
 import {
   GenerateBedFeeBillAction,
@@ -40,7 +39,6 @@ const EthiopiaDischargeInPatientsTable = () => {
   const { bedLayouts, wardAdmittedPatientsWithBed, isLoading } = wardPatientGroupDetails ?? {};
   const { emrConfiguration, isLoadingEmrConfiguration } = useEmrConfiguration();
   const { handleLeaveBed } = usePatientLeaveBed();
-  const { location: wardLocation } = useWardLocation();
   const config = useConfig<ClinicalWorkflowConfig>();
 
   const headers = [
@@ -157,12 +155,7 @@ const EthiopiaDischargeInPatientsTable = () => {
                 if (!patient.visit || !emrConfiguration?.exitFromInpatientEncounterType) {
                   return;
                 }
-                await handleLeaveBed(
-                  patient,
-                  emrConfiguration as unknown as Record<string, unknown>,
-                  patient.visit,
-                  wardLocation,
-                );
+                await handleLeaveBed(patient, emrConfiguration as unknown as Record<string, unknown>, patient.visit);
               }}
             />
           </OverflowMenu>
@@ -179,7 +172,6 @@ const EthiopiaDischargeInPatientsTable = () => {
     isLoadingEmrConfiguration,
     results,
     t,
-    wardLocation,
   ]);
 
   if (!patients.length) {
