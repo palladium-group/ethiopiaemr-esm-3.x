@@ -76,6 +76,31 @@
   justify-self: start;
 }
 
+.observationSections {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  margin-block: layout.$spacing-05;
+  margin-inline: 0 layout.$spacing-05;
+}
+
+.observationSections .observation {
+  margin-block: 0;
+  margin-inline: 0;
+}
+
+.resultSection {
+  border-block-start: 1px solid $ui-03;
+  padding-block-start: layout.$spacing-05;
+}
+
+.resultSectionHeading {
+  @include type.type-style('heading-compact-01');
+  color: $text-02;
+  font-weight: 600;
+  margin: 0 0 layout.$spacing-03;
+}
+
 .parentConcept {
   font-weight: bold;
 }

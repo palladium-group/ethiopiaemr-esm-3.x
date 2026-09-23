@@ -16,6 +16,7 @@ import { formatDatetime, parseDate, useConfig, useLayoutType, type Visit } from 
 import { type PathologyConfig } from '../config-schema';
 import { PATHOLOGY_ORDER_WORKSPACE } from '../constants';
 import { usePathologyRequestEncounters } from './pathology-orders.resource';
+import { useResultConceptSetMembers } from './pathology-results.resource';
 import RequestObservations from './request-observations.component';
 import styles from './pathology-orders.scss';
 
@@ -41,13 +42,32 @@ const ExpandDefaultRow: React.FC<{ expandRow: (rowId: string) => void; rowId?: s
 const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid, visitContext }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { pathologyRequestForms } = useConfig<PathologyConfig>();
+  const { pathologyRequestForms, pathologyResultConceptSetUuid, cytologyResultConceptSetUuid } =
+    useConfig<PathologyConfig>();
   const resolvedPatientUuid = patientUuid ?? patient?.id;
 
   const formUuids = useMemo(
     () => (pathologyRequestForms ?? []).map((option) => option.formUuid).filter(Boolean),
     [pathologyRequestForms],
   );
+
+  const { members: resultConceptMembers } = useResultConceptSetMembers([
+    { uuid: pathologyResultConceptSetUuid, resultKind: 'pathology' },
+    { uuid: cytologyResultConceptSetUuid, resultKind: 'cytology' },
+  ]);
+
+  const resultConceptUuids = useMemo(() => {
+    const uuids = new Set(resultConceptMembers.map((member) => member.uuid).filter(Boolean));
+    // LIS may also write the result value onto the ordered test concept.
+    for (const option of pathologyRequestForms ?? []) {
+      for (const mapping of option.sampleTypeToOrderConcept ?? []) {
+        if (mapping?.orderConceptUuid) {
+          uuids.add(mapping.orderConceptUuid);
+        }
+      }
+    }
+    return uuids;
+  }, [pathologyRequestForms, resultConceptMembers]);
 
   const { encounters, error, isLoading } = usePathologyRequestEncounters(resolvedPatientUuid, formUuids);
   const launchPathologyOrderWorkspace = useLaunchWorkspaceRequiringVisit(
@@ -119,7 +139,7 @@ const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid,
                       </TableExpandRow>
                       {row.isExpanded && encounter ? (
                         <TableExpandedRow className={styles.expandedRow} colSpan={2}>
-                          <RequestObservations observations={encounter.obs} />
+                          <RequestObservations observations={encounter.obs} resultConceptUuids={resultConceptUuids} />
                         </TableExpandedRow>
                       ) : (
                         <TableExpandedRow className={styles.hiddenRow} colSpan={2} />
