@@ -70,6 +70,20 @@ export function resolveOrderConceptUuid(
   return match?.orderConceptUuid ?? null;
 }
 
+/**
+ * Looks up the optional order urgency for a Sample type answer (defaults to ROUTINE).
+ */
+export function resolveOrderUrgency(
+  answerConceptUuid: string | null,
+  mappings: Array<SampleTypeOrderMapping> | undefined,
+): string {
+  if (!answerConceptUuid || !mappings?.length) {
+    return 'ROUTINE';
+  }
+  const match = mappings.find((entry) => entry.answerConceptUuid === answerConceptUuid);
+  return match?.urgency?.trim() || 'ROUTINE';
+}
+
 async function loadEncounterObs(encounterUuid: string): Promise<EncounterObsPayload['obs']> {
   const url = `${restBaseUrl}/encounter/${encounterUuid}?v=${encodeURIComponent(encounterWithObsRepresentation)}`;
   const response = await openmrsFetch<EncounterObsPayload>(url);
@@ -145,6 +159,7 @@ export function buildSpecialOrderFormLaunchProps({
         ordererUuid,
         conceptUuid: orderConceptUuid,
         careSettingUuid,
+        urgency: resolveOrderUrgency(answerConceptUuid, sampleTypeToOrderConcept),
       });
       showSnackbar({
         kind: 'success',

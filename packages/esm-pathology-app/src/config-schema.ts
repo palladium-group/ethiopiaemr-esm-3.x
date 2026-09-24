@@ -9,14 +9,14 @@ const HISTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID = 'c2000010-2222-4a2b-8c3d-0e1f2a3
 const CYTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID = 'c3000010-3333-4a2b-8c3d-0e1f2a3b4c10';
 
 const BIOPSY_ANSWER_UUID = 'c2000001-2222-4a2b-8c3d-0e1f2a3b4c01';
-const MORPHOLOGY_ANSWER_UUID = 'c2000002-2222-4a2b-8c3d-0e1f2a3b4c02';
+const FROZEN_SECTION_ANSWER_UUID = 'c2000005-2222-4a2b-8c3d-0e1f2a3b4c05';
 const FNAC_ANSWER_UUID = 'c3000001-3333-4a2b-8c3d-0e1f2a3b4c01';
 const FLUID_ANSWER_UUID = 'c3000002-3333-4a2b-8c3d-0e1f2a3b4c02';
 const PAP_ANSWER_UUID = 'c3000003-3333-4a2b-8c3d-0e1f2a3b4c03';
 const IMAGE_GUIDED_FNAC_ANSWER_UUID = 'c3000004-3333-4a2b-8c3d-0e1f2a3b4c04';
 
 const HISTOPATHOLOGY_ORDER_CONCEPT_UUID = 'b1a7f0c2-9d34-4e51-8a26-1c2d3e4f5a60';
-const MORPHOLOGY_ORDER_CONCEPT_UUID = 'b1a7f0c3-9d34-4e51-8a26-1c2d3e4f5a61';
+const FROZEN_SECTION_ORDER_CONCEPT_UUID = 'b1a7f0c4-9d34-4e51-8a26-1c2d3e4f5a62';
 const FNAC_ORDER_CONCEPT_UUID = 'b2a8f1c3-9e45-4f62-9b37-2d3e4f5a6b71';
 const IMAGE_GUIDED_FNAC_ORDER_CONCEPT_UUID = 'b2a8f1c4-9e45-4f62-9b37-2d3e4f5a6b72';
 const FLUID_ORDER_CONCEPT_UUID = 'b2a8f1c5-9e45-4f62-9b37-2d3e4f5a6b73';
@@ -61,6 +61,10 @@ export const configSchema = {
             _type: Type.UUID,
             _description: 'Concept UUID of the TestOrder created when that answer is selected.',
           },
+          urgency: {
+            _type: Type.String,
+            _description: 'Optional OpenMRS order urgency (ROUTINE, STAT, …). Defaults to ROUTINE when omitted.',
+          },
         },
       },
     },
@@ -72,7 +76,11 @@ export const configSchema = {
         sampleTypeConceptUuid: HISTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID,
         sampleTypeToOrderConcept: [
           { answerConceptUuid: BIOPSY_ANSWER_UUID, orderConceptUuid: HISTOPATHOLOGY_ORDER_CONCEPT_UUID },
-          { answerConceptUuid: MORPHOLOGY_ANSWER_UUID, orderConceptUuid: MORPHOLOGY_ORDER_CONCEPT_UUID },
+          {
+            answerConceptUuid: FROZEN_SECTION_ANSWER_UUID,
+            orderConceptUuid: FROZEN_SECTION_ORDER_CONCEPT_UUID,
+            urgency: 'STAT',
+          },
         ],
       },
       {
@@ -111,6 +119,8 @@ export const configSchema = {
 export type SampleTypeOrderMapping = {
   answerConceptUuid: string;
   orderConceptUuid: string;
+  /** OpenMRS order urgency; defaults to ROUTINE when omitted. Frozen section uses STAT. */
+  urgency?: string;
 };
 
 export type PathologyRequestFormOption = {

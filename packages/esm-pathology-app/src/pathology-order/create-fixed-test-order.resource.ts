@@ -6,6 +6,8 @@ export type CreateFixedTestOrderArgs = {
   ordererUuid: string;
   conceptUuid: string;
   careSettingUuid: string;
+  /** OpenMRS order urgency. Defaults to ROUTINE. Frozen section uses STAT. */
+  urgency?: string;
 };
 
 /**
@@ -18,6 +20,7 @@ export async function createFixedTestOrder({
   ordererUuid,
   conceptUuid,
   careSettingUuid,
+  urgency = 'ROUTINE',
 }: CreateFixedTestOrderArgs) {
   const body: OrderPost = {
     action: 'NEW',
@@ -27,7 +30,7 @@ export async function createFixedTestOrder({
     orderer: ordererUuid,
     encounter: encounterUuid,
     concept: conceptUuid,
-    urgency: 'ROUTINE',
+    urgency,
   };
 
   return postOrder(body);
