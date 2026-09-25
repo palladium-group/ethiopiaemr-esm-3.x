@@ -109,6 +109,21 @@ export const configSchema = {
     ],
     _description: 'List of regulator options with unique keys for each.',
   },
+  departmentTagUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the "Department" location tag',
+    _default: '74b3eb96-5301-4a4d-9b88-edda1a3da17c',
+  },
+  departmentTypeAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the "Department Type" location attribute type (concept datatype)',
+    _default: 'f09a656c-6340-4c85-8934-d89736fb1d1b',
+  },
+  departmentTypesConceptSetUuid: {
+    _type: Type.ConceptUuid,
+    _description: 'UUID of the "Department Types" concept set whose members are the allowed department types',
+    _default: '029c263b-1984-44b2-94c6-bda1f7c3f202',
+  },
 };
 
 export interface UserProperties {
@@ -139,4 +154,7 @@ export interface ConfigObject {
     key: string;
     name: string;
   }>;
+  departmentTagUuid: string;
+  departmentTypeAttributeTypeUuid: string;
+  departmentTypesConceptSetUuid: string;
 }
