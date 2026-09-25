@@ -88,6 +88,13 @@ export const usePopulateBillingFormFromVisit = ({
       }
     });
 
+    if (parsedAttributes.expiryDate && !parsedAttributes.cbhiExpiryDate) {
+      setValue('attributes.cbhiExpiryDate', parsedAttributes.expiryDate, { shouldDirty: false });
+    }
+    if (parsedAttributes.cbhiExpiryDate && !parsedAttributes.expiryDate) {
+      setValue('attributes.expiryDate', parsedAttributes.cbhiExpiryDate, { shouldDirty: false });
+    }
+
     // Prefer independent CBHI visit attributes (for reporting) over any legacy summary values
     const cbhiAttributeTypes = billingVisitAttributeTypes.cbhi || {};
     CBHI_VISIT_ATTRIBUTE_FIELDS.forEach((field: CbhiVisitAttributeField) => {
