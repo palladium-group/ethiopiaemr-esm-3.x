@@ -16,22 +16,40 @@ export type BuildSpecialOrderFormLaunchPropsArgs = {
   t: TFunction;
 };
 
-const encounterWithObsRepresentation = 'custom:(uuid,obs:(uuid,concept:(uuid),value:(uuid)))';
+const encounterWithObsRepresentation =
+  'custom:(uuid,obs:(uuid,concept:(uuid),value:(uuid),' +
+  'groupMembers:(uuid,concept:(uuid),value:(uuid),' +
+  'groupMembers:(uuid,concept:(uuid),value:(uuid)))))';
+
+type SampleTypeObs = {
+  uuid?: string;
+  concept?: { uuid?: string };
+  value?: string | { uuid?: string } | unknown;
+  groupMembers?: Array<SampleTypeObs>;
+};
 
 type EncounterObsPayload = {
   uuid: string;
-  obs?: Array<{
-    uuid?: string;
-    concept?: { uuid?: string };
-    value?: string | { uuid?: string };
-  }>;
+  obs?: Array<SampleTypeObs>;
 };
+
+function valueAsConceptUuid(value: unknown): string | null {
+  if (value && typeof value === 'object' && value !== null && 'uuid' in value) {
+    const uuid = (value as { uuid?: string }).uuid;
+    return uuid || null;
+  }
+  if (typeof value === 'string' && value) {
+    return value;
+  }
+  return null;
+}
 
 /**
  * Resolves the Sample type answer concept UUID from encounter observations.
+ * Recurses into obs groups (common in O3 form-engine forms).
  */
 export function resolveSampleTypeAnswerUuid(
-  obs: Array<{ concept?: { uuid?: string }; value?: unknown }> | undefined,
+  obs: Array<SampleTypeObs> | undefined,
   sampleTypeConceptUuid: string,
 ): string | null {
   if (!obs?.length || !sampleTypeConceptUuid) {
@@ -39,18 +57,15 @@ export function resolveSampleTypeAnswerUuid(
   }
 
   for (const observation of obs) {
-    if (observation?.concept?.uuid !== sampleTypeConceptUuid) {
-      continue;
-    }
-    const value = observation.value;
-    if (value && typeof value === 'object' && value !== null && 'uuid' in value) {
-      const uuid = (value as { uuid?: string }).uuid;
-      if (uuid) {
-        return uuid;
+    if (observation?.concept?.uuid === sampleTypeConceptUuid) {
+      const answerUuid = valueAsConceptUuid(observation.value);
+      if (answerUuid) {
+        return answerUuid;
       }
     }
-    if (typeof value === 'string' && value) {
-      return value;
+    const nested = resolveSampleTypeAnswerUuid(observation.groupMembers, sampleTypeConceptUuid);
+    if (nested) {
+      return nested;
     }
   }
   return null;
@@ -132,7 +147,7 @@ export function buildSpecialOrderFormLaunchProps({
     }
 
     try {
-      let obs: Array<{ concept?: { uuid?: string }; value?: unknown }> = (savedEncounter.obs as Array<Obs>) ?? [];
+      let obs: Array<SampleTypeObs> = (savedEncounter.obs as Array<Obs> as Array<SampleTypeObs>) ?? [];
       let answerConceptUuid = resolveSampleTypeAnswerUuid(obs, sampleTypeConceptUuid);
 
       if (!answerConceptUuid) {
@@ -164,9 +179,11 @@ export function buildSpecialOrderFormLaunchProps({
       showSnackbar({
         kind: 'success',
         title: t('pathologyOrderCreated', 'Pathology order created'),
-        subtitle: t('specialOrderCreatedSubtitle', 'The request details were saved and the lab order was sent.', {
-          typeOfSample: serviceAreaLabel,
-        }),
+        subtitle: t(
+          'specialOrderCreatedSubtitle',
+          'The {{typeOfSample}} request was saved and the lab order was sent.',
+          { typeOfSample: serviceAreaLabel },
+        ),
         isLowContrast: true,
       });
     } catch (error) {

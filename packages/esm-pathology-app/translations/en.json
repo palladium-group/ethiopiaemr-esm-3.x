@@ -8,6 +8,7 @@
   "pathology": "Pathology",
   "Pathology": "Pathology",
   "pathologyFormNotConfigured": "No pathology order form has been configured.",
+  "pathologyOrderCreated": "Pathology order created",
   "pathologyOrders": "Pathology orders",
   "pathologyOrdersTitle": "Pathology Orders",
   "pathologyResultsTitle": "Pathology Results",
@@ -15,5 +16,11 @@
   "refreshing": "Refreshing...",
   "results": "Results",
   "serviceArea": "Service area",
+  "specialOrderCreatedSubtitle": "The {{typeOfSample}} request was saved and the lab order was sent.",
+  "specialOrderMissingEncounter": "The request form was saved, but no encounter was returned. The lab order was not created.",
+  "specialOrderOrderCreateFailed": "The request details were saved, but creating the lab order failed. Please try again or contact support.",
+  "specialOrderProviderRequired": "The request form was saved, but your user is not linked to a provider, so the lab order was not created.",
+  "specialOrderSampleTypeRequired": "The request form was saved, but Sample type was missing or not mapped to a lab test. The lab order was not created.",
+  "specialOrderSaveIncomplete": "Request incomplete",
   "unknownForm": "Unknown form"
 }
