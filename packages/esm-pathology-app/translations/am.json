@@ -8,7 +8,6 @@
   "pathology": "ፓቶሎጂ",
   "Pathology": "ፓቶሎጂ",
   "pathologyFormNotConfigured": "ምንም የፓቶሎጂ ትእዛዝ ቅጽ አልተዋቀረም።",
-  "pathologyOrderCreated": "የፓቶሎጂ ትእዛዝ ተፈጥሯል",
   "pathologyOrders": "የፓቶሎጂ ትእዛዞች",
   "pathologyOrdersTitle": "የፓቶሎጂ ትእዛዞች",
   "pathologyResultsTitle": "የፓቶሎጂ ውጤቶች",
@@ -16,11 +15,5 @@
   "refreshing": "በማደስ ላይ...",
   "results": "ውጤቶች",
   "serviceArea": "የአገልግሎት አካባቢ",
-  "specialOrderCreatedSubtitle": "የ{{typeOfSample}} ጥያቄ ተቀምጧል እና የላብራቶሪ ትእዛዝ ተልኳል።",
-  "specialOrderMissingEncounter": "የጥያቄ ቅጹ ተቀምጧል፣ ነገር ግን ምንም encounter አልተመለሰም። የላብራቶሪ ትእዛዝ አልተፈጠረም።",
-  "specialOrderOrderCreateFailed": "የጥያቄ ዝርዝሮች ተቀምጠዋል፣ ነገር ግን የላብራቶሪ ትእዛዝ መፍጠር አልተሳካም። እባክዎ እንደገና ይሞክሩ ወይም ድጋፍ ያግኙ።",
-  "specialOrderProviderRequired": "የጥያቄ ቅጹ ተቀምጧል፣ ነገር ግን ተጠቃሚዎ ከአቅራቢ ጋር አልተገናኘም፣ ስለዚህ የላብራቶሪ ትእዛዝ አልተፈጠረም።",
-  "specialOrderSampleTypeRequired": "የጥያቄ ቅጹ ተቀምጧል፣ ነገር ግን የናሙና አይነት ጠፍቷል ወይም ከላብራቶሪ ምርመራ ጋር አልተገናኘም። የላብራቶሪ ትእዛዝ አልተፈጠረም።",
-  "specialOrderSaveIncomplete": "ጥያቄው አልተሟላም",
   "unknownForm": "ያልታወቀ ቅጽ"
 }
