@@ -399,6 +399,12 @@
       "type": "other-form"
     },
     {
+      "name": "exemption-rule-workspace",
+      "component": "exemptionRuleWorkspace",
+      "title": "Exemption Rule",
+      "type": "other-form"
+    },
+    {
       "name": "add-commodity-form",
       "component": "addCommodityForm",
       "title": "Add Commodity Form",
@@ -445,6 +451,10 @@
     {
       "name": "delete-payment-mode-modal",
       "component": "deletePaymentModeModal"
+    },
+    {
+      "name": "delete-exemption-rule-modal",
+      "component": "deleteExemptionRuleModal"
     },
     {
       "name": "manage-claim-request-modal",

@@ -567,11 +567,6 @@ export type FacilityClaim = {
 };
 export type BillingPromptType = 'patient-chart' | 'billing-orders';
 
-export interface Schema {
-  services: Record<string, unknown>;
-  commodities: Record<string, unknown>;
-}
-
 export type ServiceType = { uuid: string; display: string; id: number };
 
 export type ServiceTypesResponse = {
