@@ -3,23 +3,18 @@ import { useForm, type UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { parseDate, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { type Drug, type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { useRequireOutpatientQuantity } from '../api';
 import { type ConfigObject } from '../config-schema';
-import { type DrugOrderBasketItemWithStartDate } from '../types';
 
-export function useDrugOrderForm(initialOrderBasketItem: DrugOrderBasketItemWithStartDate) {
+export function useDrugOrderForm(initialOrderBasketItem: DrugOrderBasketItem) {
   const medicationOrderFormSchema = useCreateMedicationOrderFormSchema();
 
-  const defaultValues = useMemo(() => {
-    const defaultStartDate =
-      typeof initialOrderBasketItem?.startDate === 'string'
-        ? parseDate(initialOrderBasketItem?.startDate)
-        : (initialOrderBasketItem?.startDate as Date) ?? new Date();
-
-    return drugOrderBasketItemToFormValue(initialOrderBasketItem, defaultStartDate);
-  }, [initialOrderBasketItem]);
+  const defaultValues = useMemo(
+    () => drugOrderBasketItemToFormValue(initialOrderBasketItem, initialOrderBasketItem?.scheduledDate ?? new Date()),
+    [initialOrderBasketItem],
+  );
 
   const drugOrderForm: UseFormReturn<MedicationOrderFormData> = useForm<MedicationOrderFormData>({
     mode: 'all',
@@ -30,10 +25,7 @@ export function useDrugOrderForm(initialOrderBasketItem: DrugOrderBasketItemWith
   return drugOrderForm;
 }
 
-export function drugOrderBasketItemToFormValue(
-  item: DrugOrderBasketItemWithStartDate,
-  startDate: Date,
-): MedicationOrderFormData {
+export function drugOrderBasketItemToFormValue(item: DrugOrderBasketItem, startDate: Date): MedicationOrderFormData {
   return {
     drug: item?.drug as Partial<Drug>,
     isFreeTextDosage: item?.isFreeTextDosage ?? false,

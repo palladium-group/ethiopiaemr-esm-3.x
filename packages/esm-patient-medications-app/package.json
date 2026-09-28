@@ -52,7 +52,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@openmrs/esm-patient-common-lib": "12.2.1",
-    "openmrs": "10.0.1-pre.5199"
+    "@openmrs/esm-patient-common-lib": "12.3.4",
+    "openmrs": "10.0.1-pre.5263"
   }
 }

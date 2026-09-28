@@ -19,7 +19,6 @@ import {
   type OrderAction,
 } from '@openmrs/esm-patient-common-lib';
 import { type ConfigObject } from '../config-schema';
-import { type DrugOrderBasketItemWithStartDate } from '../types';
 
 const customRepresentation =
   'custom:(uuid,dosingType,orderNumber,accessionNumber,' +
@@ -289,7 +288,7 @@ export const prepMedicationOrderPostData: PostDataPrepFunction = (
  * The inverse of prepMedicationOrderPostData - converts an Order into a DrugOrderBasketItem
  * See also the same function defined in esm-patient-orders-app/src/utils/index.ts
  */
-export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrderBasketItemWithStartDate {
+export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrderBasketItem {
   if (!order.drug) {
     throw new Error('Drug order is missing drug information.');
   }
@@ -327,7 +326,7 @@ export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrd
     patientInstructions: order.dosingType !== 'org.openmrs.FreeTextDosingInstructions' ? order.dosingInstructions : '',
     asNeeded: order.asNeeded,
     asNeededCondition: order.asNeededCondition ?? null,
-    startDate: action === 'DISCONTINUE' ? order.dateActivated : new Date(),
+    scheduledDate: action === 'DISCONTINUE' ? new Date(order.dateActivated) : new Date(),
     duration: order.duration,
     durationUnit: order.durationUnits
       ? {
