@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 import { openmrsFetch, restBaseUrl, showSnackbar, type Encounter, type Obs, type Visit } from '@openmrs/esm-framework';
 import type { SampleTypeOrderMapping } from '../config-schema';
-import { createFixedTestOrder } from './create-fixed-test-order.resource';
+import { createFixedTestOrder, type CreateFixedTestOrderArgs } from './create-fixed-test-order.resource';
 
 export type BuildSpecialOrderFormLaunchPropsArgs = {
   /** Display name for this service area (e.g. Histopathology). */
@@ -91,12 +91,12 @@ export function resolveOrderConceptUuid(
 export function resolveOrderUrgency(
   answerConceptUuid: string | null,
   mappings: Array<SampleTypeOrderMapping> | undefined,
-): string {
+): CreateFixedTestOrderArgs['urgency'] {
   if (!answerConceptUuid || !mappings?.length) {
     return 'ROUTINE';
   }
   const match = mappings.find((entry) => entry.answerConceptUuid === answerConceptUuid);
-  return match?.urgency?.trim() || 'ROUTINE';
+  return match?.urgency?.trim().toUpperCase() === 'STAT' ? 'STAT' : 'ROUTINE';
 }
 
 async function loadEncounterObs(encounterUuid: string): Promise<EncounterObsPayload['obs']> {

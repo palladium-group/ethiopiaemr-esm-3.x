@@ -7,7 +7,7 @@ export type CreateFixedTestOrderArgs = {
   conceptUuid: string;
   careSettingUuid: string;
   /** OpenMRS order urgency. Defaults to ROUTINE. Frozen section uses STAT. */
-  urgency?: string;
+  urgency?: OrderPost['urgency'];
 };
 
 /**
