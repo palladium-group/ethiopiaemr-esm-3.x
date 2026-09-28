@@ -1,0 +1,12 @@
+@use '@carbon/layout';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  row-gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.buttons {
+  justify-content: flex-end;
+}
