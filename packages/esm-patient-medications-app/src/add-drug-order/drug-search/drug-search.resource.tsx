@@ -17,6 +17,7 @@ import {
   type OrderTemplate,
 } from '@openmrs/esm-patient-common-lib';
 import { type ConfigObject } from '../../config-schema';
+import { type DrugOrderBasketItemWithStartDate } from '../../types';
 
 export interface DrugSearchResult {
   uuid: string;
@@ -351,7 +352,7 @@ export function getTemplateOrderBasketItem(
     display: string;
   },
   template?: DrugOrderTemplate,
-): DrugOrderBasketItem {
+): DrugOrderBasketItemWithStartDate {
   if (template) {
     const defaultUnit =
       getDefaultDoseUnit(template.template) ??

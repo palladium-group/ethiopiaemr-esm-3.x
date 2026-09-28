@@ -288,6 +288,7 @@ function renderAddDrugOrderWorkspace(order = null) {
       }}
       windowName={''}
       isRootWorkspace={false}
+      showActionMenu={false}
     />,
   );
 }

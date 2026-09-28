@@ -22,7 +22,7 @@
     "*.{js,jsx,ts,tsx}": "eslint --cache --fix"
   },
   "resolutions": {
-    "@openmrs/esm-patient-common-lib": "12.1.1-pre.11242",
+    "@openmrs/esm-patient-common-lib": "12.2.1",
     "@types/d3-dispatch": "3.0.6",
     "@carbon/react": "1.83.0",
     "sass": "^1.54.3",
@@ -43,8 +43,8 @@
   },
   "devDependencies": {
     "@carbon/pictograms-react": "^11.66.0",
-    "@openmrs/esm-framework": "8.0.1-pre.3623",
-    "@openmrs/esm-patient-common-lib": "12.1.1-pre.11242",
+    "@openmrs/esm-framework": "10.0.1-pre.5199",
+    "@openmrs/esm-patient-common-lib": "12.2.1",
     "@playwright/test": "^1.30.0",
     "@rspack/cli": "^1.5.5",
     "@rspack/core": "^1.5.5",
@@ -87,7 +87,7 @@
     "jest-cli": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "lodash": "^4.17.21",
-    "openmrs": "next",
+    "openmrs": "10.0.1-pre.5199",
     "pinst": "^3.0.0",
     "prettier": "^2.2.1",
     "pretty-quick": "^2.0.2",
