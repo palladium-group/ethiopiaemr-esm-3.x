@@ -98,46 +98,8 @@
 }
 
 /* ── Action card ──────────────────────────────────────────── */
-.actionGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-  gap: layout.$spacing-05;
-  margin-bottom: layout.$spacing-06;
-}
-
-.actionCard {
-  display: flex;
-  flex-direction: column;
-  gap: layout.$spacing-04;
-  padding: layout.$spacing-06;
-  border-left: 3px solid colors.$blue-60;
-}
-
-.actionCardHeader {
-  display: flex;
-  align-items: center;
-  gap: layout.$spacing-03;
-}
-
-.actionCardTitle {
-  @include type.type-style('heading-02');
-  color: colors.$gray-100;
-  margin: 0;
-  flex: 1;
-}
-
-.actionCardBody {
-  @include type.type-style('body-01');
-  color: colors.$gray-70;
-  margin: 0;
-  flex: 1;
-}
 
 /* ── Notification ─────────────────────────────────────────── */
-.notification {
-  margin-bottom: layout.$spacing-06;
-  max-width: 100%;
-}
 
 /* ── Outbox table ─────────────────────────────────────────── */
 .statusSection {

@@ -60,11 +60,12 @@ export const launchTriageFormWorkspace = (
   formUuid: string,
   formName: string,
   t: TFunction<'translation', undefined>,
+  triageId: string,
 ) => {
-  // Queue modal handler - for central triage workflow
-  const handleShowModal = (encounter: Encounter) => {
-    const dispose = showModal('transition-patient-to-latest-queue-modal', {
+  const handleShowModal = (_encounter: Encounter) => {
+    const dispose = showModal('triage-queue-assignment-modal', {
       activeVisit: visit,
+      triageId,
       closeModal: () => dispose(),
     });
   };
@@ -192,7 +193,7 @@ export const useStartVisitAndLaunchTriageForm = (): UseStartVisitAndLaunchTriage
         invalidateVisitCache(patientUuid);
 
         // Launch triage form workspace with visit
-        launchTriageFormWorkspace(patient, patientUuid, visit, formUuid, formName, t);
+        launchTriageFormWorkspace(patient, patientUuid, visit, formUuid, formName, t, triageId);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : t('triageDashboardUnexpectedError', 'An unexpected error occurred');

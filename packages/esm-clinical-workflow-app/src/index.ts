@@ -13,6 +13,8 @@ import { spaBasePath } from './constants';
 import BillingInformationWorkspace from './mru/billing-information/billing-information.workspace';
 import PatientScoreboard from './patient-scoreboard/patient-scoreboard.component';
 import orderBasketActionButtonExtension from './patient-orders/order-basket-action-button/order-basket-action-button.component';
+import orderBasketDiagnosisBannerExtension from './patient-orders/order-basket-diagnosis-banner.extension';
+import { provideOrderBasketErrorTitle } from './patient-orders/provide-order-basket-error-title';
 import clinicalFormsActionButtonExtension from './patient-forms/clinical-form-action-button.component';
 import visitNotesActionButtonExtension from './patient-notes/visit-note-action-button.extension';
 import diagnosesSummaryComponent from './patient-notes/diagnoses-summary.component';
@@ -23,6 +25,7 @@ import patientTransferActionButtonExtension from './patient-transfer/patient-tra
 import pastVisitsOverviewComponent from './patient-chart/visit/visits-widget/visit-detail-overview.component';
 import startVisitActionButtonComponent from './patient-chart/start-visit-action-button.component';
 import admitPatientActionButtonComponent from './patient-chart/admit-patient-action-button.component';
+import admissionDischargeActionButtonComponent from './patient-chart/admission-discharge-action-button.component';
 import confirmDischargeActionButtonComponent from './patient-chart/confirm-discharge-action-button.component';
 import FinishServiceButton from './patient-chart/finish-service-button.extension';
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
@@ -47,6 +50,8 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+
+  provideOrderBasketErrorTitle();
 
   getConfig(moduleName)
     .then((cfg) => {
@@ -110,6 +115,8 @@ export const patientScoreboard = getSyncLifecycle(PatientScoreboard, options);
 
 export const orderBasketActionButton = getSyncLifecycle(orderBasketActionButtonExtension, options);
 
+export const orderBasketDiagnosisBanner = getSyncLifecycle(orderBasketDiagnosisBannerExtension, options);
+
 export const clinicalFormsActionButton = getSyncLifecycle(clinicalFormsActionButtonExtension, options);
 
 export const visitNoteActionButton = getSyncLifecycle(visitNotesActionButtonExtension, options);
@@ -167,6 +174,11 @@ export const queueTableActionsColumn = getAsyncLifecycle(
 
 export const assignQueueRoomModal = getSyncLifecycle(AssignQueueRoomModal, options);
 
+export const triageQueueAssignmentModal = getAsyncLifecycle(
+  () => import('./triage/triage-queue-assignment.modal'),
+  options,
+);
+
 export const callQueueEntryModal = getAsyncLifecycle(() => import('./queue-room/call-queue-entry.modal'), options);
 
 export const serviceQueuesDashboardShell = getAsyncLifecycle(
@@ -209,8 +221,18 @@ export const confirmDischargeActionButton = getSyncLifecycle(confirmDischargeAct
   moduleName,
 });
 
+export const admissionDischargeActionButton = getSyncLifecycle(admissionDischargeActionButtonComponent, {
+  featureName: 'patient-action-admission-discharge',
+  moduleName,
+});
+
 export const confirmDischargeDialog = getAsyncLifecycle(
   () => import('./ward/discharge-confirmation/confirm-discharge-dialog.modal'),
+  options,
+);
+
+export const generateBedFeeBillDialog = getAsyncLifecycle(
+  () => import('./ward/bed-fee/generate-bed-fee-bill.modal'),
   options,
 );
 

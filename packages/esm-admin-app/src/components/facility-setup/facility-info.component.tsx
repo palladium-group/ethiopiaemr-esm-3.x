@@ -1,8 +1,9 @@
-import { Button, Column, Grid, InlineLoading, Layer, Tile } from '@carbon/react';
+import { Button, Column, Grid, InlineLoading, Layer, Tile, Toggle } from '@carbon/react';
 import { formatDate, parseDate, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocalFacilityInfo, useShaFacilityInfo } from '../hook/useFacilityInfo';
+import { useCbhiManualEntrySetting, saveCbhiManualEntrySetting } from '../hook/useCbhiManualEntrySetting';
 import styles from './facility-info.scss';
 import Card from './card.component';
 import dayjs from 'dayjs';
@@ -23,6 +24,40 @@ const FacilityInfo: React.FC = () => {
     mutate: mutateLocalFacility,
     error: localFacilityError,
   } = useLocalFacilityInfo();
+
+  const {
+    isManualEntryEnabled,
+    settingUuid,
+    isLoading: isCbhiSettingLoading,
+    mutate: mutateCbhiSetting,
+  } = useCbhiManualEntrySetting();
+  const [isCbhiSaving, setIsCbhiSaving] = useState(false);
+
+  const handleToggleCbhiManualEntry = async (checked: boolean) => {
+    setIsCbhiSaving(true);
+    try {
+      await saveCbhiManualEntrySetting(checked, settingUuid);
+      await mutateCbhiSetting();
+      showSnackbar({
+        title: t('cbhiSettingUpdated', 'Setting Updated'),
+        subtitle: checked
+          ? t('cbhiManualEntryEnabled', 'Allow CBHI Manual Entry has been enabled.')
+          : t('cbhiManualEntryDisabled', 'Allow CBHI Manual Entry has been disabled.'),
+        kind: 'success',
+        isLowContrast: true,
+      });
+    } catch (error) {
+      showSnackbar({
+        title: t('error', 'Error'),
+        subtitle: t('errorUpdatingCbhiSetting', 'Error updating CBHI manual entry setting'),
+        kind: 'error',
+        isLowContrast: true,
+      });
+    } finally {
+      setIsCbhiSaving(false);
+    }
+  };
+
   const mutateFacility = useCallback(async () => {
     const defaultFacility = await mutateLocalFacility();
     const shaFacility = await mutateShafacility();
@@ -130,6 +165,35 @@ const FacilityInfo: React.FC = () => {
                 <Card label={t('shaStatus', 'SHA Status')} value={shaStatus} />
                 <Card label={t('shaContracted', 'SHA Contracted')} value={shaFacility?.approved} />
                 <Card label={t('shaContractExpiry', 'SHA Contract Expiry Date')} value={shaExpiry} />
+              </div>
+            </Tile>
+          </Layer>
+        </Column>
+
+        {/* Facility Configurations Column */}
+        <Column sm={4} md={4} lg={8}>
+          <Layer>
+            <Tile className={styles.card}>
+              <h3 className={styles.cardTitle}>{t('facilityConfigurations', 'Facility Configurations')}</h3>
+              <hr className={styles.cardDivider} />
+              <div className={styles.cardContent}>
+                <div style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
+                  <Toggle
+                    id="allow-cbhi-manual-entry-toggle"
+                    labelText={t('allowCbhiManualEntry', 'Allow CBHI Manual Entry')}
+                    labelA={t('disabled', 'Disabled')}
+                    labelB={t('enabled', 'Enabled')}
+                    toggled={isManualEntryEnabled}
+                    disabled={isCbhiSaving || isCbhiSettingLoading}
+                    onToggle={(checked) => handleToggleCbhiManualEntry(checked)}
+                  />
+                  <p style={{ fontSize: '0.875rem', color: '#525252', marginTop: '0.5rem' }}>
+                    {t(
+                      'allowCbhiManualEntryDescription',
+                      'When enabled, CBHI member details (CBHI ID and Expiry Date) are entered manually in MRU billing information instead of online search.',
+                    )}
+                  </p>
+                </div>
               </div>
             </Tile>
           </Layer>

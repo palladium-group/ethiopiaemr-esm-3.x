@@ -1,9 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableSkeleton } from '@carbon/react';
-import { EmptyState, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import {
+  EmptyState,
+  ErrorState,
+  useLaunchWorkspaceRequiringVisit,
+  EmptyStateProps,
+} from '@openmrs/esm-patient-common-lib';
 import MedicationsDetailsTable from '../components/medications-details-table.component';
 import { useActivePatientOrders } from '../api/api';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
+import { PatientMedicationsPermissions } from '../permissions.constants';
 
 interface ActiveMedicationsProps {
   patient: fhir.Patient;
@@ -13,6 +20,12 @@ const ActiveMedications: React.FC<ActiveMedicationsProps> = ({ patient }) => {
   const { t } = useTranslation();
   const headerTitle = t('activeMedicationsHeaderTitle', 'Active medications');
   const displayText = t('activeMedicationsDisplayText', 'active medications');
+
+  const session = useSession();
+  const canManageMedications = userHasAccess(
+    PatientMedicationsPermissions.ManagePatientMedications,
+    session?.user ?? { privileges: [], roles: [] },
+  );
 
   const { data: activePatientOrders, error, isLoading, isValidating } = useActivePatientOrders(patient?.id);
 
@@ -40,13 +53,17 @@ const ActiveMedications: React.FC<ActiveMedicationsProps> = ({ patient }) => {
     );
   }
 
-  return (
-    <EmptyState
-      displayText={displayText}
-      headerTitle={headerTitle}
-      launchForm={() => launchOrderBasket({}, { encounterUuid: '' })}
-    />
-  );
+  const emptyStateProps: EmptyStateProps = {
+    displayText: displayText,
+    headerTitle: headerTitle,
+  };
+
+  /** If the user has the ManagePatientMedications permission, show the launch form button. */
+  if (canManageMedications) {
+    emptyStateProps.launchForm = () => launchOrderBasket({}, { encounterUuid: '' });
+  }
+
+  return <EmptyState {...emptyStateProps} />;
 };
 
 export default ActiveMedications;

@@ -1,11 +1,21 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 import { InlineNotification, SkeletonText } from '@carbon/react';
-import { Microscope, WarningFilled } from '@carbon/react/icons';
-import { formatDate, launchWorkspace2, showSnackbar, useConfig, usePatient, useVisit } from '@openmrs/esm-framework';
+import { Information, Microscope, WarningFilled } from '@carbon/react/icons';
+import {
+  fetchCurrentPatient,
+  formatDate,
+  launchWorkspace2,
+  showSnackbar,
+  useConfig,
+  useVisit,
+} from '@openmrs/esm-framework';
 import { type RadiologyConfig } from '../../../config-schema';
 import { type ImagingOrderBasketItem } from '../../../types';
 import { useLatestRenalFunctionPanel } from '../../../resources/hooks/useRenalLabResults';
+import { usePendingRenalLabOrder } from '../../../resources/hooks/usePendingRenalLabOrder';
+import { type RenalLabOrderBasketWindowProps } from './renal-lab-order-basket.workspace';
 import styles from './renal-warning.scss';
 
 type RenalWarningProps = {
@@ -30,6 +40,7 @@ const RenalWarning: React.FC<RenalWarningProps> = ({ order, patient }) => {
         patientUuid={patient.id}
         testConceptUuid={renalFunctionTestConceptUuid}
         validityPeriodInDays={matchedConfig.labResultValidityPeriodInDays}
+        radiologyOrderDateActivated={null}
       />
     </div>
   );
@@ -40,9 +51,14 @@ export default RenalWarning;
 type RenalWarningForOrderProps = {
   conceptUuid: string;
   patientUuid: string;
+  radiologyOrderDateActivated?: string | null;
 };
 
-export const RenalWarningForOrder: React.FC<RenalWarningForOrderProps> = ({ conceptUuid, patientUuid }) => {
+export const RenalWarningForOrder: React.FC<RenalWarningForOrderProps> = ({
+  conceptUuid,
+  patientUuid,
+  radiologyOrderDateActivated,
+}) => {
   const { radiologyOrdersRequiringRenalFunctionCheck, renalFunctionTestConceptUuid } = useConfig<RadiologyConfig>();
 
   const matchedConfig = radiologyOrdersRequiringRenalFunctionCheck.find(
@@ -59,6 +75,7 @@ export const RenalWarningForOrder: React.FC<RenalWarningForOrderProps> = ({ conc
         patientUuid={patientUuid}
         testConceptUuid={renalFunctionTestConceptUuid}
         validityPeriodInDays={matchedConfig.labResultValidityPeriodInDays}
+        radiologyOrderDateActivated={radiologyOrderDateActivated}
       />
     </div>
   );
@@ -68,6 +85,7 @@ type RenalLabResultsProps = {
   patientUuid: string;
   testConceptUuid: string;
   validityPeriodInDays: number;
+  radiologyOrderDateActivated?: string | null;
 };
 
 type RenalResultStatus = 'valid' | 'high' | 'low' | 'critical' | 'expired' | 'warning';
@@ -99,19 +117,35 @@ function normalizeStatus(interpretationClass: string): RenalResultStatus {
   }
 }
 
-const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConceptUuid, validityPeriodInDays }) => {
+const RenalLabResults: React.FC<RenalLabResultsProps> = ({
+  patientUuid,
+  testConceptUuid,
+  validityPeriodInDays,
+  radiologyOrderDateActivated,
+}) => {
   const { t } = useTranslation();
-  const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
+  // Avoid usePatient here: on radiology routes it clears the patient UUID on every
+  // single-spa navigation because getPatientUuidFromUrl() returns undefined.
+  const {
+    data: patient,
+    isLoading: isPatientLoading,
+    error: patientError,
+  } = useSWR(patientUuid ? ['patient', patientUuid] : null, () => fetchCurrentPatient(patientUuid));
   const { activeVisit, mutate: mutateVisitContext } = useVisit(patientUuid);
-  const { interpretedResults, isLoading, error, lastResultDate } = useLatestRenalFunctionPanel(
+  const { interpretedResults, isLoading, error, resultDate } = useLatestRenalFunctionPanel(
     patientUuid,
     testConceptUuid,
     validityPeriodInDays,
   );
+  const {
+    hasPendingOrder,
+    isLoading: isLoadingPendingOrder,
+    pendingOrder,
+  } = usePendingRenalLabOrder(patientUuid, testConceptUuid, radiologyOrderDateActivated);
 
   const sectionTitle = <p className={styles.sectionTitle}>{t('renalFunctionResults', 'Renal function results')}</p>;
 
-  if (isLoading) {
+  if (isLoading || isLoadingPendingOrder) {
     return (
       <>
         {sectionTitle}
@@ -143,27 +177,70 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
       });
       return;
     }
-    launchWorkspace2(
-      'imaging-renal-order-basket-workspace',
+
+    if (!patient) {
+      showSnackbar({
+        title: t('errorLoadingPatient', 'Error loading patient'),
+        subtitle: patientError?.message ?? t('tryPlacingTheOrderAgain', 'Please try placing the order again.'),
+        kind: 'error',
+      });
+      return;
+    }
+
+    launchWorkspace2<object, RenalLabOrderBasketWindowProps, object>(
+      'imaging-renal-lab-order-basket',
+      {},
       { patient, patientUuid, visitContext: activeVisit, mutateVisitContext },
-      {
-        patient,
-        patientUuid,
-        visitContext: activeVisit,
-        mutateVisitContext,
-        labOrderWorkspaceName: 'imaging-renal-add-lab-order-workspace',
-        visibleOrderPanels: ['imaging-renal-add-lab-order-workspace'],
-      },
-    );
+    ).catch((launchError: Error) => {
+      showSnackbar({
+        title: t('errorPlacingOrder', 'Could not place the order'),
+        subtitle: launchError?.message ?? t('tryPlacingTheOrderAgain', 'Please try placing the order again.'),
+        kind: 'error',
+      });
+    });
   }
 
   if (!interpretedResults.length) {
-    const lastDoneText = lastResultDate
-      ? t('renalResultsLastDone', 'Last result: {{date}} (valid for {{validityDuration}} day(s)).', {
-          date: formatDate(new Date(lastResultDate), { noToday: true }),
-          validityDuration: validityPeriodInDays,
-        })
-      : t('renalResultsNoneOnFile', 'No previous result on file.');
+    if (hasPendingOrder) {
+      const orderedOn = pendingOrder?.dateActivated
+        ? formatDate(new Date(pendingOrder.dateActivated), { noToday: true })
+        : null;
+
+      return (
+        <div className={styles.panelCard}>
+          <div className={styles.panelHeader}>
+            <p className={styles.panelTitle}>{t('renalFunctionPanel', 'Renal function panel')}</p>
+            <p className={styles.statusPending}>{t('statusPendingResults', 'Status: Pending results')}</p>
+          </div>
+          <div className={styles.emptyStateBody}>
+            <div className={`${styles.emptyStateBox} ${styles.emptyStateBoxInfo}`} role="status">
+              <Information size={32} className={`${styles.emptyStateIcon} ${styles.emptyStateIconInfo}`} />
+              <p className={`${styles.emptyStateTitle} ${styles.emptyStateTitleInfo}`}>
+                {t('renalResultsPendingTitle', 'Renal function test ordered')}
+              </p>
+              <p className={`${styles.emptyStateSubtitle} ${styles.emptyStateSubtitleInfo}`}>
+                {orderedOn
+                  ? t(
+                      'renalResultsPendingSubtitleWithDate',
+                      'A renal function panel was ordered on {{date}}. Results are not available yet.',
+                      { date: orderedOn },
+                    )
+                  : t(
+                      'renalResultsPendingSubtitle',
+                      'A renal function panel has already been ordered. Results are not available yet.',
+                    )}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const validityText = t(
+      'renalResultsNoneWithinValidity',
+      'No result on file from the last {{validityDuration}} day(s).',
+      { validityDuration: validityPeriodInDays },
+    );
 
     return (
       <div className={styles.panelCard}>
@@ -185,12 +262,16 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
             </svg>
             <p className={styles.emptyStateTitle}>{t('renalResultsRequiredTitle', 'Renal function test required')}</p>
             <p className={styles.emptyStateSubtitle}>
-              {t('renalResultsRequiredSubtitle', 'A recent RFT is required before ordering this test.')} {lastDoneText}
+              {t('renalResultsRequiredSubtitle', 'A recent RFT is required before ordering this test.')} {validityText}
             </p>
           </div>
         </div>
         <div className={styles.panelFooter}>
-          <button type="button" className={styles.orderLabButton} disabled={isPatientLoading} onClick={handleOrderTest}>
+          <button
+            type="button"
+            className={styles.orderLabButton}
+            disabled={isPatientLoading || !patient}
+            onClick={handleOrderTest}>
             <Microscope size={16} />
             {t('orderLabTest', 'Order lab test')}
           </button>
@@ -203,10 +284,10 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
     <div className={styles.panelCard}>
       <div className={styles.panelHeader}>
         <p className={styles.panelTitle}>{t('renalFunctionPanel', 'Renal function panel')}</p>
-        {lastResultDate && (
+        {resultDate && (
           <p className={styles.lastUpdated}>
             {t('updated', 'Updated: {{date}}', {
-              date: formatDate(new Date(lastResultDate), { noToday: true, time: false }),
+              date: formatDate(new Date(resultDate), { noToday: true, time: false }),
             })}
           </p>
         )}
@@ -229,11 +310,11 @@ const RenalLabResults: React.FC<RenalLabResultsProps> = ({ patientUuid, testConc
                     <span className={styles.statusLabel}>{view.interpretation}</span>
                   </span>
                 </div>
-                {status === 'expired' && (
+                {status === 'expired' && !hasPendingOrder && (
                   <button
                     type="button"
                     className={styles.orderTestLink}
-                    disabled={isPatientLoading}
+                    disabled={isPatientLoading || !patient}
                     onClick={handleOrderTest}>
                     {t('orderTest', 'Order Test')}
                   </button>

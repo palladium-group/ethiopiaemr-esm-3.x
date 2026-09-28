@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, DataTableSkeleton, Dropdown, Layer, TableToolbarSearch } from '@carbon/react';
-import { isDesktop, showModal, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, showModal, showSnackbar, useLayoutType, useSession } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
 import { useServiceQueueEntries } from './service-queue-entries.resource';
 import ServiceQueueTable, { filterServiceQueueEntriesBySearch } from './service-queue-table.component';
@@ -68,6 +68,7 @@ function LocationDropdownFilter({
 }) {
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const currentItem = locationOptions.find((item) => item.id === selectedLocation.id) ?? selectedLocation;
 
   return (
     <div className={tableStyles.filterContainer}>
@@ -75,8 +76,8 @@ function LocationDropdownFilter({
         id="service-queue-location"
         items={locationOptions}
         itemToString={(item) => (item ? item.name : '')}
-        label={selectedLocation.name}
-        selectedItem={selectedLocation}
+        label={currentItem.name}
+        selectedItem={currentItem}
         onChange={({ selectedItem }) => selectedItem && onLocationChange(selectedItem)}
         size={isDesktop(layout) ? 'sm' : 'lg'}
         titleText={t('location', 'Location')}
@@ -148,12 +149,14 @@ function StatusDropdownFilter() {
 function ServiceQueueTableSection() {
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const { sessionLocation } = useSession();
   const columnIds = useFilteredQueueTableColumnIds();
   const { visitQueueNumberAttributeUuid } = useServiceQueuesConfig();
   const { selectedServiceUuid, selectedQueueStatusUuid } = useServiceQueuesFilterState();
   const { queueLocations, isLoading: isLoadingLocations } = useQueueLocations();
   const { activeTickets } = useActiveTicketAssignments();
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasUserSelectedLocation, setHasUserSelectedLocation] = useState(false);
 
   const [selectedLocation, setSelectedLocation] = useState<LocationOption>({
     id: ALL_LOCATIONS_ID,
@@ -170,6 +173,32 @@ function ServiceQueueTableSection() {
       ...queueLocations.map((location) => ({ id: location.id ?? '', name: location.name ?? '' })),
     ];
   }, [queueLocations, t]);
+
+  useEffect(() => {
+    if (hasUserSelectedLocation || isLoadingLocations) {
+      return;
+    }
+
+    if (sessionLocation?.uuid) {
+      const matchingQueueLocation = queueLocations.find((loc) => loc.id === sessionLocation.uuid);
+      if (matchingQueueLocation) {
+        setSelectedLocation({
+          id: matchingQueueLocation.id ?? sessionLocation.uuid,
+          name:
+            matchingQueueLocation.name ??
+            (sessionLocation as any).display ??
+            (sessionLocation as any).name ??
+            sessionLocation.uuid,
+        });
+        return;
+      }
+    }
+
+    setSelectedLocation({
+      id: ALL_LOCATIONS_ID,
+      name: t('all', 'All'),
+    });
+  }, [hasUserSelectedLocation, isLoadingLocations, queueLocations, sessionLocation, t]);
 
   const locationUuidForRooms = selectedLocation.id === ALL_LOCATIONS_ID ? undefined : selectedLocation.id;
   const { queueRooms, isLoading: isLoadingRooms } = useQueueRoomsAtLocation(locationUuidForRooms);
@@ -189,6 +218,7 @@ function ServiceQueueTableSection() {
 
   const handleLocationChange = useCallback(
     (location: LocationOption) => {
+      setHasUserSelectedLocation(true);
       setSelectedLocation(location);
       setSelectedRoom({ id: ALL_ROOMS_FILTER, name: t('all', 'All') });
     },

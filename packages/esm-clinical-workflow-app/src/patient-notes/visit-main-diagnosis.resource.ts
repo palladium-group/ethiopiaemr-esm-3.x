@@ -42,6 +42,14 @@ export function collectVisitPrimaryConceptUuids(visit: ActiveVisitWithEncounters
   return Array.from(uuids);
 }
 
+export function visitHasPrimaryDiagnosis(visit: ActiveVisitWithEncounters | null): boolean {
+  return collectVisitPrimaryConceptUuids(visit).length > 0;
+}
+
+export function getActiveVisitWithEncountersSwrKey(patientUuid: string, activeVisitUuid: string) {
+  return ['activeVisitWithEncounters', patientUuid, activeVisitUuid] as const;
+}
+
 /** True when another encounter on the visit already has a main diagnosis. */
 export function visitHasMainDiagnosisOnOtherEncounter(
   visit: ActiveVisitWithEncounters | null,
@@ -62,8 +70,8 @@ export function visitHasMainDiagnosisOnOtherEncounter(
 }
 
 export function useActiveVisitWithEncounters(patientUuid: string, activeVisitUuid: string | undefined) {
-  const { data, error, isLoading } = useSWR(
-    activeVisitUuid ? ['activeVisitWithEncounters', patientUuid, activeVisitUuid] : null,
+  const { data, error, isLoading, mutate } = useSWR(
+    activeVisitUuid ? getActiveVisitWithEncountersSwrKey(patientUuid, activeVisitUuid) : null,
     () => fetchActiveVisitWithEncounters(patientUuid),
   );
 
@@ -71,5 +79,6 @@ export function useActiveVisitWithEncounters(patientUuid: string, activeVisitUui
     visitWithEncounters: data ?? null,
     error,
     isLoading,
+    mutate,
   };
 }

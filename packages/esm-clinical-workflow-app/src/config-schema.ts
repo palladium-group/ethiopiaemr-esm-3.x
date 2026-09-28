@@ -106,6 +106,12 @@ export const configSchema = {
       },
     },
   },
+  allowCbhiManualEntry: {
+    _type: Type.Boolean,
+    _description:
+      'Allow CBHI manual entry of CBHI ID and Expiry Date instead of online search in MRU billing information.',
+    _default: false,
+  },
   billingVisitAttributeTypes: {
     _type: Type.Object,
     _description: 'Visit attribute type UUIDs for billing information',
@@ -152,10 +158,15 @@ export const configSchema = {
       'Visit attribute type UUID that stores the triage definition id on visits created from a triage page.',
     _default: 'c1f592f3-3c6e-44c9-ac2d-ddab90f705ba',
   },
+  assignedQueueVisitAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Visit attribute type UUID that stores the queue location assigned after triage.',
+    _default: 'b8d2e4f1-6c3a-4e9b-a1f7-5d0c8e2b9473',
+  },
   identifierSourceUuid: {
     _type: Type.String,
     _description: 'Identifier source UUID',
-    _default: 'fb034aac-2353-4940-abe2-7bc94e7c1e71',
+    _default: '0b5ddb77-7df8-4a9b-8e9c-ecd8a264729f',
   },
   defaultIdentifierTypeUuid: {
     _type: Type.String,
@@ -257,6 +268,12 @@ export const configSchema = {
     _default: true,
     _description: 'Indicates whether a primary diagnosis is required when submitting a visit note',
   },
+  showOrderBasketDiagnosisBanner: {
+    _type: Type.Boolean,
+    _default: true,
+    _description:
+      'When true, shows a warning banner in the order basket if the active visit has no primary (rank 1) diagnosis. Order save enforcement is controlled only by the ethiopiaemrcore backend global properties.',
+  },
   visitNoteConfig: notesConfigSchema,
   disableEmptyTabs: {
     _type: Type.Boolean,
@@ -345,6 +362,21 @@ export const configSchema = {
     _description: 'UUID of the Inpatient Order Sheet form',
     _default: '038fea05-4091-4a08-a24c-5fc7e4d11b82',
   },
+  inPatientVisitTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Visit type UUID for inpatient visits; used to enable discharge actions',
+    _default: 'a73e2ac6-263b-47fc-99fc-e0f2c09fc914',
+  },
+  inpatientDischargeFormUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the Admission Discharge (IPD Discharge) form opened from the patient chart',
+    _default: 'ea36f403-c2d3-42e7-93d1-af5cf59d6f22',
+  },
+  inpatientDischargeFormName: {
+    _type: Type.String,
+    _description: 'Display name for the Admission Discharge form workspace title',
+    _default: 'Admission Discharge',
+  },
   ipdDischargeEncounterTypeUuid: {
     _type: Type.UUID,
     _description: 'IPD Discharge encounter type UUID (doctor clinical discharge form)',
@@ -399,6 +431,8 @@ export type ClinicalWorkflowConfig = {
   finishedServiceQueueStatusUuid: string;
   visitQueueNumberAttributeTypeUuid: string;
   triageVisitAttributeTypeUuid: string;
+  assignedQueueVisitAttributeTypeUuid: string;
+  allowCbhiManualEntry: boolean;
   billingVisitAttributeTypes: {
     paymentMethod: string;
     creditType: string;
@@ -441,11 +475,15 @@ export type ClinicalWorkflowConfig = {
   transferDestinationLocationConceptUuid: string;
   recentDiagnosesCount: number;
   inpatientOrderSheetFormUuid: string;
+  inPatientVisitTypeUuid: string;
+  inpatientDischargeFormUuid: string;
+  inpatientDischargeFormName: string;
   ipdDischargeEncounterTypeUuid: string;
   nurseDischargeConfirmationEncounterTypeUuid: string;
   nurseDischargeConfirmationConceptUuid: string;
   nurseDischargeConfirmationYesConceptUuid: string;
   legacySummaryDisplayEnabled: boolean;
+  showOrderBasketDiagnosisBanner: boolean;
 };
 
 export interface VisitNoteConfig {

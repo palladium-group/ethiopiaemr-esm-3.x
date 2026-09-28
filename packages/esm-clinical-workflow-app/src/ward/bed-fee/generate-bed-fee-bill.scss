@@ -1,0 +1,29 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: layout.$spacing-05;
+  row-gap: layout.$spacing-02;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  margin: 0 0 layout.$spacing-05;
+
+  dt {
+    @include type.type-style('label-01');
+    color: $text-02;
+  }
+
+  dd {
+    @include type.type-style('body-compact-01');
+    color: $ui-05;
+    margin: 0;
+  }
+}
+
+.servicePicker {
+  margin-bottom: layout.$spacing-05;
+}

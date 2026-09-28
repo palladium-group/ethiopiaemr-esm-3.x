@@ -1,10 +1,13 @@
 import React, { useMemo } from 'react';
-import { FormGroup } from '@carbon/react';
+import { FormGroup, TextInput } from '@carbon/react';
+import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import type { Control, FieldErrors } from 'react-hook-form';
 import { CBHI_VISIT_ATTRIBUTE_FIELDS, type BillingFormData } from '../billing-information.resource';
+import type { ClinicalWorkflowConfig } from '../../../config-schema';
 import styles from '../billing-information.scss';
 import { CbhiMemberSearch } from './CbhiMemberSearch';
+import { useCbhiManualEntrySetting } from '../hooks/useCbhiManualEntrySetting';
 import type { CbhiPersistFields } from '../hooks/useCbhiSearch';
 
 type AttributeType = {
@@ -27,12 +30,16 @@ type CbhiBillingAttributesProps = {
 const normalize = (value: string) => value?.toLowerCase().replace(/[\s_-]/g, '') ?? '';
 
 export const CBHI_PERSIST_FIELD_MATCHERS: Array<{
-  field: keyof CbhiPersistFields;
+  field: keyof CbhiPersistFields | 'expiryDate';
   match: (normalizedName: string) => boolean;
 }> = [
   {
     field: 'cbhiId',
     match: (n) => n.includes('cbhi') && (n.includes('id') || n.includes('number')),
+  },
+  {
+    field: 'expiryDate',
+    match: (n) => n.includes('expiry') || n.includes('expiration') || n.includes('date'),
   },
   {
     field: 'insuredId',
@@ -56,7 +63,10 @@ export const CBHI_PERSIST_FIELD_MATCHERS: Array<{
   },
 ];
 
-export const findCbhiAttributeType = (attributeTypes: AttributeType[], field: keyof CbhiPersistFields) => {
+export const findCbhiAttributeType = (
+  attributeTypes: AttributeType[],
+  field: keyof CbhiPersistFields | 'expiryDate',
+) => {
   const matcher = CBHI_PERSIST_FIELD_MATCHERS.find((item) => item.field === field);
   if (!matcher) {
     return undefined;
@@ -65,13 +75,16 @@ export const findCbhiAttributeType = (attributeTypes: AttributeType[], field: ke
 };
 
 export const CbhiBillingAttributes: React.FC<CbhiBillingAttributesProps> = ({
+  errors,
   t,
   attributeTypes,
   attributes,
   setValue,
 }) => {
+  const { isManualEntryEnabled } = useCbhiManualEntrySetting();
+
   const fieldToAttribute = useMemo(() => {
-    const mapping = new Map<keyof CbhiPersistFields, AttributeType>();
+    const mapping = new Map<keyof CbhiPersistFields | 'expiryDate', AttributeType>();
     const usedUuids = new Set<string>();
 
     CBHI_PERSIST_FIELD_MATCHERS.forEach(({ field, match }) => {
@@ -135,6 +148,71 @@ export const CbhiBillingAttributes: React.FC<CbhiBillingAttributesProps> = ({
 
     setValue('attributes', nextAttributes, { shouldDirty: true });
   };
+
+  const handleCbhiIdChange = (cbhiId: string) => {
+    const nextAttributes = { ...attributes, cbhiId };
+    const cbhiIdAttr = fieldToAttribute.get('cbhiId');
+    if (cbhiIdAttr) {
+      nextAttributes[cbhiIdAttr.uuid] = cbhiId;
+    }
+    setValue('attributes', nextAttributes, { shouldDirty: true });
+  };
+
+  const handleExpiryDateChange = (date: string | Date) => {
+    const dateValue = typeof date === 'string' ? date : date ? date.toISOString().split('T')[0] : '';
+    const nextAttributes = { ...attributes, expiryDate: dateValue, cbhiExpiryDate: dateValue };
+    const expiryAttr = fieldToAttribute.get('expiryDate');
+    if (expiryAttr) {
+      nextAttributes[expiryAttr.uuid] = dateValue;
+    }
+    setValue('attributes', nextAttributes, { shouldDirty: true });
+  };
+
+  const cbhiIdValue = attributes?.cbhiId ?? '';
+  const expiryDateValue = attributes?.expiryDate ?? attributes?.cbhiExpiryDate ?? '';
+
+  const cbhiIdError = errors.attributes?.cbhiId;
+  const cbhiIdErrorMessage =
+    cbhiIdError && typeof cbhiIdError === 'object' && 'message' in cbhiIdError
+      ? String(cbhiIdError.message)
+      : cbhiIdError
+      ? String(cbhiIdError)
+      : undefined;
+
+  const expiryDateError = errors.attributes?.expiryDate || errors.attributes?.cbhiExpiryDate;
+  const expiryDateErrorMessage =
+    expiryDateError && typeof expiryDateError === 'object' && 'message' in expiryDateError
+      ? String(expiryDateError.message)
+      : expiryDateError
+      ? String(expiryDateError)
+      : undefined;
+
+  if (isManualEntryEnabled) {
+    return (
+      <FormGroup className={styles.billingTypeAttributesContainer} legendText={t('billingDetails', 'Billing Details')}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <TextInput
+            id="attribute-cbhiId"
+            labelText={t('cbhiId', 'CBHI ID')}
+            value={cbhiIdValue}
+            onChange={(e) => handleCbhiIdChange(e.target.value)}
+            placeholder={t('enterCbhiId', 'Enter CBHI ID')}
+            invalid={!!cbhiIdError}
+            invalidText={cbhiIdErrorMessage}
+            required
+          />
+          <OpenmrsDatePicker
+            id="attribute-cbhiExpiryDate"
+            labelText={t('expiryDate', 'Expiry Date')}
+            value={expiryDateValue}
+            onChange={handleExpiryDateChange}
+            invalid={!!expiryDateError}
+            invalidText={expiryDateErrorMessage}
+          />
+        </div>
+      </FormGroup>
+    );
+  }
 
   return (
     <FormGroup className={styles.billingTypeAttributesContainer} legendText={t('billingDetails', 'Billing Details')}>

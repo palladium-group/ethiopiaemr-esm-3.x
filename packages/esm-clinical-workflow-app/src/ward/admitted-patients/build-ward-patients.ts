@@ -10,7 +10,7 @@ export function buildWardPatients(
   return (
     bedLayouts
       ?.map((bedLayout) => {
-        const { patients } = bedLayout;
+        const patients = bedLayout.patients ?? [];
         const bed = bedLayoutToBed(bedLayout);
         const wardPatients: WardPatient[] = patients.map((patient): WardPatient => {
           const inpatientAdmission = wardAdmittedPatientsWithBed?.get(patient.uuid);

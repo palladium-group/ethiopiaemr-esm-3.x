@@ -16,5 +16,5 @@ export function bedLayoutToBed(bedLayout: BedLayout): Bed {
 }
 
 export const getOpenmrsId = (identifiers: Array<PatientIdentifier>) => {
-  return identifiers.find((id) => id.identifierType.uuid === OPENMRS_ID_TYPE)?.identifier ?? null;
+  return identifiers.find((id) => id.identifierType?.uuid === OPENMRS_ID_TYPE)?.identifier ?? null;
 };

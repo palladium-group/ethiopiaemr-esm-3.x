@@ -39,7 +39,7 @@ describe('validateMrnNumber', () => {
   });
 
   it('rejects non-numeric values', () => {
-    expect(validateMrnNumber('12a456', configuredDefaultMrnLength)).toBe('MRN must contain only digits');
+    expect(validateMrnNumber('12a456', configuredDefaultMrnLength)).toBe('Legacy MRN must contain only digits');
   });
 
   describe.each([
@@ -60,7 +60,7 @@ describe('validateMrnNumber', () => {
       const message = mrnLengthValidationMessage(length);
       expect(validateMrnNumber(tooShort, length)).toBe(message);
       expect(validateMrnNumber(tooLong, length)).toBe(message);
-      expect(message).toBe(`MRN must be exactly ${length} digits`);
+      expect(message).toBe(`Legacy MRN must be exactly ${length} digits`);
     });
   });
 });

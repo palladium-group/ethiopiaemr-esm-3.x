@@ -173,6 +173,13 @@
       "offline": true
     },
     {
+      "name": "admission-discharge-button",
+      "component": "admissionDischargeActionButton",
+      "slot": "patient-actions-slot",
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "add-patient-to-ward-siderail-button",
       "component": "addPatientToWardSiderailButton",
       "slot": "ward-ui-extension-hidden-slot"
@@ -229,6 +236,12 @@
       "slot": "patient-chart-summary-dashboard-slot",
       "online": true,
       "offline": false
+    },
+    {
+      "name": "order-basket-diagnosis-banner",
+      "component": "orderBasketDiagnosisBanner",
+      "slot": "order-basket-slot",
+      "order": 0
     },
     {
       "name": "immunization-register-action-button",
@@ -326,6 +339,10 @@
       "component": "confirmDischargeDialog"
     },
     {
+      "name": "generate-bed-fee-bill-dialog",
+      "component": "generateBedFeeBillDialog"
+    },
+    {
       "name": "confirm-transfer-dialog",
       "component": "confirmTransferDialog"
     },
@@ -340,6 +357,10 @@
     {
       "name": "call-queue-entry-modal",
       "component": "callQueueEntryModal"
+    },
+    {
+      "name": "triage-queue-assignment-modal",
+      "component": "triageQueueAssignmentModal"
     }
   ]
 }

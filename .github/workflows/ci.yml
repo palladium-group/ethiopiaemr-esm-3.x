@@ -93,8 +93,17 @@ jobs:
         env:
           YARN_ENABLE_IMMUTABLE_INSTALLS: false
 
+      - name: Determine changed packages
+        shell: bash
+        run: |
+          change_base="${{ github.event.before }}"
+          if ! git cat-file -e "${change_base}^{commit}" 2>/dev/null; then
+            change_base="${GITHUB_SHA}^"
+          fi
+          echo "CHANGE_BASE=$change_base" >> "$GITHUB_ENV"
+
       - name: Version
-        run: yarn workspaces foreach --worktree --topological --exclude @ethiopia/esm-3.x-apps version "$(node -e "console.log(require('semver').inc(require('./package.json').version, 'patch'))")-pre.${{ github.run_number }}"
+        run: yarn workspaces foreach --since="${CHANGE_BASE}" --topological --no-private version "$(node -e "console.log(require('semver').inc(require('./package.json').version, 'patch'))")-pre.${{ github.run_number }}"
 
       - name: Build
         run: yarn turbo run build --cache-dir=".turbo" --concurrency=2
@@ -144,6 +153,16 @@ jobs:
         run: yarn install --frozen-lockfile
         env:
           YARN_ENABLE_IMMUTABLE_INSTALLS: false
+
+      - name: Determine changed packages
+        shell: bash
+        run: |
+          previous_tag="$(git describe --tags --abbrev=0 "${GITHUB_SHA}^" 2>/dev/null || true)"
+          if [[ -n "$previous_tag" ]]; then
+            echo "CHANGE_BASE=$previous_tag" >> "$GITHUB_ENV"
+          else
+            echo "CHANGE_BASE=$(git rev-list --max-parents=0 HEAD)" >> "$GITHUB_ENV"
+          fi
       
       - name: Build
         run: yarn turbo run build --cache-dir=".turbo" --concurrency=5 --no-daemon

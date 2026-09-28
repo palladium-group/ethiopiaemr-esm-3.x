@@ -1,5 +1,5 @@
 export function mrnLengthValidationMessage(expectedLength: number): string {
-  return `MRN must be exactly ${expectedLength} digits`;
+  return `Legacy MRN must be exactly ${expectedLength} digits`;
 }
 
 export function validateMrnNumber(value: string | undefined, expectedLength: number): string | undefined {
@@ -8,7 +8,7 @@ export function validateMrnNumber(value: string | undefined, expectedLength: num
     return undefined;
   }
   if (!/^\d+$/.test(trimmed)) {
-    return 'MRN must contain only digits';
+    return 'Legacy MRN must contain only digits';
   }
   if (trimmed.length !== expectedLength) {
     return mrnLengthValidationMessage(expectedLength);

@@ -46,17 +46,15 @@ export const usePatientLeaveBed = () => {
   const { wardPatientGroupDetails } = useAppContext<WardViewContext>('ward-view-context') ?? {};
   const session = useSession();
 
-  const handleLeaveBed = async (
-    wardPatient: WardPatient,
-    emrConfiguration: Record<string, unknown>,
-    visit: Visit,
-    wardLocation?: OpenmrsResource,
-  ) => {
+  const handleLeaveBed = async (wardPatient: WardPatient, emrConfiguration: Record<string, unknown>, visit: Visit) => {
     try {
+      // Keep this at the session location, not the ward: the KenyaEMR ward app's Discharged tab
+      // lists exit encounters at the ward location and crashes on patients whose display name
+      // lacks an "OpenMRS ID" identifier, which blanks the whole ward page.
       const encounterPayload = createDischargeEncounterPayload(
         wardPatient.patient.uuid,
         emrConfiguration.exitFromInpatientEncounterType as OpenmrsResource,
-        wardLocation ?? (session?.sessionLocation as OpenmrsResource),
+        session?.sessionLocation as OpenmrsResource,
         session?.currentProvider as OpenmrsResource,
         visit.uuid,
         emrConfiguration.clinicianEncounterRole as OpenmrsResource,
@@ -101,29 +99,31 @@ export enum PaymentStatus {
   PENDING = 'PENDING',
 }
 
+type BillLineItem = {
+  uuid: string;
+  paymentStatus: string;
+  itemOrServiceConceptUuid: string;
+  quantity: number;
+  dateCreated?: string;
+};
+
 type Bill = OpenmrsResource & {
   voided: boolean;
   patient: OpenmrsResource;
-  lineItems: Array<{
-    uuid: string;
-    paymentStatus: string;
-    itemOrServiceConceptUuid: string;
-    quantity: number;
-    dateCreated?: string;
-  }>;
+  lineItems: Array<BillLineItem>;
 };
 
 export const usePatientBills = (patientUuid: string, startingDate?: Date | null, endDate?: Date | null) => {
-  const rep =
-    'custom:(uuid,display,voided,voidReason,dateCreated,status,patient:(uuid,display),' +
-    'lineItems:(uuid,paymentStatus,billableService,itemOrServiceConceptUuid,quantity,dateCreated))';
+  // Nested lineItems:(…) custom props are ignored by the cashier REST resource and return only
+  // uuid/display/voided. Request bare lineItems so quantity, paymentStatus, and concept UUIDs load.
+  const rep = 'custom:(uuid,display,voided,voidReason,dateCreated,status,patient:(uuid,display),lineItems)';
 
   const { dailyBedFeeBillableService } = useConfig<WardAppConfigSlice>({
     externalModuleName: '@kenyaemr/esm-ward-app',
   });
 
   const url = patientUuid ? `${restBaseUrl}/cashier/bill?v=${rep}&patientUuid=${patientUuid}` : null;
-  const { data, isLoading, error } = useSWR<FetchResponse<{ results: Array<Bill> }>>(url, openmrsFetch);
+  const { data, isLoading, error, mutate } = useSWR<FetchResponse<{ results: Array<Bill> }>>(url, openmrsFetch);
 
   const bills = useMemo(
     () => (data?.data?.results ?? []).filter((bill) => !bill.voided && bill.patient?.uuid === patientUuid),
@@ -135,35 +135,42 @@ export const usePatientBills = (patientUuid: string, startingDate?: Date | null,
     [bills],
   );
 
+  /** Number of bed fee days already billed within this ward stay. */
+  const bedFeeDaysBilled = useMemo(() => {
+    const bedFeeLineItems = bills.reduce<Array<BillLineItem>>((prev, curr) => {
+      const matching = (curr.lineItems ?? []).filter(
+        (item) => item.itemOrServiceConceptUuid === dailyBedFeeBillableService,
+      );
+      prev.push(...matching);
+      return prev;
+    }, []);
+
+    // Bed fees are often raised after the discharge date, so the window extends to now to keep
+    // those line items in scope while still excluding fees from an earlier admission.
+    const scopeEnd = endDate ? Math.max(endDate.getTime(), Date.now()) : null;
+
+    const scopedItems =
+      startingDate && scopeEnd
+        ? bedFeeLineItems.filter((item) => {
+            if (!item.dateCreated) {
+              return true;
+            }
+            const created = new Date(item.dateCreated).getTime();
+            return created >= startingDate.getTime() && created <= scopeEnd;
+          })
+        : bedFeeLineItems;
+
+    return scopedItems.reduce((prev, curr) => prev + (curr.quantity ?? 0), 0);
+  }, [bills, dailyBedFeeBillableService, endDate, startingDate]);
+
   const dailyBedFeeSettled = useCallback(
     (daysInWard?: number) => {
       if (!daysInWard || daysInWard <= 0) {
         return true;
       }
-
-      const allBedFeeLineItems = bills.reduce<Bill['lineItems']>((prev, curr) => {
-        const matching = (curr.lineItems ?? []).filter(
-          (item) => item.itemOrServiceConceptUuid === dailyBedFeeBillableService,
-        );
-        prev.push(...matching);
-        return prev;
-      }, []);
-
-      const scopedItems =
-        startingDate && endDate
-          ? allBedFeeLineItems.filter((item) => {
-              if (!item.dateCreated) {
-                return true;
-              }
-              const created = new Date(item.dateCreated).getTime();
-              return created >= startingDate.getTime() && created <= endDate.getTime();
-            })
-          : allBedFeeLineItems;
-
-      const totalQuantity = scopedItems.reduce((prev, curr) => prev + (curr.quantity ?? 0), 0);
-      return totalQuantity >= daysInWard;
+      return bedFeeDaysBilled >= daysInWard;
     },
-    [bills, dailyBedFeeBillableService, endDate, startingDate],
+    [bedFeeDaysBilled],
   );
 
   return {
@@ -171,6 +178,8 @@ export const usePatientBills = (patientUuid: string, startingDate?: Date | null,
     isLoading,
     bills,
     pendingBills,
+    bedFeeDaysBilled,
     dailyBedFeeSettled,
+    mutate,
   };
 };

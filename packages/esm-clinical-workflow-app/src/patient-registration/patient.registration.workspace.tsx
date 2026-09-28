@@ -38,8 +38,8 @@ import {
   patientMrnIdentifierInUse,
   saveAllergy,
   saveCondition,
+  generateIdentifier,
 } from './patient-registration.resource';
-import { useGenerateIdentifier } from './useGenerateIdentifier';
 import { useHealthIdLookup } from './useHealthIdLookup';
 import styles from './patient.registration.workspace.scss';
 import classNames from 'classnames';
@@ -177,7 +177,6 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   } = useConfig<ClinicalWorkflowConfig>();
   const canSaveMrn = !!mrnIdentifierTypeUuid?.trim();
   const { sessionLocation } = useSession();
-  const { identifier } = useGenerateIdentifier(identifierSourceUuid);
   const patientRegistrationSchema = useMemo(() => createPatientRegistrationSchema(mrnNumberLength), [mrnNumberLength]);
 
   const [healthIdInput, setHealthIdInput] = useState('');
@@ -342,7 +341,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
       if (!configuredMrnTypeUuid) {
         // MRN is optional: don't block patient registration when MRN isn't configured/supported.
         showSnackbar({
-          title: t('mrnNotSaved', 'MRN could not be saved'),
+          title: t('mrnNotSaved', 'Legacy MRN could not be saved'),
           subtitle: t(
             'mrnIdentifierTypeNotConfigured',
             'Set mrnIdentifierTypeUuid in clinical workflow configuration to a valid patient identifier type.',
@@ -359,18 +358,21 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
           if (!mrnTypeExists) {
             showSnackbar({
-              title: t('mrnNotSaved', 'MRN could not be saved'),
+              title: t('mrnNotSaved', 'Legacy MRN could not be saved'),
               subtitle: t(
                 'mrnIdentifierTypeMissingOnServer',
-                'The configured MRN identifier type was not found on this server. Deploy the MRN patient identifier metadata or update mrnIdentifierTypeUuid.',
+                'The configured Legacy MRN identifier type was not found on this server. Deploy the Legacy MRN patient identifier metadata or update mrnIdentifierTypeUuid.',
               ),
               kind: 'warning',
               isLowContrast: true,
             });
           } else if (mrnAlreadyInUse) {
             showSnackbar({
-              title: t('mrnDuplicate', 'MRN already in use'),
-              subtitle: t('mrnDuplicateDetail', 'Another patient already has this MRN. Enter a different value.'),
+              title: t('mrnDuplicate', 'Legacy MRN already in use'),
+              subtitle: t(
+                'mrnDuplicateDetail',
+                'Another patient already has this Legacy MRN. Enter a different value.',
+              ),
               kind: 'error',
               isLowContrast: true,
             });
@@ -381,10 +383,10 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
         } catch (error) {
           // Don't silently allow duplicates if we couldn't validate; MRN is optional, so proceed without it.
           showSnackbar({
-            title: t('mrnNotSaved', 'MRN could not be saved'),
+            title: t('mrnNotSaved', 'Legacy MRN could not be saved'),
             subtitle: t(
               'mrnValidationFailed',
-              'Could not validate MRN right now. Patient will be registered, but MRN will not be saved.',
+              'Could not validate Legacy MRN right now. Patient will be registered, but Legacy MRN will not be saved.',
             ),
             kind: 'warning',
             isLowContrast: true,
@@ -394,6 +396,39 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     }
 
     try {
+      let identifier = '';
+      if (identifierSourceUuid) {
+        try {
+          const identifierResponse = await generateIdentifier(identifierSourceUuid);
+          identifier = (identifierResponse?.data as any)?.identifier ?? '';
+        } catch (idGenError) {
+          console.error('[Patient Registration] Failed to generate identifier:', idGenError);
+          showSnackbar({
+            title: t('identifierGenerationFailed', 'Identifier Generation Failed'),
+            subtitle: t(
+              'identifierGenerationFailedSubtitle',
+              'Could not generate a patient identifier. Please try again.',
+            ),
+            kind: 'error',
+            isLowContrast: true,
+          });
+          return;
+        }
+      }
+
+      if (!identifier) {
+        showSnackbar({
+          title: t('identifierGenerationFailed', 'Identifier Generation Failed'),
+          subtitle: t(
+            'identifierMissingSubtitle',
+            'Could not generate a valid patient identifier. Check identifier source configuration.',
+          ),
+          kind: 'error',
+          isLowContrast: true,
+        });
+        return;
+      }
+
       // Extract Health ID extra fields to include in initial registration
       const healthIdExtraFields = healthIdPatient?.fhir
         ? {
@@ -657,7 +692,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
               <ResponsiveWrapper>
                 <TextInput
                   id="mrn-number"
-                  labelText={t('mrnNumber', 'MRN')}
+                  labelText={t('mrnNumber', 'Legacy MRN')}
                   helperText={t('mrnNumberHelper', 'Optional. Enter {{length}} numeric digits.', {
                     length: mrnNumberLength,
                   })}
@@ -665,7 +700,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, mrnNumberLength))}
                   invalid={isSubmitted && !!errors.mrnNumber}
                   invalidText={isSubmitted ? errors.mrnNumber?.message : ''}
-                  placeholder={t('enterMrnNumber', 'Enter MRN')}
+                  placeholder={t('enterMrnNumber', 'Enter Legacy MRN')}
                   size="md"
                   type="text"
                   inputMode="numeric"

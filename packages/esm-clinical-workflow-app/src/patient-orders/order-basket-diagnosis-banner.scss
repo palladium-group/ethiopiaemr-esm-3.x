@@ -1,0 +1,20 @@
+.banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-03);
+  margin-bottom: var(--spacing-05);
+  width: 100%;
+  position: relative;
+  z-index: 0;
+  pointer-events: auto;
+
+  :global(.cds--inline-notification) {
+    max-inline-size: 100%;
+    width: 100%;
+  }
+}
+
+.actionButton {
+  margin-inline-start: var(--spacing-07);
+}

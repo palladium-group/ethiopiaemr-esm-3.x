@@ -151,3 +151,22 @@
 .pagination {
   border-top: 1px solid $ui-03;
 }
+
+.blockedPatientNameLink {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  color: $text-02;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    color: colors.$red-60;
+    text-decoration: underline;
+  }
+}
+
+.blockedMoneyIcon {
+  color: colors.$red-60;
+  flex-shrink: 0;
+}

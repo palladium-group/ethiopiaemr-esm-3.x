@@ -21,7 +21,15 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, variantConfi
   const { isLoading, patient } = usePatient(patientUuid);
   const handleLaunchTriageForm = () => {
     if (activeVisit && patient) {
-      launchTriageFormWorkspace(patient, patientUuid, activeVisit, variantConfig.formUuid, variantConfig.name, t);
+      launchTriageFormWorkspace(
+        patient,
+        patientUuid,
+        activeVisit,
+        variantConfig.formUuid,
+        variantConfig.name,
+        t,
+        variantConfig.id,
+      );
     } else {
       handleStartVisitAndLaunchTriageForm(patientUuid, variantConfig.formUuid, variantConfig.name, variantConfig.id);
     }

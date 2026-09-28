@@ -9,3 +9,4 @@ export { useBillableServices } from './useBillableServices';
 export { useCashPoints } from './useCashPoints';
 export { useCbhiSearch } from './useCbhiSearch';
 export type { CbhiEligibilityMember, CbhiPersistFields } from './useCbhiSearch';
+export { useCbhiManualEntrySetting, GP_ALLOW_CBHI_MANUAL_ENTRY } from './useCbhiManualEntrySetting';

@@ -90,7 +90,11 @@ const ClinicalHistory: React.FC<ClinicalHistoryProps> = ({ order }) => {
         </div>
         <div className={styles.content}>
           <p className={styles.label}>{t('relevantLabResults', 'Relevant Lab Results')}</p>
-          <RenalWarningForOrder conceptUuid={order?.concept?.uuid} patientUuid={order?.patient?.uuid} />
+          <RenalWarningForOrder
+            conceptUuid={order?.concept?.uuid}
+            patientUuid={order?.patient?.uuid}
+            radiologyOrderDateActivated={order?.dateActivated}
+          />
         </div>
       </div>
     </div>

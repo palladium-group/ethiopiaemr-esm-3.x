@@ -1,9 +1,9 @@
 import { InlineLoading, OverflowMenuItem, Tag } from '@carbon/react';
-import { useConfig, type Visit } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
+import { showModal, useConfig, type Visit } from '@openmrs/esm-framework';
 import React, { type FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ClinicalWorkflowConfig } from '../../config-schema';
+import { findEncounterDatetimeByType, getBedStayWindow } from '../bed-fee/bed-fee.utils';
 import { visitHasEncounterType } from '../discharge-confirmation/confirm-discharge.resource';
 import { usePatientBills } from './patient-leave-bed.resource';
 
@@ -16,43 +16,10 @@ type PatientAdmissionCellProps = {
 const useAdmissionBillingDetails = (encounterDatetime?: string, visit?: Visit | null) => {
   const config = useConfig<ClinicalWorkflowConfig>();
 
-  const admissionDate = useMemo(() => {
-    if (!encounterDatetime) {
-      return null;
-    }
-    const date = dayjs(encounterDatetime);
-    return date.isValid() ? date.startOf('day') : null;
-  }, [encounterDatetime]);
-
-  const ipdDischargeEncounter = useMemo(() => {
-    if (!visit?.encounters || !config.ipdDischargeEncounterTypeUuid) {
-      return null;
-    }
-    return visit.encounters.find((encounter) => encounter.encounterType?.uuid === config.ipdDischargeEncounterTypeUuid);
-  }, [config.ipdDischargeEncounterTypeUuid, visit]);
-
-  const endDate = useMemo(() => {
-    if (ipdDischargeEncounter?.encounterDatetime) {
-      const date = dayjs(ipdDischargeEncounter.encounterDatetime);
-      if (date.isValid()) {
-        return date.endOf('day');
-      }
-    }
-    return dayjs().endOf('day');
-  }, [ipdDischargeEncounter]);
-
-  const daysInWard = useMemo(() => {
-    if (!admissionDate) {
-      return 0;
-    }
-    return Math.abs(endDate.startOf('day').diff(admissionDate, 'days')) + 1;
-  }, [admissionDate, endDate]);
-
-  return {
-    daysInWard,
-    billStartDate: admissionDate?.toDate() ?? null,
-    billEndDate: endDate.toDate(),
-  };
+  return useMemo(
+    () => getBedStayWindow(encounterDatetime, findEncounterDatetimeByType(visit, config.ipdDischargeEncounterTypeUuid)),
+    [config.ipdDischargeEncounterTypeUuid, encounterDatetime, visit],
+  );
 };
 
 export const PatientBillStatus: FC<PatientAdmissionCellProps> = ({ patientUuid, encounterDatetime, visit }) => {
@@ -92,6 +59,47 @@ export const NurseDischargeConfirmationStatus: FC<{ visit?: Visit | null }> = ({
   }
 
   return <Tag type="red">{t('nurseDischargePending', 'Awaiting nurse confirmation')}</Tag>;
+};
+
+type GenerateBedFeeBillActionProps = PatientAdmissionCellProps & {
+  patientName?: string;
+  bedTypeName?: string;
+};
+
+/**
+ * Lets the liaison raise the bed fee bill for the outstanding days. Hidden once the whole stay has
+ * been billed, which is also what unblocks the bed unassign action below.
+ */
+export const GenerateBedFeeBillAction: FC<GenerateBedFeeBillActionProps> = ({
+  patientUuid,
+  encounterDatetime,
+  visit,
+  patientName,
+  bedTypeName,
+}) => {
+  const { t } = useTranslation();
+  const { daysInWard, billStartDate, billEndDate } = useAdmissionBillingDetails(encounterDatetime, visit);
+  const { isLoading, error, bedFeeDaysBilled } = usePatientBills(patientUuid, billStartDate, billEndDate);
+
+  if (isLoading) {
+    return <InlineLoading />;
+  }
+  if (error || daysInWard <= 0 || daysInWard - bedFeeDaysBilled <= 0) {
+    return null;
+  }
+
+  const handleClick = () => {
+    const dispose = showModal('generate-bed-fee-bill-dialog', {
+      patientUuid,
+      visitUuid: visit?.uuid,
+      patientName,
+      bedTypeName,
+      admissionDatetime: encounterDatetime,
+      closeModal: () => dispose(),
+    });
+  };
+
+  return <OverflowMenuItem itemText={t('generateBill', 'Generate bill')} onClick={handleClick} />;
 };
 
 type UnAssignPatientBedActionProps = PatientAdmissionCellProps & {

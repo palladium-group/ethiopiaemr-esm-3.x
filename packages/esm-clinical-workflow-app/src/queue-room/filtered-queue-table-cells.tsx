@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import { ConfigurableLink, ExtensionSlot, useConfig } from '@openmrs/esm-framework';
+import { Money } from '@carbon/react/icons';
+import { ConfigurableLink, ExtensionSlot, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 import type { QueueEntry } from '../types';
 import QueuePriority, { type PriorityConfig } from './components/queue-priority.component';
+import { useQueueEntryBillingStatus } from './useQueueEntryBillingStatus';
+import styles from './service-queue-table.scss';
 
 const extensionColumnIds = new Set(['transfer-status', 'room-assignment', 'actions']);
 
@@ -79,6 +83,48 @@ interface FilteredQueueTableCellProps {
   queueEntry: QueueEntry;
 }
 
+function QueuePatientNameCell({ queueEntry, config }: { queueEntry: QueueEntry; config: ServiceQueuesTableConfig }) {
+  const { t } = useTranslation();
+  const billingStatus = useQueueEntryBillingStatus(queueEntry);
+  const patientDisplayName = queueEntry.patient?.person?.display ?? queueEntry.patient?.display ?? '--';
+
+  if (!billingStatus.isCleared) {
+    const handleBlockedClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showSnackbar({
+        title: t('patientNotCleared', 'Patient Not Cleared for Service'),
+        subtitle: billingStatus.message,
+        kind: 'warning',
+        isLowContrast: false,
+      });
+    };
+
+    return (
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={handleBlockedClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleBlockedClick(e as unknown as React.MouseEvent);
+          }
+        }}
+        className={styles.blockedPatientNameLink}
+        title={billingStatus.message}>
+        <Money size={16} className={styles.blockedMoneyIcon} />
+        <span>{patientDisplayName}</span>
+      </span>
+    );
+  }
+
+  return (
+    <ConfigurableLink to={config.customPatientChartUrl} templateParams={{ patientUuid: queueEntry.patient.uuid }}>
+      {patientDisplayName}
+    </ConfigurableLink>
+  );
+}
+
 export const FilteredQueueTableCell: React.FC<FilteredQueueTableCellProps> = ({ columnId, queueEntry }) => {
   const config = useConfig<ServiceQueuesTableConfig>({
     externalModuleName: '@openmrs/esm-service-queues-app',
@@ -90,11 +136,7 @@ export const FilteredQueueTableCell: React.FC<FilteredQueueTableCellProps> = ({ 
 
   switch (columnId) {
     case 'patient-name':
-      return (
-        <ConfigurableLink to={config.customPatientChartUrl} templateParams={{ patientUuid: queueEntry.patient.uuid }}>
-          {queueEntry.patient?.person?.display ?? queueEntry.patient?.display}
-        </ConfigurableLink>
-      );
+      return <QueuePatientNameCell queueEntry={queueEntry} config={config} />;
     case 'queue-number': {
       const queueNumber = queueEntry.visit?.attributes?.find(
         (attribute) => attribute?.attributeType?.uuid === config.visitQueueNumberAttributeUuid,

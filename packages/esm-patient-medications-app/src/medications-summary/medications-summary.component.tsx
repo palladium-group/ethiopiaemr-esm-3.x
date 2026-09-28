@@ -1,11 +1,18 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableSkeleton } from '@carbon/react';
-import { EmptyState, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import {
+  EmptyState,
+  EmptyStateProps,
+  ErrorState,
+  useLaunchWorkspaceRequiringVisit,
+} from '@openmrs/esm-patient-common-lib';
 import { useActivePatientOrders, usePastPatientOrders } from '../api';
 import { type AddDrugOrderWorkspaceProps } from '../add-drug-order/add-drug-order.workspace';
 import MedicationsDetailsTable from '../components/medications-details-table.component';
 import styles from './medications-summary.scss';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
+import { PatientMedicationsPermissions } from '../permissions.constants';
 
 export interface MedicationsSummaryProps {
   patient: fhir.Patient;
@@ -36,6 +43,21 @@ export default function MedicationsSummary({ patient }: MedicationsSummaryProps)
   const activeDisplayText = t('activeMedicationsDisplayText', 'active medications');
   const pastHeaderTitle = t('pastMedicationsHeaderTitle', 'Past medications');
   const pastDisplayText = t('pastMedicationsDisplayText', 'past medications');
+  const session = useSession();
+
+  const canManageMedications = userHasAccess(
+    PatientMedicationsPermissions.ManagePatientMedications,
+    session?.user ?? { privileges: [], roles: [] },
+  );
+
+  const emptyStateProps: EmptyStateProps = {
+    displayText: activeDisplayText,
+    headerTitle: activeHeaderTitle,
+  };
+
+  if (canManageMedications) {
+    emptyStateProps.launchForm = () => launchAddDrugWorkspace({}, { encounterUuid: '' });
+  }
 
   return (
     <div>
@@ -56,11 +78,7 @@ export default function MedicationsSummary({ patient }: MedicationsSummaryProps)
             patient={patient}
           />
         ) : (
-          <EmptyState
-            displayText={activeDisplayText}
-            headerTitle={activeHeaderTitle}
-            launchForm={launchAddDrugWorkspace}
-          />
+          <EmptyState {...emptyStateProps} />
         )}
       </section>
       <section>

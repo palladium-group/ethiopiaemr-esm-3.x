@@ -16,13 +16,13 @@ import {
 } from '@carbon/react';
 import { ErrorState, formatDatetime, parseDate, useAppContext, usePagination } from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
-import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getOpenmrsId } from '../admitted-patients/admitted-patients.utils';
 import { EmptyState } from '../admitted-patients/empty-state.component';
 import { HyperLinkPatientCell } from '../admitted-patients/patient-cells';
 import type { InpatientRequest, WardViewContext } from '../admitted-patients/ward.types';
+import { countInclusiveDays } from '../stay-duration.utils';
 import AwaitingAdmissionExpandedRow from './awaiting-admission-expanded-row.component';
 import WardAdmissionRequestActions from './ward-admission-request-actions.component';
 import styles from './ethiopia-awaiting-admission-patients-table.scss';
@@ -41,37 +41,39 @@ const EthiopiaAwaitingAdmissionPatientsTable = () => {
     { key: 'gender', header: t('gender', 'Gender') },
     { key: 'age', header: t('age', 'Age') },
     { key: 'bedNumber', header: t('bedNumber', 'Bed Number') },
-    { key: 'daysAdmitted', header: t('durationOnWard', 'Duration on ward') },
+    { key: 'daysAdmitted', header: t('daysInQueue', 'Days in queue') },
     { key: 'action', header: t('action', 'Action') },
   ];
 
   const searchResults = useMemo(() => {
-    return inpatientRequests?.filter((request) =>
-      request?.patient?.person?.display?.toLowerCase().includes(search.toLowerCase()),
+    const query = search.toLowerCase();
+    return (inpatientRequests ?? []).filter((request) =>
+      request?.patient?.person?.display?.toLowerCase().includes(query),
     );
   }, [inpatientRequests, search]);
 
-  const { paginated, results, totalPages, currentPage, goTo } = usePagination(searchResults ?? [], pageSize);
-  const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
+  const { paginated, results, totalPages, currentPage, goTo } = usePagination(searchResults, pageSize);
+  const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results?.length ?? 0);
 
   const requestsByRowId = useMemo(() => {
     const map = new Map<string, InpatientRequest>();
-    results.forEach((request, index) => {
+    (results ?? []).forEach((request, index) => {
       map.set(request.patient?.uuid ?? index.toString(), request);
     });
     return map;
   }, [results]);
 
   const tableRows = useMemo(() => {
-    return results.map((request, index) => {
-      const admissionDate = request.dispositionEncounter?.encounterDatetime
-        ? formatDatetime(parseDate(request.dispositionEncounter.encounterDatetime))
-        : '--';
-      const encounterDate = request.dispositionEncounter?.encounterDatetime;
-      const daysInQueue =
-        encounterDate && dayjs(encounterDate).isValid()
-          ? Math.abs(dayjs().startOf('day').diff(dayjs(encounterDate).startOf('day'), 'days'))
-          : '--';
+    return (results ?? []).map((request, index) => {
+      let admissionDate = '--';
+      try {
+        if (request.dispositionEncounter?.encounterDatetime) {
+          admissionDate = formatDatetime(parseDate(request.dispositionEncounter.encounterDatetime));
+        }
+      } catch {
+        admissionDate = '--';
+      }
+      const daysInQueue = countInclusiveDays(request.dispositionEncounter?.encounterDatetime) ?? '--';
       const rowId = request.patient?.uuid ?? index.toString();
 
       return {

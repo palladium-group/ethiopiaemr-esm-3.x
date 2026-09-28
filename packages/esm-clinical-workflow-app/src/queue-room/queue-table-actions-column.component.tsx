@@ -6,6 +6,7 @@ import type { QueueEntry } from '../types';
 import { useMutateServiceQueueEntries } from './service-queue-entries.resource';
 import { serveQueueEntry } from './service-queues-api.resource';
 import QueueTableRoomActionMenu from './queue-table-room-action-menu.extension';
+import { useQueueEntryBillingStatus } from './useQueueEntryBillingStatus';
 import styles from './queue-table-actions-column.scss';
 
 interface ServiceQueuesActionConfig {
@@ -23,7 +24,7 @@ const ACTION_OVERFLOW_MENU: QueueEntryAction[] = ['move', 'transition', 'edit', 
 type ActionProps = {
   label: string;
   text: string;
-  onClick: (queueEntry: QueueEntry) => void;
+  onClick: (queueEntry: QueueEntry, isCleared?: boolean, blockedMessage?: string) => void;
   showIf?: (queueEntry: QueueEntry) => boolean;
   isDelete?: boolean;
 };
@@ -49,7 +50,22 @@ function useActionPropsByKey() {
       call: {
         label: 'call',
         text: 'Call',
-        onClick: async (queueEntry: QueueEntry) => {
+        onClick: async (queueEntry: QueueEntry, isCleared = true, blockedMessage = '') => {
+          if (!isCleared) {
+            showSnackbar({
+              title: t('patientNotCleared', 'Patient Not Cleared for Service'),
+              subtitle:
+                blockedMessage ||
+                t(
+                  'cannotCallUnclearedPatient',
+                  'Cannot call patient: MRU registration or consultation fee payment is pending.',
+                ),
+              kind: 'warning',
+              isLowContrast: false,
+            });
+            return;
+          }
+
           const visitQueueNumber =
             (queueEntry.visit?.attributes?.find(
               (attribute) => attribute?.attributeType?.uuid === visitQueueNumberAttributeUuid,
@@ -79,7 +95,21 @@ function useActionPropsByKey() {
       transition: {
         label: 'transition',
         text: 'Transition',
-        onClick: (queueEntry: QueueEntry) => {
+        onClick: (queueEntry: QueueEntry, isCleared = true, blockedMessage = '') => {
+          if (!isCleared) {
+            showSnackbar({
+              title: t('patientNotCleared', 'Patient Not Cleared for Service'),
+              subtitle:
+                blockedMessage ||
+                t(
+                  'cannotTransitionUnclearedPatient',
+                  'Cannot transition patient: MRU registration or consultation fee payment is pending.',
+                ),
+              kind: 'warning',
+              isLowContrast: false,
+            });
+            return;
+          }
           openModal('transition-queue-entry-modal', queueEntry);
         },
       },
@@ -121,7 +151,17 @@ function useActionPropsByKey() {
   return actionPropsByKey;
 }
 
-function ActionButton({ actionKey, queueEntry }: { actionKey: QueueEntryAction; queueEntry: QueueEntry }) {
+function ActionButton({
+  actionKey,
+  queueEntry,
+  isCleared,
+  blockedMessage,
+}: {
+  actionKey: QueueEntryAction;
+  queueEntry: QueueEntry;
+  isCleared: boolean;
+  blockedMessage?: string;
+}) {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const actionPropsByKey = useActionPropsByKey();
@@ -131,13 +171,18 @@ function ActionButton({ actionKey, queueEntry }: { actionKey: QueueEntryAction; 
     return null;
   }
 
+  const isCallAction = actionKey === 'call';
+  const isBlocked = isCallAction && !isCleared;
+
   return (
     <Button
       kind="ghost"
       aria-label={t(actionProps.label, actionProps.text)}
+      disabled={isBlocked}
+      title={isBlocked ? blockedMessage : undefined}
       onClick={(event) => {
         event.stopPropagation();
-        actionProps.onClick(queueEntry);
+        actionProps.onClick(queueEntry, isCleared, blockedMessage);
       }}
       size={isDesktop(layout) ? 'sm' : 'lg'}>
       {t(actionProps.label, actionProps.text)}
@@ -145,7 +190,17 @@ function ActionButton({ actionKey, queueEntry }: { actionKey: QueueEntryAction; 
   );
 }
 
-function ActionOverflowMenuItem({ actionKey, queueEntry }: { actionKey: QueueEntryAction; queueEntry: QueueEntry }) {
+function ActionOverflowMenuItem({
+  actionKey,
+  queueEntry,
+  isCleared,
+  blockedMessage,
+}: {
+  actionKey: QueueEntryAction;
+  queueEntry: QueueEntry;
+  isCleared: boolean;
+  blockedMessage?: string;
+}) {
   const { t } = useTranslation();
   const actionPropsByKey = useActionPropsByKey();
   const actionProps = actionPropsByKey[actionKey];
@@ -162,7 +217,7 @@ function ActionOverflowMenuItem({ actionKey, queueEntry }: { actionKey: QueueEnt
       isDelete={actionProps.isDelete}
       onClick={(event) => {
         event.stopPropagation();
-        actionProps.onClick(queueEntry);
+        actionProps.onClick(queueEntry, isCleared, blockedMessage);
       }}
       itemText={t(actionProps.label, actionProps.text)}
     />
@@ -174,11 +229,13 @@ interface QueueTableActionsColumnProps {
 }
 
 /**
- * Replaces the built-in actions column to add room assign/transfer items in the row overflow menu.
+ * Replaces the built-in actions column to add room assign/transfer items in the row overflow menu,
+ * and enforces billing/MRU clearance before calling or serving patients.
  */
 const QueueTableActionsColumn: React.FC<QueueTableActionsColumnProps> = ({ queueEntry }) => {
   const layout = useLayoutType();
   const actionPropsByKey = useActionPropsByKey();
+  const billingStatus = useQueueEntryBillingStatus(queueEntry);
 
   const [buttonComponents, overflowMenuComponents] = useMemo(() => {
     const declaredButtonComponents = ACTION_BUTTONS.map((actionKey) => {
@@ -189,7 +246,15 @@ const QueueTableActionsColumn: React.FC<QueueTableActionsColumnProps> = ({ queue
       if (actionProps.showIf && !actionProps.showIf(queueEntry)) {
         return null;
       }
-      return <ActionButton key={actionKey} actionKey={actionKey} queueEntry={queueEntry} />;
+      return (
+        <ActionButton
+          key={actionKey}
+          actionKey={actionKey}
+          queueEntry={queueEntry}
+          isCleared={billingStatus.isCleared}
+          blockedMessage={billingStatus.message}
+        />
+      );
     }).filter(Boolean);
 
     let fallbackActionComponent: React.ReactNode | null = null;
@@ -205,7 +270,13 @@ const QueueTableActionsColumn: React.FC<QueueTableActionsColumnProps> = ({ queue
       });
       if (defaultAction) {
         fallbackActionComponent = (
-          <ActionButton key={defaultAction} actionKey={defaultAction} queueEntry={queueEntry} />
+          <ActionButton
+            key={defaultAction}
+            actionKey={defaultAction}
+            queueEntry={queueEntry}
+            isCleared={billingStatus.isCleared}
+            blockedMessage={billingStatus.message}
+          />
         );
         overflowMenuKeys = ACTION_OVERFLOW_MENU.filter((actionKey) => actionKey !== defaultAction);
       } else {
@@ -216,11 +287,17 @@ const QueueTableActionsColumn: React.FC<QueueTableActionsColumnProps> = ({ queue
     }
 
     const overflowItems = overflowMenuKeys.map((actionKey) => (
-      <ActionOverflowMenuItem key={actionKey} actionKey={actionKey} queueEntry={queueEntry} />
+      <ActionOverflowMenuItem
+        key={actionKey}
+        actionKey={actionKey}
+        queueEntry={queueEntry}
+        isCleared={billingStatus.isCleared}
+        blockedMessage={billingStatus.message}
+      />
     ));
 
     return [[...declaredButtonComponents, fallbackActionComponent], overflowItems];
-  }, [queueEntry, actionPropsByKey]);
+  }, [queueEntry, actionPropsByKey, billingStatus.isCleared, billingStatus.message]);
 
   return (
     <div className={styles.actionsCell}>

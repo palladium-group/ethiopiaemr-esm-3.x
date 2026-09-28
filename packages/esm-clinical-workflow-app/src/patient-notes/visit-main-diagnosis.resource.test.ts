@@ -1,6 +1,7 @@
 import {
   collectVisitPrimaryConceptUuids,
   visitHasMainDiagnosisOnOtherEncounter,
+  visitHasPrimaryDiagnosis,
   type ActiveVisitWithEncounters,
 } from './visit-main-diagnosis.resource';
 
@@ -56,6 +57,27 @@ describe('visit-main-diagnosis.resource', () => {
 
     it('returns empty array for null visit', () => {
       expect(collectVisitPrimaryConceptUuids(null)).toEqual([]);
+    });
+  });
+
+  describe('visitHasPrimaryDiagnosis', () => {
+    it('returns true when the visit has a primary diagnosis', () => {
+      expect(visitHasPrimaryDiagnosis(visit)).toBe(true);
+    });
+
+    it('returns false when there is no primary diagnosis', () => {
+      expect(visitHasPrimaryDiagnosis(null)).toBe(false);
+      expect(
+        visitHasPrimaryDiagnosis({
+          uuid: 'visit-3',
+          encounters: [
+            {
+              uuid: 'enc-d',
+              diagnoses: [{ rank: 2, voided: false, diagnosis: { coded: { uuid: 'secondary' } } }],
+            },
+          ],
+        }),
+      ).toBe(false);
     });
   });
 
