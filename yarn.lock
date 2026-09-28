@@ -3544,8 +3544,9 @@ __metadata:
   resolution: "@palladium-ethiopia/esm-pathology-app@workspace:packages/esm-pathology-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-patient-common-lib": "npm:12.3.4"
   peerDependencies:
-    "@openmrs/esm-framework": 8.x
+    "@openmrs/esm-framework": 10.x
     "@openmrs/esm-patient-common-lib": 12.x
     dayjs: 1.x
     react: 18.x
@@ -3673,8 +3674,9 @@ __metadata:
   resolution: "@palladium-ethiopia/esm-special-orders-app@workspace:packages/esm-special-orders-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-patient-common-lib": "npm:12.3.4"
   peerDependencies:
-    "@openmrs/esm-framework": 8.x
+    "@openmrs/esm-framework": 10.x
     "@openmrs/esm-patient-common-lib": 12.x
     dayjs: 1.x
     react: 18.x
