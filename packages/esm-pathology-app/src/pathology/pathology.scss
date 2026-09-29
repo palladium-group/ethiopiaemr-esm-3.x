@@ -1,0 +1,9 @@
+@use '@carbon/layout';
+
+.container {
+  width: 100%;
+}
+
+.tabPanel {
+  padding: layout.$spacing-05 0 0;
+}

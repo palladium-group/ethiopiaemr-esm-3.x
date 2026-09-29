@@ -1,0 +1,110 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.container {
+  margin: 0;
+  border: 1px solid $ui-03;
+  background-color: $ui-02;
+  width: 100%;
+}
+
+.tableContainer {
+  padding: 0;
+
+  :global(.cds--data-table-header) {
+    padding: 0;
+  }
+
+  &:global(.cds--data-table-container) {
+    background: none !important;
+  }
+
+  :global(.cds--expandable-row td),
+  :global(tr.cds--parent-row td) {
+    padding-block: layout.$spacing-05;
+  }
+}
+
+.encounterSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  flex-wrap: wrap;
+  padding-inline: layout.$spacing-03;
+}
+
+.encounterDate {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+}
+
+.encounterFormName {
+  @include type.type-style('heading-compact-01');
+  color: $text-02;
+  font-weight: 600;
+}
+
+.expandedRow {
+  padding-inline-start: 3.5rem;
+  padding-inline-end: 3.5rem;
+
+  > td {
+    padding: inherit !important;
+
+    > div {
+      max-height: max-content !important;
+    }
+  }
+}
+
+.hiddenRow {
+  display: none;
+}
+
+.observation {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: layout.$spacing-05;
+  row-gap: layout.$spacing-03;
+  margin-block: layout.$spacing-05;
+  margin-inline: 0 layout.$spacing-05;
+}
+
+.observation > span {
+  align-self: center;
+  justify-self: start;
+}
+
+.observationSections {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  margin-block: layout.$spacing-05;
+  margin-inline: 0 layout.$spacing-05;
+}
+
+.observationSections .observation {
+  margin-block: 0;
+  margin-inline: 0;
+}
+
+.resultSection {
+  border-block-start: 1px solid $ui-03;
+  padding-block-start: layout.$spacing-05;
+}
+
+.resultSectionHeading {
+  @include type.type-style('heading-compact-01');
+  color: $text-02;
+  font-weight: 600;
+  margin: 0 0 layout.$spacing-03;
+}
+
+.parentConcept {
+  font-weight: bold;
+}
+
+.childConcept {
+  padding-inline-start: layout.$spacing-04;
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "workspaces2": [
+    {
+      "name": "special-orders-workspace",
+      "component": "specialOrdersWorkspace",
+      "window": "special-orders"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "special-orders",
+      "group": "patient-chart",
+      "icon": "specialOrdersActionButton",
+      "order": 5,
+      "width": "wider",
+      "canMaximize": true
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+.container {
+  padding: 1.25rem 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sectionLabel {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--cds-text-secondary, #525252);
+}
+
+.typeOfSampleSwitcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  border: 1px solid var(--brand-03, #005d5d);
+  border-radius: 0.375rem;
+  overflow: hidden;
+  background: var(--cds-layer, #fff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.typeOfSampleButton {
+  width: 100%;
+  max-inline-size: none;
+  min-height: 2.75rem;
+  height: auto;
+  margin: 0;
+  padding: 0.625rem 0.5rem;
+  border: none !important;
+  border-radius: 0 !important;
+  border-inline-end: 1px solid var(--brand-03, #005d5d) !important;
+  box-shadow: none !important;
+  justify-content: center;
+  align-items: center;
+  white-space: normal;
+  line-height: 1.25;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.typeOfSampleButton:last-child {
+  border-inline-end: none !important;
+}
+
+.typeOfSampleButton:focus {
+  outline: 2px solid var(--cds-focus, #0f62fe);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.typeOfSampleButtonSelected {
+  background: var(--brand-03, #005d5d) !important;
+  color: #fff !important;
+}
+
+.typeOfSampleButtonUnselected {
+  background: transparent !important;
+  color: var(--brand-03, #005d5d) !important;
+}
+
+.typeOfSampleButtonUnselected:hover {
+  background: color-mix(in srgb, var(--brand-03, #005d5d) 10%, white) !important;
+}
+
+.empty {
+  margin: 0;
+  padding: 0.75rem 0;
+  color: var(--cds-text-secondary, #525252);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 32rem) {
+  .typeOfSampleSwitcher {
+    grid-template-columns: 1fr;
+  }
+
+  .typeOfSampleButton {
+    border-inline-end: none !important;
+    border-block-end: 1px solid var(--brand-03, #005d5d) !important;
+  }
+
+  .typeOfSampleButton:last-child {
+    border-block-end: none !important;
+  }
+}

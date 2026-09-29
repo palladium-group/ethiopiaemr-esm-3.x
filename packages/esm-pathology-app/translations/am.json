@@ -1,0 +1,19 @@
+{
+  "cannotOpenPathologyForm": "የፓቶሎጂ ትእዛዝ ቅጽ መክፈት አልተቻለም",
+  "cytologyResultsTitle": "የሳይቶሎጂ ውጤቶች",
+  "newPathologyOrder": "አዲስ ትእዛዝ",
+  "noObservationsFound": "ምንም ምልከታ አልተገኘም",
+  "noPathologyRequestFormsConfigured": "ምንም የፓቶሎጂ ጥያቄ ቅጾች አልተዋቀሩም።",
+  "orders": "ትእዛዞች",
+  "pathology": "ፓቶሎጂ",
+  "Pathology": "ፓቶሎጂ",
+  "pathologyFormNotConfigured": "ምንም የፓቶሎጂ ትእዛዝ ቅጽ አልተዋቀረም።",
+  "pathologyOrders": "የፓቶሎጂ ትእዛዞች",
+  "pathologyOrdersTitle": "የፓቶሎጂ ትእዛዞች",
+  "pathologyResultsTitle": "የፓቶሎጂ ውጤቶች",
+  "recordOrders": "ትእዛዞችን መዝግብ",
+  "refreshing": "በማደስ ላይ...",
+  "results": "ውጤቶች",
+  "serviceArea": "የአገልግሎት አካባቢ",
+  "unknownForm": "ያልታወቀ ቅጽ"
+}
