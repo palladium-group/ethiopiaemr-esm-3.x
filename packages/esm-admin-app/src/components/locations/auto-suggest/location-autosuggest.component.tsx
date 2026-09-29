@@ -13,6 +13,10 @@ interface LocationAutosuggestProps {
   placeholder?: string;
   invalid?: boolean;
   invalidText?: string;
+  defaultValue?: string;
+  /** Locations never offered as suggestions (e.g. the location being edited and its children) */
+  excludeUuids?: Array<string>;
+  onLocationCleared?: () => void;
 }
 
 export const LocationAutosuggest: React.FC<LocationAutosuggestProps> = ({
@@ -21,6 +25,9 @@ export const LocationAutosuggest: React.FC<LocationAutosuggestProps> = ({
   placeholder = 'Search for a location...',
   invalid = false,
   invalidText = 'Please select a valid location',
+  defaultValue,
+  excludeUuids,
+  onLocationCleared,
 }) => {
   const [searchResults, setSearchResults] = useState<LocationResponse[]>([]);
   const { t } = useTranslation();
@@ -40,16 +47,21 @@ export const LocationAutosuggest: React.FC<LocationAutosuggestProps> = ({
         if (selected) {
           onLocationSelected(value, selected);
         }
+      } else {
+        onLocationCleared?.();
       }
     },
-    [onLocationSelected, searchResults],
+    [onLocationSelected, onLocationCleared, searchResults],
   );
 
-  const handleSearchResults = useCallback(async (query: string) => {
-    const results = await searchLocation(query);
-    setSearchResults(results);
-    return results;
-  }, []);
+  const handleSearchResults = useCallback(
+    async (query: string) => {
+      const results = (await searchLocation(query)).filter((item) => !excludeUuids?.includes(item.uuid));
+      setSearchResults(results);
+      return results;
+    },
+    [excludeUuids],
+  );
 
   const renderSuggestionItem = useCallback((item: LocationResponse) => {
     return (
@@ -89,6 +101,7 @@ export const LocationAutosuggest: React.FC<LocationAutosuggestProps> = ({
       renderEmptyState={renderEmptyState}
       invalid={invalid}
       invalidText={invalidText}
+      defaultValue={defaultValue}
     />
   );
 };
