@@ -36,6 +36,9 @@ export const mapBillProperties = (bill: PatientInvoice): MappedBill => {
     cashPointLocation: bill?.cashPoint?.location?.display,
     dateCreated: bill?.dateCreated ? formatDate(parseDate(bill?.dateCreated), { mode: 'wide' }) : '--',
     dateCreatedUnformatted: bill?.dateCreated,
+    visitStartDatetime: bill?.visit?.startDatetime
+      ? formatDate(parseDate(bill.visit.startDatetime), { mode: 'wide' })
+      : undefined,
     lineItems: bill?.lineItems.filter((li) => !li?.voided),
     billingService: extractString(
       bill?.lineItems.map((bill) => bill?.item || bill?.billableService || '--').join('  '),
@@ -96,6 +99,58 @@ export const useBills = (
 
   return {
     bills: formattedBills,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  };
+};
+
+type UsePagedBillsParams = {
+  billStatus?: PaymentStatus | '' | string;
+  searchTerm?: string;
+  page?: number;
+  pageSize?: number;
+  startingDate?: Date;
+  endDate?: Date;
+};
+
+/**
+ * Fetches one page of bills created in the given window (today by default), letting the server do the
+ * filtering, searching (patient name / identifier) and paging so that no bills are silently dropped.
+ */
+export const usePagedBills = ({
+  billStatus = '',
+  searchTerm = '',
+  page = 1,
+  pageSize = 10,
+  startingDate = dayjs().startOf('day').toDate(),
+  endDate = dayjs().endOf('day').toDate(),
+}: UsePagedBillsParams = {}) => {
+  const startIndex = (page - 1) * pageSize;
+  const trimmedSearch = searchTerm.trim();
+
+  // The server widens both bounds to whole days, so send plain local calendar dates. Sending UTC instants
+  // (toISOString) shifts the window back a day for clients east of UTC, pulling in yesterday's bills.
+  const fromDate = dayjs(startingDate).format('YYYY-MM-DD');
+  const toDate = dayjs(endDate).format('YYYY-MM-DD');
+
+  const url =
+    `${restBaseUrl}/cashier/bill?status=${billStatus}` +
+    `&v=custom:(uuid,display,status,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems,patient:(uuid,display),visit:(uuid,startDatetime))` +
+    `&createdOnOrAfter=${fromDate}&createdOnOrBefore=${toDate}` +
+    `&startIndex=${startIndex}&limit=${pageSize}` +
+    (trimmedSearch ? `&q=${encodeURIComponent(trimmedSearch)}` : '');
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{
+    data: { results: Array<PatientInvoice>; totalCount?: number };
+  }>(url, openmrsFetch, { errorRetryCount: 2, keepPreviousData: true });
+
+  const results = data?.data?.results;
+
+  return {
+    bills: results?.map((bill) => mapBillProperties(bill)),
+    totalCount: data?.data?.totalCount ?? results?.length ?? 0,
     error,
     isLoading,
     isValidating,

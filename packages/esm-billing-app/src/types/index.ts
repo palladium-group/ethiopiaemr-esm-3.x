@@ -14,6 +14,7 @@ export interface MappedBill {
   identifier: string;
   dateCreated: string;
   dateCreatedUnformatted: string;
+  visitStartDatetime?: string;
   lineItems: Array<LineItem>;
   billingService: string;
   payments: Array<Payment>;
@@ -147,6 +148,7 @@ export interface PatientInvoice {
   totalExempted?: number;
   balance?: number;
   closed?: boolean;
+  visit?: { uuid: string; startDatetime: string } | null;
 }
 
 export interface PatientDetails {

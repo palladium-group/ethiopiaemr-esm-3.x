@@ -1,10 +1,10 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { useBills } from '../billing.resource';
+import { render, screen, waitFor } from '@testing-library/react';
+import { usePagedBills } from '../billing.resource';
 import BillsTable from './bills-table.component';
 import userEvent from '@testing-library/user-event';
 
-const mockbills = useBills as jest.Mock;
+const mockbills = usePagedBills as jest.Mock;
 
 const mockBillsData = [
   { uuid: '1', patientName: 'John Doe', identifier: '12345678', visitType: 'Checkup', patientUuid: 'uuid1' },
@@ -13,8 +13,9 @@ const mockBillsData = [
 
 jest.mock('../billing.resource', () => ({
   ...jest.requireActual('../billing.resource'),
-  useBills: jest.fn(() => ({
+  usePagedBills: jest.fn(() => ({
     bills: mockBillsData,
+    totalCount: mockBillsData.length,
     isLoading: false,
     isValidating: false,
     error: null,
@@ -46,6 +47,7 @@ describe('BillsTable', () => {
   it('displays empty state when there are no bills', () => {
     mockbills.mockImplementationOnce(() => ({
       bills: [],
+      totalCount: 0,
       isLoading: false,
       isValidating: false,
       error: null,
@@ -85,30 +87,52 @@ describe('BillsTable', () => {
     expect(screen.getByText(/Error State/i)).toBeInTheDocument();
   });
 
-  test('should filter bills by search term and bill payment status', async () => {
+  test('should pass the search term and bill payment status to the server-side query', async () => {
     render(<BillsTable />);
 
     const searchInput = screen.getByRole('searchbox');
     await user.type(searchInput, 'John Doe');
 
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.queryByText('Mary Smith')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(mockbills).toHaveBeenLastCalledWith(expect.objectContaining({ searchTerm: 'John Doe', page: 1 })),
+    );
 
-    await user.clear(searchInput);
-    await user.type(searchInput, 'Mary Smith');
-
-    expect(screen.getByText('Mary Smith')).toBeInTheDocument();
-    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
-
-    // Should filter the table when bill payment status combobox is changed
-    const billCategorySelect = screen.getByRole('combobox');
-    expect(billCategorySelect).toBeInTheDocument();
-    await user.click(billCategorySelect, { name: 'All bills' });
-    expect(mockbills).toHaveBeenCalledWith('', '');
-
+    const billCategorySelect = screen.getByRole('combobox', { name: /filter by/i });
+    await user.click(billCategorySelect);
     await user.click(screen.getByText('Pending bills'));
-    expect(screen.getByText('Pending bills')).toBeInTheDocument();
-    expect(mockbills).toHaveBeenCalledWith('', 'PENDING');
+
+    expect(mockbills).toHaveBeenLastCalledWith(expect.objectContaining({ billStatus: 'PENDING', page: 1 }));
+  });
+
+  test('should request the next page from the server when paginating', async () => {
+    mockbills.mockImplementation(() => ({
+      bills: mockBillsData,
+      totalCount: 25,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    await user.click(screen.getByRole('button', { name: /next page/i }));
+
+    expect(mockbills).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, pageSize: 10 }));
+  });
+
+  test('should show the visit start time rather than the bill creation time', () => {
+    mockbills.mockImplementationOnce(() => ({
+      bills: [{ ...mockBillsData[0], dateCreated: 'bill-created', visitStartDatetime: 'visit-started' }],
+      totalCount: 1,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    expect(screen.getByText('visit-started')).toBeInTheDocument();
+    expect(screen.queryByText('bill-created')).not.toBeInTheDocument();
   });
 
   test('should show the loading spinner while retrieving data', () => {

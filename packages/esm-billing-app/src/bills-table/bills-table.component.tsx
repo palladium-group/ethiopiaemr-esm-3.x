@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useMemo, useState } from 'react';
+import React, { useCallback, useId, useState } from 'react';
 import classNames from 'classnames';
 import {
   DataTable,
@@ -18,16 +18,9 @@ import {
   Tile,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import {
-  useLayoutType,
-  isDesktop,
-  useConfig,
-  usePagination,
-  ErrorState,
-  ConfigurableLink,
-} from '@openmrs/esm-framework';
+import { useLayoutType, isDesktop, useConfig, useDebounce, ErrorState, ConfigurableLink } from '@openmrs/esm-framework';
 import { EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
-import { useBills } from '../billing.resource';
+import { usePagedBills } from '../billing.resource';
 import styles from './bills-table.scss';
 
 const filterItems = [
@@ -51,8 +44,15 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
   const [billPaymentStatus, setBillPaymentStatus] = useState(defaultBillPaymentStatus);
   const pageSizes = config?.bills?.pageSizes ?? [10, 20, 30, 40, 50];
   const [pageSize, setPageSize] = useState(config?.bills?.pageSize ?? 10);
-  const { bills, isLoading, isValidating, error } = useBills('', billPaymentStatus);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchString, setSearchString] = useState('');
+  const debouncedSearchString = useDebounce(searchString);
+  const { bills, totalCount, isLoading, isValidating, error } = usePagedBills({
+    billStatus: billPaymentStatus,
+    searchTerm: debouncedSearchString,
+    page: currentPage,
+    pageSize,
+  });
 
   const headerData = [
     {
@@ -77,25 +77,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
     },
   ];
 
-  const searchResults = useMemo(() => {
-    if (bills !== undefined && bills.length > 0) {
-      if (searchString && searchString.trim() !== '') {
-        const search = searchString.toLowerCase();
-        return bills?.filter((activeBillRow) =>
-          Object.entries(activeBillRow).some(([header, value]) => {
-            if (header === 'patientUuid') {
-              return false;
-            }
-            return `${value}`.toLowerCase().includes(search);
-          }),
-        );
-      }
-    }
-
-    return bills;
-  }, [searchString, bills]);
-
-  const { paginated, goTo, results, currentPage } = usePagination(searchResults, pageSize);
+  const isSearching = debouncedSearchString.trim() !== '';
 
   const setBilledItems = (bill) =>
     bill?.lineItems?.reduce(
@@ -105,7 +87,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
 
   const billingUrl = '${openmrsSpaBase}/home/accounting/patient/${patientUuid}/${uuid}';
 
-  const rowData = results?.map((bill, index) => ({
+  const rowData = bills?.map((bill, index) => ({
     id: `${index}`,
     uuid: bill.uuid,
     patientName: (
@@ -116,7 +98,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
         {bill.patientName}
       </ConfigurableLink>
     ),
-    visitTime: bill.dateCreated,
+    visitTime: bill.visitStartDatetime ?? '--',
     identifier: bill.identifier,
     department: '--',
     billedItems: setBilledItems(bill),
@@ -124,17 +106,18 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
     status: bill.status,
   }));
 
-  const handleSearch = useCallback(
-    (e) => {
-      goTo(1);
-      setSearchString(e.target.value);
-    },
-    [goTo, setSearchString],
-  );
+  const handleSearch = useCallback((e) => {
+    setCurrentPage(1);
+    setSearchString(e.target.value);
+  }, []);
 
-  const handleFilterChange = ({ selectedItem }) => setBillPaymentStatus(selectedItem.id);
+  const handleFilterChange = ({ selectedItem }) => {
+    setCurrentPage(1);
+    setBillPaymentStatus(selectedItem.id);
+  };
 
-  if (isLoading) {
+  // Only show the skeleton on the very first load; later page/search changes keep the previous rows visible.
+  if (isLoading && !bills) {
     return (
       <div className={styles.loaderContainer}>
         <DataTableSkeleton
@@ -176,7 +159,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
         />
       </div>
 
-      {bills?.length > 0 ? (
+      {totalCount > 0 || isSearching ? (
         <div className={styles.billListContainer}>
           <FilterableTableHeader
             handleSearch={handleSearch}
@@ -218,7 +201,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
               </TableContainer>
             )}
           </DataTable>
-          {searchResults?.length === 0 && (
+          {bills?.length === 0 && (
             <div className={styles.filterEmptyState}>
               <Layer level={0}>
                 <Tile className={styles.filterEmptyStateTile}>
@@ -230,22 +213,22 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
               </Layer>
             </div>
           )}
-          {paginated && (
+          {totalCount > 0 && (
             <Pagination
               forwardText="Next page"
               backwardText="Previous page"
               page={currentPage}
               pageSize={pageSize}
               pageSizes={pageSizes}
-              totalItems={searchResults?.length}
+              totalItems={totalCount}
               className={styles.pagination}
               size={responsiveSize}
               onChange={({ pageSize: newPageSize, page: newPage }) => {
                 if (newPageSize !== pageSize) {
                   setPageSize(newPageSize);
-                }
-                if (newPage !== currentPage) {
-                  goTo(newPage);
+                  setCurrentPage(1);
+                } else if (newPage !== currentPage) {
+                  setCurrentPage(newPage);
                 }
               }}
             />
