@@ -113,3 +113,25 @@
     margin-right: -50%;
   }
 }
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+}
+
+.tagFilter {
+  min-width: 12rem;
+}
+
+.actionsCell {
+  width: layout.$spacing-09;
+  text-align: right;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  padding: 0 layout.$spacing-05 layout.$spacing-03;
+}

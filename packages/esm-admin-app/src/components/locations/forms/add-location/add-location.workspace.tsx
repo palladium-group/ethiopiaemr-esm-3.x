@@ -25,7 +25,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import styles from './add-location.workspace.scss';
 import { type LocationResponse } from '../../types';
-import { extractErrorMessagesFromResponse } from '../../helpers';
+import { showServerErrorModal } from '../../../../utils/server-error';
 import { useLocationTags } from '../../hooks/useLocationTags';
 import { mutate } from 'swr';
 import {
@@ -187,13 +187,8 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
       });
       handleMutation();
       closeWorkspaceWithSavedChanges();
-    } catch (error: any) {
-      const errorMessages = extractErrorMessagesFromResponse(error);
-      showSnackbar({
-        title: t('error', 'Error'),
-        kind: 'error',
-        subtitle: errorMessages.join(', ') || t('locationSaveError', 'Error saving location'),
-      });
+    } catch (error) {
+      showServerErrorModal(t('locationSaveError', 'Error saving location'), error);
     }
   };
 
