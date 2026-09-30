@@ -79,6 +79,7 @@ export interface LineItem {
   itemOrServiceConceptUuid: string;
   serviceTypeUuid: string;
   order: OpenmrsResource;
+  dateCreated?: string;
 }
 
 interface PatientLink {

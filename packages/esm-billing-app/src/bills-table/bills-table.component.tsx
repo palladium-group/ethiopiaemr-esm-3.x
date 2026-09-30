@@ -1,5 +1,6 @@
 import React, { useCallback, useId, useState } from 'react';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import {
   DataTable,
   DataTableSkeleton,
@@ -18,7 +19,15 @@ import {
   Tile,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { useLayoutType, isDesktop, useConfig, useDebounce, ErrorState, ConfigurableLink } from '@openmrs/esm-framework';
+import {
+  useLayoutType,
+  isDesktop,
+  useConfig,
+  useDebounce,
+  ErrorState,
+  ConfigurableLink,
+  parseDate,
+} from '@openmrs/esm-framework';
 import { EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
 import { usePagedBills } from '../billing.resource';
 import styles from './bills-table.scss';
@@ -79,11 +88,17 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
 
   const isSearching = debouncedSearchString.trim() !== '';
 
+  // Bills are reused across days, so only list the items added today. Items without a dateCreated are kept.
+  const isAddedToday = (item) => !item?.dateCreated || dayjs(parseDate(item.dateCreated)).isSame(dayjs(), 'day');
+
   const setBilledItems = (bill) =>
-    bill?.lineItems?.reduce(
-      (acc, item) => acc + (acc ? ' & ' : '') + (item?.billableService.split(':')[1] || item?.item.split(':')[1] || ''),
-      '',
-    );
+    bill?.lineItems
+      ?.filter(isAddedToday)
+      .reduce(
+        (acc, item) =>
+          acc + (acc ? ' & ' : '') + (item?.billableService.split(':')[1] || item?.item.split(':')[1] || ''),
+        '',
+      );
 
   const billingUrl = '${openmrsSpaBase}/home/accounting/patient/${patientUuid}/${uuid}';
 

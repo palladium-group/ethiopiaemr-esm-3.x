@@ -135,6 +135,31 @@ describe('BillsTable', () => {
     expect(screen.queryByText('bill-created')).not.toBeInTheDocument();
   });
 
+  test('should only list the line items added today in the billed items column', () => {
+    const today = new Date().toISOString();
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    mockbills.mockImplementationOnce(() => ({
+      bills: [
+        {
+          ...mockBillsData[0],
+          lineItems: [
+            { billableService: 'uuid-1:Old Consultation', item: '', dateCreated: yesterday },
+            { billableService: 'uuid-2:New Lab Test', item: '', dateCreated: today },
+          ],
+        },
+      ],
+      totalCount: 1,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    expect(screen.getByText('New Lab Test')).toBeInTheDocument();
+    expect(screen.queryByText(/Old Consultation/)).not.toBeInTheDocument();
+  });
+
   test('should show the loading spinner while retrieving data', () => {
     mockbills.mockImplementationOnce(() => ({
       bills: undefined,

@@ -137,8 +137,10 @@ export const usePagedBills = ({
 
   const url =
     `${restBaseUrl}/cashier/bill?status=${billStatus}` +
-    `&v=custom:(uuid,display,status,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems,patient:(uuid,display),visit:(uuid,startDatetime))` +
+    `&v=custom:(uuid,display,status,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems:(uuid,item,billableService,price,quantity,paymentStatus,voided,dateCreated),patient:(uuid,display),visit:(uuid,startDatetime))` +
     `&createdOnOrAfter=${fromDate}&createdOnOrBefore=${toDate}` +
+    // Also match older bills that had line items added in the window (bills are reused across days).
+    `&includeLineItemActivity=true` +
     `&startIndex=${startIndex}&limit=${pageSize}` +
     (trimmedSearch ? `&q=${encodeURIComponent(trimmedSearch)}` : '');
 
