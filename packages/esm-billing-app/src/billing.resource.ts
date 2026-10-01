@@ -5,6 +5,7 @@ import {
   parseDate,
   restBaseUrl,
   useConfig,
+  useOpenmrsFetchAll,
   useSession,
   useVisit,
 } from '@openmrs/esm-framework';
@@ -80,20 +81,25 @@ export const useBills = (
   startingDate: Date = dayjs().startOf('day').toDate(),
   endDate: Date = dayjs().endOf('day').toDate(),
 ) => {
-  const startingDateISO = startingDate.toISOString();
-  const endDateISO = endDate.toISOString();
+  // The server widens both bounds to whole days, so send plain local calendar dates. Sending UTC instants
+  // (toISOString) shifts the window back a day for clients east of UTC.
+  const fromDate = dayjs(startingDate).format('YYYY-MM-DD');
+  const toDate = dayjs(endDate).format('YYYY-MM-DD');
 
-  const url = `${restBaseUrl}/cashier/bill?status=${billStatus}&v=custom:(uuid,display,status,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems,patient:(uuid,display))&createdOnOrAfter=${startingDateISO}&createdOnOrBefore=${endDateISO}`;
+  const url = `${restBaseUrl}/cashier/bill?status=${billStatus}&v=custom:(uuid,display,status,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems,payments,patient:(uuid,display))&createdOnOrAfter=${fromDate}&createdOnOrBefore=${toDate}`;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Array<PatientInvoice> } }>(
-    patientUuid ? `${url}&patientUuid=${patientUuid}` : url,
-    openmrsFetch,
-    {
-      errorRetryCount: 2,
-    },
-  );
+  // The endpoint is paginated; fetch every page so totals and lists are not cut off at the first page.
+  const {
+    data: results,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  } = useOpenmrsFetchAll<PatientInvoice>(patientUuid ? `${url}&patientUuid=${patientUuid}` : url, {
+    swrInfiniteConfig: { errorRetryCount: 2 },
+  });
 
-  const sortBills = sortBy(data?.data?.results ?? [], ['dateCreated']).reverse();
+  const sortBills = sortBy(results ?? [], ['dateCreated']).reverse();
   const filteredBills = billStatus === '' ? sortBills : sortBills?.filter((bill) => bill?.status === billStatus);
   const mappedResults = filteredBills?.map((bill) => mapBillProperties(bill));
   const filteredResults = mappedResults?.filter((res) => res.patientUuid === patientUuid);
