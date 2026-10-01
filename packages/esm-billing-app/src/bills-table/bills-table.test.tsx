@@ -143,8 +143,8 @@ describe('BillsTable', () => {
         {
           ...mockBillsData[0],
           lineItems: [
-            { billableService: 'uuid-1:Old Consultation', item: '', dateCreated: yesterday },
-            { billableService: 'uuid-2:New Lab Test', item: '', dateCreated: today },
+            { billableService: 'uuid-1:Old Consultation', item: '', auditInfo: { dateCreated: yesterday } },
+            { billableService: 'uuid-2:New Lab Test', item: '', auditInfo: { dateCreated: today } },
           ],
         },
       ],
@@ -158,6 +158,38 @@ describe('BillsTable', () => {
 
     expect(screen.getByText('New Lab Test')).toBeInTheDocument();
     expect(screen.queryByText(/Old Consultation/)).not.toBeInTheDocument();
+  });
+
+  test('should not crash when a line item has no service or item name', () => {
+    mockbills.mockImplementationOnce(() => ({
+      bills: [{ ...mockBillsData[0], lineItems: [{ uuid: 'li-1' }, { billableService: 'uuid-2:New Lab Test' }] }],
+      totalCount: 1,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    expect(screen.getByText('New Lab Test')).toBeInTheDocument();
+  });
+
+  test('should mark closed bills in the status column', () => {
+    mockbills.mockImplementationOnce(() => ({
+      bills: [
+        { ...mockBillsData[0], status: 'PAID', closed: true },
+        { ...mockBillsData[1], status: 'PENDING', closed: false },
+      ],
+      totalCount: 2,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    expect(screen.getAllByText('Closed')).toHaveLength(1);
+    expect(screen.getByText('PENDING')).toBeInTheDocument();
   });
 
   test('should show the loading spinner while retrieving data', () => {

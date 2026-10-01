@@ -1,4 +1,4 @@
-import { InlineLoading } from '@carbon/react';
+import { InlineLoading, Tag } from '@carbon/react';
 import { ExtensionSlot, formatDatetime, parseDate, usePatient, useVisit } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useEffect, useState } from 'react';
@@ -86,7 +86,14 @@ export function InvoiceSummary({
   return (
     <>
       <div className={styles.invoiceSummary}>
-        <span className={styles.invoiceSummaryTitle}>{t('invoiceSummary', 'Invoice Summary')}</span>
+        <span className={styles.invoiceSummaryTitle}>
+          {t('invoiceSummary', 'Invoice Summary')}
+          {bill?.closed && (
+            <Tag className={styles.closedTag} size="sm" type="gray">
+              {t('closed', 'Closed')}
+            </Tag>
+          )}
+        </span>
         <InvoiceActions bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
       </div>
       <div className={styles.invoiceSummaryContainer}>
@@ -99,6 +106,15 @@ export function InvoiceSummary({
           <InvoiceSummaryItem label={t('invoiceStatus', 'Invoice Status')} value={bill?.status} />
           <InvoiceSummaryItem label={t('cashPoint', 'Cash Point')} value={bill?.cashPointName} />
           <InvoiceSummaryItem label={t('cashier', 'Cashier')} value={capitalize(bill?.cashier?.display)} />
+          {bill?.closed && bill?.dateClosed && (
+            <InvoiceSummaryItem
+              label={t('closedOn', 'Closed on')}
+              value={formatDatetime(parseDate(bill.dateClosed), { mode: 'standard', noToday: true })}
+            />
+          )}
+          {bill?.closed && bill?.closeReason && (
+            <InvoiceSummaryItem label={t('closeReason', 'Close reason')} value={bill.closeReason} />
+          )}
         </div>
         <div className={styles.divider} />
         <div className={styles.invoiceCard}>

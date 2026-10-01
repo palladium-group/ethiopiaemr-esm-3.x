@@ -159,7 +159,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
   const handleNavigateToBillingDashboard = () =>
     navigate({
-      to: window.getOpenmrsSpaBase() + 'home/billing',
+      to: window.getOpenmrsSpaBase() + 'home/accounting',
     });
 
   const roundCurrency = (value: number) => parseFloat(Number(value).toFixed(2));
@@ -285,7 +285,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
           />
           <div className={styles.processPayments}>
             <Button onClick={handleNavigateToBillingDashboard} kind="secondary">
-              {t('discard', 'Discard')}
+              {t('backToBills', 'Back to bills')}
             </Button>
             <UserHasAccess privilege={Permissions.ProcessPayment}>
               <Button

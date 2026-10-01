@@ -67,6 +67,8 @@ export const mapBillProperties = (bill: PatientInvoice): MappedBill => {
     totalDeposits: bill?.totalDeposits,
     totalExempted: bill?.totalExempted,
     closed: bill?.closed,
+    closeReason: bill?.closeReason,
+    dateClosed: bill?.dateClosed,
   };
 
   return mappedBill;
@@ -135,9 +137,10 @@ export const usePagedBills = ({
   const fromDate = dayjs(startingDate).format('YYYY-MM-DD');
   const toDate = dayjs(endDate).format('YYYY-MM-DD');
 
+  // lineItems:full is needed for auditInfo.dateCreated; the line item resource ignores a custom field list.
   const url =
     `${restBaseUrl}/cashier/bill?status=${billStatus}` +
-    `&v=custom:(uuid,display,status,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems:(uuid,item,billableService,price,quantity,paymentStatus,voided,dateCreated),patient:(uuid,display),visit:(uuid,startDatetime))` +
+    `&v=custom:(uuid,display,status,closed,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems:full,patient:(uuid,display),visit:(uuid,startDatetime))` +
     `&createdOnOrAfter=${fromDate}&createdOnOrBefore=${toDate}` +
     // Also match older bills that had line items added in the window (bills are reused across days).
     `&includeLineItemActivity=true` +
@@ -203,6 +206,8 @@ export const useBill = (billUuid: string) => {
         ?.reduce((prev, curr) => prev + curr?.price * curr?.quantity, 0),
       balance: bill?.balance,
       closed: bill?.closed,
+      closeReason: bill?.closeReason,
+      dateClosed: bill?.dateClosed,
     };
 
     return mappedBill;

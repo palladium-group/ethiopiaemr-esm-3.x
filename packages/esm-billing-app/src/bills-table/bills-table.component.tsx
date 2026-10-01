@@ -16,6 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
   Tile,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
@@ -88,15 +89,18 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
 
   const isSearching = debouncedSearchString.trim() !== '';
 
-  // Bills are reused across days, so only list the items added today. Items without a dateCreated are kept.
-  const isAddedToday = (item) => !item?.dateCreated || dayjs(parseDate(item.dateCreated)).isSame(dayjs(), 'day');
+  // Bills are reused across days, so only list the items added today. Items without a creation date are kept.
+  const isAddedToday = (item) => {
+    const dateCreated = item?.auditInfo?.dateCreated;
+    return !dateCreated || dayjs(parseDate(dateCreated)).isSame(dayjs(), 'day');
+  };
 
   const setBilledItems = (bill) =>
     bill?.lineItems
       ?.filter(isAddedToday)
       .reduce(
         (acc, item) =>
-          acc + (acc ? ' & ' : '') + (item?.billableService.split(':')[1] || item?.item.split(':')[1] || ''),
+          acc + (acc ? ' & ' : '') + (item?.billableService?.split(':')[1] || item?.item?.split(':')[1] || ''),
         '',
       );
 
@@ -118,7 +122,16 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
     department: '--',
     billedItems: setBilledItems(bill),
     billingPrice: '--',
-    status: bill.status,
+    status: bill.closed ? (
+      <>
+        {bill.status}{' '}
+        <Tag size="sm" type="gray">
+          {t('closed', 'Closed')}
+        </Tag>
+      </>
+    ) : (
+      bill.status
+    ),
   }));
 
   const handleSearch = useCallback((e) => {
