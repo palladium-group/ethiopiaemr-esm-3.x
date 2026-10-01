@@ -112,6 +112,63 @@
   gap: layout.$spacing-05;
 }
 
+.invoiceHeaderActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: layout.$spacing-03;
+}
+
+// Telebirr and EthSwitch: logo-only buttons, one per row.
+.paymentChannels {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: layout.$spacing-03;
+}
+
+.paymentChannel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 9rem;
+  height: 2.5rem;
+  padding: layout.$spacing-02 layout.$spacing-04;
+  border: 1px solid colors.$gray-30;
+  border-radius: layout.$spacing-02;
+  cursor: pointer;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 0 0 2px colors.$blue-60;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.telebirrChannel {
+  background-color: colors.$white;
+}
+
+// The EthSwitch logo is white lettering, so it needs a dark background.
+.ethSwitchChannel {
+  background-color: #14172b;
+  border-color: #14172b;
+}
+
 .invoiceTitle {
   @include type.type-style('heading-03');
   display: flex;

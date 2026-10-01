@@ -2,15 +2,15 @@ import { InlineLoading, Tab, TabList, TabPanel, TabPanels, Tabs, Tag } from '@ca
 import classNames from 'classnames';
 import { ExtensionSlot, formatDatetime, parseDate, usePatient, useVisit } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useBill } from '../billing.resource';
 import { usePaymentsReconciler } from '../hooks/use-payments-reconciler';
 import { LineItem, MappedBill } from '../types';
-import InvoiceTable from './invoice-table.component';
 import styles from './invoice.scss';
-import Payments from './payments/payments.component';
+import InvoiceCheckout from './checkout/invoice-checkout.component';
+import PaymentChannelButtons from './payment-channel-buttons.component';
 import capitalize from 'lodash-es/capitalize';
 import { InvoiceActions } from './invoice-actions.component';
 import { useCurrencyFormatting } from '../helpers/currency';
@@ -23,19 +23,8 @@ const Invoice: React.FC = () => {
   const { bill, isLoading: isLoadingBill, error: billingError } = useBill(billUuid);
   usePaymentsReconciler(billUuid);
   const { activeVisit, isLoading: isVisitLoading, error: visitError } = useVisit(patientUuid);
-  const [selectedLineItems, setSelectedLineItems] = useState([]);
-
-  const handleSelectItem = (lineItems: Array<LineItem>) => {
-    const paidLineItems = bill?.lineItems?.filter((item) => item.paymentStatus === 'PAID') ?? [];
-    const uniqueLineItems = [...new Set([...lineItems, ...paidLineItems])];
-    setSelectedLineItems(uniqueLineItems);
-  };
-
-  useEffect(() => {
-    // Select all line items by default
-    setSelectedLineItems(bill?.lineItems ?? []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bill?.lineItems?.length]);
+  // The ticked line items, reported by the checkout so the Telebirr and EthSwitch buttons act on them.
+  const [selectedLineItems, setSelectedLineItems] = useState<Array<LineItem>>([]);
 
   // useBill returns an empty bill while its cached data is cleared for a refetch (the bill mutations clear
   // every cashier/bill key), so wait for a real bill instead of rendering one without line items.
@@ -74,19 +63,13 @@ const Invoice: React.FC = () => {
       <Tabs>
         <TabList className={styles.invoiceTabs} aria-label={t('invoiceSections', 'Invoice sections')} contained>
           <Tab>
-            {t('lineItems', 'Line items')} ({bill?.lineItems?.length ?? 0})
-          </Tab>
-          <Tab>
-            {t('payments', 'Payments')} ({bill?.payments?.length ?? 0})
+            {t('itemsAndPayment', 'Items & payment')} ({bill?.lineItems?.length ?? 0})
           </Tab>
           <Tab>{t('timeline', 'Timeline')}</Tab>
         </TabList>
         <TabPanels>
           <TabPanel className={styles.invoiceTabPanel}>
-            <InvoiceTable bill={bill} isLoadingBill={isLoadingBill} onSelectItem={handleSelectItem} />
-          </TabPanel>
-          <TabPanel className={styles.invoiceTabPanel}>
-            <Payments bill={bill} selectedLineItems={selectedLineItems} />
+            <InvoiceCheckout bill={bill} onSelectItem={setSelectedLineItems} />
           </TabPanel>
           <TabPanel className={styles.invoiceTabPanel}>
             <div className={styles.timelineCard}>
@@ -151,7 +134,10 @@ export function InvoiceHeader({
             ))}
           </dl>
         </div>
-        <InvoiceActions bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
+        <div className={styles.invoiceHeaderActions}>
+          <InvoiceActions bill={bill} activeVisit={activeVisit} />
+          <PaymentChannelButtons bill={bill} selectedLineItems={selectedLineItems} />
+        </div>
       </div>
       <dl className={styles.invoiceFigures}>
         {figures.map(({ label, value }) => (

@@ -1,0 +1,168 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: layout.$spacing-05;
+  align-items: start;
+  margin: layout.$spacing-05;
+}
+
+.muted {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.sectionLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card {
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  padding: layout.$spacing-05;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: layout.$spacing-04;
+}
+
+.cardTitle {
+  @include type.type-style('heading-compact-02');
+}
+
+.links {
+  display: flex;
+  gap: layout.$spacing-05;
+
+  button {
+    @include type.type-style('body-compact-01');
+    background: none;
+    border: 0;
+    padding: 0;
+    color: colors.$blue-60;
+    cursor: pointer;
+  }
+}
+
+.itemList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04 0;
+  border-top: 1px solid colors.$gray-20;
+
+  > :first-child {
+    flex: 0 0 auto;
+  }
+}
+
+.itemMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-01;
+  min-width: 0;
+}
+
+.itemName {
+  @include type.type-style('body-compact-02');
+}
+
+.itemTotal {
+  @include type.type-style('heading-compact-01');
+  min-width: 6rem;
+  text-align: right;
+}
+
+.itemSettled {
+  .itemName,
+  .itemTotal {
+    color: colors.$gray-60;
+  }
+}
+
+.paymentHistory {
+  margin-top: layout.$spacing-06;
+}
+
+// Payment panel — deliberately compact: small type, one line per payment option.
+.paymentPanel {
+  position: sticky;
+  top: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  padding: layout.$spacing-05;
+  @include type.type-style('body-compact-01');
+}
+
+.covered {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: layout.$spacing-04;
+  padding-bottom: layout.$spacing-04;
+  margin-bottom: layout.$spacing-02;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.coveredValue {
+  @include type.type-style('heading-compact-02');
+  white-space: nowrap;
+}
+
+.coveredExact {
+  color: colors.$green-60;
+}
+
+.coveredOver {
+  color: colors.$red-60;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.optionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem 2rem;
+  gap: layout.$spacing-03;
+  align-items: center;
+}
+
+.removeOption svg {
+  fill: colors.$red-60;
+}
+
+.optionActions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.notification {
+  max-width: none;
+}
+
+.processPayment {
+  align-self: flex-end;
+  margin-top: layout.$spacing-03;
+}
