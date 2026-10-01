@@ -98,59 +98,97 @@
   }
 }
 
-.invoiceSummaryContainer {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: layout.$spacing-05;
-  margin: 0 layout.$spacing-05 layout.$spacing-05 layout.$spacing-05;
-  background-color: colors.$white;
+.invoiceHeader {
+  margin: layout.$spacing-05 layout.$spacing-05 0 layout.$spacing-05;
   padding: layout.$spacing-05;
-
-  .divider {
-    width: 1px;
-    background-color: colors.$gray-20;
-    margin: 0 layout.$spacing-05;
-  }
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
 }
 
-.invoiceSummaryItem {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: layout.$spacing-05;
-  justify-content: center;
-
-  .label {
-    @include type.type-style('legal-02');
-    color: colors.$gray-70;
-  }
-
-  .value {
-    @include type.type-style('heading-01');
-    color: colors.$gray-70;
-  }
-}
-
-.invoiceSummary {
+.invoiceHeaderTop {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: layout.$spacing-05;
+}
+
+.invoiceTitle {
+  @include type.type-style('heading-03');
+  display: flex;
   align-items: center;
-  margin: layout.$spacing-05 layout.$spacing-05 0 layout.$spacing-05;
-  background-color: colors.$white;
-  border-bottom: 1px solid colors.$gray-20;
-  padding: layout.$spacing-01 layout.$spacing-04;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-04;
+}
 
-  .invoiceSummaryActions {
-    display: flex;
-    gap: layout.$spacing-04;
+.invoiceDetails {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.invoiceDetail {
+  padding: 0 layout.$spacing-06;
+  border-left: 1px solid colors.$gray-20;
+
+  &:first-child {
+    padding-left: 0;
+    border-left: none;
   }
-  .invoiceSummaryTitle {
-    @include type.type-style('heading-01');
+
+  dt {
+    @include type.type-style('label-01');
     color: colors.$gray-70;
+    margin-bottom: layout.$spacing-01;
   }
 
-  .closedTag {
-    margin-left: layout.$spacing-03;
+  dd {
+    @include type.type-style('body-compact-01');
+    color: colors.$gray-100;
   }
+}
+
+.invoiceFigures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-07;
+  margin-top: layout.$spacing-05;
+  padding-top: layout.$spacing-05;
+  border-top: 1px solid colors.$gray-20;
+}
+
+.invoiceFigure {
+  dt {
+    @include type.type-style('label-01');
+    color: colors.$gray-70;
+    margin-bottom: layout.$spacing-02;
+  }
+
+  dd {
+    @include type.type-style('heading-02');
+  }
+}
+
+.invoiceBalance {
+  margin-left: auto;
+  text-align: right;
+
+  dd {
+    @include type.type-style('heading-04');
+  }
+}
+
+.invoiceTabs {
+  margin: layout.$spacing-05 layout.$spacing-05 0 layout.$spacing-05;
+}
+
+.invoiceTabPanel {
+  padding: 0;
+}
+
+.timelineCard {
+  margin: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
 }
 
 .popoverContent {

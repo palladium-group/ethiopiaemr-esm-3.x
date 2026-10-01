@@ -44,7 +44,7 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
   const printPrivileges = [Permissions.PrintInvoice, Permissions.PrintReceipt, Permissions.PrintBillStatement];
   const hasAnyPrintPrivilege = printPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
   // filter out exempted and paid line items
-  const billableLineItems = bill.lineItems.filter(
+  const billableLineItems = (bill.lineItems ?? []).filter(
     (item) => item.paymentStatus !== PaymentStatus.EXEMPTED && item.paymentStatus !== PaymentStatus.PAID,
   );
 
