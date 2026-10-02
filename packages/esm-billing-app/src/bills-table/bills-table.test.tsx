@@ -291,6 +291,63 @@ describe('BillsTable', () => {
     expect(loadingContainer.querySelector('.cds--inline-loading')).toBeInTheDocument();
   });
 
+  test('should show the priority of each bill and of each line item', async () => {
+    const today = new Date().toISOString();
+    const lineItem = (uuid: string, name: string, orderUrgency?: string) => ({
+      uuid,
+      billableService: `service:${name}`,
+      price: 10,
+      quantity: 1,
+      paymentStatus: 'PENDING',
+      orderUrgency,
+      auditInfo: { dateCreated: today },
+    });
+    mockbills.mockImplementation(() => ({
+      bills: [
+        {
+          ...mockBillsData[0],
+          lineItems: [
+            lineItem('li-1', 'Blood Test', 'STAT'),
+            lineItem('li-2', 'X-Ray', 'ROUTINE'),
+            lineItem('li-3', 'Card Fee'),
+          ],
+        },
+        { ...mockBillsData[1], lineItems: [lineItem('li-4', 'Consultation', 'ROUTINE')] },
+      ],
+      totalCount: 2,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    // A bill whose items differ shows how many distinct priorities it has; a uniform one shows the priority.
+    expect(screen.getByRole('columnheader', { name: /priority/i })).toBeInTheDocument();
+    expect(screen.getByText('2 priorities')).toBeInTheDocument();
+    expect(screen.getAllByText('Routine')).toHaveLength(1);
+
+    await user.click(screen.getAllByRole('button', { name: /show line items/i })[0]);
+
+    expect(screen.getByText('Stat')).toBeInTheDocument();
+    expect(screen.getAllByText('Routine')).toHaveLength(2);
+  });
+
+  test('should show no priority for a bill whose items did not come from orders', () => {
+    mockbills.mockImplementation(() => ({
+      bills: [{ ...mockBillsData[0], lineItems: [{ uuid: 'li-1', billableService: 'service:Card Fee' }] }],
+      totalCount: 1,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    expect(screen.queryByText(/priorities/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Routine')).not.toBeInTheDocument();
+  });
+
   test('should show the invoice number of each bill', () => {
     mockbills.mockImplementation(() => ({
       bills: [{ ...mockBillsData[0], receiptNumber: '0005-9' }, mockBillsData[1]],

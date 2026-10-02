@@ -82,6 +82,8 @@ export interface LineItem {
   serviceTypeUuid: string;
   order: OpenmrsResource;
   auditInfo?: { dateCreated?: string };
+  /** The urgency of the order the item was billed for; only in the full representation. */
+  orderUrgency?: string;
 }
 
 interface PatientLink {

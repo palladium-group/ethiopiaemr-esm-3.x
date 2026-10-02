@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrencyFormatting } from '../helpers/currency';
 import { paymentStatusTagType } from '../invoice/timeline/bill-timeline.component';
 import { LineItem } from '../types';
+import { PriorityTag } from './order-priority';
 import styles from './bills-table.scss';
 
 export const lineItemName = (lineItem: LineItem) =>
@@ -30,6 +31,7 @@ const BillLineItems: React.FC<BillLineItemsProps> = ({ lineItems }) => {
       <thead>
         <tr>
           <th>{t('item', 'Item')}</th>
+          <th>{t('priority', 'Priority')}</th>
           <th>{t('addedAt', 'Added')}</th>
           <th className={styles.numeric}>{t('quantity', 'Quantity')}</th>
           <th className={styles.numeric}>{t('price', 'Price')}</th>
@@ -43,6 +45,9 @@ const BillLineItems: React.FC<BillLineItemsProps> = ({ lineItems }) => {
           return (
             <tr key={lineItem.uuid}>
               <td>{lineItemName(lineItem)}</td>
+              <td>
+                <PriorityTag urgency={lineItem.orderUrgency} />
+              </td>
               <td>{dateCreated ? formatTime(parseDate(dateCreated)) : '--'}</td>
               <td className={styles.numeric}>{lineItem.quantity}</td>
               <td className={styles.numeric}>{formatCurrency(lineItem.price)}</td>

@@ -36,6 +36,7 @@ import { EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
 import { usePagedBills } from '../billing.resource';
 import { useCurrencyFormatting } from '../helpers/currency';
 import BillLineItems, { lineItemTotal } from './bill-line-items.component';
+import { BillPriority } from './order-priority';
 import styles from './bills-table.scss';
 
 const searchDebounceMs = 500;
@@ -93,6 +94,10 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
       key: 'invoiceNumber',
     },
     {
+      header: t('priority', 'Priority'),
+      key: 'priority',
+    },
+    {
       header: t('billedItems', 'Billed Items'),
       key: 'billedItems',
     },
@@ -133,6 +138,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
       </ConfigurableLink>
     ),
     invoiceNumber: bill.receiptNumber ?? '--',
+    priority: <BillPriority lineItems={todaysLineItems(bill)} />,
     visitTime: bill.visitStartDatetime ?? '--',
     identifier: bill.identifier,
     department: '--',
