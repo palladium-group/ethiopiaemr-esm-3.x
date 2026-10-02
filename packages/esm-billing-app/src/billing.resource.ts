@@ -125,7 +125,7 @@ type UsePagedBillsParams = {
 
 /**
  * Fetches one page of bills created in the given window (today by default), letting the server do the
- * filtering, searching (patient name / identifier) and paging so that no bills are silently dropped.
+ * filtering, searching (patient name, identifier or invoice number) and paging so that no bills are silently dropped.
  */
 export const usePagedBills = ({
   billStatus = '',
@@ -146,12 +146,13 @@ export const usePagedBills = ({
   // lineItems:full is needed for auditInfo.dateCreated; the line item resource ignores a custom field list.
   const url =
     `${restBaseUrl}/cashier/bill?status=${billStatus}` +
-    `&v=custom:(uuid,display,status,closed,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems:full,patient:(uuid,display),visit:(uuid,startDatetime))` +
+    `&v=custom:(uuid,display,receiptNumber,status,closed,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems:full,patient:(uuid,display),visit:(uuid,startDatetime))` +
     `&createdOnOrAfter=${fromDate}&createdOnOrBefore=${toDate}` +
     // Also match older bills that had line items added in the window (bills are reused across days).
     `&includeLineItemActivity=true` +
     `&startIndex=${startIndex}&limit=${pageSize}` +
-    (trimmedSearch ? `&q=${encodeURIComponent(trimmedSearch)}` : '');
+    // searchReceiptNumber makes the free-text search match the invoice number as well as the patient.
+    (trimmedSearch ? `&q=${encodeURIComponent(trimmedSearch)}&searchReceiptNumber=true` : '');
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{
     data: { results: Array<PatientInvoice>; totalCount?: number };

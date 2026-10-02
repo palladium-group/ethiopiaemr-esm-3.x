@@ -13,6 +13,9 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableExpandRow,
   TableHead,
   TableHeader,
   TableRow,
@@ -31,7 +34,11 @@ import {
 } from '@openmrs/esm-framework';
 import { EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
 import { usePagedBills } from '../billing.resource';
+import { useCurrencyFormatting } from '../helpers/currency';
+import BillLineItems, { lineItemTotal } from './bill-line-items.component';
 import styles from './bills-table.scss';
+
+const searchDebounceMs = 500;
 
 const filterItems = [
   { id: '', text: 'All bills' },
@@ -47,6 +54,7 @@ type BillTableProps = {
 
 const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' }) => {
   const { t } = useTranslation();
+  const { format: formatCurrency } = useCurrencyFormatting();
   const id = useId();
   const config = useConfig();
   const layout = useLayoutType();
@@ -56,8 +64,11 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
   const [pageSize, setPageSize] = useState(config?.bills?.pageSize ?? 10);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchString, setSearchString] = useState('');
-  const debouncedSearchString = useDebounce(searchString);
-  const { bills, totalCount, isLoading, isValidating, error } = usePagedBills({
+  // Only one bill's line items are open at a time.
+  const [expandedBillUuid, setExpandedBillUuid] = useState<string | null>(null);
+  // Wait for a pause in typing before querying the server.
+  const debouncedSearchString = useDebounce(searchString, searchDebounceMs);
+  const { bills, totalCount, isLoading, error } = usePagedBills({
     billStatus: billPaymentStatus,
     searchTerm: debouncedSearchString,
     page: currentPage,
@@ -78,8 +89,16 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
       key: 'patientName',
     },
     {
+      header: t('invoiceNumber', 'Invoice Number'),
+      key: 'invoiceNumber',
+    },
+    {
       header: t('billedItems', 'Billed Items'),
       key: 'billedItems',
+    },
+    {
+      header: t('total', 'Total'),
+      key: 'total',
     },
     {
       header: t('status', 'Status'),
@@ -88,6 +107,9 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
   ];
 
   const isSearching = debouncedSearchString.trim() !== '';
+  // Show the spinner only for loads the user asked for: a search still being typed, or a new search, filter
+  // or page being fetched. Background refreshes (for example when the window regains focus) stay silent.
+  const isFetchingForUser = isLoading || searchString !== debouncedSearchString;
 
   // Bills are reused across days, so only list the items added today. Items without a creation date are kept.
   const isAddedToday = (item) => {
@@ -95,19 +117,12 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
     return !dateCreated || dayjs(parseDate(dateCreated)).isSame(dayjs(), 'day');
   };
 
-  const setBilledItems = (bill) =>
-    bill?.lineItems
-      ?.filter(isAddedToday)
-      .reduce(
-        (acc, item) =>
-          acc + (acc ? ' & ' : '') + (item?.billableService?.split(':')[1] || item?.item?.split(':')[1] || ''),
-        '',
-      );
+  const todaysLineItems = (bill) => bill?.lineItems?.filter(isAddedToday) ?? [];
 
   const billingUrl = '${openmrsSpaBase}/home/accounting/patient/${patientUuid}/${uuid}';
 
-  const rowData = bills?.map((bill, index) => ({
-    id: `${index}`,
+  const rowData = bills?.map((bill) => ({
+    id: bill.uuid,
     uuid: bill.uuid,
     patientName: (
       <ConfigurableLink
@@ -117,10 +132,14 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
         {bill.patientName}
       </ConfigurableLink>
     ),
+    invoiceNumber: bill.receiptNumber ?? '--',
     visitTime: bill.visitStartDatetime ?? '--',
     identifier: bill.identifier,
     department: '--',
-    billedItems: setBilledItems(bill),
+    billedItems: `${todaysLineItems(bill).length} ${
+      todaysLineItems(bill).length === 1 ? t('itemLowercase', 'item') : t('itemsLowercase', 'items')
+    }`,
+    total: formatCurrency(todaysLineItems(bill).reduce((sum, lineItem) => sum + lineItemTotal(lineItem), 0)),
     billingPrice: '--',
     status: bill.closed ? (
       <>
@@ -191,7 +210,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
         <div className={styles.billListContainer}>
           <FilterableTableHeader
             handleSearch={handleSearch}
-            isValidating={isValidating}
+            isFetching={isFetchingForUser}
             layout={layout}
             responsiveSize={responsiveSize}
             t={t}
@@ -202,11 +221,12 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
             headers={headerData}
             size={responsiveSize}
             useZebraStyles={rowData?.length > 1 ? true : false}>
-            {({ rows, headers, getRowProps, getTableProps }) => (
+            {({ rows, headers, getRowProps, getTableProps, getExpandedRowProps }) => (
               <TableContainer>
                 <Table {...getTableProps()} aria-label="bill list">
                   <TableHead>
                     <TableRow>
+                      <TableExpandHeader />
                       {headers.map((header) => (
                         <TableHeader key={header.key}>{header.header}</TableHeader>
                       ))}
@@ -214,15 +234,29 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
                   </TableHead>
                   <TableBody>
                     {rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        {...getRowProps({
-                          row,
-                        })}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                      </TableRow>
+                      <React.Fragment key={row.id}>
+                        <TableExpandRow
+                          {...getRowProps({ row })}
+                          isExpanded={row.id === expandedBillUuid}
+                          onExpand={() => setExpandedBillUuid(row.id === expandedBillUuid ? null : row.id)}
+                          aria-label={
+                            row.id === expandedBillUuid
+                              ? t('hideLineItems', 'Hide line items')
+                              : t('showLineItems', 'Show line items')
+                          }>
+                          {row.cells.map((cell) => (
+                            <TableCell key={cell.id}>{cell.value}</TableCell>
+                          ))}
+                        </TableExpandRow>
+                        {row.id === expandedBillUuid && (
+                          <TableExpandedRow
+                            className={styles.expandedRow}
+                            colSpan={headers.length + 1}
+                            {...getExpandedRowProps({ row })}>
+                            <BillLineItems lineItems={todaysLineItems(bills?.find((bill) => bill.uuid === row.id))} />
+                          </TableExpandedRow>
+                        )}
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
@@ -276,7 +310,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
   );
 };
 
-function FilterableTableHeader({ layout, handleSearch, isValidating, responsiveSize, t }) {
+function FilterableTableHeader({ layout, handleSearch, isFetching, responsiveSize, t }) {
   return (
     <>
       <div className={styles.headerContainer}>
@@ -288,12 +322,12 @@ function FilterableTableHeader({ layout, handleSearch, isValidating, responsiveS
           <h4>{t('billList', 'Bill list')}</h4>
         </div>
         <div className={styles.backgroundDataFetchingIndicator}>
-          <span>{isValidating ? <InlineLoading /> : null}</span>
+          <span>{isFetching ? <InlineLoading /> : null}</span>
         </div>
       </div>
       <Search
         labelText=""
-        placeholder={t('filterTable', 'Filter table')}
+        placeholder={t('searchBillsPlaceholder', 'Search by patient name, identifier or invoice number')}
         onChange={handleSearch}
         size={responsiveSize}
       />

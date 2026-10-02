@@ -27,6 +27,13 @@ describe('BillsTable', () => {
 
   beforeEach(() => {
     user = userEvent.setup();
+    mockbills.mockImplementation(() => ({
+      bills: mockBillsData,
+      totalCount: mockBillsData.length,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
   });
 
   xit('renders data table with pending bills', () => {
@@ -135,16 +142,38 @@ describe('BillsTable', () => {
     expect(screen.queryByText('bill-created')).not.toBeInTheDocument();
   });
 
-  test('should only list the line items added today in the billed items column', () => {
+  test('should summarise the items added today and list them when the bill row is expanded', async () => {
     const today = new Date().toISOString();
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    mockbills.mockImplementationOnce(() => ({
+    mockbills.mockImplementation(() => ({
       bills: [
         {
           ...mockBillsData[0],
           lineItems: [
-            { billableService: 'uuid-1:Old Consultation', item: '', auditInfo: { dateCreated: yesterday } },
-            { billableService: 'uuid-2:New Lab Test', item: '', auditInfo: { dateCreated: today } },
+            {
+              uuid: 'li-old',
+              billableService: 'uuid-1:Old Consultation',
+              price: 50,
+              quantity: 1,
+              paymentStatus: 'PAID',
+              auditInfo: { dateCreated: yesterday },
+            },
+            {
+              uuid: 'li-lab',
+              billableService: 'uuid-2:New Lab Test',
+              price: 40,
+              quantity: 2,
+              paymentStatus: 'PENDING',
+              auditInfo: { dateCreated: today },
+            },
+            {
+              uuid: 'li-drug',
+              item: 'uuid-3:Iron Supplement',
+              price: 30,
+              quantity: 1,
+              paymentStatus: 'PAID',
+              auditInfo: { dateCreated: today },
+            },
           ],
         },
       ],
@@ -156,13 +185,40 @@ describe('BillsTable', () => {
 
     render(<BillsTable />);
 
+    expect(screen.getByText('2 items')).toBeInTheDocument();
+    expect(screen.queryByText('New Lab Test')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /show line items/i }));
+
     expect(screen.getByText('New Lab Test')).toBeInTheDocument();
+    expect(screen.getByText('Iron Supplement')).toBeInTheDocument();
+    expect(screen.getByText('PENDING')).toBeInTheDocument();
     expect(screen.queryByText(/Old Consultation/)).not.toBeInTheDocument();
   });
 
-  test('should not crash when a line item has no service or item name', () => {
-    mockbills.mockImplementationOnce(() => ({
-      bills: [{ ...mockBillsData[0], lineItems: [{ uuid: 'li-1' }, { billableService: 'uuid-2:New Lab Test' }] }],
+  test('should not crash when a line item has no service or item name', async () => {
+    mockbills.mockImplementation(() => ({
+      bills: [
+        {
+          ...mockBillsData[0],
+          lineItems: [{ uuid: 'li-1' }, { uuid: 'li-2', billableService: 'uuid-2:New Lab Test' }],
+        },
+      ],
+      totalCount: 1,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+    await user.click(screen.getByRole('button', { name: /show line items/i }));
+
+    expect(screen.getByText('New Lab Test')).toBeInTheDocument();
+  });
+
+  test('should say so when a bill has no items added today', async () => {
+    mockbills.mockImplementation(() => ({
+      bills: [{ ...mockBillsData[0], lineItems: [] }],
       totalCount: 1,
       isLoading: false,
       isValidating: false,
@@ -171,7 +227,83 @@ describe('BillsTable', () => {
 
     render(<BillsTable />);
 
-    expect(screen.getByText('New Lab Test')).toBeInTheDocument();
+    expect(screen.getByText('0 items')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /show line items/i }));
+    expect(screen.getByText(/no items were added to this bill today/i)).toBeInTheDocument();
+  });
+
+  test('should keep only one bill expanded at a time and offer no expand-all control', async () => {
+    const lineItem = (uuid: string, name: string) => ({
+      uuid,
+      billableService: `service:${name}`,
+      price: 10,
+      quantity: 1,
+      paymentStatus: 'PENDING',
+      auditInfo: { dateCreated: new Date().toISOString() },
+    });
+    mockbills.mockImplementation(() => ({
+      bills: [
+        { ...mockBillsData[0], lineItems: [lineItem('li-1', 'Consultation')] },
+        { ...mockBillsData[1], lineItems: [lineItem('li-2', 'Skin Ointment')] },
+      ],
+      totalCount: 2,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    expect(screen.getAllByRole('button', { name: /show line items/i })).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: /expand all|collapse all/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: /show line items/i })[0]);
+    expect(screen.getByText('Consultation')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /show line items/i }));
+    expect(screen.getByText('Skin Ointment')).toBeInTheDocument();
+    expect(screen.queryByText('Consultation')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /hide line items/i }));
+    expect(screen.queryByText('Skin Ointment')).not.toBeInTheDocument();
+  });
+
+  test('should show the spinner while a requested page is loading, but not for background refreshes', () => {
+    mockbills.mockImplementation(() => ({
+      bills: mockBillsData,
+      totalCount: mockBillsData.length,
+      isLoading: false,
+      isValidating: true,
+      error: null,
+    }));
+    const { container, unmount } = render(<BillsTable />);
+    expect(container.querySelector('.cds--inline-loading')).not.toBeInTheDocument();
+    unmount();
+
+    mockbills.mockImplementation(() => ({
+      bills: mockBillsData,
+      totalCount: mockBillsData.length,
+      isLoading: true,
+      isValidating: true,
+      error: null,
+    }));
+    const { container: loadingContainer } = render(<BillsTable />);
+    expect(loadingContainer.querySelector('.cds--inline-loading')).toBeInTheDocument();
+  });
+
+  test('should show the invoice number of each bill', () => {
+    mockbills.mockImplementation(() => ({
+      bills: [{ ...mockBillsData[0], receiptNumber: '0005-9' }, mockBillsData[1]],
+      totalCount: 2,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+    }));
+
+    render(<BillsTable />);
+
+    expect(screen.getByRole('columnheader', { name: /invoice number/i })).toBeInTheDocument();
+    expect(screen.getByText('0005-9')).toBeInTheDocument();
   });
 
   test('should mark closed bills in the status column', () => {

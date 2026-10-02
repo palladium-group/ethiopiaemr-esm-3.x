@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { useOpenmrsFetchAll } from '@openmrs/esm-framework';
-import { useBills } from './billing.resource';
+import useSWR from 'swr';
+import { useBills, usePagedBills } from './billing.resource';
 
 jest.mock('@openmrs/esm-framework', () => ({
   ...jest.requireActual('@openmrs/esm-framework'),
@@ -9,7 +10,10 @@ jest.mock('@openmrs/esm-framework', () => ({
   parseDate: (value: string) => new Date(value),
 }));
 
+jest.mock('swr', () => ({ __esModule: true, ...jest.requireActual('swr'), default: jest.fn() }));
+
 const mockUseOpenmrsFetchAll = useOpenmrsFetchAll as jest.Mock;
+const mockUseSWR = useSWR as jest.Mock;
 
 const bill = (uuid: string, status: string, dateCreated: string) => ({
   uuid,
@@ -56,5 +60,34 @@ describe('useBills', () => {
 
     expect(mockUseOpenmrsFetchAll.mock.calls[0][0]).toContain('&patientUuid=patient-1');
     expect(result.current.bills).toHaveLength(3);
+  });
+});
+
+describe('usePagedBills', () => {
+  beforeEach(() => {
+    mockUseSWR.mockReturnValue({
+      data: { data: { results: [bill('b1', 'PENDING', '2026-10-01T08:00:00.000+0300')], totalCount: 31 } },
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+  });
+
+  it('asks the server for one page and returns the total count', () => {
+    const { result } = renderHook(() => usePagedBills({ page: 3, pageSize: 10 }));
+
+    const url = mockUseSWR.mock.calls[0][0] as string;
+    expect(url).toContain('startIndex=20&limit=10');
+    expect(url).toContain('includeLineItemActivity=true');
+    expect(url).not.toContain('&q=');
+    expect(result.current.totalCount).toBe(31);
+    expect(result.current.bills).toHaveLength(1);
+  });
+
+  it('searches patients and invoice numbers on the server', () => {
+    renderHook(() => usePagedBills({ searchTerm: '  0005-9 ' }));
+
+    expect(mockUseSWR.mock.calls[0][0]).toContain('&q=0005-9&searchReceiptNumber=true');
   });
 });
