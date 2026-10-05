@@ -40,3 +40,8 @@
     display: flex;
   }
 }
+
+// Line items shown under an expanded bill row
+.expandedRow > td {
+  padding-left: layout.$spacing-09;
+}

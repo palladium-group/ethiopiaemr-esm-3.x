@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag } from '@carbon/react';
-import { formatTime, parseDate } from '@openmrs/esm-framework';
+import { formatDatetime, formatTime, parseDate } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { useCurrencyFormatting } from '../helpers/currency';
 import { paymentStatusTagType } from '../invoice/timeline/bill-timeline.component';
@@ -15,15 +15,23 @@ export const lineItemTotal = (lineItem: LineItem) => Number(lineItem.price) * Nu
 
 type BillLineItemsProps = {
   lineItems: Array<LineItem>;
+  /** Show the date as well as the time each item was added, for bills whose items span several days. */
+  showDate?: boolean;
+  /** Shown when there are no line items to list. */
+  emptyMessage?: string;
 };
 
 /** The line items of one bill, shown when its row in the bills table is expanded. */
-const BillLineItems: React.FC<BillLineItemsProps> = ({ lineItems }) => {
+const BillLineItems: React.FC<BillLineItemsProps> = ({ lineItems, showDate = false, emptyMessage }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
 
   if (!lineItems?.length) {
-    return <p className={styles.noLineItems}>{t('noItemsAddedToday', 'No items were added to this bill today')}</p>;
+    return (
+      <p className={styles.noLineItems}>
+        {emptyMessage ?? t('noItemsAddedToday', 'No items were added to this bill today')}
+      </p>
+    );
   }
 
   return (
@@ -48,7 +56,13 @@ const BillLineItems: React.FC<BillLineItemsProps> = ({ lineItems }) => {
               <td>
                 <PriorityTag urgency={lineItem.orderUrgency} />
               </td>
-              <td>{dateCreated ? formatTime(parseDate(dateCreated)) : '--'}</td>
+              <td>
+                {!dateCreated
+                  ? '--'
+                  : showDate
+                  ? formatDatetime(parseDate(dateCreated), { mode: 'standard' })
+                  : formatTime(parseDate(dateCreated))}
+              </td>
               <td className={styles.numeric}>{lineItem.quantity}</td>
               <td className={styles.numeric}>{formatCurrency(lineItem.price)}</td>
               <td className={styles.numeric}>{formatCurrency(lineItemTotal(lineItem))}</td>

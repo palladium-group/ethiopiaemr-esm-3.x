@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import useSWR from 'swr';
-import { useBills, usePagedBills } from './billing.resource';
+import { useBills, usePagedBills, usePatientBillsWithLineItems } from './billing.resource';
 
 jest.mock('@openmrs/esm-framework', () => ({
   ...jest.requireActual('@openmrs/esm-framework'),
@@ -89,5 +89,45 @@ describe('usePagedBills', () => {
     renderHook(() => usePagedBills({ searchTerm: '  0005-9 ' }));
 
     expect(mockUseSWR.mock.calls[0][0]).toContain('&q=0005-9&searchReceiptNumber=true');
+  });
+});
+
+describe('usePatientBillsWithLineItems', () => {
+  beforeEach(() => {
+    mockUseOpenmrsFetchAll.mockReturnValue({
+      data: [
+        bill('older', 'PAID', '2026-09-28T08:00:00.000+0300'),
+        bill('newer', 'PENDING', '2026-10-01T10:00:00.000+0300'),
+        {
+          ...bill('other', 'PAID', '2026-10-02T10:00:00.000+0300'),
+          patient: { uuid: 'patient-2', display: 'ID-2 - Other' },
+        },
+      ],
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+  });
+
+  it("fetches every page of the patient's bills with line items in full", () => {
+    renderHook(() => usePatientBillsWithLineItems('patient-1'));
+
+    const url = mockUseOpenmrsFetchAll.mock.calls[0][0] as string;
+    expect(url).toContain('patientUuid=patient-1');
+    expect(url).toContain('lineItems:full');
+    expect(url).toContain('receiptNumber');
+  });
+
+  it("returns only the selected patient's bills, newest first", () => {
+    const { result } = renderHook(() => usePatientBillsWithLineItems('patient-1'));
+
+    expect(result.current.bills.map((mapped) => mapped.uuid)).toEqual(['newer', 'older']);
+  });
+
+  it('does not fetch until a patient is selected', () => {
+    renderHook(() => usePatientBillsWithLineItems(undefined));
+
+    expect(mockUseOpenmrsFetchAll.mock.calls[0][0]).toBeNull();
   });
 });

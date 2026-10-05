@@ -170,6 +170,34 @@ export const usePagedBills = ({
   };
 };
 
+/**
+ * Fetches every bill of one patient, newest first, with the fields the bills tables show: invoice number,
+ * closed state, and line items in full (creation date and order priority).
+ */
+export const usePatientBillsWithLineItems = (patientUuid?: string) => {
+  // lineItems:full is needed for auditInfo.dateCreated and orderUrgency; the line item resource ignores a
+  // custom field list.
+  const url =
+    `${restBaseUrl}/cashier/bill?patientUuid=${patientUuid}` +
+    `&v=custom:(uuid,display,receiptNumber,status,closed,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems:full,patient:(uuid,display))`;
+
+  const {
+    data: results,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  } = useOpenmrsFetchAll<PatientInvoice>(patientUuid ? url : null, { swrInfiniteConfig: { errorRetryCount: 2 } });
+
+  const bills = sortBy(results ?? [], ['dateCreated'])
+    .reverse()
+    .map((bill) => mapBillProperties(bill))
+    // Never show another patient's bills, whatever the server returned.
+    .filter((bill) => bill.patientUuid === patientUuid);
+
+  return { bills, error, isLoading, isValidating, mutate };
+};
+
 export const useBill = (billUuid: string) => {
   const url = `${restBaseUrl}/cashier/bill/${billUuid}?includeVoided=false`;
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: PatientInvoice }>(
