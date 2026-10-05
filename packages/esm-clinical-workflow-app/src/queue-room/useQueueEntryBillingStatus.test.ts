@@ -3,6 +3,7 @@ import useSWR from 'swr';
 import { useConfig } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
 import { usePaymentModes } from '../mru/billing-information/hooks/usePaymentModes';
+import { usePatientCardValidity } from './usePatientCardValidity';
 import { useQueueEntryBillingStatus } from './useQueueEntryBillingStatus';
 
 jest.mock('react-i18next', () => ({
@@ -10,6 +11,9 @@ jest.mock('react-i18next', () => ({
     t: (_key: string, fallback: string, options?: any) => {
       if (options?.mode) {
         return fallback.replace('{{mode}}', options.mode);
+      }
+      if (options?.date) {
+        return fallback.replace('{{date}}', options.date);
       }
       return fallback;
     },
@@ -28,6 +32,10 @@ jest.mock('swr', () => jest.fn());
 
 jest.mock('../mru/billing-information/hooks/usePaymentModes', () => ({
   usePaymentModes: jest.fn(),
+}));
+
+jest.mock('./usePatientCardValidity', () => ({
+  usePatientCardValidity: jest.fn(),
 }));
 
 const PAYMENT_METHOD_ATTRIBUTE_TYPE = 'payment-method-attribute-type';
@@ -55,6 +63,13 @@ describe('useQueueEntryBillingStatus', () => {
 
     (useSWR as unknown as jest.Mock).mockReturnValue({
       data: { data: { results: [] } },
+      isLoading: false,
+    });
+
+    (usePatientCardValidity as jest.Mock).mockReturnValue({
+      hasValidCard: false,
+      cardExpiryDate: null,
+      lastConsultationDate: null,
       isLoading: false,
     });
   });
@@ -237,5 +252,90 @@ describe('useQueueEntryBillingStatus', () => {
     expect(result.current.status).toBe('CLEARED');
     expect(result.current.badgeType).toBe('green');
     expect(result.current.badgeText).toBe('Paid');
+  });
+
+  it('clears patient when card is valid even without a consultation fee bill on current visit', () => {
+    (usePatientCardValidity as jest.Mock).mockReturnValue({
+      hasValidCard: true,
+      cardExpiryDate: new Date('2026-10-15'),
+      lastConsultationDate: new Date('2026-09-15'),
+      isLoading: false,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [
+          {
+            attributeType: { uuid: PAYMENT_METHOD_ATTRIBUTE_TYPE },
+            value: CASH_PAYMENT_MODE_UUID,
+          },
+        ],
+      },
+    } as unknown as QueueEntry;
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CARD_VALID');
+    expect(result.current.badgeType).toBe('green');
+    expect(result.current.badgeText).toContain('Card Valid');
+    expect(result.current.message).toContain('No new consultation fee required');
+  });
+
+  it('clears patient when card is valid even if visit has no paymentMethod attribute attached', () => {
+    (usePatientCardValidity as jest.Mock).mockReturnValue({
+      hasValidCard: true,
+      cardExpiryDate: new Date('2026-10-15'),
+      lastConsultationDate: new Date('2026-09-15'),
+      isLoading: false,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [],
+      },
+    } as unknown as QueueEntry;
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CARD_VALID');
+    expect(result.current.badgeType).toBe('green');
+    expect(result.current.badgeText).toContain('Card Valid');
+  });
+
+  it('shows loading status while card validity is being verified', () => {
+    (usePatientCardValidity as jest.Mock).mockReturnValue({
+      hasValidCard: false,
+      cardExpiryDate: null,
+      lastConsultationDate: null,
+      isLoading: true,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [
+          {
+            attributeType: { uuid: PAYMENT_METHOD_ATTRIBUTE_TYPE },
+            value: CASH_PAYMENT_MODE_UUID,
+          },
+        ],
+      },
+    } as unknown as QueueEntry;
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(false);
+    expect(result.current.status).toBe('LOADING');
+    expect(result.current.badgeType).toBe('cool-gray');
   });
 });

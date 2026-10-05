@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
-import { showSnackbar, useSession } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import {
   type BillingFormData,
   createBillingInformationVisitAttribute,
   updateVisitWithBillingInformation,
   createCashierBill,
+  saveLastConsultationDate,
 } from '../billing-information.resource';
 import type { ClinicalWorkflowConfig } from '../../../config-schema';
 
@@ -23,6 +24,7 @@ type UseBillingFormSubmissionParams = {
     attributes?: VisitAttribute[];
   };
   billingVisitAttributeTypes: ClinicalWorkflowConfig['billingVisitAttributeTypes'];
+  billingTypes?: Array<{ uuid: string; name?: string }>;
   mutateVisit: () => void;
   closeWorkspaceWithSavedChanges: () => void;
   t: TFunction;
@@ -36,6 +38,7 @@ type UseBillingFormSubmissionParams = {
 export const useBillingFormSubmission = ({
   activeVisit,
   billingVisitAttributeTypes,
+  billingTypes,
   mutateVisit,
   closeWorkspaceWithSavedChanges,
   t,
@@ -43,6 +46,7 @@ export const useBillingFormSubmission = ({
   isEditMode = false,
 }: UseBillingFormSubmissionParams) => {
   const { currentProvider } = useSession();
+  const { cardValidity } = useConfig<ClinicalWorkflowConfig>();
   const cashierUuid = currentProvider?.uuid;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,6 +112,19 @@ export const useBillingFormSubmission = ({
           }
         }
 
+        // Only record consultation date in MRU if the patient has a non-cash payment method (CBHI, Credit, Waiver, Free, Exempt).
+        // Cash/Paying patients must pay at the cashier before their consultation date is updated.
+        const selectedMode = billingTypes?.find((type) => type.uuid === data.billingTypeUuid);
+        const isNonCash = Boolean(selectedMode?.name && !/cash|paying/i.test(selectedMode.name));
+
+        if (isNonCash && cardValidity?.lastConsultationDateAttributeTypeUuid && data.billableItem) {
+          try {
+            await saveLastConsultationDate(patientUuid, cardValidity.lastConsultationDateAttributeTypeUuid);
+          } catch (cardErr) {
+            console.error('Failed to update last consultation date attribute', cardErr);
+          }
+        }
+
         // Update visit attributes
         const visitAttributePayload = createBillingInformationVisitAttribute(data, billingVisitAttributeTypes);
         const response = await updateVisitWithBillingInformation(
@@ -150,6 +167,8 @@ export const useBillingFormSubmission = ({
       patientUuid,
       cashierUuid,
       isEditMode,
+      billingTypes,
+      cardValidity?.lastConsultationDateAttributeTypeUuid,
     ],
   );
 
