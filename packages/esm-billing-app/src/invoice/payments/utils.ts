@@ -1,4 +1,7 @@
-import { LineItem, PaymentMethod, PaymentStatus } from '../../types';
+import dayjs from 'dayjs';
+import { mutate } from 'swr';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { BillingService, LineItem, PaymentMethod, PaymentStatus } from '../../types';
 
 /**
  * Checks if a specific billable item exists within a collection of billable items
@@ -265,4 +268,86 @@ export const createLineItemPaymentPayload = ({
         : [],
     lineItemsToMarkPaid: lineItemUuids,
   };
+};
+
+/**
+ * Saves or updates the patient's lastConsultationDate person attribute with today's date.
+ */
+export const saveLastConsultationDateForPatient = async (
+  patientUuid: string,
+  attributeTypeUuid: string,
+  dateStr?: string,
+) => {
+  if (!patientUuid || !attributeTypeUuid) {
+    return;
+  }
+  const dateValue = dateStr || dayjs().format('YYYY-MM-DD');
+
+  try {
+    const response = await openmrsFetch(
+      `${restBaseUrl}/person/${patientUuid}/attribute?v=custom:(uuid,value,attributeType:(uuid))`,
+    );
+    const existingAttrs =
+      (response?.data?.results as
+        | Array<{ uuid: string; value: string; attributeType?: { uuid: string } }>
+        | undefined) ?? [];
+    const existingAttr = existingAttrs.find((attr) => attr.attributeType?.uuid === attributeTypeUuid);
+
+    if (existingAttr?.uuid) {
+      await openmrsFetch(`${restBaseUrl}/person/${patientUuid}/attribute/${existingAttr.uuid}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ value: dateValue }),
+      });
+    } else {
+      await openmrsFetch(`${restBaseUrl}/person/${patientUuid}/attribute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          attributeType: attributeTypeUuid,
+          value: dateValue,
+        }),
+      });
+    }
+
+    // Invalidate person attribute cache so card validity is immediately detected across apps
+    mutate((key) => typeof key === 'string' && key.includes(`/person/${patientUuid}/attribute`), undefined, {
+      revalidate: true,
+    });
+  } catch (error) {
+    console.error('Failed to save last consultation date attribute', error);
+  }
+};
+
+/**
+ * Checks if any of the paid line items corresponds to a clinical consultation service,
+ * and if so, saves/updates the patient's Last Consultation Date person attribute.
+ */
+export const recordConsultationPaymentIfApplicable = async (
+  patientUuid: string,
+  paidLineItems: Array<LineItem>,
+  billableServices: Array<BillingService>,
+  attributeTypeUuid: string,
+) => {
+  if (!patientUuid || !attributeTypeUuid || !paidLineItems?.length || !billableServices?.length) {
+    return;
+  }
+
+  const hasConsultationItem = paidLineItems.some((item) => {
+    const serviceUuid = extractServiceIdentifier(item);
+    if (!serviceUuid) {
+      return false;
+    }
+    const service = billableServices.find((s) => s.uuid === serviceUuid);
+    const serviceTypeDisplay = service?.serviceType?.display?.toLowerCase() ?? '';
+    return serviceTypeDisplay === 'clinical consultation' || serviceTypeDisplay.includes('consultation');
+  });
+
+  if (hasConsultationItem) {
+    await saveLastConsultationDateForPatient(patientUuid, attributeTypeUuid);
+  }
 };

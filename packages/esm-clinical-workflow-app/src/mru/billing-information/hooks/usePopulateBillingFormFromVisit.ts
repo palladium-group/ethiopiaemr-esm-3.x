@@ -23,6 +23,8 @@ type UsePopulateBillingFormFromVisitParams = {
   billingTypes: Array<{ uuid: string; name?: string }>;
   billingVisitAttributeTypes: ClinicalWorkflowConfig['billingVisitAttributeTypes'];
   setValue: UseFormSetValue<BillingFormData>;
+  hasValidCard?: boolean;
+  lastVisitPaymentMethodUuid?: string | null;
 };
 
 /**
@@ -33,9 +35,37 @@ export const usePopulateBillingFormFromVisit = ({
   billingTypes,
   billingVisitAttributeTypes,
   setValue,
+  hasValidCard = false,
+  lastVisitPaymentMethodUuid,
 }: UsePopulateBillingFormFromVisitParams) => {
   // Track if form has been populated from visit attributes
   const hasPopulatedFormRef = useRef(false);
+
+  // If active visit has no payment method yet, but the patient's card is valid,
+  // auto-populate the payment method from their previous visit
+  useEffect(() => {
+    if (!hasValidCard || !lastVisitPaymentMethodUuid || !billingTypes || billingTypes.length === 0) {
+      return;
+    }
+
+    const hasActivePaymentMethod = activeVisit?.attributes?.some(
+      (attr) => attr.attributeType.uuid === billingVisitAttributeTypes.paymentMethod,
+    );
+
+    if (!hasActivePaymentMethod && !hasPopulatedFormRef.current) {
+      const matchingType = billingTypes.find((bt) => bt.uuid === lastVisitPaymentMethodUuid);
+      if (matchingType) {
+        setValue('billingTypeUuid', lastVisitPaymentMethodUuid, { shouldDirty: true });
+      }
+    }
+  }, [
+    hasValidCard,
+    lastVisitPaymentMethodUuid,
+    activeVisit?.attributes,
+    billingTypes,
+    billingVisitAttributeTypes?.paymentMethod,
+    setValue,
+  ]);
 
   // Populate form with existing billing information from visit attributes
   useEffect(() => {

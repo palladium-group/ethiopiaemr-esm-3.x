@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { QueueEntry } from '../types';
 import QueuePriority, { type PriorityConfig } from './components/queue-priority.component';
 import { useQueueEntryBillingStatus } from './useQueueEntryBillingStatus';
+import { useQueueEntryBillingContext } from './queue-entry-billing-context';
 import styles from './service-queue-table.scss';
 
 const extensionColumnIds = new Set(['transfer-status', 'room-assignment', 'actions']);
@@ -85,7 +86,9 @@ interface FilteredQueueTableCellProps {
 
 function QueuePatientNameCell({ queueEntry, config }: { queueEntry: QueueEntry; config: ServiceQueuesTableConfig }) {
   const { t } = useTranslation();
-  const billingStatus = useQueueEntryBillingStatus(queueEntry);
+  const contextBillingStatus = useQueueEntryBillingContext();
+  const fallbackBillingStatus = useQueueEntryBillingStatus(contextBillingStatus ? null : queueEntry);
+  const billingStatus = contextBillingStatus ?? fallbackBillingStatus;
   const patientDisplayName = queueEntry.patient?.person?.display ?? queueEntry.patient?.display ?? '--';
 
   if (!billingStatus.isCleared) {
@@ -101,27 +104,31 @@ function QueuePatientNameCell({ queueEntry, config }: { queueEntry: QueueEntry; 
     };
 
     return (
-      <span
-        role="button"
-        tabIndex={0}
-        onClick={handleBlockedClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            handleBlockedClick(e as unknown as React.MouseEvent);
-          }
-        }}
-        className={styles.blockedPatientNameLink}
-        title={billingStatus.message}>
-        <Money size={16} className={styles.blockedMoneyIcon} />
-        <span>{patientDisplayName}</span>
+      <span className={styles.patientNameCell}>
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={handleBlockedClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              handleBlockedClick(e as unknown as React.MouseEvent);
+            }
+          }}
+          className={styles.blockedPatientNameLink}
+          title={billingStatus.message}>
+          <Money size={16} className={styles.blockedMoneyIcon} />
+          <span>{patientDisplayName}</span>
+        </span>
       </span>
     );
   }
 
   return (
-    <ConfigurableLink to={config.customPatientChartUrl} templateParams={{ patientUuid: queueEntry.patient.uuid }}>
-      {patientDisplayName}
-    </ConfigurableLink>
+    <span className={styles.patientNameCell}>
+      <ConfigurableLink to={config.customPatientChartUrl} templateParams={{ patientUuid: queueEntry.patient.uuid }}>
+        {patientDisplayName}
+      </ConfigurableLink>
+    </span>
   );
 }
 

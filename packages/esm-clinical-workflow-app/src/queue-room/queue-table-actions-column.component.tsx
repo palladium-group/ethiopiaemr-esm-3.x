@@ -7,6 +7,7 @@ import { useMutateServiceQueueEntries } from './service-queue-entries.resource';
 import { serveQueueEntry } from './service-queues-api.resource';
 import QueueTableRoomActionMenu from './queue-table-room-action-menu.extension';
 import { useQueueEntryBillingStatus } from './useQueueEntryBillingStatus';
+import { useQueueEntryBillingContext } from './queue-entry-billing-context';
 import styles from './queue-table-actions-column.scss';
 
 interface ServiceQueuesActionConfig {
@@ -235,7 +236,9 @@ interface QueueTableActionsColumnProps {
 const QueueTableActionsColumn: React.FC<QueueTableActionsColumnProps> = ({ queueEntry }) => {
   const layout = useLayoutType();
   const actionPropsByKey = useActionPropsByKey();
-  const billingStatus = useQueueEntryBillingStatus(queueEntry);
+  const contextBillingStatus = useQueueEntryBillingContext();
+  const fallbackBillingStatus = useQueueEntryBillingStatus(contextBillingStatus ? null : queueEntry);
+  const billingStatus = contextBillingStatus ?? fallbackBillingStatus;
 
   const [buttonComponents, overflowMenuComponents] = useMemo(() => {
     const declaredButtonComponents = ACTION_BUTTONS.map((actionKey) => {

@@ -18,7 +18,7 @@ type QueueEntryResponse = FetchResponse<{
  * Omits visit.encounters (obs, diagnoses, providers) which the table never displays.
  */
 export const serviceQueueEntryRep =
-  'custom:(uuid,display,queue:(uuid,display,name,location:(uuid,display)),status:(uuid,display),patient:(uuid,display,person:(uuid,display,birthdate),identifiers:(uuid,display,identifier,identifierType:(uuid,display))),visit:(uuid,display,startDatetime,attributes:(uuid,display,value,attributeType:(uuid,display))),priority:(uuid,display),priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor:(uuid,display),queueComingFrom:(uuid,display),providerWaitingFor:(uuid,display),previousQueueEntry:(uuid,display))';
+  'custom:(uuid,display,queue:(uuid,display,name,location:(uuid,display)),status:(uuid,display),patient:(uuid,display,person:(uuid,display,birthdate,attributes:(uuid,value,attributeType:(uuid,display))),identifiers:(uuid,display,identifier,identifierType:(uuid,display))),visit:(uuid,display,startDatetime,attributes:(uuid,display,value,attributeType:(uuid,display))),priority:(uuid,display),priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor:(uuid,display),queueComingFrom:(uuid,display),providerWaitingFor:(uuid,display),previousQueueEntry:(uuid,display))';
 
 function getInitialUrl(rep: string, searchCriteria?: QueueEntrySearchCriteria) {
   const searchParam = new URLSearchParams();

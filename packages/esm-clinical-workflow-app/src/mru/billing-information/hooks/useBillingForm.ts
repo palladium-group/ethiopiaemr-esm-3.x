@@ -4,10 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { TFunction } from 'i18next';
 import { createBillingFormSchema, type BillingFormData } from '../billing-information.resource';
 
-export const useBillingForm = (t: TFunction, billingTypes: any[], isEditMode = false) => {
+export const useBillingForm = (t: TFunction, billingTypes: any[], isEditMode = false, hasValidCard = false) => {
   const billingFormSchema = useMemo(
-    () => createBillingFormSchema(t, billingTypes, isEditMode),
-    [t, billingTypes, isEditMode],
+    () => createBillingFormSchema(t, billingTypes, isEditMode, hasValidCard),
+    [t, billingTypes, isEditMode, hasValidCard],
   );
 
   const form = useForm<BillingFormData>({

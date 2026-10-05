@@ -170,3 +170,27 @@
   color: colors.$red-60;
   flex-shrink: 0;
 }
+
+.patientNameColumn {
+  width: 22%;
+  min-width: 14rem;
+  max-width: 24rem;
+}
+
+.roomColumn {
+  width: 7%;
+  min-width: 4.5rem;
+  max-width: 7.5rem;
+}
+
+.patientNameCell {
+  display: block;
+  min-width: 13rem;
+  white-space: normal;
+  word-break: normal;
+
+  a {
+    color: inherit;
+    display: inline-block;
+  }
+}
