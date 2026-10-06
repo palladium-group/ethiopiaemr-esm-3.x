@@ -1,18 +1,20 @@
-import { InlineLoading } from '@carbon/react';
+import { InlineLoading, Tab, TabList, TabPanel, TabPanels, Tabs, Tag } from '@carbon/react';
+import classNames from 'classnames';
 import { ExtensionSlot, formatDatetime, parseDate, usePatient, useVisit } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useBill } from '../billing.resource';
 import { usePaymentsReconciler } from '../hooks/use-payments-reconciler';
 import { LineItem, MappedBill } from '../types';
-import InvoiceTable from './invoice-table.component';
 import styles from './invoice.scss';
-import Payments from './payments/payments.component';
+import InvoiceCheckout from './checkout/invoice-checkout.component';
+import PaymentChannelButtons from './payment-channel-buttons.component';
 import capitalize from 'lodash-es/capitalize';
 import { InvoiceActions } from './invoice-actions.component';
 import { useCurrencyFormatting } from '../helpers/currency';
+import BillTimeline, { paymentStatusTagType } from './timeline/bill-timeline.component';
 
 const Invoice: React.FC = () => {
   const { t } = useTranslation();
@@ -21,21 +23,14 @@ const Invoice: React.FC = () => {
   const { bill, isLoading: isLoadingBill, error: billingError } = useBill(billUuid);
   usePaymentsReconciler(billUuid);
   const { activeVisit, isLoading: isVisitLoading, error: visitError } = useVisit(patientUuid);
-  const [selectedLineItems, setSelectedLineItems] = useState([]);
+  // The ticked line items, reported by the checkout so the Telebirr and EthSwitch buttons act on them.
+  const [selectedLineItems, setSelectedLineItems] = useState<Array<LineItem>>([]);
 
-  const handleSelectItem = (lineItems: Array<LineItem>) => {
-    const paidLineItems = bill?.lineItems?.filter((item) => item.paymentStatus === 'PAID') ?? [];
-    const uniqueLineItems = [...new Set([...lineItems, ...paidLineItems])];
-    setSelectedLineItems(uniqueLineItems);
-  };
+  // useBill returns an empty bill while its cached data is cleared for a refetch (the bill mutations clear
+  // every cashier/bill key), so wait for a real bill instead of rendering one without line items.
+  const isBillMissing = !billingError && !bill?.uuid;
 
-  useEffect(() => {
-    // Select all line items by default
-    setSelectedLineItems(bill?.lineItems ?? []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bill?.lineItems?.length]);
-
-  if (isLoadingPatient || isLoadingBill || isVisitLoading) {
+  if (isLoadingPatient || isLoadingBill || isVisitLoading || isBillMissing) {
     return (
       <div className={styles.invoiceContainer}>
         <InlineLoading
@@ -64,14 +59,30 @@ const Invoice: React.FC = () => {
       {patient && patientUuid && (
         <ExtensionSlot name="patient-header-slot" state={{ patient, patientUuid, hideActionsOverflow: true }} />
       )}
-      <InvoiceSummary bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
-      <InvoiceTable bill={bill} isLoadingBill={isLoadingBill} onSelectItem={handleSelectItem} />
-      <Payments bill={bill} selectedLineItems={selectedLineItems} />
+      <InvoiceHeader bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
+      <Tabs>
+        <TabList className={styles.invoiceTabs} aria-label={t('invoiceSections', 'Invoice sections')} contained>
+          <Tab>
+            {t('itemsAndPayment', 'Items & payment')} ({bill?.lineItems?.length ?? 0})
+          </Tab>
+          <Tab>{t('timeline', 'Timeline')}</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel className={styles.invoiceTabPanel}>
+            <InvoiceCheckout bill={bill} onSelectItem={setSelectedLineItems} />
+          </TabPanel>
+          <TabPanel className={styles.invoiceTabPanel}>
+            <div className={styles.timelineCard}>
+              <BillTimeline bill={bill} />
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </div>
   );
 };
 
-export function InvoiceSummary({
+export function InvoiceHeader({
   bill,
   selectedLineItems,
   activeVisit,
@@ -83,51 +94,64 @@ export function InvoiceSummary({
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
 
-  return (
-    <>
-      <div className={styles.invoiceSummary}>
-        <span className={styles.invoiceSummaryTitle}>{t('invoiceSummary', 'Invoice Summary')}</span>
-        <InvoiceActions bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
-      </div>
-      <div className={styles.invoiceSummaryContainer}>
-        <div className={styles.invoiceCard}>
-          <InvoiceSummaryItem label={t('invoiceNumber', 'Invoice Number')} value={bill.receiptNumber} />
-          <InvoiceSummaryItem
-            label={t('dateAndTime', 'Date And Time')}
-            value={formatDatetime(parseDate(bill.dateCreated), { mode: 'standard', noToday: true })}
-          />
-          <InvoiceSummaryItem label={t('invoiceStatus', 'Invoice Status')} value={bill?.status} />
-          <InvoiceSummaryItem label={t('cashPoint', 'Cash Point')} value={bill?.cashPointName} />
-          <InvoiceSummaryItem label={t('cashier', 'Cashier')} value={capitalize(bill?.cashier?.display)} />
-        </div>
-        <div className={styles.divider} />
-        <div className={styles.invoiceCard}>
-          <InvoiceSummaryItem label={t('totalAmount', 'Total Amount')} value={formatCurrency(bill?.totalAmount)} />
-          <InvoiceSummaryItem
-            label={t('totalExempted', 'Total Exempted')}
-            value={formatCurrency(bill?.totalExempted)}
-          />
-          <InvoiceSummaryItem
-            label={t('totalPayments', 'Total Payments')}
-            value={formatCurrency(bill?.totalPayments)}
-          />
-          <InvoiceSummaryItem
-            label={t('totalDeposits', 'Total Deposits')}
-            value={formatCurrency(bill?.totalDeposits)}
-          />
-          <InvoiceSummaryItem label={t('balance', 'Balance')} value={formatCurrency(bill?.balance)} />
-        </div>
-      </div>
-    </>
-  );
-}
+  const details = [
+    {
+      label: t('dateAndTime', 'Date And Time'),
+      value: formatDatetime(parseDate(bill.dateCreatedUnformatted), { mode: 'standard', noToday: true }),
+    },
+    { label: t('cashPoint', 'Cash Point'), value: bill?.cashPointName },
+    { label: t('cashier', 'Cashier'), value: capitalize(bill?.cashier?.display) },
+  ];
 
-export function InvoiceSummaryItem({ label, value }: { readonly label: string; readonly value: string | number }) {
+  const figures = [
+    { label: t('totalAmount', 'Total Amount'), value: bill?.totalAmount },
+    { label: t('totalPayments', 'Total Payments'), value: bill?.totalPayments },
+    { label: t('totalExempted', 'Total Exempted'), value: bill?.totalExempted },
+    { label: t('totalDeposits', 'Total Deposits'), value: bill?.totalDeposits },
+  ];
+
   return (
-    <div className={styles.invoiceSummaryItem}>
-      <span className={styles.label}>{label}</span>
-      <span className={styles.value}>{value}</span>
-    </div>
+    <header className={styles.invoiceHeader}>
+      <div className={styles.invoiceHeaderTop}>
+        <div>
+          <h4 className={styles.invoiceTitle}>
+            {t('invoice', 'Invoice')} {bill.receiptNumber}
+            <Tag size="sm" type={paymentStatusTagType(bill?.status)}>
+              {bill?.status}
+            </Tag>
+            {bill?.closed && (
+              <Tag size="sm" type="gray">
+                {t('closed', 'Closed')}
+              </Tag>
+            )}
+          </h4>
+          <dl className={styles.invoiceDetails}>
+            {details.map(({ label, value }) => (
+              <div key={label} className={styles.invoiceDetail}>
+                <dt>{label}</dt>
+                <dd>{value || '--'}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div className={styles.invoiceHeaderActions}>
+          <InvoiceActions bill={bill} activeVisit={activeVisit} />
+          <PaymentChannelButtons bill={bill} selectedLineItems={selectedLineItems} />
+        </div>
+      </div>
+      <dl className={styles.invoiceFigures}>
+        {figures.map(({ label, value }) => (
+          <div key={label} className={styles.invoiceFigure}>
+            <dt>{label}</dt>
+            <dd>{formatCurrency(value ?? 0)}</dd>
+          </div>
+        ))}
+        <div className={classNames(styles.invoiceFigure, styles.invoiceBalance)}>
+          <dt>{t('balance', 'Balance')}</dt>
+          <dd>{formatCurrency(bill?.balance ?? 0)}</dd>
+        </div>
+      </dl>
+    </header>
   );
 }
 

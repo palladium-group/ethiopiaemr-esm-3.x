@@ -1,0 +1,98 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.message {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+}
+
+.day {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: layout.$spacing-04;
+}
+
+.events {
+  list-style: none;
+  margin: 0 0 0 layout.$spacing-02;
+  padding: 0;
+  border-left: 2px solid colors.$gray-20;
+}
+
+.event {
+  position: relative;
+  padding: 0 0 layout.$spacing-05 layout.$spacing-05;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.dot {
+  position: absolute;
+  left: -7px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: colors.$gray-50;
+  border: 2px solid colors.$white;
+}
+
+.opened .dot {
+  background-color: colors.$blue-60;
+}
+
+.itemAdded .dot {
+  background-color: colors.$gray-60;
+}
+
+.payment .dot {
+  background-color: colors.$green-50;
+}
+
+.closed .dot {
+  background-color: colors.$gray-100;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+}
+
+.title {
+  @include type.type-style('heading-compact-01');
+}
+
+.amount {
+  @include type.type-style('body-compact-01');
+  white-space: nowrap;
+}
+
+.payment .amount {
+  color: colors.$green-60;
+}
+
+.meta {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
+.actor {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+}

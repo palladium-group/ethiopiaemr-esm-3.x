@@ -98,55 +98,154 @@
   }
 }
 
-.invoiceSummaryContainer {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: layout.$spacing-05;
-  margin: 0 layout.$spacing-05 layout.$spacing-05 layout.$spacing-05;
-  background-color: colors.$white;
+.invoiceHeader {
+  margin: layout.$spacing-05 layout.$spacing-05 0 layout.$spacing-05;
   padding: layout.$spacing-05;
-
-  .divider {
-    width: 1px;
-    background-color: colors.$gray-20;
-    margin: 0 layout.$spacing-05;
-  }
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
 }
 
-.invoiceSummaryItem {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: layout.$spacing-05;
-  justify-content: center;
-
-  .label {
-    @include type.type-style('legal-02');
-    color: colors.$gray-70;
-  }
-
-  .value {
-    @include type.type-style('heading-01');
-    color: colors.$gray-70;
-  }
-}
-
-.invoiceSummary {
+.invoiceHeaderTop {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin: layout.$spacing-05 layout.$spacing-05 0 layout.$spacing-05;
-  background-color: colors.$white;
-  border-bottom: 1px solid colors.$gray-20;
-  padding: layout.$spacing-01 layout.$spacing-04;
+  align-items: flex-start;
+  gap: layout.$spacing-05;
+}
 
-  .invoiceSummaryActions {
-    display: flex;
-    gap: layout.$spacing-04;
+.invoiceHeaderActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: layout.$spacing-03;
+}
+
+// Telebirr and EthSwitch: logo-only buttons, one per row.
+.paymentChannels {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: layout.$spacing-03;
+}
+
+.paymentChannel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 9rem;
+  height: 2.5rem;
+  padding: layout.$spacing-02 layout.$spacing-04;
+  border: 1px solid colors.$gray-30;
+  border-radius: layout.$spacing-02;
+  cursor: pointer;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
   }
-  .invoiceSummaryTitle {
-    @include type.type-style('heading-01');
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 0 0 2px colors.$blue-60;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.telebirrChannel {
+  background-color: colors.$white;
+}
+
+// The EthSwitch logo is white lettering, so it needs a dark background.
+.ethSwitchChannel {
+  background-color: #14172b;
+  border-color: #14172b;
+}
+
+.invoiceTitle {
+  @include type.type-style('heading-03');
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-04;
+}
+
+.invoiceDetails {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.invoiceDetail {
+  padding: 0 layout.$spacing-06;
+  border-left: 1px solid colors.$gray-20;
+
+  &:first-child {
+    padding-left: 0;
+    border-left: none;
+  }
+
+  dt {
+    @include type.type-style('label-01');
     color: colors.$gray-70;
+    margin-bottom: layout.$spacing-01;
   }
+
+  dd {
+    @include type.type-style('body-compact-01');
+    color: colors.$gray-100;
+  }
+}
+
+.invoiceFigures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-07;
+  margin-top: layout.$spacing-05;
+  padding-top: layout.$spacing-05;
+  border-top: 1px solid colors.$gray-20;
+}
+
+.invoiceFigure {
+  dt {
+    @include type.type-style('label-01');
+    color: colors.$gray-70;
+    margin-bottom: layout.$spacing-02;
+  }
+
+  dd {
+    @include type.type-style('heading-02');
+  }
+}
+
+.invoiceBalance {
+  margin-left: auto;
+  text-align: right;
+
+  dd {
+    @include type.type-style('heading-04');
+  }
+}
+
+.invoiceTabs {
+  margin: layout.$spacing-05 layout.$spacing-05 0 layout.$spacing-05;
+}
+
+.invoiceTabPanel {
+  padding: 0;
+}
+
+.timelineCard {
+  margin: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
 }
 
 .popoverContent {

@@ -1,5 +1,6 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { z } from 'zod';
+import { isNonEmptyReportContent } from './report-content';
 
 /**
  * Strips Word-specific XML/MSO markup from pasted HTML while preserving
@@ -125,8 +126,8 @@ export const referOrderExternally = (orderUuid: string, referralReason: string, 
   });
 
 export const preliminaryReportSchema = z.object({
-  preliminaryReport: z.string().min(1, 'Preliminary report findings are required'),
-  preliminaryImpression: z.string().min(1, 'Preliminary impression is required'),
+  preliminaryReport: z.string().refine(isNonEmptyReportContent, 'Preliminary report findings are required'),
+  preliminaryImpression: z.string().refine(isNonEmptyReportContent, 'Preliminary impression is required'),
 });
 
 export type PreliminaryReportPayload = z.infer<typeof preliminaryReportSchema>;

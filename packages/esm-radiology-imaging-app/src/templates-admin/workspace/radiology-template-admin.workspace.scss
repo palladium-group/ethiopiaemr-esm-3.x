@@ -1,0 +1,62 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+}
+
+.formContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: layout.$spacing-05;
+}
+
+.editorLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+}
+
+.editorWrapper {
+  border: 1px solid colors.$gray-20;
+  overflow-y: auto;
+  min-height: 300px;
+  background-color: colors.$gray-10;
+}
+
+.editorArea {
+  outline: none;
+  padding: layout.$spacing-05;
+  min-height: 300px;
+  @include type.type-style('body-01');
+
+  p {
+    margin-bottom: layout.$spacing-03;
+  }
+
+  ul,
+  ol {
+    padding-left: layout.$spacing-06;
+    margin-bottom: layout.$spacing-03;
+  }
+}
+
+.tablet {
+  padding: layout.$spacing-06 layout.$spacing-05;
+  background-color: colors.$white;
+}
+
+.desktop {
+  padding: 0;
+
+  & button {
+    max-width: 50% !important;
+  }
+}
+
+.buttonContainer {
+  max-width: 50%;
+}

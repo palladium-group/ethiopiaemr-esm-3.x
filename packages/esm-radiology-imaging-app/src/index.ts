@@ -15,6 +15,7 @@ import { configSchema } from './config-schema';
 import { dashboardMeta, moduleName } from './dashboard.meta';
 import { createHomeDashboardLink } from './radiology-imaging/create-dashboard-link.component';
 import { createLeftPanelLink } from './radiology-imaging/create-left-panel-link.component';
+import RadiologyTemplatesAdminNavLink from './extensions/radiology-templates-admin-nav-link.extension';
 
 const options = {
   featureName: 'radiology-imaging',
@@ -144,6 +145,16 @@ export const referOrderExternalModal = getAsyncLifecycle(
   options,
 );
 
+export const templatePickerModal = getAsyncLifecycle(
+  () => import('./radiology-imaging/workspace/template-picker-modal.component'),
+  options,
+);
+
+export const voidTemplateModal = getAsyncLifecycle(
+  () => import('./templates-admin/home/void-template-modal.component'),
+  options,
+);
+
 export const rejectOrderModal = getAsyncLifecycle(
   () => import('./radiology-imaging/orders/reject-order-modal.component'),
   options,
@@ -152,4 +163,19 @@ export const rejectOrderModal = getAsyncLifecycle(
 export const radiologyImagingNavLink = getAsyncLifecycle(
   () => import('./radiology-imaging/radiology-imaging-nav-link.component'),
   options,
+);
+
+export const radiologyTemplatesAdminHome = getAsyncLifecycle(
+  () => import('./templates-admin/home/home.component'),
+  options,
+);
+
+export const radiologyTemplatesAdminNavLink = getSyncLifecycle(RadiologyTemplatesAdminNavLink, {
+  featureName: 'radiology-templates-admin-nav-link',
+  moduleName,
+});
+
+export const radiologyTemplateAdminWorkspace = getAsyncLifecycle(
+  () => import('./templates-admin/workspace/radiology-template-admin.workspace'),
+  { featureName: 'radiology-template-admin-workspace', moduleName },
 );

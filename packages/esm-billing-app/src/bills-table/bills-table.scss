@@ -187,3 +187,37 @@
 .scalpel {
   cursor: pointer;
 }
+
+// Line items shown under an expanded bill row
+.expandedRow > td {
+  padding-left: layout.$spacing-09;
+}
+
+.lineItemsTable {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    @include type.type-style('label-01');
+    color: $text-02;
+    text-align: left;
+    padding: layout.$spacing-03 layout.$spacing-04;
+  }
+
+  td {
+    @include type.type-style('body-compact-01');
+    padding: layout.$spacing-02 layout.$spacing-04;
+    border-top: 1px solid $ui-03;
+  }
+}
+
+.numeric {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.noLineItems {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  padding: layout.$spacing-03 layout.$spacing-04;
+}

@@ -14,6 +14,7 @@ export interface MappedBill {
   identifier: string;
   dateCreated: string;
   dateCreatedUnformatted: string;
+  visitStartDatetime?: string;
   lineItems: Array<LineItem>;
   billingService: string;
   payments: Array<Payment>;
@@ -27,6 +28,8 @@ export interface MappedBill {
   totalExempted?: number;
   balance?: number;
   closed?: boolean;
+  closeReason?: string;
+  dateClosed?: string;
 }
 
 interface LocationLink {
@@ -78,6 +81,9 @@ export interface LineItem {
   itemOrServiceConceptUuid: string;
   serviceTypeUuid: string;
   order: OpenmrsResource;
+  auditInfo?: { dateCreated?: string };
+  /** The urgency of the order the item was billed for; only in the full representation. */
+  orderUrgency?: string;
 }
 
 interface PatientLink {
@@ -147,6 +153,9 @@ export interface PatientInvoice {
   totalExempted?: number;
   balance?: number;
   closed?: boolean;
+  closeReason?: string;
+  dateClosed?: string;
+  visit?: { uuid: string; startDatetime: string } | null;
 }
 
 export interface PatientDetails {

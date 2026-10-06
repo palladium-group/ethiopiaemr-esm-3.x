@@ -159,6 +159,24 @@
     font-weight: 600;
   }
 
+  em {
+    font-style: italic;
+  }
+
+  u {
+    text-decoration: underline;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0 0 layout.$spacing-03;
+    font-weight: 600;
+  }
+
   ol,
   ul {
     padding-left: layout.$spacing-06;
@@ -167,6 +185,32 @@
 
   li {
     display: list-item;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.5rem 0;
+
+    td,
+    th {
+      padding: 0.25rem 0.5rem;
+      border: 1px solid #8d8d8d;
+      vertical-align: top;
+    }
+
+    th {
+      font-weight: 600;
+      text-align: left;
+      background-color: #f4f4f4;
+    }
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0.5rem 0;
   }
 }
 

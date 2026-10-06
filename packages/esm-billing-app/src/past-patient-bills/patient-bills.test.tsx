@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { usePatient } from '@openmrs/esm-framework';
-import { PatientBills, PatientHeader } from './patient-bills.component';
+import { PatientBills } from './patient-bills.component';
 import { mockPatient } from '../../../../__mocks__/patient.mock';
 import { MappedBill } from '../types';
 
@@ -20,8 +20,8 @@ jest.mock('@openmrs/esm-framework', () => ({
   )),
 }));
 
-jest.mock('../helpers', () => ({
-  convertToCurrency: jest.fn((amount) => `KES ${amount.toFixed(2)}`),
+jest.mock('../helpers/currency', () => ({
+  useCurrencyFormatting: () => ({ format: (amount: number) => `ETB ${Number(amount).toFixed(2)}` }),
 }));
 
 jest.mock('./patient-bills-dashboard/empty-patient-bill.component', () => {
@@ -151,6 +151,21 @@ describe('PatientBills', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
+  it('should render loading state while the bills are loading', () => {
+    render(<PatientBills bills={[]} isLoading onCancel={mockOnCancel} patientUuid={patientUuid} />);
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.queryByText('No bills found')).not.toBeInTheDocument();
+  });
+
+  it('should not show a patient other than the selected one', () => {
+    // usePatient can keep returning the previously selected patient.
+    render(<PatientBills bills={mockBills} onCancel={mockOnCancel} patientUuid="another-patient-uuid" />);
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.queryByText(/100GEJ|CP2-0011-0/)).not.toBeInTheDocument();
+  });
+
   it('should render empty state when there are no bills', () => {
     render(<PatientBills bills={[]} onCancel={mockOnCancel} patientUuid={patientUuid} />);
 
@@ -158,143 +173,56 @@ describe('PatientBills', () => {
     expect(screen.getByText('No bills found for this patient')).toBeInTheDocument();
   });
 
-  it('should render patient header with patient information', () => {
+  it('should render the bills table with the same columns as the bills list', () => {
     render(<PatientBills bills={mockBills} onCancel={mockOnCancel} patientUuid={patientUuid} />);
 
-    expect(screen.getByText('John Wilson')).toBeInTheDocument();
-    expect(screen.getByText('Male')).toBeInTheDocument();
-    expect(screen.getByText('100732HE')).toBeInTheDocument();
+    ['Date', 'Invoice Number', 'Priority', 'Billed Items', 'Total', 'Status'].forEach((header) => {
+      expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
+    });
+    expect(screen.getByText('Patient bill summary')).toBeInTheDocument();
   });
 
-  it('should render bills table with correct headers', () => {
+  it('should show each bill with its invoice number, item count, total and status', () => {
     render(<PatientBills bills={mockBills} onCancel={mockOnCancel} patientUuid={patientUuid} />);
 
-    expect(screen.getByText('Date')).toBeInTheDocument();
-    expect(screen.getByText('Charge Item')).toBeInTheDocument();
-    expect(screen.getByText('Total Amount')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
-  });
-
-  it('should render bill data in the table', () => {
-    render(<PatientBills bills={mockBills} onCancel={mockOnCancel} patientUuid={patientUuid} />);
-
-    expect(screen.getByText('HIV self-test kit')).toBeInTheDocument();
-    expect(screen.getByText('Medical Certificate')).toBeInTheDocument();
-    expect(screen.getByText('KES 500.00')).toBeInTheDocument();
-    expect(screen.getByText('KES 1000.00')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'CP2-0011-0' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'CP2-0012-0' })).toBeInTheDocument();
+    expect(screen.getAllByText('1 item')).toHaveLength(2);
+    expect(screen.getByText('ETB 500.00')).toBeInTheDocument();
+    expect(screen.getByText('ETB 1000.00')).toBeInTheDocument();
     expect(screen.getByText('PENDING')).toBeInTheDocument();
     expect(screen.getByText('PAID')).toBeInTheDocument();
   });
 
-  it('should render table title and description', () => {
-    render(<PatientBills bills={mockBills} onCancel={mockOnCancel} patientUuid={patientUuid} />);
+  it('should mark closed bills', () => {
+    render(
+      <PatientBills bills={[{ ...mockBills[1], closed: true }]} onCancel={mockOnCancel} patientUuid={patientUuid} />,
+    );
 
-    expect(screen.getByText(/patient bill summary/i)).toBeInTheDocument();
-    expect(screen.getByText(/a list of all bills for this patient/i)).toBeInTheDocument();
+    expect(screen.getByText('Closed')).toBeInTheDocument();
   });
 
-  it('should call onCancel when close button is clicked', async () => {
+  it('should list the line items of one bill at a time when its row is expanded', async () => {
     const user = userEvent.setup();
     render(<PatientBills bills={mockBills} onCancel={mockOnCancel} patientUuid={patientUuid} />);
 
-    const closeButton = screen.getByRole('button', { name: /close/i });
-    await user.click(closeButton);
+    expect(screen.queryByText('HIV self-test kit')).not.toBeInTheDocument();
 
-    expect(mockOnCancel).toHaveBeenCalledWith('');
+    await user.click(screen.getAllByRole('button', { name: /show line items/i })[0]);
+    expect(screen.getByText('HIV self-test kit')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /show line items/i }));
+    expect(screen.getByText('Medical Certificate')).toBeInTheDocument();
+    expect(screen.queryByText('HIV self-test kit')).not.toBeInTheDocument();
   });
 
-  it('should render charge items as links', () => {
+  it('should clear the selected patient with the clear search button', async () => {
+    const user = userEvent.setup();
     render(<PatientBills bills={mockBills} onCancel={mockOnCancel} patientUuid={patientUuid} />);
 
-    const links = screen.getAllByRole('link');
-    expect(links.length).toBeGreaterThan(0);
-    expect(links[0]).toHaveAttribute('href', expect.stringContaining('8673ee4f-e2ab-4077-ba55-4980f408773e'));
-  });
+    expect(screen.queryByRole('button', { name: /^close$/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /clear search/i }));
 
-  it('should handle bills with multiple line items correctly', () => {
-    const billWithMultipleItems: MappedBill = {
-      ...mockBills[0],
-      lineItems: [
-        mockBills[0].lineItems[0],
-        {
-          uuid: '8ff72ef2-4265-4fdb-8563-a3a2eefa484e',
-          display: 'BillLineItem',
-          billableService: 'uuid3:Lab Test',
-          voided: false,
-          voidReason: null,
-          item: 'Lab Test',
-          quantity: 1,
-          price: 300.0,
-          priceName: '',
-          priceUuid: '',
-          lineItemOrder: 1,
-          resourceVersion: '1.8',
-          paymentStatus: 'PENDING',
-          itemOrServiceConceptUuid: '',
-          serviceTypeUuid: '',
-          order: null,
-        },
-      ],
-    };
-
-    render(<PatientBills bills={[billWithMultipleItems]} onCancel={mockOnCancel} patientUuid={patientUuid} />);
-
-    expect(screen.getByText(/HIV self-test kit, Lab Test/i)).toBeInTheDocument();
-  });
-});
-
-describe('PatientHeader', () => {
-  const mockOnCancel = jest.fn();
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should render patient name, gender, and identifier', () => {
-    render(<PatientHeader patient={mockPatient as any} onCancel={mockOnCancel} />);
-
-    expect(screen.getByText('John Wilson')).toBeInTheDocument();
-    expect(screen.getByText('Male')).toBeInTheDocument();
-    expect(screen.getByText('100732HE')).toBeInTheDocument();
-  });
-
-  it('should render close button', () => {
-    render(<PatientHeader patient={mockPatient as any} onCancel={mockOnCancel} />);
-
-    const closeButton = screen.getByRole('button', { name: /close/i });
-    expect(closeButton).toBeInTheDocument();
-  });
-
-  it('should call onCancel with empty string when close button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<PatientHeader patient={mockPatient as any} onCancel={mockOnCancel} />);
-
-    const closeButton = screen.getByRole('button', { name: /close/i });
-    await user.click(closeButton);
-
-    expect(mockOnCancel).toHaveBeenCalledWith('');
-    expect(mockOnCancel).toHaveBeenCalledTimes(1);
-  });
-
-  it('should display -- when patient identifier is not available', () => {
-    const patientWithoutIdentifier = {
-      ...mockPatient,
-      identifier: [],
-    };
-
-    render(<PatientHeader patient={patientWithoutIdentifier as any} onCancel={mockOnCancel} />);
-
-    expect(screen.getByText('--')).toBeInTheDocument();
-  });
-
-  it('should capitalize patient gender', () => {
-    const patientWithLowercaseGender = {
-      ...mockPatient,
-      gender: 'female',
-    };
-
-    render(<PatientHeader patient={patientWithLowercaseGender as any} onCancel={mockOnCancel} />);
-
-    expect(screen.getByText('Female')).toBeInTheDocument();
+    expect(mockOnCancel).toHaveBeenCalledWith(undefined);
   });
 });

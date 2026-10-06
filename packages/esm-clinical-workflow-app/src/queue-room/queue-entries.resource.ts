@@ -160,7 +160,12 @@ export function useQueueLocations() {
   const { data, error, isLoading } = useFhirFetchAll<fhir.Location>(apiUrl);
 
   const queueLocations = useMemo(
-    () => data?.map((location) => location).sort((a, b) => a.name.localeCompare(b.name, getLocale())) ?? [],
+    () =>
+      // A FHIR result page with no entries comes through as an undefined item, so drop anything that is not
+      // a location before sorting and listing them.
+      data
+        ?.filter((location) => Boolean(location))
+        .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', getLocale())) ?? [],
     [data],
   );
 
