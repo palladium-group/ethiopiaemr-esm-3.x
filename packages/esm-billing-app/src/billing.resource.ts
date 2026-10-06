@@ -5,6 +5,7 @@ import {
   parseDate,
   restBaseUrl,
   useConfig,
+  useOpenmrsFetchAll,
   useSession,
   useVisit,
 } from '@openmrs/esm-framework';
@@ -36,6 +37,9 @@ export const mapBillProperties = (bill: PatientInvoice): MappedBill => {
     cashPointLocation: bill?.cashPoint?.location?.display,
     dateCreated: bill?.dateCreated ? formatDate(parseDate(bill?.dateCreated), { mode: 'wide' }) : '--',
     dateCreatedUnformatted: bill?.dateCreated,
+    visitStartDatetime: bill?.visit?.startDatetime
+      ? formatDate(parseDate(bill.visit.startDatetime), { mode: 'wide' })
+      : undefined,
     lineItems: bill?.lineItems.filter((li) => !li?.voided),
     billingService: extractString(
       bill?.lineItems.map((bill) => bill?.item || bill?.billableService || '--').join('  '),
@@ -64,6 +68,8 @@ export const mapBillProperties = (bill: PatientInvoice): MappedBill => {
     totalDeposits: bill?.totalDeposits,
     totalExempted: bill?.totalExempted,
     closed: bill?.closed,
+    closeReason: bill?.closeReason,
+    dateClosed: bill?.dateClosed,
   };
 
   return mappedBill;
@@ -75,20 +81,25 @@ export const useBills = (
   startingDate: Date = dayjs().startOf('day').toDate(),
   endDate: Date = dayjs().endOf('day').toDate(),
 ) => {
-  const startingDateISO = startingDate.toISOString();
-  const endDateISO = endDate.toISOString();
+  // The server widens both bounds to whole days, so send plain local calendar dates. Sending UTC instants
+  // (toISOString) shifts the window back a day for clients east of UTC.
+  const fromDate = dayjs(startingDate).format('YYYY-MM-DD');
+  const toDate = dayjs(endDate).format('YYYY-MM-DD');
 
-  const url = `${restBaseUrl}/cashier/bill?status=${billStatus}&v=custom:(uuid,display,status,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems,patient:(uuid,display))&createdOnOrAfter=${startingDateISO}&createdOnOrBefore=${endDateISO}`;
+  const url = `${restBaseUrl}/cashier/bill?status=${billStatus}&v=custom:(uuid,display,status,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems,payments,patient:(uuid,display))&createdOnOrAfter=${fromDate}&createdOnOrBefore=${toDate}`;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Array<PatientInvoice> } }>(
-    patientUuid ? `${url}&patientUuid=${patientUuid}` : url,
-    openmrsFetch,
-    {
-      errorRetryCount: 2,
-    },
-  );
+  // The endpoint is paginated; fetch every page so totals and lists are not cut off at the first page.
+  const {
+    data: results,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  } = useOpenmrsFetchAll<PatientInvoice>(patientUuid ? `${url}&patientUuid=${patientUuid}` : url, {
+    swrInfiniteConfig: { errorRetryCount: 2 },
+  });
 
-  const sortBills = sortBy(data?.data?.results ?? [], ['dateCreated']).reverse();
+  const sortBills = sortBy(results ?? [], ['dateCreated']).reverse();
   const filteredBills = billStatus === '' ? sortBills : sortBills?.filter((bill) => bill?.status === billStatus);
   const mappedResults = filteredBills?.map((bill) => mapBillProperties(bill));
   const filteredResults = mappedResults?.filter((res) => res.patientUuid === patientUuid);
@@ -101,6 +112,90 @@ export const useBills = (
     isValidating,
     mutate,
   };
+};
+
+type UsePagedBillsParams = {
+  billStatus?: PaymentStatus | '' | string;
+  searchTerm?: string;
+  page?: number;
+  pageSize?: number;
+  startingDate?: Date;
+  endDate?: Date;
+};
+
+/**
+ * Fetches one page of bills created in the given window (today by default), letting the server do the
+ * filtering, searching (patient name, identifier or invoice number) and paging so that no bills are silently dropped.
+ */
+export const usePagedBills = ({
+  billStatus = '',
+  searchTerm = '',
+  page = 1,
+  pageSize = 10,
+  startingDate = dayjs().startOf('day').toDate(),
+  endDate = dayjs().endOf('day').toDate(),
+}: UsePagedBillsParams = {}) => {
+  const startIndex = (page - 1) * pageSize;
+  const trimmedSearch = searchTerm.trim();
+
+  // The server widens both bounds to whole days, so send plain local calendar dates. Sending UTC instants
+  // (toISOString) shifts the window back a day for clients east of UTC, pulling in yesterday's bills.
+  const fromDate = dayjs(startingDate).format('YYYY-MM-DD');
+  const toDate = dayjs(endDate).format('YYYY-MM-DD');
+
+  // lineItems:full is needed for auditInfo.dateCreated; the line item resource ignores a custom field list.
+  const url =
+    `${restBaseUrl}/cashier/bill?status=${billStatus}` +
+    `&v=custom:(uuid,display,receiptNumber,status,closed,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems:full,patient:(uuid,display),visit:(uuid,startDatetime))` +
+    `&createdOnOrAfter=${fromDate}&createdOnOrBefore=${toDate}` +
+    // Also match older bills that had line items added in the window (bills are reused across days).
+    `&includeLineItemActivity=true` +
+    `&startIndex=${startIndex}&limit=${pageSize}` +
+    // searchReceiptNumber makes the free-text search match the invoice number as well as the patient.
+    (trimmedSearch ? `&q=${encodeURIComponent(trimmedSearch)}&searchReceiptNumber=true` : '');
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{
+    data: { results: Array<PatientInvoice>; totalCount?: number };
+  }>(url, openmrsFetch, { errorRetryCount: 2, keepPreviousData: true });
+
+  const results = data?.data?.results;
+
+  return {
+    bills: results?.map((bill) => mapBillProperties(bill)),
+    totalCount: data?.data?.totalCount ?? results?.length ?? 0,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  };
+};
+
+/**
+ * Fetches every bill of one patient, newest first, with the fields the bills tables show: invoice number,
+ * closed state, and line items in full (creation date and order priority).
+ */
+export const usePatientBillsWithLineItems = (patientUuid?: string) => {
+  // lineItems:full is needed for auditInfo.dateCreated and orderUrgency; the line item resource ignores a
+  // custom field list.
+  const url =
+    `${restBaseUrl}/cashier/bill?patientUuid=${patientUuid}` +
+    `&v=custom:(uuid,display,receiptNumber,status,closed,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems:full,patient:(uuid,display))`;
+
+  const {
+    data: results,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  } = useOpenmrsFetchAll<PatientInvoice>(patientUuid ? url : null, { swrInfiniteConfig: { errorRetryCount: 2 } });
+
+  const bills = sortBy(results ?? [], ['dateCreated'])
+    .reverse()
+    .map((bill) => mapBillProperties(bill))
+    // Never show another patient's bills, whatever the server returned.
+    .filter((bill) => bill.patientUuid === patientUuid);
+
+  return { bills, error, isLoading, isValidating, mutate };
 };
 
 export const useBill = (billUuid: string) => {
@@ -146,6 +241,8 @@ export const useBill = (billUuid: string) => {
         ?.reduce((prev, curr) => prev + curr?.price * curr?.quantity, 0),
       balance: bill?.balance,
       closed: bill?.closed,
+      closeReason: bill?.closeReason,
+      dateClosed: bill?.dateClosed,
     };
 
     return mappedBill;

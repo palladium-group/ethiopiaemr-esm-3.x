@@ -1,8 +1,11 @@
-import React, { Dispatch, SetStateAction } from 'react';
+import React, { useState } from 'react';
 import {
   DataTable,
   TableContainer,
   Table,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableExpandRow,
   TableHead,
   TableRow,
   TableHeader,
@@ -10,6 +13,7 @@ import {
   TableCell,
   Button,
   InlineLoading,
+  Tag,
 } from '@carbon/react';
 import { Add, Close } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +21,8 @@ import { ConfigurableLink, getPatientName, usePatient, useVisit, launchWorkspace
 import capitalize from 'lodash/capitalize';
 
 import { type MappedBill } from '../types';
+import BillLineItems, { lineItemTotal } from '../bills-table/bill-line-items.component';
+import { BillPriority } from '../bills-table/order-priority';
 import EmptyPatientBill from './patient-bills-dashboard/empty-patient-bill.component';
 
 import styles from './patient-bills.scss';
@@ -25,22 +31,26 @@ import { useCurrencyFormatting } from '../helpers/currency';
 type PatientBillsProps = {
   patientUuid: string;
   bills: Array<MappedBill>;
-  onCancel: Dispatch<SetStateAction<string>>;
+  isLoading?: boolean;
+  /** Clears the selected patient, returning the tab to the search. */
+  onCancel: (patientUuid: string | undefined) => void;
 };
 
-export const patientBillsHeaders = [
-  { header: 'Date', key: 'date' },
-  { header: 'Charge Item', key: 'chargeItem' },
-  { header: 'Total Amount', key: 'totalAmount' },
-  { header: 'Status', key: 'status' },
-];
-
-export const PatientBills: React.FC<PatientBillsProps> = ({ bills, onCancel, patientUuid }) => {
+export const PatientBills: React.FC<PatientBillsProps> = ({
+  bills,
+  isLoading: isLoadingBills,
+  onCancel,
+  patientUuid,
+}) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
+  // Only one bill's line items are open at a time.
+  const [expandedBillUuid, setExpandedBillUuid] = useState<string | null>(null);
 
-  const { patient, isLoading, error } = usePatient(patientUuid);
-  if (isLoading) {
+  const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
+
+  // usePatient keeps the first patient it was given, so never render one that is not the selected patient.
+  if (isLoadingPatient || isLoadingBills || !patient || patient.id !== patientUuid) {
     return <InlineLoading status="active" description={t('loading', 'Loading...')} />;
   }
 
@@ -58,58 +68,107 @@ export const PatientBills: React.FC<PatientBillsProps> = ({ bills, onCancel, pat
     );
   }
 
-  const tableRows = bills.map((bill) => ({
-    id: `${bill.uuid}`,
-    date: bill.dateCreated,
-    chargeItem: (
-      <ConfigurableLink
-        style={{ textDecoration: 'none', maxWidth: '50%' }}
-        to={billingUrl}
-        templateParams={{ patientUuid: bill.patientUuid, uuid: bill.uuid }}>
-        {bill.lineItems.map((item) => item?.billableService?.split(':')[1]).join(', ')}
-      </ConfigurableLink>
-    ),
-    totalAmount: formatCurrency(bill.totalAmount),
-    status: bill.status,
-  }));
+  const headers = [
+    { header: t('billDate', 'Date'), key: 'date' },
+    { header: t('invoiceNumber', 'Invoice Number'), key: 'invoiceNumber' },
+    { header: t('priority', 'Priority'), key: 'priority' },
+    { header: t('billedItems', 'Billed Items'), key: 'billedItems' },
+    { header: t('total', 'Total'), key: 'total' },
+    { header: t('status', 'Status'), key: 'status' },
+  ];
+
+  const tableRows = bills.map((bill) => {
+    const lineItems = bill.lineItems ?? [];
+    return {
+      id: `${bill.uuid}`,
+      date: bill.dateCreated,
+      invoiceNumber: (
+        <ConfigurableLink
+          style={{ textDecoration: 'none' }}
+          to={billingUrl}
+          templateParams={{ patientUuid: bill.patientUuid, uuid: bill.uuid }}>
+          {bill.receiptNumber ?? t('viewInvoice', 'View invoice')}
+        </ConfigurableLink>
+      ),
+      priority: <BillPriority lineItems={lineItems} />,
+      billedItems: `${lineItems.length} ${
+        lineItems.length === 1 ? t('itemLowercase', 'item') : t('itemsLowercase', 'items')
+      }`,
+      total: formatCurrency(lineItems.reduce((sum, lineItem) => sum + lineItemTotal(lineItem), 0)),
+      status: bill.closed ? (
+        <>
+          {bill.status}{' '}
+          <Tag size="sm" type="gray">
+            {t('closed', 'Closed')}
+          </Tag>
+        </>
+      ) : (
+        bill.status
+      ),
+    };
+  });
 
   return (
     <div className={styles.container}>
       <PatientHeader patient={patient} onCancel={onCancel} />
       <DataTable
         rows={tableRows}
-        headers={patientBillsHeaders}
+        headers={headers}
         size="sm"
         useZebraStyles
-        render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
+        render={({
+          rows,
+          headers,
+          getHeaderProps,
+          getRowProps,
+          getTableProps,
+          getTableContainerProps,
+          getExpandedRowProps,
+        }) => (
           <TableContainer
             title={t('patientBillsSummary', 'Patient bill summary')}
             description={t('patientBillsSummaryDescription', 'A list of all bills for this patient')}
             {...getTableContainerProps()}>
-            <Table {...getTableProps()} aria-label="sample table">
+            <Table {...getTableProps()} aria-label={t('patientBillsSummary', 'Patient bill summary')}>
               <TableHead>
                 <TableRow>
-                  {headers.map((header, i) => (
-                    <TableHeader
-                      key={i}
-                      {...getHeaderProps({
-                        header,
-                      })}>
+                  <TableExpandHeader />
+                  {headers.map((header) => (
+                    <TableHeader key={header.key} {...getHeaderProps({ header })}>
                       {header.header}
                     </TableHeader>
                   ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => (
-                  <TableRow
-                    {...getRowProps({
-                      row,
-                    })}>
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value}</TableCell>
-                    ))}
-                  </TableRow>
+                {rows.map((row) => (
+                  <React.Fragment key={row.id}>
+                    <TableExpandRow
+                      {...getRowProps({ row })}
+                      isExpanded={row.id === expandedBillUuid}
+                      onExpand={() => setExpandedBillUuid(row.id === expandedBillUuid ? null : row.id)}
+                      aria-label={
+                        row.id === expandedBillUuid
+                          ? t('hideLineItems', 'Hide line items')
+                          : t('showLineItems', 'Show line items')
+                      }>
+                      {row.cells.map((cell) => (
+                        <TableCell key={cell.id}>{cell.value}</TableCell>
+                      ))}
+                    </TableExpandRow>
+                    {row.id === expandedBillUuid && (
+                      <TableExpandedRow
+                        className={styles.expandedRow}
+                        colSpan={headers.length + 1}
+                        {...getExpandedRowProps({ row })}>
+                        <BillLineItems
+                          lineItems={bills.find((bill) => bill.uuid === row.id)?.lineItems ?? []}
+                          showDate
+                          emptyMessage={t('noLineItems', 'This bill has no line items')}
+                        />
+                      </TableExpandedRow>
+                    )}
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>
@@ -122,14 +181,14 @@ export const PatientBills: React.FC<PatientBillsProps> = ({ bills, onCancel, pat
 
 type PatientHeaderProps = {
   patient: fhir.Patient;
-  onCancel: Dispatch<SetStateAction<string>>;
+  onCancel: (patientUuid: string | undefined) => void;
 };
 
 export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient, onCancel }) => {
   const { t } = useTranslation();
   const { activeVisit, isLoading: isVisitLoading } = useVisit(patient.id);
   const patientName = getPatientName(patient);
-  const identifier = patient?.identifier[0]?.value ?? '--';
+  const identifier = patient?.identifier?.[0]?.value ?? '--';
 
   const handleAddNewBill = () => {
     launchWorkspace('billing-form-workspace', {
@@ -156,8 +215,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient, onCancel 
         <span className={styles.identifier}>{identifier}</span>
       </div>
       <div className={styles.headerActions}>
-        <Button kind="ghost" onClick={() => onCancel('')} renderIcon={Close}>
-          {t('close', 'Close')}
+        {/* This only clears the selected patient; it does not close any bill. */}
+        <Button kind="ghost" onClick={() => onCancel(undefined)} renderIcon={Close}>
+          {t('clearPatientSearch', 'Clear search')}
         </Button>
         <Button disabled={!activeVisit} kind="ghost" onClick={handleAddNewBill} renderIcon={Add}>
           {getAddBillButtonContent()}

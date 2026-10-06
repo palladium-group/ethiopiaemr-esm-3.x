@@ -3,14 +3,14 @@ import styles from './patient-bills-dashboard.scss';
 import { ErrorState } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { PatientBills } from '../patient-bills.component';
-import { usePatientBills } from '../../prompt-payment/prompt-payment.resource';
+import { usePatientBillsWithLineItems } from '../../billing.resource';
 import PatientSearchExtension from './patient-search-extension.component';
 import EmptyPatientBill from './empty-patient-bill.component';
 
 const PatientBillsScreen: React.FC = () => {
   const { t } = useTranslation();
   const [patientUuid, setPatientUuid] = useState<string | undefined>();
-  const { patientBills: bills, isLoading, error } = usePatientBills(patientUuid);
+  const { bills, isLoading, error } = usePatientBillsWithLineItems(patientUuid);
 
   if (error) {
     return (
@@ -36,7 +36,14 @@ const PatientBillsScreen: React.FC = () => {
   return (
     <main className={styles.container}>
       <PatientSearchExtension setPatientUuid={setPatientUuid} />
-      <PatientBills patientUuid={patientUuid} bills={bills} onCancel={setPatientUuid} />
+      {/* Keyed by patient so nothing from the previously selected patient carries over to the next one. */}
+      <PatientBills
+        key={patientUuid}
+        patientUuid={patientUuid}
+        bills={bills}
+        isLoading={isLoading}
+        onCancel={setPatientUuid}
+      />
     </main>
   );
 };

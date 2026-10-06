@@ -1,5 +1,5 @@
 import { Button, Popover, PopoverContent } from '@carbon/react';
-import { Close, Printer, Wallet, FolderOpen, BaggageClaim } from '@carbon/react/icons';
+import { Close, Printer, FolderOpen, BaggageClaim } from '@carbon/react/icons';
 import {
   restBaseUrl,
   showModal,
@@ -18,7 +18,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { mutate } from 'swr';
-import { MappedBill, LineItem, PaymentStatus } from '../types';
+import { MappedBill } from '../types';
 import { spaBasePath } from '../constants';
 import { useCheckShareGnum } from './invoice.resource';
 import styles from './invoice.scss';
@@ -27,11 +27,10 @@ import { Permissions } from '../permission/permissions.constants';
 
 interface InvoiceActionsProps {
   readonly bill: MappedBill;
-  readonly selectedLineItems?: LineItem[];
   readonly activeVisit?: any;
 }
 
-export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: InvoiceActionsProps) {
+export function InvoiceActions({ bill, activeVisit }: InvoiceActionsProps) {
   const { t } = useTranslation();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -43,11 +42,6 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
   const session = useSession();
   const printPrivileges = [Permissions.PrintInvoice, Permissions.PrintReceipt, Permissions.PrintBillStatement];
   const hasAnyPrintPrivilege = printPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
-  // filter out exempted and paid line items
-  const billableLineItems = bill.lineItems.filter(
-    (item) => item.paymentStatus !== PaymentStatus.EXEMPTED && item.paymentStatus !== PaymentStatus.PAID,
-  );
-
   const isInsurancePayment = (payments) => {
     return payments?.some((payment) => payment.instanceType.name === 'Insurance');
   };
@@ -70,22 +64,6 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
       onClose: () => dispose(),
       title: documentTitle,
       documentUrl: `/openmrs${restBaseUrl}/cashier/print?documentType=${documentType}&billId=${bill?.id}`,
-    });
-  };
-
-  const handleBillPayment = () => {
-    const dispose = showModal('initiate-payment-modal', {
-      closeModal: () => dispose(),
-      bill: bill,
-      selectedLineItems,
-    });
-  };
-
-  const handleEthSwitchPayment = () => {
-    const dispose = showModal('ethswitch-payment-modal', {
-      closeModal: () => dispose(),
-      bill: bill,
-      selectedLineItems,
     });
   };
 
@@ -243,35 +221,6 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
             {t('reopen', 'Reopen')}
           </Button>
         </UserHasAccess>
-      )}
-
-      {bill?.balance !== 0 && billableLineItems.length > 0 && (
-        <>
-          <Button
-            onClick={handleBillPayment}
-            disabled={
-              bill?.balance === 0 ||
-              selectedLineItems?.filter((item) => item.paymentStatus === PaymentStatus.PENDING).length === 0
-            }
-            size="sm"
-            renderIcon={Wallet}
-            iconDescription="Add"
-            tooltipPosition="left">
-            {t('telebirrPayment', 'Telebirr Payment')}
-          </Button>
-          <Button
-            onClick={handleEthSwitchPayment}
-            disabled={
-              bill?.balance === 0 ||
-              selectedLineItems?.filter((item) => item.paymentStatus === PaymentStatus.PENDING).length === 0
-            }
-            size="sm"
-            renderIcon={Wallet}
-            iconDescription="Add"
-            tooltipPosition="left">
-            {t('ethSwitchPayment', 'EthSwitch Payment')}
-          </Button>
-        </>
       )}
 
       {isProcessClaimsFormEnabled && isInsurancePayment(bill?.payments) && (

@@ -9,9 +9,9 @@ export type BillSummary = {
   exemptedBills: number;
 };
 export const useBillSummary = () => {
-  const startDate = dayjs().startOf('day').toDate();
-  const endDate = dayjs().endOf('day').toDate();
-  const url = `${restBaseUrl}/cashier/bill-summary?createdOnOrAfter=${startDate.toISOString()}&createdOnOrBefore=${endDate.toISOString()}`;
+  // Plain local dates and includeLineItemActivity keep the cards in step with the Today's Bills list.
+  const today = dayjs().format('YYYY-MM-DD');
+  const url = `${restBaseUrl}/cashier/bill-summary?createdOnOrAfter=${today}&createdOnOrBefore=${today}&includeLineItemActivity=true`;
   const { data, isLoading, isValidating, error, mutate } = useSWRImmutable<{ data: { results: Array<BillSummary> } }>(
     url,
     openmrsFetch,
