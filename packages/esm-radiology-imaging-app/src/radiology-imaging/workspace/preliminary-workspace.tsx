@@ -1,22 +1,13 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Color from '@tiptap/extension-color';
-import { Image as TiptapImage } from '@tiptap/extension-image';
-import { Table as TiptapTable } from '@tiptap/extension-table';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { TableRow } from '@tiptap/extension-table-row';
-import TextAlign from '@tiptap/extension-text-align';
-import { TextStyle } from '@tiptap/extension-text-style';
-import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 import { Controller, useForm } from 'react-hook-form';
 import { Button, ButtonSet, FormLabel, InlineLoading, InlineNotification } from '@carbon/react';
 import {
   formatDatetime,
   parseDate,
+  showModal,
   showSnackbar,
   useLayoutType,
   Workspace2,
@@ -26,14 +17,14 @@ import { updateOrderFulfillmentStatus } from '../../resources/hooks/useOrders';
 import {
   amendAndFinalizePreliminaryReport,
   cleanWordHtml,
-  decodeHtmlEntities,
   type PreliminaryReportPayload,
   preliminaryReportSchema,
   resubmitPreliminaryReport,
   savePreliminaryReport,
 } from './preliminary.resource';
 import PreliminaryEditorToolbar from './preliminary-editor-toolbar.component';
-import TemplatePickerModal from './template-picker-modal.component';
+import { toEditorContent } from './report-content';
+import { tiptapExtensions } from './tiptap-extensions';
 import styles from './preliminary-workspace.scss';
 import classNames from 'classnames';
 import { type RadiologyOrder } from '../types';
@@ -47,25 +38,11 @@ interface PreliminaryWorkspaceProps {
   mutate: () => void;
 }
 
-const tiptapExtensions = [
-  StarterKit,
-  Underline,
-  TextStyle,
-  Color,
-  TextAlign.configure({ types: ['heading', 'paragraph'] }),
-  TiptapImage.configure({ inline: false, allowBase64: true }),
-  TiptapTable.configure({ resizable: true }),
-  TableRow,
-  TableHeader,
-  TableCell,
-];
-
 const PreliminaryWorkspace: React.FC<Workspace2DefinitionProps<PreliminaryWorkspaceProps, object, object>> = ({
   closeWorkspace,
   workspaceProps,
 }) => {
   const isTablet = useLayoutType() === 'tablet';
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const { orderUuid = '', order, mutate: orderMutate } = workspaceProps ?? {};
   const procedure = order?.procedures?.[0];
   const { t } = useTranslation();
@@ -94,7 +71,7 @@ const PreliminaryWorkspace: React.FC<Workspace2DefinitionProps<PreliminaryWorksp
     },
     onCreate: ({ editor: e }) => {
       if (initialFindings) {
-        e.commands.setContent(decodeHtmlEntities(initialFindings));
+        e.commands.setContent(toEditorContent(initialFindings));
       }
     },
     onUpdate: ({ editor: e }) => {
@@ -111,7 +88,7 @@ const PreliminaryWorkspace: React.FC<Workspace2DefinitionProps<PreliminaryWorksp
     },
     onCreate: ({ editor: e }) => {
       if (initialImpression) {
-        e.commands.setContent(decodeHtmlEntities(initialImpression));
+        e.commands.setContent(toEditorContent(initialImpression));
       }
     },
     onUpdate: ({ editor: e }) => {
@@ -267,7 +244,18 @@ const PreliminaryWorkspace: React.FC<Workspace2DefinitionProps<PreliminaryWorksp
                     kind="ghost"
                     size="sm"
                     className={styles.templateButton}
-                    onClick={() => setIsTemplateModalOpen(true)}>
+                    onClick={() => {
+                      const dispose = showModal('template-picker-modal', {
+                        onSelect: (doc) => {
+                          editor.commands.setContent(doc);
+                          setValue('preliminaryReport', editor.getHTML(), {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          });
+                        },
+                        closeModal: () => dispose(),
+                      });
+                    }}>
                     {t('useTemplate', 'Use template')}
                   </Button>
                 </div>
@@ -276,14 +264,6 @@ const PreliminaryWorkspace: React.FC<Workspace2DefinitionProps<PreliminaryWorksp
                 {errors.preliminaryReport && <p className={styles.errorText}>{errors.preliminaryReport.message}</p>}
               </div>
             )}
-          />
-          <TemplatePickerModal
-            open={isTemplateModalOpen}
-            onClose={() => setIsTemplateModalOpen(false)}
-            onSelect={(html) => {
-              editor.commands.setContent(html);
-              setValue('preliminaryReport', html, { shouldDirty: true, shouldValidate: true });
-            }}
           />
 
           <Controller
