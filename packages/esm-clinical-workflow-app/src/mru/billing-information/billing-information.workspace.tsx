@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Button, ButtonSet, InlineLoading, ContentSwitcher, Switch, Form } from '@carbon/react';
+import { Button, ButtonSet, InlineLoading, ContentSwitcher, Switch, Form, InlineNotification } from '@carbon/react';
+import dayjs from 'dayjs';
 import {
   DefaultWorkspaceProps,
   ExtensionSlot,
@@ -11,6 +12,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { ClinicalWorkflowConfig } from '../../config-schema';
+import { usePatientCardValidity } from '../../queue-room/usePatientCardValidity';
 import {
   usePaymentModes,
   useCreditCompanies,
@@ -20,6 +22,7 @@ import {
   useBillingFormSubmission,
   useBillingFormHandlers,
   useCashPoints,
+  useLastVisitPaymentMethod,
 } from './hooks';
 import {
   BillingTypeAttributes,
@@ -55,6 +58,13 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   const { billingTypes } = usePaymentModes();
   const { cashPoints } = useCashPoints();
 
+  // Card validity and last visit payment method
+  const { hasValidCard, cardExpiryDate } = usePatientCardValidity(patientUuid);
+  const { lastVisitPaymentMethodUuid } = useLastVisitPaymentMethod(
+    patientUuid,
+    billingVisitAttributeTypes?.paymentMethod,
+  );
+
   // Form management hook
   const {
     control,
@@ -63,7 +73,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
     getValues,
     setValue,
     formState: { errors, isDirty },
-  } = useBillingForm(t, billingTypes, isEditMode);
+  } = useBillingForm(t, billingTypes, isEditMode, hasValidCard);
 
   // Watch form values
   const billingTypeUuid = watch('billingTypeUuid');
@@ -91,6 +101,8 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
     billingTypes,
     billingVisitAttributeTypes,
     setValue,
+    hasValidCard,
+    lastVisitPaymentMethodUuid,
   });
 
   // Form submission handler
@@ -106,6 +118,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
         }
       : undefined,
     billingVisitAttributeTypes,
+    billingTypes,
     mutateVisit,
     closeWorkspaceWithSavedChanges,
     t,
@@ -162,6 +175,23 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
       )}
       <Form className={styles.form} onSubmit={handleSubmit(handleFormSubmit)}>
         <div className={styles.billingInformationContainer}>
+          {hasValidCard && (
+            <InlineNotification
+              kind="info"
+              title={t('cardValid', 'Card Valid')}
+              subtitle={t(
+                'cardValidInfo',
+                'Patient has a valid card until {{date}}. Consultation fee is not required.',
+                {
+                  date: cardExpiryDate ? dayjs(cardExpiryDate).format('DD MMM YYYY') : '',
+                  interpolation: { escapeValue: false },
+                },
+              )}
+              lowContrast
+              style={{ marginBottom: '1rem' }}
+            />
+          )}
+
           <p className={styles.sectionTitle}>{t('paymentMethods', 'Payment Methods')}</p>
 
           <ContentSwitcher
@@ -240,6 +270,7 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             t={t}
             selectedPaymentModeUuid={billingTypeUuid}
             isEditMode={isEditMode}
+            isCardValid={hasValidCard}
           />
         </div>
         <ButtonSet className={styles.buttonSet}>

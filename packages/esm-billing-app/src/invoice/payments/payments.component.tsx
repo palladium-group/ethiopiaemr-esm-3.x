@@ -23,7 +23,7 @@ import { InvoiceBreakDown } from './invoice-breakdown/invoice-breakdown.componen
 import PaymentForm from './payment-form/payment-form.component';
 import PaymentHistory from './payment-history/payment-history.component';
 import styles from './payments.scss';
-import { createLineItemPaymentPayload, getPayableLineItemUuids } from './utils';
+import { createLineItemPaymentPayload, getPayableLineItemUuids, recordConsultationPaymentIfApplicable } from './utils';
 import { makePayment } from './payments.resource';
 import { usePaymentSchema } from '../../hooks/usePaymentSchema';
 import { useCurrencyFormatting } from '../../helpers/currency';
@@ -41,7 +41,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { lineItems } = bill;
-  const { visitAttributeTypes } = useConfig<BillingConfig>();
+  const { visitAttributeTypes, lastConsultationDateAttributeTypeUuid } = useConfig<BillingConfig>();
 
   const paymentSchema = usePaymentSchema(bill);
   const { activeVisit } = useVisit(bill.patientUuid);
@@ -207,6 +207,15 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
     const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
     mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
+
+    if (createdUuids.length > 0 && lastConsultationDateAttributeTypeUuid && bill?.patientUuid) {
+      recordConsultationPaymentIfApplicable(
+        bill.patientUuid,
+        selectedLineItems,
+        billableServices,
+        lastConsultationDateAttributeTypeUuid,
+      );
+    }
 
     if (failedAtIndex === null) {
       remove();

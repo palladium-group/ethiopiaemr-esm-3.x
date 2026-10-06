@@ -130,6 +130,14 @@ export const configSchema = {
       },
     },
   },
+  cardValidity: {
+    _type: Type.Object,
+    _description: 'Card validity settings for consultation fee exemption',
+    _default: {
+      lastConsultationDateAttributeTypeUuid: 'c8e030e4-b778-43f1-b9f1-9878d655f412',
+      validityDays: 30,
+    },
+  },
 
   visitTypeUuid: {
     _type: Type.String,
@@ -446,6 +454,10 @@ export type ClinicalWorkflowConfig = {
       cbhiId: string;
       insuredId: string;
     };
+  };
+  cardValidity: {
+    lastConsultationDateAttributeTypeUuid: string;
+    validityDays: number;
   };
   visitTypeUuid: string;
   identifierSourceUuid: string;

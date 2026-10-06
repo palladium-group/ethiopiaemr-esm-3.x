@@ -30,6 +30,7 @@ import {
   useFilteredQueueTableColumnIds,
 } from './filtered-queue-table-cells';
 import ServiceQueueTableExpandedRow from './service-queue-table-expanded-row.component';
+import { QueueEntryBillingRowProvider } from './queue-entry-billing-context';
 import styles from './service-queue-table.scss';
 
 interface ServiceQueueTableProps {
@@ -149,41 +150,58 @@ const ServiceQueueTable: React.FC<ServiceQueueTableProps> = ({
               <TableHead>
                 <TableRow>
                   <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                  {tableHeaders.map((header) => (
-                    <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                      {header.header}
-                    </TableHeader>
-                  ))}
+                  {tableHeaders.map((header) => {
+                    const headerProps = getHeaderProps({ header });
+                    return (
+                      <TableHeader
+                        key={header.key}
+                        {...headerProps}
+                        className={classNames(headerProps?.className, {
+                          [styles.patientNameColumn]: header.key === 'patient-name',
+                          [styles.roomColumn]: header.key === 'room-assignment',
+                        })}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {tableRows.map((row, index) => (
-                  <React.Fragment key={row.id}>
-                    <TableExpandRow {...getRowProps({ row })}>
-                      {row.cells.map((cell, cellIndex) => (
-                        <TableCell
-                          key={cell.id}
-                          onClick={(event) => {
-                            if (columnIds[cellIndex]?.includes('actions')) {
-                              event.stopPropagation();
-                            }
-                          }}
-                          className={classNames({
-                            'cds--table-column-menu': columnIds[cellIndex]?.includes('actions'),
-                          })}>
-                          {cell.value}
-                        </TableCell>
-                      ))}
-                    </TableExpandRow>
-                    {row.isExpanded ? (
-                      <TableExpandedRow className={styles.expandedActiveVisitRow} colSpan={tableHeaders.length + 2}>
-                        <ServiceQueueTableExpandedRow queueEntry={paginatedQueueEntries[index]} />
-                      </TableExpandedRow>
-                    ) : (
-                      <TableExpandedRow className={styles.hiddenRow} colSpan={tableHeaders.length + 2} />
-                    )}
-                  </React.Fragment>
-                ))}
+                {tableRows.map((row, index) => {
+                  const queueEntry = paginatedQueueEntries[index];
+                  return (
+                    <QueueEntryBillingRowProvider key={row.id} queueEntry={queueEntry}>
+                      <TableExpandRow {...getRowProps({ row })}>
+                        {row.cells.map((cell, cellIndex) => {
+                          const columnId = columnIds[cellIndex];
+                          return (
+                            <TableCell
+                              key={cell.id}
+                              onClick={(event) => {
+                                if (columnId?.includes('actions')) {
+                                  event.stopPropagation();
+                                }
+                              }}
+                              className={classNames({
+                                'cds--table-column-menu': columnId?.includes('actions'),
+                                [styles.patientNameColumn]: columnId === 'patient-name',
+                                [styles.roomColumn]: columnId === 'room-assignment',
+                              })}>
+                              {cell.value}
+                            </TableCell>
+                          );
+                        })}
+                      </TableExpandRow>
+                      {row.isExpanded ? (
+                        <TableExpandedRow className={styles.expandedActiveVisitRow} colSpan={tableHeaders.length + 2}>
+                          <ServiceQueueTableExpandedRow queueEntry={queueEntry} />
+                        </TableExpandedRow>
+                      ) : (
+                        <TableExpandedRow className={styles.hiddenRow} colSpan={tableHeaders.length + 2} />
+                      )}
+                    </QueueEntryBillingRowProvider>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

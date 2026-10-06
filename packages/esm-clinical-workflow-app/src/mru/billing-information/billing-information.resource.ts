@@ -1,5 +1,6 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { z } from 'zod';
+import dayjs from 'dayjs';
 // Create the billing form schema factory with conditional validation based on skip logic
 import type { TFunction } from 'i18next';
 
@@ -48,6 +49,7 @@ export const createBillingFormSchema = (
   t: TFunction,
   billingTypes?: Array<{ uuid: string; name?: string; attributeTypes?: Array<{ uuid: string; required?: boolean }> }>,
   isEditMode = false,
+  hasValidCard = false,
 ) => {
   return z
     .object({
@@ -76,8 +78,8 @@ export const createBillingFormSchema = (
         return;
       }
 
-      // Billable service is required when creating billing information (not in edit mode)
-      if (!isEditMode && !data.billableItem) {
+      // Billable service is required when creating billing information (not in edit mode and card is not valid)
+      if (!isEditMode && !hasValidCard && !data.billableItem) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: t('billableServiceRequired', 'Billable service is required'),
@@ -300,4 +302,44 @@ export const updateVisitWithBillingInformation = async (
       attributes,
     },
   });
+};
+
+/**
+ * Saves or updates the patient's lastConsultationDate person attribute with today's date.
+ */
+export const saveLastConsultationDate = async (patientUuid: string, attributeTypeUuid: string, dateStr?: string) => {
+  if (!patientUuid || !attributeTypeUuid) {
+    return;
+  }
+  const dateValue = dateStr || dayjs().format('YYYY-MM-DD');
+
+  // Check if person attribute already exists
+  const response = await openmrsFetch(
+    `${restBaseUrl}/person/${patientUuid}/attribute?v=custom:(uuid,value,attributeType:(uuid))`,
+  );
+  const existingAttrs =
+    (response?.data?.results as Array<{ uuid: string; value: string; attributeType?: { uuid: string } }> | undefined) ??
+    [];
+  const existingAttr = existingAttrs.find((attr) => attr.attributeType?.uuid === attributeTypeUuid);
+
+  if (existingAttr?.uuid) {
+    return openmrsFetch(`${restBaseUrl}/person/${patientUuid}/attribute/${existingAttr.uuid}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ value: dateValue }),
+    });
+  } else {
+    return openmrsFetch(`${restBaseUrl}/person/${patientUuid}/attribute`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        attributeType: attributeTypeUuid,
+        value: dateValue,
+      }),
+    });
+  }
 };

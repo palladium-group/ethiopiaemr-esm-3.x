@@ -12,6 +12,7 @@ type BillableItemsSelectionProps = {
   t: TFunction;
   selectedPaymentModeUuid?: string;
   isEditMode?: boolean;
+  isCardValid?: boolean;
 };
 
 export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
@@ -20,6 +21,7 @@ export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
   t,
   selectedPaymentModeUuid,
   isEditMode = false,
+  isCardValid = false,
 }) => {
   const { billableServices, isLoading } = useBillableServices();
 
@@ -65,7 +67,7 @@ export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
         name="billableItem"
         control={control}
         rules={
-          !isEditMode
+          !isEditMode && !isCardValid
             ? {
                 required: t('billableServiceRequired', 'Billable service is required'),
               }
@@ -88,11 +90,13 @@ export const BillableItemsSelection: React.FC<BillableItemsSelectionProps> = ({
               }}
               selectedItem={selectedItemWithUpdatedPrice}
               placeholder={t('selectBillableServicePlaceholder', 'Select a billable service')}
-              disabled={isEditMode || isLoading}
+              disabled={isEditMode || isLoading || isCardValid}
               invalid={!!fieldError}
               invalidText={errorMessage}
               helperText={
-                filteredBillableServices.length === 0
+                isCardValid
+                  ? t('cardValidConsultationExempt', 'Card is valid. Consultation fee is not required.')
+                  : filteredBillableServices.length === 0
                   ? t('noBillableItemsAvailable', 'No billable items available')
                   : undefined
               }

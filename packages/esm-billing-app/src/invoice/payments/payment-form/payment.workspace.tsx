@@ -8,6 +8,7 @@ import {
   ResponsiveWrapper,
   restBaseUrl,
   showSnackbar,
+  useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
@@ -17,9 +18,11 @@ import { usePaymentForm } from './use-payment-form';
 import { z } from 'zod';
 import { mutate } from 'swr';
 import { makePayment } from '../payments.resource';
-import { createLineItemPaymentPayload, getPayableLineItemUuids } from '../utils';
+import { createLineItemPaymentPayload, getPayableLineItemUuids, recordConsultationPaymentIfApplicable } from '../utils';
 import { extractErrorMessagesFromResponse } from '../../../utils';
 import { useCurrencyFormatting } from '../../../helpers/currency';
+import useBillableServices from '../../../hooks/useBillableServices';
+import type { BillingConfig } from '../../../config-schema';
 
 type PaymentWorkspaceProps = DefaultWorkspaceProps & {
   bill: MappedBill;
@@ -55,6 +58,8 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
   type PaymentFormData = z.infer<typeof paymentSchema>;
 
   const { paymentModes, isLoading: isLoadingPaymentModes } = usePaymentModes();
+  const { lastConsultationDateAttributeTypeUuid } = useConfig<BillingConfig>();
+  const { billableServices } = useBillableServices();
 
   const {
     formState: { isSubmitting, errors, isValid },
@@ -95,6 +100,16 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
       if (!response.ok || !response.data?.uuid) {
         throw response;
       }
+
+      if (lastConsultationDateAttributeTypeUuid && bill?.patientUuid && bill?.lineItems) {
+        recordConsultationPaymentIfApplicable(
+          bill.patientUuid,
+          bill.lineItems,
+          billableServices,
+          lastConsultationDateAttributeTypeUuid,
+        );
+      }
+
       showSnackbar({
         title: t('paymentSaved', 'Payment saved'),
         kind: 'success',

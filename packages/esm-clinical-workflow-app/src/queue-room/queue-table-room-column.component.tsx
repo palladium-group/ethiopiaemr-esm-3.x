@@ -29,10 +29,18 @@ const QueueTableRoomColumn: React.FC<QueueTableRoomColumnProps> = ({ queueEntry 
   }
 
   if (assignedRoomName) {
-    return <span className={styles.roomCell}>{assignedRoomName}</span>;
+    return (
+      <span className={styles.roomCell} title={assignedRoomName}>
+        {assignedRoomName}
+      </span>
+    );
   }
 
-  return <span className={styles.roomCell}>{t('noRoom', 'No room')}</span>;
+  return (
+    <span className={styles.roomCell} title={t('noRoom', 'No room')}>
+      {t('noRoom', 'No room')}
+    </span>
+  );
 };
 
 export default QueueTableRoomColumn;

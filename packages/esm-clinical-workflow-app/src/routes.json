@@ -135,6 +135,14 @@
       "offline": true
     },
     {
+      "name": "appointment-checkin-queue-handler",
+      "component": "appointmentCheckInQueueHandler",
+      "slot": "appointments-metrics-slot",
+      "order": 10,
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "transfer-notes-overview-widget",
       "component": "transferNotesOverview",
       "slot": "patient-chart-summary-dashboard-slot",

@@ -1,9 +1,10 @@
-import { Button, Column, Grid, InlineLoading, Layer, Tile, Toggle } from '@carbon/react';
+import { Button, Column, Grid, InlineLoading, Layer, NumberInput, Tile, Toggle } from '@carbon/react';
 import { formatDate, parseDate, showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocalFacilityInfo, useShaFacilityInfo } from '../hook/useFacilityInfo';
 import { useCbhiManualEntrySetting, saveCbhiManualEntrySetting } from '../hook/useCbhiManualEntrySetting';
+import { useCardValiditySetting, saveCardValiditySetting } from '../hook/useCardValiditySetting';
 import styles from './facility-info.scss';
 import Card from './card.component';
 import dayjs from 'dayjs';
@@ -33,6 +34,19 @@ const FacilityInfo: React.FC = () => {
   } = useCbhiManualEntrySetting();
   const [isCbhiSaving, setIsCbhiSaving] = useState(false);
 
+  const {
+    cardValidityDays,
+    settingUuid: cardValiditySettingUuid,
+    isLoading: isCardValidityLoading,
+    mutate: mutateCardValiditySetting,
+  } = useCardValiditySetting();
+  const [cardValidityDaysInput, setCardValidityDaysInput] = useState<number>(cardValidityDays);
+  const [isCardValiditySaving, setIsCardValiditySaving] = useState(false);
+
+  useEffect(() => {
+    setCardValidityDaysInput(cardValidityDays);
+  }, [cardValidityDays]);
+
   const handleToggleCbhiManualEntry = async (checked: boolean) => {
     setIsCbhiSaving(true);
     try {
@@ -55,6 +69,34 @@ const FacilityInfo: React.FC = () => {
       });
     } finally {
       setIsCbhiSaving(false);
+    }
+  };
+
+  const handleSaveCardValidityDays = async () => {
+    if (!cardValidityDaysInput || cardValidityDaysInput < 1) {
+      return;
+    }
+    setIsCardValiditySaving(true);
+    try {
+      await saveCardValiditySetting(cardValidityDaysInput, cardValiditySettingUuid);
+      await mutateCardValiditySetting();
+      showSnackbar({
+        title: t('settingUpdated', 'Setting Updated'),
+        subtitle: t('cardValidityDaysUpdated', 'Card validity period updated to {{days}} days.', {
+          days: cardValidityDaysInput,
+        }),
+        kind: 'success',
+        isLowContrast: true,
+      });
+    } catch (error) {
+      showSnackbar({
+        title: t('error', 'Error'),
+        subtitle: t('errorUpdatingCardValiditySetting', 'Error updating card validity period setting'),
+        kind: 'error',
+        isLowContrast: true,
+      });
+    } finally {
+      setIsCardValiditySaving(false);
     }
   };
 
@@ -193,6 +235,40 @@ const FacilityInfo: React.FC = () => {
                       'When enabled, CBHI member details (CBHI ID and Expiry Date) are entered manually in MRU billing information instead of online search.',
                     )}
                   </p>
+                </div>
+
+                <hr className={styles.cardDivider} style={{ margin: '1.25rem 0' }} />
+
+                <div style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
+                  <NumberInput
+                    id="card-validity-days-input"
+                    label={t('cardValidityDays', 'Card Validity Period (Days)')}
+                    helperText={t(
+                      'cardValidityDaysDescription',
+                      'Number of days consultation card remains valid after payment. Patients returning within this window will not be charged consultation fee.',
+                    )}
+                    min={1}
+                    max={365}
+                    step={1}
+                    value={cardValidityDaysInput}
+                    disabled={isCardValiditySaving || isCardValidityLoading}
+                    onChange={(_event, { value }) => setCardValidityDaysInput(Number(value))}
+                  />
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <Button
+                      size="md"
+                      kind="primary"
+                      disabled={
+                        isCardValiditySaving ||
+                        isCardValidityLoading ||
+                        cardValidityDaysInput === cardValidityDays ||
+                        !cardValidityDaysInput ||
+                        cardValidityDaysInput < 1
+                      }
+                      onClick={handleSaveCardValidityDays}>
+                      {isCardValiditySaving ? t('saving', 'Saving...') : t('save', 'Save')}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Tile>

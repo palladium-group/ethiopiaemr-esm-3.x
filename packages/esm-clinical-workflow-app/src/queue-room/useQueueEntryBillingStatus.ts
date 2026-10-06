@@ -1,17 +1,20 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
+import dayjs from 'dayjs';
 import { openmrsFetch, restBaseUrl, useConfig, type FetchResponse } from '@openmrs/esm-framework';
 import type { ClinicalWorkflowConfig } from '../config-schema';
 import type { QueueEntry } from '../types';
 import { getVisitPaymentModeUuid } from '../ward/bed-fee/bed-fee.utils';
 import { usePaymentModes } from '../mru/billing-information/hooks/usePaymentModes';
+import { usePatientCardValidity } from './usePatientCardValidity';
 
 export type QueueEntryBillingStatusType =
   | 'LOADING'
   | 'NO_PAYMENT_METHOD'
   | 'NO_CONSULTATION_BILL'
   | 'PENDING_PAYMENT'
+  | 'CARD_VALID'
   | 'CLEARED';
 
 export interface QueueEntryBillingStatus {
@@ -83,7 +86,13 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
   }, [matchedPaymentMode, modeName]);
 
   const patientUuid = queueEntry?.patient?.uuid;
-  const shouldFetchBills = Boolean(patientUuid && paymentModeUuid && !isKnownNonCash);
+  const personAttributes = (queueEntry?.patient as any)?.person?.attributes ?? (queueEntry?.patient as any)?.attributes;
+  const {
+    hasValidCard,
+    cardExpiryDate,
+    isLoading: isLoadingCard,
+  } = usePatientCardValidity(patientUuid, personAttributes);
+  const shouldFetchBills = Boolean(patientUuid && paymentModeUuid && !isKnownNonCash && !hasValidCard);
 
   const billsUrl = shouldFetchBills
     ? `${restBaseUrl}/cashier/bill?v=${CASHIER_BILL_REP}&patientUuid=${patientUuid}`
@@ -93,8 +102,8 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     billsUrl,
     openmrsFetch,
     {
-      revalidateOnFocus: true,
-      dedupingInterval: 5000,
+      revalidateOnFocus: false,
+      dedupingInterval: 30_000,
     },
   );
 
@@ -110,22 +119,7 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
       };
     }
 
-    // Check if payment method visit attribute is attached
-    if (!paymentModeUuid) {
-      return {
-        status: 'NO_PAYMENT_METHOD',
-        isCleared: false,
-        isLoading: false,
-        badgeText: t('mruPending', 'MRU Pending'),
-        badgeType: 'gray',
-        message: t(
-          'noPaymentMethodAttached',
-          'No payment method attached. Patient must visit the MRU desk to register payment mode and consultation fee.',
-        ),
-      };
-    }
-
-    if (isLoadingPaymentModes && !matchedPaymentMode) {
+    if (isLoadingPaymentModes && !matchedPaymentMode && paymentModeUuid) {
       return {
         status: 'LOADING',
         isCleared: false,
@@ -148,6 +142,56 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
         message: t('paymentMethodRegistered', 'Payment method registered: {{mode}}', {
           mode: modeName || 'Non-Cash',
         }),
+      };
+    }
+
+    // Card validity check:
+    // If the patient has a valid consultation card from a previous visit,
+    // they are cleared for service and do not need a new consultation bill.
+    if (isLoadingCard) {
+      return {
+        status: 'LOADING',
+        isCleared: false,
+        isLoading: true,
+        badgeText: t('checkingStatus', 'Checking...'),
+        badgeType: 'cool-gray',
+        message: t('verifyingCardValidity', 'Verifying card validity...'),
+      };
+    }
+
+    if (hasValidCard) {
+      const formattedExpiryDate = cardExpiryDate ? dayjs(cardExpiryDate).format('DD MMM YYYY') : '';
+      return {
+        status: 'CARD_VALID',
+        isCleared: true,
+        isLoading: false,
+        paymentModeName: modeName,
+        badgeText: formattedExpiryDate
+          ? t('cardValidWithDate', 'Card Valid ({{date}})', {
+              date: formattedExpiryDate,
+              interpolation: { escapeValue: false },
+            })
+          : t('cardValid', 'Card Valid'),
+        badgeType: 'green',
+        message: t('cardValidMessage', 'Patient has a valid card until {{date}}. No new consultation fee required.', {
+          date: formattedExpiryDate,
+          interpolation: { escapeValue: false },
+        }),
+      };
+    }
+
+    // Check if payment method visit attribute is attached
+    if (!paymentModeUuid) {
+      return {
+        status: 'NO_PAYMENT_METHOD',
+        isCleared: false,
+        isLoading: false,
+        badgeText: t('mruPending', 'MRU Pending'),
+        badgeType: 'gray',
+        message: t(
+          'noPaymentMethodAttached',
+          'No payment method attached. Patient must visit the MRU desk to register payment mode and consultation fee.',
+        ),
       };
     }
 
@@ -229,6 +273,9 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     modeName,
     isLoadingBills,
     billsData?.data?.results,
+    isLoadingCard,
+    hasValidCard,
+    cardExpiryDate,
     t,
   ]);
 }

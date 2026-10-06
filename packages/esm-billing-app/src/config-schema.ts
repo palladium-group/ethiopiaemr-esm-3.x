@@ -42,9 +42,15 @@ export interface BillingConfig {
   paymentAPIBaseUrl: string;
   showStockAvailability: boolean;
   stockInventoryUrl: string;
+  lastConsultationDateAttributeTypeUuid: string;
 }
 
 export const configSchema: ConfigSchema = {
+  lastConsultationDateAttributeTypeUuid: {
+    _type: Type.String,
+    _description: 'The person attribute type uuid for last consultation date',
+    _default: 'c8e030e4-b778-43f1-b9f1-9878d655f412',
+  },
   isPDSLFacility: {
     _type: Type.Boolean,
     _description: 'A flag for PDSL facilities',
