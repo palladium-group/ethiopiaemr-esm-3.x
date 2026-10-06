@@ -51,9 +51,6 @@
     "@tiptap/pm": "^3.23.6",
     "@tiptap/react": "^3.23.6",
     "@tiptap/starter-kit": "^3.23.6",
-    "dompurify": "^3.4.6",
-    "he": "^1.2.0",
-    "html-react-parser": "^6.1.2",
     "lodash-es": "^4.17.21",
     "react-hook-form": "^7.54.0",
     "zod": "^3.24.1"
@@ -67,9 +64,6 @@
     "react-router-dom": "6.x",
     "rxjs": "6.x",
     "swr": "2.x"
-  },
-  "devDependencies": {
-    "@types/he": "^1"
   },
   "publishConfig": {
     "access": "public"

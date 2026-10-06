@@ -36,6 +36,19 @@
       }
     },
     {
+      "name": "radiology-templates-admin-nav-link",
+      "slot": "navbar-items-slot",
+      "component": "radiologyTemplatesAdminNavLink",
+      "order": 1,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "name": "radiology-templates-admin",
+        "title": "Radiology templates admin",
+        "search": ["radiology templates", "report templates", "Radiology templates admin"]
+      }
+    },
+    {
       "name": "radiology-imaging-incoming-orders-link",
       "slot": "radiology-imaging-left-panel-slot",
       "component": "radiologyImagingHomeLink",
@@ -134,6 +147,23 @@
     {
       "component": "radiologyImagingRoot",
       "route": "radiology-imaging"
+    },
+    {
+      "component": "radiologyTemplatesAdminHome",
+      "route": "radiology-templates-admin",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "workspaces": [
+    {
+      "name": "radiology-template-admin-workspace",
+      "component": "radiologyTemplateAdminWorkspace",
+      "title": "Report template",
+      "type": "other-form",
+      "width": "extra-wide",
+      "canHide": true,
+      "canMaximize": true
     }
   ],
   "modals": [
@@ -156,6 +186,14 @@
     {
       "name": "reject-order-modal",
       "component": "rejectOrderModal"
+    },
+    {
+      "name": "template-picker-modal",
+      "component": "templatePickerModal"
+    },
+    {
+      "name": "void-template-modal",
+      "component": "voidTemplateModal"
     }
   ],
   "workspaces2":[
