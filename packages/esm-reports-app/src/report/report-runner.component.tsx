@@ -288,7 +288,7 @@ const ReportRunner: React.FC = () => {
                 key={param.name}
                 id={`param-${param.name}`}
                 labelText={param.label}
-                className={styles.field}
+                className={styles.dateField}
                 value={paramValues[param.name] || null}
                 /* Only the end date is bounded. Capping the start date at the current
                    end date would strand the user in the period they just ran, since
