@@ -41,19 +41,24 @@
   width: 14rem;
 }
 
-/* The picker's input is a fixed 18rem (Carbon's single date picker), so a 14rem
-   box let it spill under the next field and hide that field's calendar icon. The
-   inner rules keep the input inside its box if that width ever changes. */
+/* OpenmrsDatePicker renders a 15rem input (plus a 1rem left margin) beside a 2.5rem
+   calendar button, 18.5rem in all, so a 14rem box let it spill under the next field
+   and hide that field's calendar icon. The inner rules keep the picker inside its
+   box if that width ever changes, letting only the input shrink so the button stays
+   square. */
 .dateField {
   flex: 0 0 auto;
-  width: 18rem;
+  width: 18.5rem;
 
   :global(.cds--date-picker),
-  :global(.cds--date-picker-container),
-  :global(.cds--date-picker-input__wrapper),
-  :global(.cds--date-picker__input) {
+  :global(.cds--date-picker-container) {
     width: 100%;
     max-width: 100%;
+  }
+
+  :global(.cds--date-picker-input__wrapper) {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }
 
