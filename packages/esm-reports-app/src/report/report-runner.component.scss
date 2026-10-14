@@ -41,6 +41,22 @@
   width: 14rem;
 }
 
+/* The picker's input is a fixed 18rem (Carbon's single date picker), so a 14rem
+   box let it spill under the next field and hide that field's calendar icon. The
+   inner rules keep the input inside its box if that width ever changes. */
+.dateField {
+  flex: 0 0 auto;
+  width: 18rem;
+
+  :global(.cds--date-picker),
+  :global(.cds--date-picker-container),
+  :global(.cds--date-picker-input__wrapper),
+  :global(.cds--date-picker__input) {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
 /* Wider than a plain field: month labels are long and several sit side by side. */
 .monthField {
   flex: 0 0 auto;
