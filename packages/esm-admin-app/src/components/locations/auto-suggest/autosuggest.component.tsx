@@ -56,6 +56,8 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
   const { t } = useTranslation();
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // The empty state only makes sense once a search has run, not for a prefilled value.
+  const [hasSearched, setHasSearched] = useState(false);
   const searchBox = useRef<HTMLInputElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const { id: name, labelText } = searchProps;
@@ -95,6 +97,7 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
     if (!query || !query.trim()) {
       setSuggestions([]);
       setIsLoading(false);
+      setHasSearched(false);
       return;
     }
 
@@ -107,12 +110,14 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
           if (requestId === latestRequest.current) {
             setSuggestions(results || []);
             setIsLoading(false);
+            setHasSearched(true);
           }
         })
         .catch(() => {
           if (requestId === latestRequest.current) {
             setSuggestions([]);
             setIsLoading(false);
+            setHasSearched(true);
           }
         });
     }, debounceMs);
@@ -123,6 +128,7 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
     onSuggestionSelected(name, undefined);
     setSuggestions([]);
     setIsLoading(false);
+    setHasSearched(false);
   };
 
   const handleClick = (index: number) => {
@@ -136,6 +142,7 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
       cancelPendingSearch();
       onSuggestionSelected(name, fieldValue);
       setSuggestions([]);
+      setHasSearched(false);
     }
   };
 
@@ -172,7 +179,7 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
           })}
         </ul>
       ) : (
-        !isLoading && renderEmptyState && renderEmptyState(searchBox.current?.value || '')
+        !isLoading && hasSearched && renderEmptyState && renderEmptyState(searchBox.current?.value || '')
       )}
       {invalid && <label className={classNames(styles.invalidMsg)}>{invalidText}</label>}
     </div>

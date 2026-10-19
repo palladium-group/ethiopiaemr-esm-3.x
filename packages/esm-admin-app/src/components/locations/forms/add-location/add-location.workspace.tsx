@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   type DefaultWorkspaceProps,
   ResponsiveWrapper,
@@ -121,6 +121,9 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
     },
   });
 
+  // The parent autosuggest only reads its default value on mount, so remount it once the loaded details are in the form.
+  const [detailsApplied, setDetailsApplied] = useState(false);
+
   // Parent and department type are not in the table row, so load them before editing.
   useEffect(() => {
     if (!locationDetails) {
@@ -138,6 +141,7 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
         : null,
       departmentType: attributeValueUuid(existingDepartmentType) ?? null,
     });
+    setDetailsApplied(true);
   }, [locationDetails, existingDepartmentType, departmentTagUuid, reset, getValues]);
 
   const isDepartment = !!watch('tags')?.some((tag) => tag.uuid === departmentTagUuid);
@@ -282,7 +286,7 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
                   name="parentLocation"
                   render={({ field: { onChange, value } }) => (
                     <LocationAutosuggest
-                      key={locationDetails?.parentLocation?.uuid ?? 'none'}
+                      key={`${locationDetails?.parentLocation?.uuid ?? 'none'}-${detailsApplied}`}
                       labelText={t('parentLocationOptional', 'Parent location (optional)')}
                       placeholder={t('searchParentLocation', 'Search for location...')}
                       defaultValue={value?.display}

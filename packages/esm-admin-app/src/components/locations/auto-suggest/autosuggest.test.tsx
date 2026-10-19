@@ -61,4 +61,30 @@ describe('Autosuggest', () => {
     expect(await screen.findByText('Main Pharmacy')).toBeInTheDocument();
     expect(screen.queryByText('Maternity')).not.toBeInTheDocument();
   });
+
+  it('shows the empty state only after a search finds nothing, not for a prefilled value', async () => {
+    const getSearchResults = jest.fn().mockResolvedValue([]);
+    render(
+      <Autosuggest
+        id="parent"
+        labelText="Parent location"
+        placeholder="Search"
+        defaultValue="Main Pharmacy"
+        getDisplayValue={(item) => item.name}
+        getFieldValue={(item) => item.uuid}
+        getSearchResults={getSearchResults}
+        onSuggestionSelected={jest.fn()}
+        renderEmptyState={(value) => <p>No results for {value}</p>}
+      />,
+    );
+
+    expect(screen.queryByText(/No results for/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Zzz' } });
+    await act(async () => {
+      jest.advanceTimersByTime(AUTOSUGGEST_DEBOUNCE_MS);
+    });
+
+    expect(await screen.findByText('No results for Zzz')).toBeInTheDocument();
+  });
 });
