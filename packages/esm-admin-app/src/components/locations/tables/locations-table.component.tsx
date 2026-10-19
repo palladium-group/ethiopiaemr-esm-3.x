@@ -1,10 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTable,
   DataTableSkeleton,
+  Dropdown,
   InlineLoading,
+  OverflowMenu,
+  OverflowMenuItem,
   Pagination,
   Search,
   Table,
@@ -19,19 +22,24 @@ import {
 } from '@carbon/react';
 import { Add, Upload } from '@carbon/react/icons';
 import {
+  ErrorState,
   WorkspaceContainer,
   isDesktop as desktopLayout,
   launchWorkspace,
   showModal,
+  useDebounce,
   useLayoutType,
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
 import styles from './locations-table.scss';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
-import { useFacilitiesTagged } from './locations-table.resource';
+import { type LocationListItem, usePagedLocations } from './locations-table.resource';
 import { useLocationTags } from '../hooks/useLocationTags';
 import { AdminPermissions } from '../../../permissions.constants';
+
+const PAGE_SIZES = [10, 20, 50, 100];
+const ALL_TAGS = '';
 
 const LocationsTable: React.FC = () => {
   const { t } = useTranslation();
@@ -40,22 +48,45 @@ const LocationsTable: React.FC = () => {
   const isTablet = layout === 'tablet';
   const isDesktop = desktopLayout(layout);
   const [pageSize, setPageSize] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 400);
+  const [selectedTag, setSelectedTag] = useState(ALL_TAGS);
 
   const canBulkImport = userHasAccess(AdminPermissions.ManageLocationBulkImport, session?.user);
-  const { locationTagList, isLoading: tagsLoading } = useLocationTags();
-  const {
-    facilityList,
-    isLoading: taggedLoading,
-    mutate: mutateLocations,
-  } = useFacilitiesTagged({
-    results: locationTagList,
+  const { locationTagList } = useLocationTags();
+  const { locations, totalCount, isLoading, isValidating, error, mutate } = usePagedLocations({
+    searchTerm: debouncedSearch,
+    tag: selectedTag,
+    page: currentPage,
+    pageSize,
   });
+
+  // The REST API rejects a startIndex past the last record (e.g. after locations were retired); go back to page 1.
+  useEffect(() => {
+    if (error && currentPage > 1) {
+      setCurrentPage(1);
+    }
+  }, [error, currentPage]);
+
+  const tagItems = useMemo(
+    () => [
+      { uuid: ALL_TAGS, display: t('allLocations', 'All locations') },
+      ...locationTagList.map((tag) => ({ uuid: tag.uuid, display: tag.display || tag.name })),
+    ],
+    [locationTagList, t],
+  );
 
   const handleAddLocationWorkspace = () => {
     launchWorkspace('add-location-workspace', {
       workspaceTitle: t('addLocation', 'Add Location'),
+    });
+  };
+
+  const handleEditLocation = (location: LocationListItem) => {
+    launchWorkspace('add-location-workspace', {
+      workspaceTitle: t('editLocation', 'Edit Location'),
+      location,
     });
   };
 
@@ -68,134 +99,114 @@ const LocationsTable: React.FC = () => {
   const handleImportLocations = () => {
     const dispose = showModal('location-bulk-import-modal', {
       closeModal: () => dispose(),
-      mutateLocations: () => mutateLocations(),
+      mutateLocations: () => mutate(),
     });
   };
 
   const tableHeaders = [
-    {
-      key: 'name',
-      header: t('locationName', 'Location Name'),
-    },
-    {
-      key: 'description',
-      header: t('description', 'Description'),
-    },
-    {
-      key: 'tags',
-      header: t('tags', 'Tags'),
-    },
+    { key: 'name', header: t('locationName', 'Location Name') },
+    { key: 'description', header: t('description', 'Description') },
+    { key: 'parent', header: t('parentLocation', 'Parent location') },
+    { key: 'tags', header: t('tags', 'Tags') },
+    { key: 'actions', header: '' },
   ];
 
-  const getLocationTags = (resource) => {
-    if (!resource?.meta?.tag) {
-      return [];
-    }
+  const rows = locations.map((location) => ({
+    id: location.uuid,
+    name: location.name || location.display || '--',
+    description: location.description || '--',
+    parent: location.parentLocation?.display || '--',
+    tags: location.tags?.length ? (
+      <div className={styles.tagList}>
+        {location.tags.map((tag) => (
+          <Tag key={tag.uuid} type="blue" size="sm">
+            {tag.display || tag.name}
+          </Tag>
+        ))}
+      </div>
+    ) : (
+      '--'
+    ),
+    actions: (
+      <OverflowMenu flipped aria-label={t('locationActions', 'Location actions')} size={isTablet ? 'lg' : 'sm'}>
+        <OverflowMenuItem itemText={t('edit', 'Edit')} onClick={() => handleEditLocation(location)} />
+      </OverflowMenu>
+    ),
+  }));
 
-    return resource.meta.tag.filter((tag) => tag.system && tag.system.includes('location-tag')).map((tag) => tag.code);
-  };
-
-  const rows = useMemo(() => {
-    const uniqueFacilities = new Map();
-
-    facilityList.forEach((facility) => {
-      const resource = facility.resource;
-      const uuid = resource?.id;
-
-      if (uuid && !uniqueFacilities.has(uuid)) {
-        uniqueFacilities.set(uuid, facility);
-      }
-    });
-
-    return Array.from(uniqueFacilities.values()).map((facility) => {
-      const resource = facility.resource;
-      const tags = getLocationTags(resource);
-
-      return {
-        id: resource?.id,
-        name: resource?.name || resource?.partOf?.display || '--',
-        description: resource?.description || '--',
-        tags: tags.length > 0 ? tags.join(', ') : '--',
-      };
-    });
-  }, [facilityList]);
-
-  const filteredRows = useMemo(() => {
-    if (!searchTerm) {
-      return rows;
-    }
-
-    return rows.filter(
-      (row) =>
-        row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.tags.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [rows, searchTerm]);
-
-  const paginatedRows = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredRows.slice(startIndex, endIndex);
-  }, [filteredRows, currentPage, pageSize]);
-
-  if (tagsLoading || (taggedLoading && !facilityList.length)) {
-    return (
-      <>
-        <div className={styles.widgetCard}>
-          <DataTableSkeleton role="progressbar" compact={isDesktop} zebra />
-        </div>
-      </>
-    );
+  if (error) {
+    return <ErrorState error={error} headerTitle={t('locations', 'Locations')} />;
   }
+
+  const isFirstLoad = isLoading && locations.length === 0;
+  const hasFilters = !!debouncedSearch.trim() || selectedTag !== ALL_TAGS;
 
   return (
     <>
       <div className={styles.widgetCard}>
-        <CardHeader title={t('locations', 'Locations')}>
+        <CardHeader title={`${t('locations', 'Locations')} (${isFirstLoad ? '…' : totalCount})`}>
           <span className={styles.backgroundDataFetchingIndicator}>
-            <span>{tagsLoading ? <InlineLoading /> : null}</span>
+            <span>{isValidating && !isFirstLoad ? <InlineLoading /> : null}</span>
           </span>
           <div className={styles.headerActions}>
-            <>
-              <div className={styles.filterContainer}>
-                <Search
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder={t('search', 'Search location')}
-                  value={searchTerm}
-                  labelText={t('search', 'Search location')}
-                />
-              </div>
+            <Button
+              kind="ghost"
+              renderIcon={(props) => <Add size={16} {...props} />}
+              onClick={handleAddLocationWorkspace}>
+              {t('addLocation', 'Add Location')}
+            </Button>
+            <Button
+              kind="ghost"
+              renderIcon={(props) => <Add size={16} {...props} />}
+              onClick={handleSearchLocationWorkspace}>
+              {t('tagLocation', 'Tag Location')}
+            </Button>
+            {canBulkImport ? (
               <Button
                 kind="ghost"
-                renderIcon={(props) => <Add size={16} {...props} />}
-                onClick={handleAddLocationWorkspace}>
-                {t('addLocation', 'Add Location')}
+                renderIcon={(props) => <Upload size={16} {...props} />}
+                onClick={handleImportLocations}>
+                {t('importLocations', 'Import locations')}
               </Button>
-              <Button
-                kind="ghost"
-                renderIcon={(props) => <Add size={16} {...props} />}
-                onClick={handleSearchLocationWorkspace}>
-                {t('tagLocation', 'Tag Location')}
-              </Button>
-              {canBulkImport ? (
-                <Button
-                  kind="ghost"
-                  renderIcon={(props) => <Upload size={16} {...props} />}
-                  onClick={handleImportLocations}>
-                  {t('importLocations', 'Import locations')}
-                </Button>
-              ) : null}
-            </>
+            ) : null}
           </div>
         </CardHeader>
 
-        <DataTable rows={paginatedRows} headers={tableHeaders} isSortable size={isTablet ? 'lg' : 'sm'} useZebraStyles>
-          {({ rows, headers, getTableProps }) => {
-            return (
+        <div className={styles.toolbar}>
+          <div className={styles.filterContainer}>
+            <Search
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder={t('searchLocationByName', 'Search by location name (starts with)')}
+              value={searchTerm}
+              labelText={t('searchLocationByName', 'Search by location name (starts with)')}
+              size={isTablet ? 'lg' : 'md'}
+            />
+          </div>
+          <Dropdown
+            id="location-tag-filter"
+            className={styles.tagFilter}
+            titleText=""
+            hideLabel
+            label={t('filterByTag', 'Filter by tag')}
+            items={tagItems}
+            itemToString={(item) => item?.display ?? ''}
+            selectedItem={tagItems.find((item) => item.uuid === selectedTag)}
+            onChange={({ selectedItem }) => {
+              setSelectedTag(selectedItem?.uuid ?? ALL_TAGS);
+              setCurrentPage(1);
+            }}
+            size={isTablet ? 'lg' : 'md'}
+          />
+        </div>
+
+        {isFirstLoad ? (
+          <DataTableSkeleton role="progressbar" compact={isDesktop} zebra showHeader={false} showToolbar={false} />
+        ) : (
+          <DataTable rows={rows} headers={tableHeaders} size={isTablet ? 'lg' : 'sm'} useZebraStyles>
+            {({ rows: tableRows, headers, getTableProps }) => (
               <TableContainer>
                 <Table {...getTableProps()}>
                   <TableHead>
@@ -206,66 +217,53 @@ const LocationsTable: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map((row) => (
+                    {tableRows.map((row) => (
                       <TableRow key={row.id}>
                         {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>
-                            {cell.id.includes('tags') && cell.value !== 'No tags' ? (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                {cell.value.split(', ').map((tag, index) => (
-                                  <Tag key={index} type="blue" size="sm">
-                                    {tag}
-                                  </Tag>
-                                ))}
-                              </div>
-                            ) : (
-                              cell.value
-                            )}
+                          <TableCell key={cell.id} className={cell.info.header === 'actions' ? styles.actionsCell : ''}>
+                            {cell.value}
                           </TableCell>
                         ))}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                {rows.length === 0 ? (
+                {tableRows.length === 0 ? (
                   <div className={styles.tileContainer}>
                     <Tile className={styles.tile}>
                       <div className={styles.tileContent}>
                         <p className={styles.content}>
-                          {searchTerm
-                            ? t('noSearchResults', `No results found for "${searchTerm}"`)
+                          {hasFilters
+                            ? t('noMatchingLocations', 'No locations match the current search or tag filter')
                             : t('noData', 'No data to display')}
                         </p>
-                        <p className={styles.helper}>
-                          {searchTerm
-                            ? t('tryDifferentSearch', 'Try a different search term')
-                            : t('checkFilters', 'Check the filters above')}
-                        </p>
+                        {hasFilters ? (
+                          <p className={styles.helper}>{t('tryDifferentSearch', 'Try a different search term')}</p>
+                        ) : null}
                       </div>
                     </Tile>
                   </div>
                 ) : null}
                 <Pagination
-                  backwardText="Previous page"
-                  forwardText="Next page"
+                  backwardText={t('previousPage', 'Previous page')}
+                  forwardText={t('nextPage', 'Next page')}
                   page={currentPage}
                   pageSize={pageSize}
-                  pageSizes={[10, 20, 30, 40, 50]}
-                  totalItems={filteredRows.length}
+                  pageSizes={PAGE_SIZES}
+                  totalItems={totalCount}
                   onChange={({ pageSize: newPageSize, page }) => {
                     if (newPageSize !== pageSize) {
                       setPageSize(newPageSize);
                       setCurrentPage(1);
-                    }
-                    if (page !== currentPage) {
+                    } else {
                       setCurrentPage(page);
                     }
                   }}
                 />
               </TableContainer>
-            );
-          }}
-        </DataTable>
+            )}
+          </DataTable>
+        )}
       </div>
       <WorkspaceContainer contextKey="locations" />
     </>

@@ -10,7 +10,7 @@ import {
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { extractErrorMessagesFromResponse } from '../../../locations/helpers';
+import { showServerErrorModal } from '../../../../utils/server-error';
 import { handleMutation } from '../../../../user-management.resources';
 import { User } from '../../../../types';
 import {
@@ -84,12 +84,7 @@ const UserLoginLocationsWorkspace: React.FC<UserLoginLocationsWorkspaceProps> = 
       handleMutation(`${restBaseUrl}/user/${user.uuid}/location`);
       closeWorkspaceWithSavedChanges();
     } catch (error) {
-      const errorMessages = extractErrorMessagesFromResponse(error);
-      showSnackbar({
-        title: t('error', 'Error'),
-        kind: 'error',
-        subtitle: errorMessages.join(', ') || t('loginLocationsSaveError', 'Error saving login locations'),
-      });
+      showServerErrorModal(t('loginLocationsSaveError', 'Error saving login locations'), error);
     } finally {
       setIsSubmitting(false);
     }
