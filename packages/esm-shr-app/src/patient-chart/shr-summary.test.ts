@@ -136,6 +136,100 @@ describe('parseSummary', () => {
       expect.objectContaining({ name: 'Metformin', date: '2026-09-27' }),
     ]);
   });
+
+  it('names a medication given by reference, from the bundled Medication or the display', () => {
+    const summary = parseSummary({
+      entry: [
+        {
+          resource: {
+            resourceType: 'Composition',
+            section: [
+              {
+                code: { coding: [{ code: '10160-0' }] },
+                entry: [{ reference: 'MedicationStatement/1' }, { reference: 'MedicationStatement/2' }],
+              },
+            ],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'MedicationStatement',
+            id: '1',
+            medicationReference: { reference: 'Medication/5' },
+          },
+        },
+        { resource: { resourceType: 'Medication', id: '5', code: { text: 'Amlodipine 5mg' } } },
+        {
+          resource: {
+            resourceType: 'MedicationStatement',
+            id: '2',
+            medicationReference: { reference: 'Medication/6', display: 'Metformin' },
+          },
+        },
+      ],
+    });
+    expect(summary.medications.map((record) => record.name)).toEqual(['Amlodipine 5mg', 'Metformin']);
+  });
+
+  it('attributes a statement named by urn:uuid through the order it was derived from', () => {
+    // As the SHR read facade assembles it: the statement was never stored, so Provenance covers the order.
+    const summary = parseSummary({
+      entry: [
+        {
+          resource: {
+            resourceType: 'Composition',
+            section: [{ code: { coding: [{ code: '10160-0' }] }, entry: [{ reference: 'urn:uuid:statement' }] }],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:statement',
+          resource: {
+            resourceType: 'MedicationStatement',
+            id: '7',
+            medicationCodeableConcept: { text: 'Amlodipine 5mg' },
+            derivedFrom: [{ reference: 'https://shr/fhir/MedicationRequest/7' }],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Provenance',
+            target: [{ reference: 'MedicationRequest/7' }],
+            agent: [{ who: { display: 'Geda Health Center' } }],
+          },
+        },
+      ],
+    });
+    expect(summary.medications[0].facility).toBe('Geda Health Center');
+  });
+
+  it('keys and attributes records without an id by their fullUrl', () => {
+    const summary = parseSummary({
+      entry: [
+        {
+          resource: {
+            resourceType: 'Composition',
+            section: [
+              {
+                code: { coding: [{ code: '11450-4' }] },
+                entry: [{ reference: 'urn:uuid:a' }, { reference: 'urn:uuid:b' }],
+              },
+            ],
+          },
+        },
+        { fullUrl: 'urn:uuid:a', resource: { resourceType: 'Condition', code: { text: 'Asthma' } } },
+        { fullUrl: 'urn:uuid:b', resource: { resourceType: 'Condition', code: { text: 'Hypertension' } } },
+        {
+          resource: {
+            resourceType: 'Provenance',
+            target: [{ reference: 'urn:uuid:a' }],
+            agent: [{ who: { display: 'Geda Health Center' } }],
+          },
+        },
+      ],
+    });
+    expect(summary.problems.map((record) => record.id)).toEqual(['urn:uuid:a', 'urn:uuid:b']);
+    expect(summary.problems[0].facility).toBe('Geda Health Center');
+  });
 });
 
 describe('codeText', () => {

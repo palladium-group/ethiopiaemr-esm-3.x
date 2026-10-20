@@ -41,6 +41,7 @@ export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | und
   const entries = bundle?.entry ?? [];
 
   const byReference = new Map<string, Resource>();
+  const fullUrlOf = new Map<Resource, string>();
   for (const entry of entries) {
     const resource = entry.resource;
     if (!resource) {
@@ -48,6 +49,7 @@ export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | und
     }
     if (entry.fullUrl) {
       byReference.set(entry.fullUrl, resource);
+      fullUrlOf.set(resource, entry.fullUrl);
     }
     if (resource.id) {
       byReference.set(`${resource.resourceType}/${resource.id}`, resource);
@@ -72,6 +74,9 @@ export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | und
     }
   }
 
+  const resolve = (reference: string | undefined) =>
+    reference ? byReference.get(reference) ?? byReference.get(relativeReference(reference)) : undefined;
+
   const composition = entries.find((entry) => entry.resource?.resourceType === 'Composition')?.resource;
   for (const section of composition?.section ?? []) {
     const key = (section.code?.coding ?? []).map((coding) => SECTION_CODES[coding.code]).find(Boolean);
@@ -79,20 +84,30 @@ export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | und
       continue;
     }
     for (const ref of section.entry ?? []) {
-      const resource = ref?.reference
-        ? byReference.get(ref.reference) ?? byReference.get(relativeReference(ref.reference))
-        : undefined;
-      if (resource) {
-        const facility = facilityByReference.get(`${resource.resourceType}/${resource.id}`) ?? null;
-        summary[key].push(toRecord(resource, facility));
+      const resource = resolve(ref?.reference);
+      if (!resource) {
+        continue;
       }
+      const local = resource.id ? `${resource.resourceType}/${resource.id}` : null;
+      // An assembled record (a MedicationStatement, say) is named by urn:uuid and was never stored,
+      // so its Provenance covers the record it was derived from instead.
+      const facility =
+        [fullUrlOf.get(resource), local, ...(resource.derivedFrom ?? []).map((from) => from?.reference)]
+          .filter(Boolean)
+          .map((reference) => facilityByReference.get(relativeReference(reference)))
+          .find(Boolean) ?? null;
+      summary[key].push(toRecord(resource, local ?? ref.reference, facility, resolve));
     }
   }
   return summary;
 }
 
-function toRecord(resource: Resource, facility: string | null): ShrRecord {
-  const id = `${resource.resourceType}/${resource.id ?? ''}`;
+function toRecord(
+  resource: Resource,
+  id: string,
+  facility: string | null,
+  resolve: (reference: string | undefined) => Resource | undefined,
+): ShrRecord {
   switch (resource.resourceType) {
     case 'Condition':
       return {
@@ -116,7 +131,10 @@ function toRecord(resource: Resource, facility: string | null): ShrRecord {
     case 'MedicationRequest':
       return {
         id,
-        name: codeText(resource.medicationCodeableConcept),
+        name:
+          codeText(resource.medicationCodeableConcept) ??
+          codeText(resolve(resource.medicationReference?.reference)?.code) ??
+          (resource.medicationReference?.display?.trim() || null),
         date:
           resource.effectiveDateTime ??
           resource.effectivePeriod?.start ??
