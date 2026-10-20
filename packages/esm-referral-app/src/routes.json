@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "ethiopiaemr-module-referral": ">=1.0.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "referral",
+      "online": true,
+      "privilege": "Manage Referrals"
+    }
+  ]
+}
