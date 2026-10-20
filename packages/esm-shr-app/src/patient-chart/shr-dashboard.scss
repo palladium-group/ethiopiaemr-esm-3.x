@@ -1,0 +1,65 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  padding: layout.$spacing-05;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.title {
+  @include type.type-style('heading-03');
+  color: colors.$gray-100;
+  margin: 0 0 layout.$spacing-02;
+}
+
+.description {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+  max-width: 50rem;
+}
+
+.actions {
+  display: flex;
+  gap: layout.$spacing-03;
+  flex-shrink: 0;
+}
+
+.notice {
+  max-width: none;
+  margin-bottom: layout.$spacing-05;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.card {
+  padding: layout.$spacing-05;
+}
+
+.cardTitle {
+  @include type.type-style('heading-02');
+  margin: 0 0 layout.$spacing-04;
+}
+
+.count {
+  color: colors.$gray-60;
+  font-weight: normal;
+}
+
+.empty {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  margin: 0;
+}

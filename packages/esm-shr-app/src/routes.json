@@ -10,5 +10,30 @@
       "online": true,
       "privilege": "Manage SHR Outbox"
     }
+  ],
+  "extensions": [
+    {
+      "name": "shr-patient-chart-dashboard-link",
+      "component": "shrDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 20,
+      "privileges": "Read Shared Health Record",
+      "meta": {
+        "slot": "patient-chart-shr-dashboard-slot",
+        "path": "shared-health-record",
+        "title": "Shared Health Record",
+        "hideDashboardTitle": true,
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "shr-patient-chart-dashboard",
+      "component": "shrDashboard",
+      "slot": "patient-chart-shr-dashboard-slot",
+      "privileges": "Read Shared Health Record",
+      "meta": {
+        "fullWidth": true
+      }
+    }
   ]
 }
