@@ -3654,9 +3654,12 @@ __metadata:
 "@palladium-ethiopia/esm-shr-app@workspace:packages/esm-shr-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-shr-app@workspace:packages/esm-shr-app"
+  dependencies:
+    "@openmrs/esm-patient-common-lib": "npm:12.3.4"
   peerDependencies:
     "@carbon/react": ^1.x
     "@openmrs/esm-framework": 10.x
+    "@openmrs/esm-patient-common-lib": 12.x
     dayjs: 1.x
     react: 18.x
     react-i18next: 11.x
