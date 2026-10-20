@@ -35,5 +35,11 @@
         "fullWidth": true
       }
     }
+  ],
+  "modals": [
+    {
+      "name": "shr-request-access-modal",
+      "component": "shrRequestAccessModal"
+    }
   ]
 }

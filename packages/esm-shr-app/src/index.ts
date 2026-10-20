@@ -23,3 +23,8 @@ const chartOptions = {
 export const shrDashboardLink = getSyncLifecycle(ShrDashboardLink, chartOptions);
 
 export const shrDashboard = getAsyncLifecycle(() => import('./patient-chart/shr-dashboard.component'), chartOptions);
+
+export const shrRequestAccessModal = getAsyncLifecycle(
+  () => import('./patient-chart/request-access.modal'),
+  chartOptions,
+);
