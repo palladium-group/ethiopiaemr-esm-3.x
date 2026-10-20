@@ -20,6 +20,8 @@ const chartOptions = {
 };
 
 // Synchronous, as the other chart links are, so the left nav does not reflow as it loads.
+// The link's title is translated by the styleguide as t(title).
+// t('Shared Health Record', 'Shared Health Record')
 export const shrDashboardLink = getSyncLifecycle(ShrDashboardLink, chartOptions);
 
 export const shrDashboard = getAsyncLifecycle(() => import('./patient-chart/shr-dashboard.component'), chartOptions);
