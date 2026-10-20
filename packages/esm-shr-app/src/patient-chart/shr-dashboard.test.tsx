@@ -2,7 +2,7 @@ import React from 'react';
 import { SWRConfig } from 'swr';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { openmrsFetch, showModal, type FetchResponse } from '@openmrs/esm-framework';
+import { openmrsFetch, showModal, useSession, type FetchResponse, type Session } from '@openmrs/esm-framework';
 import { launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
 import ShrDashboard from './shr-dashboard.component';
 
@@ -10,6 +10,7 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({ launchStartVisitPrompt: je
 
 const mockOpenmrsFetch = jest.mocked(openmrsFetch);
 const mockShowModal = jest.mocked(showModal);
+const mockUseSession = jest.mocked(useSession);
 const mockLaunchStartVisitPrompt = jest.mocked(launchStartVisitPrompt);
 
 const PATIENT = '85062570-1bbf-418c-a812-43cd34aa7eef';
@@ -71,6 +72,10 @@ function renderDashboard() {
 }
 
 describe('ShrDashboard', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({ authenticated: true, user: { uuid: 'user-1' } } as Session);
+  });
+
   it('reads nothing and says so while the SHR is switched off here', async () => {
     serve({ status: () => ok({ enabled: false }) });
     renderDashboard();
@@ -141,6 +146,22 @@ describe('ShrDashboard', () => {
 
     expect(await screen.findByText('Waiting for the patient to answer')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /request access/i })).not.toBeInTheDocument();
+  });
+
+  it('does not offer a request until the waiting requests are known', async () => {
+    serve({ pending: () => new Promise(() => {}) });
+    renderDashboard();
+
+    expect(await screen.findByText('Hypertension')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /request/i })).not.toBeInTheDocument();
+  });
+
+  it('asks the user to log in again when the module reports no session', async () => {
+    serve({ summary: () => refused(401, 'not-authenticated') });
+    renderDashboard();
+
+    expect(await screen.findByText('Your session has ended')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
   });
 
   it('says the patient is not in the SHR yet rather than reporting an error', async () => {

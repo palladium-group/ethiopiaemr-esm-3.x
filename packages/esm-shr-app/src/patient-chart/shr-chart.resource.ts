@@ -1,6 +1,6 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
-import useSWRImmutable from 'swr/immutable';
-import { openmrsFetch, type FetchResponse } from '@openmrs/esm-framework';
+import { openmrsFetch, useSession, type FetchResponse } from '@openmrs/esm-framework';
 import { parseSummary, type ShrSummary } from './shr-summary';
 
 const BASE = '/ws/rest/v1/shrclient';
@@ -33,12 +33,15 @@ export interface PendingRequest {
  *
  * Off while loading and on any error, including a module too old to have the endpoint and a user
  * without the privilege: the dashboard must never appear for a request every read would refuse.
+ * Keyed by user, and read again when the chart mounts, so a new login or a facility switched on or
+ * off is seen without reloading the page.
  */
 export function useShrEnabled() {
-  const { data, error, isLoading } = useSWRImmutable<FetchResponse<{ enabled?: unknown }>, Error>(
-    `${BASE}/status`,
-    openmrsFetch,
-    { shouldRetryOnError: false },
+  const userUuid = useSession()?.user?.uuid;
+  const { data, error, isLoading } = useSWR<FetchResponse<{ enabled?: unknown }>, Error>(
+    userUuid ? [`${BASE}/status`, userUuid] : null,
+    ([url]: [string]) => openmrsFetch(url),
+    { revalidateOnFocus: false, revalidateOnReconnect: false, shouldRetryOnError: false },
   );
   return { isEnabled: !error && data?.data?.enabled === true, isLoading };
 }
@@ -53,7 +56,7 @@ export function useShrSummary(patientUuid: string | undefined) {
     openmrsFetch,
     { revalidateOnFocus: false, revalidateOnReconnect: false, shouldRetryOnError: false },
   );
-  const summary: ShrSummary | null = data ? parseSummary(data.data as never) : null;
+  const summary: ShrSummary | null = useMemo(() => (data ? parseSummary(data.data as never) : null), [data]);
   return { summary, refusal: error ? readRefusal(error) : null, isLoading, isValidating, mutate };
 }
 
@@ -64,7 +67,8 @@ export function usePendingRequests(patientUuid: string | undefined) {
     openmrsFetch,
     { revalidateOnFocus: false, shouldRetryOnError: false },
   );
-  return { pending: parsePendingRequests(data?.data), isLoading, mutate };
+  const pending = useMemo(() => parsePendingRequests(data?.data), [data]);
+  return { pending, isLoading, mutate };
 }
 
 export function requestAccess(patientUuid: string, resourceTypes: Array<string>, accessDays: number) {
@@ -84,6 +88,14 @@ export function readRefusal(error: unknown): ShrRefusal {
   if (code) {
     return { code, status };
   }
+  // Without an OperationOutcome these come from OpenMRS itself: the session has ended, or the user
+  // lacks a privilege the endpoint checks.
+  if (status === 401) {
+    return { code: 'session-expired', status };
+  }
+  if (status === 403) {
+    return { code: 'not-authorised', status };
+  }
   // A gateway in front of the SHR can answer with a page of its own rather than an OperationOutcome.
   return { code: status === null || status >= 500 ? 'shr-unreachable' : 'unknown', status };
 }
@@ -102,4 +114,19 @@ export function parsePendingRequests(bundle: unknown): Array<PendingRequest> {
         .map((input) => input.valueString)
         .filter(Boolean),
     }));
+}
+
+export function recordTypeLabel(type: string, t: (key: string, fallback: string) => string): string {
+  switch (type) {
+    case 'Condition':
+      return t('typeConditions', 'Problems');
+    case 'AllergyIntolerance':
+      return t('typeAllergies', 'Allergies');
+    case 'MedicationRequest':
+      return t('typeMedications', 'Medications');
+    case 'Encounter':
+      return t('typeVisits', 'Visits');
+    default:
+      return type;
+  }
 }

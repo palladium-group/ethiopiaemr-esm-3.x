@@ -11,8 +11,7 @@ import {
   NumberInput,
 } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
-import { MAX_ACCESS_DAYS, readRefusal, REQUESTABLE_TYPES, requestAccess } from './shr-chart.resource';
-import { recordTypeLabel } from './shr-dashboard.component';
+import { MAX_ACCESS_DAYS, readRefusal, recordTypeLabel, REQUESTABLE_TYPES, requestAccess } from './shr-chart.resource';
 
 interface RequestAccessModalProps {
   closeModal: () => void;

@@ -5,6 +5,7 @@ import { Renew } from '@carbon/react/icons';
 import { formatDate, parseDate, showModal } from '@openmrs/esm-framework';
 import { launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
 import {
+  recordTypeLabel,
   usePendingRequests,
   useShrEnabled,
   useShrSummary,
@@ -29,7 +30,11 @@ const ShrDashboard: React.FC<ShrDashboardProps> = ({ patientUuid: givenUuid, pat
   const patientUuid = givenUuid ?? patient?.id;
   const { isEnabled, isLoading: isLoadingStatus } = useShrEnabled();
   const { summary, refusal, isLoading, isValidating, mutate } = useShrSummary(isEnabled ? patientUuid : undefined);
-  const { pending, mutate: mutatePending } = usePendingRequests(isEnabled ? patientUuid : undefined);
+  const {
+    pending,
+    isLoading: isLoadingPending,
+    mutate: mutatePending,
+  } = usePendingRequests(isEnabled ? patientUuid : undefined);
 
   const refresh = useCallback(() => {
     mutate();
@@ -62,7 +67,9 @@ const ShrDashboard: React.FC<ShrDashboardProps> = ({ patientUuid: givenUuid, pat
 
   const waiting = pending.length > 0;
   // A request can only be made where a treatment read could be: the module refuses it otherwise.
-  const mayRequest = !waiting && (summary !== null || refusal?.code === 'consent-required');
+  // Not offered until the pending requests are known, so it does not appear beside one already
+  // waiting. Should that read fail, the module still refuses a second request as request-pending.
+  const mayRequest = !isLoadingPending && !waiting && (summary !== null || refusal?.code === 'consent-required');
 
   return (
     <div className={styles.container}>
@@ -195,6 +202,19 @@ const RefusalNotice: React.FC<RefusalNoticeProps> = ({ refusal, onRetry, onVisit
           subtitle={t('notInShrDetail', 'No other facility has shared records for this patient.')}
         />
       );
+    // not-authenticated is the module's own refusal; session-expired a bare 401 from OpenMRS.
+    case 'not-authenticated':
+    case 'session-expired':
+      return (
+        <InlineNotification
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          className={styles.notice}
+          title={t('sessionExpired', 'Your session has ended')}
+          subtitle={t('sessionExpiredDetail', 'Log in again to view the Shared Health Record.')}
+        />
+      );
     case 'not-authorised':
     case 'feature-disabled':
       return (
@@ -215,27 +235,12 @@ const RefusalNotice: React.FC<RefusalNoticeProps> = ({ refusal, onRetry, onVisit
           hideCloseButton
           className={styles.notice}
           title={t('shrUnavailable', "The Shared Health Record can't be reached right now")}
-          subtitle={refusal.code !== 'shr-unreachable' ? refusal.code : undefined}
+          subtitle={refusal.code !== 'shr-unreachable' && refusal.code !== 'unknown' ? refusal.code : undefined}
           actionButtonLabel={t('tryAgain', 'Try again')}
           onActionButtonClick={onRetry}
         />
       );
   }
 };
-
-export function recordTypeLabel(type: string, t: (key: string, fallback: string) => string): string {
-  switch (type) {
-    case 'Condition':
-      return t('typeConditions', 'Problems');
-    case 'AllergyIntolerance':
-      return t('typeAllergies', 'Allergies');
-    case 'MedicationRequest':
-      return t('typeMedications', 'Medications');
-    case 'Encounter':
-      return t('typeVisits', 'Visits');
-    default:
-      return type;
-  }
-}
 
 export default ShrDashboard;

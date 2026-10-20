@@ -21,6 +21,11 @@ describe('readRefusal', () => {
     expect(readRefusal(new Error('Failed to fetch'))).toEqual({ code: 'shr-unreachable', status: null });
   });
 
+  it('tells an ended session and a missing privilege apart from the SHR being unreachable', () => {
+    expect(readRefusal(refused(401, undefined, ''))).toEqual({ code: 'session-expired', status: 401 });
+    expect(readRefusal(refused(403, undefined, null))).toEqual({ code: 'not-authorised', status: 403 });
+  });
+
   it('does not invent a reason for an unexplained client error', () => {
     expect(readRefusal(refused(400, undefined, null))).toEqual({ code: 'unknown', status: 400 });
   });
