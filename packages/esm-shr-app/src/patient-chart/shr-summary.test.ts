@@ -92,6 +92,28 @@ describe('parseSummary', () => {
     expect(summary.problems[1].facility).toBe('1048907');
   });
 
+  it('prefers a Provenance that names the facility over one with only its MFR id, in either order', () => {
+    const withProvenances = (first: object, second: object) =>
+      parseSummary({
+        entry: [
+          {
+            resource: {
+              resourceType: 'Composition',
+              section: [{ code: { coding: [{ code: '11450-4' }] }, entry: [{ reference: 'Condition/10' }] }],
+            },
+          },
+          { resource: { resourceType: 'Condition', id: '10', code: { text: 'Obesity' } } },
+          { resource: { resourceType: 'Provenance', target: [{ reference: 'Condition/10' }], agent: [first] } },
+          { resource: { resourceType: 'Provenance', target: [{ reference: 'Condition/10' }], agent: [second] } },
+        ],
+      }).problems[0].facility;
+    const idOnly = { who: { identifier: FACILITY } };
+    const named = { who: { identifier: FACILITY, display: 'Geda Health Center' } };
+
+    expect(withProvenances(idOnly, named)).toBe('Geda Health Center');
+    expect(withProvenances(named, idOnly)).toBe('Geda Health Center');
+  });
+
   it('shows every section empty when the document has nothing in it', () => {
     expect(parseSummary({ entry: [] })).toEqual({ problems: [], allergies: [], medications: [] });
     expect(parseSummary(null)).toEqual({ problems: [], allergies: [], medications: [] });

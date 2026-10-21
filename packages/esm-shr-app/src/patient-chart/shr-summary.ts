@@ -57,19 +57,30 @@ export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | und
   }
 
   const facilityByReference = new Map<string, string>();
+  const namedReferences = new Set<string>();
   for (const entry of entries) {
     const provenance = entry.resource;
     if (provenance?.resourceType !== 'Provenance') {
       continue;
     }
     const who = provenance.agent?.[0]?.who;
-    const facility = who?.display || who?.identifier?.value || null;
+    const named = who?.display?.trim() || null;
+    const facility = named || who?.identifier?.value || null;
     if (!facility) {
       continue;
     }
     for (const target of provenance.target ?? []) {
-      if (target?.reference) {
-        facilityByReference.set(relativeReference(target.reference), facility);
+      if (!target?.reference) {
+        continue;
+      }
+      // A record sent more than once has several Provenances, and older ones may carry only the
+      // MFR id; a name from any of them is kept over a bare id, whatever their order.
+      const key = relativeReference(target.reference);
+      if (named || !namedReferences.has(key)) {
+        facilityByReference.set(key, facility);
+      }
+      if (named) {
+        namedReferences.add(key);
       }
     }
   }
