@@ -1,4 +1,5 @@
-import { getAsyncLifecycle } from '@openmrs/esm-framework';
+import { getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import ReferralNavLink from './components/referral-nav-link.extension';
 
 const moduleName = '@palladium-ethiopia/esm-referral-app';
 
@@ -12,3 +13,5 @@ export const importTranslation = require.context('../translations', false, /.jso
 export function startupApp() {}
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
+
+export const referralDashboardLink = getSyncLifecycle(ReferralNavLink, options);

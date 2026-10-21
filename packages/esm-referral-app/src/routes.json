@@ -10,5 +10,20 @@
       "online": true,
       "privilege": "Manage Referrals"
     }
+  ],
+  "extensions": [
+    {
+      "name": "referral-dashboard-link",
+      "component": "referralDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "order": 18,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "name": "liaison-referrals",
+        "title": "Liaison referrals",
+        "path": "referral"
+      }
+    }
   ]
 }
