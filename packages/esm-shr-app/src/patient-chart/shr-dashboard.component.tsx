@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionableNotification, Button, InlineLoading, InlineNotification, SkeletonText } from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, SkeletonText } from '@carbon/react';
 import { Renew } from '@carbon/react/icons';
 import { formatDate, parseDate, showModal } from '@openmrs/esm-framework';
 import { launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
@@ -150,17 +150,19 @@ const RefusalNotice: React.FC<RefusalNoticeProps> = ({ refusal, onRetry, onVisit
   switch (refusal.code) {
     case 'no-active-visit':
       return (
-        <ActionableNotification
-          inline
-          kind="info"
-          lowContrast
-          hideCloseButton
-          className={styles.notice}
-          title={t('visitNeeded', 'A visit is needed')}
-          subtitle={t('visitNeededDetail', "Start a visit to view this patient's Shared Health Record.")}
-          actionButtonLabel={t('startVisit', 'Start visit')}
-          onActionButtonClick={() => launchStartVisitPrompt(onVisitStarted)}
-        />
+        <div className={styles.noticeWithAction}>
+          <InlineNotification
+            kind="info"
+            lowContrast
+            hideCloseButton
+            className={styles.notice}
+            title={t('visitNeeded', 'A visit is needed')}
+            subtitle={t('visitNeededDetail', "Start a visit to view this patient's Shared Health Record.")}
+          />
+          <Button kind="primary" onClick={() => launchStartVisitPrompt(onVisitStarted)}>
+            {t('startVisit', 'Start visit')}
+          </Button>
+        </div>
       );
     case 'no-health-id':
       return (
@@ -227,17 +229,19 @@ const RefusalNotice: React.FC<RefusalNoticeProps> = ({ refusal, onRetry, onVisit
       );
     default:
       return (
-        <ActionableNotification
-          inline
-          kind="error"
-          lowContrast
-          hideCloseButton
-          className={styles.notice}
-          title={t('shrUnavailable', "The Shared Health Record can't be reached right now")}
-          subtitle={refusal.code !== 'shr-unreachable' && refusal.code !== 'unknown' ? refusal.code : undefined}
-          actionButtonLabel={t('tryAgain', 'Try again')}
-          onActionButtonClick={onRetry}
-        />
+        <div className={styles.noticeWithAction}>
+          <InlineNotification
+            kind="error"
+            lowContrast
+            hideCloseButton
+            className={styles.notice}
+            title={t('shrUnavailable', "The Shared Health Record can't be reached right now")}
+            subtitle={refusal.code !== 'shr-unreachable' && refusal.code !== 'unknown' ? refusal.code : undefined}
+          />
+          <Button kind="primary" onClick={onRetry}>
+            {t('tryAgain', 'Try again')}
+          </Button>
+        </div>
       );
   }
 };
