@@ -4,12 +4,9 @@ import {
   filterPartitionedTests,
   getPanelSelectionState,
   getStandaloneOrderablesSectionLabel,
-  getVisiblePanelChildren,
   hasVisiblePartitionedTests,
-  isPanelExpanded,
   partitionCategoryTests,
   togglePanelSelection,
-  toggleChildSelection,
   toggleTestSelection,
 } from '../api/order-catalog.utils';
 import { type CatalogTest, type OrderCatalogOrderType } from '../types/order-catalog.types';
@@ -65,35 +62,6 @@ const OrderCatalogTestGrid: React.FC<OrderCatalogTestGridProps> = ({
               );
             })}
           </ul>
-
-          {partition.panels
-            .filter((panel) => isPanelExpanded(panel, selectedUuids))
-            .map((panel) => {
-              const children = getVisiblePanelChildren(panel, searchTerm);
-              if (!children.length) {
-                return null;
-              }
-              return (
-                <div key={`members-${panel.uuid}`} className={styles.panelMembers}>
-                  <p className={styles.panelMembersTitle}>
-                    {t('panelMembersHeading', '{{panel}} — tap to include or remove', { panel: panel.displayName })}
-                  </p>
-                  <ul className={styles.orderList}>
-                    {children.map((child) => (
-                      <li key={child.uuid} className={styles.orderListItem}>
-                        <OrderCatalogOrderButton
-                          label={child.displayName}
-                          variant="child"
-                          active={selectedUuids.has(child.uuid)}
-                          availability={child.availability}
-                          onClick={() => onSelectionChange(toggleChildSelection(panel, child, selectedUuids))}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
         </section>
       ) : null}
 

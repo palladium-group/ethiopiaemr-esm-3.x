@@ -311,24 +311,6 @@ export function hasVisiblePartitionedTests(partition: PartitionedCategoryTests):
   return partition.panels.length > 0 || partition.panelMembers.length > 0 || partition.standaloneTests.length > 0;
 }
 
-/**
- * The child tests of a panel that should be shown when the panel is expanded.
- * If the panel name matches the search (or there is no search), all children show;
- * otherwise only the children whose name matches.
- */
-export function getVisiblePanelChildren(panel: CatalogTest, searchTerm: string): Array<CatalogTest> {
-  const query = searchTerm.trim().toLowerCase();
-  if (!query || matchesSearch(panel.displayName, query)) {
-    return panel.childTests;
-  }
-  return panel.childTests.filter((child) => matchesSearch(child.displayName, query));
-}
-
-/** A panel is "expanded" (its members are shown for partial selection) when it has any selection. */
-export function isPanelExpanded(panel: CatalogTest, selectedUuids: Set<string>): boolean {
-  return isOrderButtonActive(panel, selectedUuids);
-}
-
 export function isConceptSelected(testUuid: string, selectedUuids: Set<string>): boolean {
   return selectedUuids.has(testUuid);
 }
@@ -395,14 +377,6 @@ export function toggleChildSelection(panel: CatalogTest, child: CatalogTest, sel
     next.add(panel.uuid);
   }
   return next;
-}
-
-export function isOrderButtonActive(test: CatalogTest, selectedUuids: Set<string>): boolean {
-  if (test.isPanel) {
-    const state = getPanelSelectionState(test, selectedUuids);
-    return state.checked || state.indeterminate;
-  }
-  return selectedUuids.has(test.uuid);
 }
 
 export function isPanelMemberEnabled(panel: CatalogTest, selectedUuids: Set<string>): boolean {

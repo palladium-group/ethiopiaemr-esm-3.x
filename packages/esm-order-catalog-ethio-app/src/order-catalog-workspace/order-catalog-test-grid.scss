@@ -35,17 +35,3 @@
   min-width: 0;
 }
 
-/* Panel members appear indented under their panel, with a connecting accent. */
-.panelMembers {
-  margin-left: 0.5rem;
-  padding: 0.5rem 0 0.5rem 0.75rem;
-  border-left: 2px dashed var(--border-interactive, #0f62fe);
-}
-
-.panelMembersTitle {
-  margin: 0 0 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--text-secondary, #525252);
-}
-
