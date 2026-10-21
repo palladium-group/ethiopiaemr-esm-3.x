@@ -114,7 +114,7 @@ function toRecord(
         id,
         name: codeText(resource.code),
         date: resource.onsetDateTime ?? resource.recordedDate ?? null,
-        status: codeText(resource.clinicalStatus),
+        status: statusText(resource.clinicalStatus),
         detail: null,
         facility,
       };
@@ -148,6 +148,21 @@ function toRecord(
     default:
       return { id, name: codeText(resource.code), date: null, status: null, detail: null, facility };
   }
+}
+
+/**
+ * A status such as Condition.clinicalStatus: its display, else its code. Unlike a clinical concept,
+ * a status code is a fixed, readable FHIR value ("active"), so showing it is safe.
+ */
+export function statusText(
+  concept: { text?: string; coding?: Array<{ system?: string; code?: string; display?: string }> } | undefined,
+): string | null {
+  const text = codeText(concept);
+  if (text) {
+    return text;
+  }
+  const code = concept?.coding?.find((coding) => coding?.code?.trim())?.code?.trim();
+  return code ? code.charAt(0).toUpperCase() + code.slice(1) : null;
 }
 
 /** A CodeableConcept's text, else the first coding with a display. Never a bare code. */

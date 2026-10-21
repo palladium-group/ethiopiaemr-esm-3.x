@@ -1,4 +1,4 @@
-import { codeText, parseSummary } from './shr-summary';
+import { codeText, parseSummary, statusText } from './shr-summary';
 
 const FACILITY = { system: 'https://fhir.moh.gov.et/sid/mfr-facility-id', value: '1048907' };
 
@@ -229,6 +229,15 @@ describe('parseSummary', () => {
     });
     expect(summary.problems.map((record) => record.id)).toEqual(['urn:uuid:a', 'urn:uuid:b']);
     expect(summary.problems[0].facility).toBe('Geda Health Center');
+  });
+});
+
+describe('statusText', () => {
+  it('shows a status code when it has no display, but prefers the display', () => {
+    const system = 'http://terminology.hl7.org/CodeSystem/condition-clinical';
+    expect(statusText({ coding: [{ system, code: 'active' }] })).toBe('Active');
+    expect(statusText({ coding: [{ system, code: 'resolved', display: 'Resolved' }] })).toBe('Resolved');
+    expect(statusText(undefined)).toBeNull();
   });
 });
 
