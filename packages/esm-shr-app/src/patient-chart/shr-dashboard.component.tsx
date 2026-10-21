@@ -85,13 +85,12 @@ const ShrDashboard: React.FC<ShrDashboardProps> = ({ patientUuid: givenUuid, pat
         </div>
         <div className={styles.actions}>
           {mayRequest && (
-            <Button kind="tertiary" size="sm" onClick={openRequestAccess}>
+            <Button kind="primary" onClick={openRequestAccess}>
               {summary ? t('requestMoreAccess', 'Request more access') : t('requestAccess', 'Request access')}
             </Button>
           )}
           <Button
             kind="ghost"
-            size="sm"
             renderIcon={Renew}
             onClick={refresh}
             disabled={isValidating}
