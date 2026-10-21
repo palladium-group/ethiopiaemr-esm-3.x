@@ -146,6 +146,7 @@ describe('ShrDashboard', () => {
 
     expect(await screen.findByText('Waiting for the patient to answer')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /request access/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Not shared with this facility')).not.toBeInTheDocument();
   });
 
   it('does not offer a request until the waiting requests are known', async () => {

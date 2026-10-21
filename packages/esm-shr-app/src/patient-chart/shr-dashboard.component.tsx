@@ -107,7 +107,10 @@ const ShrDashboard: React.FC<ShrDashboardProps> = ({ patientUuid: givenUuid, pat
       {isLoading ? (
         <InlineLoading description={t('readingShr', 'Reading the Shared Health Record…')} />
       ) : refusal ? (
-        <RefusalNotice refusal={refusal} onRetry={refresh} onVisitStarted={refresh} />
+        // While a request waits, "not shared" only repeats what the waiting notice already says.
+        waiting && refusal.code === 'consent-required' ? null : (
+          <RefusalNotice refusal={refusal} onRetry={refresh} onVisitStarted={refresh} />
+        )
       ) : summary ? (
         <div className={styles.sections}>
           {SECTION_ORDER.map((key) => (
