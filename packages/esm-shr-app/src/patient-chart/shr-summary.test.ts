@@ -1,4 +1,4 @@
-import { codeText, parseSummary } from './shr-summary';
+import { codeText, parseSummary, statusText } from './shr-summary';
 
 const FACILITY = { system: 'https://fhir.moh.gov.et/sid/mfr-facility-id', value: '1048907' };
 
@@ -90,6 +90,28 @@ describe('parseSummary', () => {
     const summary = parseSummary(bundle);
     expect(summary.problems[0].facility).toBe('Geda Health Center');
     expect(summary.problems[1].facility).toBe('1048907');
+  });
+
+  it('prefers a Provenance that names the facility over one with only its MFR id, in either order', () => {
+    const withProvenances = (first: object, second: object) =>
+      parseSummary({
+        entry: [
+          {
+            resource: {
+              resourceType: 'Composition',
+              section: [{ code: { coding: [{ code: '11450-4' }] }, entry: [{ reference: 'Condition/10' }] }],
+            },
+          },
+          { resource: { resourceType: 'Condition', id: '10', code: { text: 'Obesity' } } },
+          { resource: { resourceType: 'Provenance', target: [{ reference: 'Condition/10' }], agent: [first] } },
+          { resource: { resourceType: 'Provenance', target: [{ reference: 'Condition/10' }], agent: [second] } },
+        ],
+      }).problems[0].facility;
+    const idOnly = { who: { identifier: FACILITY } };
+    const named = { who: { identifier: FACILITY, display: 'Geda Health Center' } };
+
+    expect(withProvenances(idOnly, named)).toBe('Geda Health Center');
+    expect(withProvenances(named, idOnly)).toBe('Geda Health Center');
   });
 
   it('shows every section empty when the document has nothing in it', () => {
@@ -229,6 +251,15 @@ describe('parseSummary', () => {
     });
     expect(summary.problems.map((record) => record.id)).toEqual(['urn:uuid:a', 'urn:uuid:b']);
     expect(summary.problems[0].facility).toBe('Geda Health Center');
+  });
+});
+
+describe('statusText', () => {
+  it('shows a status code when it has no display, but prefers the display', () => {
+    const system = 'http://terminology.hl7.org/CodeSystem/condition-clinical';
+    expect(statusText({ coding: [{ system, code: 'active' }] })).toBe('Active');
+    expect(statusText({ coding: [{ system, code: 'resolved', display: 'Resolved' }] })).toBe('Resolved');
+    expect(statusText(undefined)).toBeNull();
   });
 });
 

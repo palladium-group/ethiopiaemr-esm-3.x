@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionableNotification, Button, InlineLoading, InlineNotification, SkeletonText } from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, SkeletonText } from '@carbon/react';
 import { Renew } from '@carbon/react/icons';
 import { formatDate, parseDate, showModal } from '@openmrs/esm-framework';
 import { launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
@@ -85,13 +85,12 @@ const ShrDashboard: React.FC<ShrDashboardProps> = ({ patientUuid: givenUuid, pat
         </div>
         <div className={styles.actions}>
           {mayRequest && (
-            <Button kind="tertiary" size="sm" onClick={openRequestAccess}>
+            <Button kind="primary" onClick={openRequestAccess}>
               {summary ? t('requestMoreAccess', 'Request more access') : t('requestAccess', 'Request access')}
             </Button>
           )}
           <Button
             kind="ghost"
-            size="sm"
             renderIcon={Renew}
             onClick={refresh}
             disabled={isValidating}
@@ -108,7 +107,10 @@ const ShrDashboard: React.FC<ShrDashboardProps> = ({ patientUuid: givenUuid, pat
       {isLoading ? (
         <InlineLoading description={t('readingShr', 'Reading the Shared Health Record…')} />
       ) : refusal ? (
-        <RefusalNotice refusal={refusal} onRetry={refresh} onVisitStarted={refresh} />
+        // While a request waits, "not shared" only repeats what the waiting notice already says.
+        waiting && refusal.code === 'consent-required' ? null : (
+          <RefusalNotice refusal={refusal} onRetry={refresh} onVisitStarted={refresh} />
+        )
       ) : summary ? (
         <div className={styles.sections}>
           {SECTION_ORDER.map((key) => (
@@ -151,17 +153,19 @@ const RefusalNotice: React.FC<RefusalNoticeProps> = ({ refusal, onRetry, onVisit
   switch (refusal.code) {
     case 'no-active-visit':
       return (
-        <ActionableNotification
-          inline
-          kind="info"
-          lowContrast
-          hideCloseButton
-          className={styles.notice}
-          title={t('visitNeeded', 'A visit is needed')}
-          subtitle={t('visitNeededDetail', "Start a visit to view this patient's Shared Health Record.")}
-          actionButtonLabel={t('startVisit', 'Start visit')}
-          onActionButtonClick={() => launchStartVisitPrompt(onVisitStarted)}
-        />
+        <div className={styles.noticeWithAction}>
+          <InlineNotification
+            kind="info"
+            lowContrast
+            hideCloseButton
+            className={styles.notice}
+            title={t('visitNeeded', 'A visit is needed')}
+            subtitle={t('visitNeededDetail', "Start a visit to view this patient's Shared Health Record.")}
+          />
+          <Button kind="primary" onClick={() => launchStartVisitPrompt(onVisitStarted)}>
+            {t('startVisit', 'Start visit')}
+          </Button>
+        </div>
       );
     case 'no-health-id':
       return (
@@ -228,17 +232,19 @@ const RefusalNotice: React.FC<RefusalNoticeProps> = ({ refusal, onRetry, onVisit
       );
     default:
       return (
-        <ActionableNotification
-          inline
-          kind="error"
-          lowContrast
-          hideCloseButton
-          className={styles.notice}
-          title={t('shrUnavailable', "The Shared Health Record can't be reached right now")}
-          subtitle={refusal.code !== 'shr-unreachable' && refusal.code !== 'unknown' ? refusal.code : undefined}
-          actionButtonLabel={t('tryAgain', 'Try again')}
-          onActionButtonClick={onRetry}
-        />
+        <div className={styles.noticeWithAction}>
+          <InlineNotification
+            kind="error"
+            lowContrast
+            hideCloseButton
+            className={styles.notice}
+            title={t('shrUnavailable', "The Shared Health Record can't be reached right now")}
+            subtitle={refusal.code !== 'shr-unreachable' && refusal.code !== 'unknown' ? refusal.code : undefined}
+          />
+          <Button kind="primary" onClick={onRetry}>
+            {t('tryAgain', 'Try again')}
+          </Button>
+        </div>
       );
   }
 };

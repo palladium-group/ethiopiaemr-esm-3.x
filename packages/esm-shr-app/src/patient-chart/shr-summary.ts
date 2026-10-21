@@ -57,19 +57,30 @@ export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | und
   }
 
   const facilityByReference = new Map<string, string>();
+  const namedReferences = new Set<string>();
   for (const entry of entries) {
     const provenance = entry.resource;
     if (provenance?.resourceType !== 'Provenance') {
       continue;
     }
     const who = provenance.agent?.[0]?.who;
-    const facility = who?.display || who?.identifier?.value || null;
+    const named = who?.display?.trim() || null;
+    const facility = named || who?.identifier?.value || null;
     if (!facility) {
       continue;
     }
     for (const target of provenance.target ?? []) {
-      if (target?.reference) {
-        facilityByReference.set(relativeReference(target.reference), facility);
+      if (!target?.reference) {
+        continue;
+      }
+      // A record sent more than once has several Provenances, and older ones may carry only the
+      // MFR id; a name from any of them is kept over a bare id, whatever their order.
+      const key = relativeReference(target.reference);
+      if (named || !namedReferences.has(key)) {
+        facilityByReference.set(key, facility);
+      }
+      if (named) {
+        namedReferences.add(key);
       }
     }
   }
@@ -114,7 +125,7 @@ function toRecord(
         id,
         name: codeText(resource.code),
         date: resource.onsetDateTime ?? resource.recordedDate ?? null,
-        status: codeText(resource.clinicalStatus),
+        status: statusText(resource.clinicalStatus),
         detail: null,
         facility,
       };
@@ -148,6 +159,21 @@ function toRecord(
     default:
       return { id, name: codeText(resource.code), date: null, status: null, detail: null, facility };
   }
+}
+
+/**
+ * A status such as Condition.clinicalStatus: its display, else its code. Unlike a clinical concept,
+ * a status code is a fixed, readable FHIR value ("active"), so showing it is safe.
+ */
+export function statusText(
+  concept: { text?: string; coding?: Array<{ system?: string; code?: string; display?: string }> } | undefined,
+): string | null {
+  const text = codeText(concept);
+  if (text) {
+    return text;
+  }
+  const code = concept?.coding?.find((coding) => coding?.code?.trim())?.code?.trim();
+  return code ? code.charAt(0).toUpperCase() + code.slice(1) : null;
 }
 
 /** A CodeableConcept's text, else the first coding with a display. Never a bare code. */
