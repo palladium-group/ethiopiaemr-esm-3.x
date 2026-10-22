@@ -103,9 +103,6 @@ describe('Identifiers component', () => {
       renderIdentifiers();
 
       expect(screen.getByText('Identifiers')).toBeInTheDocument();
-      const configureButton = screen.getByRole('button', { name: 'Configure' });
-      expect(configureButton).toBeInTheDocument();
-      expect(configureButton).toBeEnabled();
     });
 
     it('renders default identifier types', () => {
@@ -120,18 +117,61 @@ describe('Identifiers component', () => {
     });
   });
 
-  describe('User interaction', () => {
-    it('opens identifier selection overlay when Configure button is clicked', async () => {
-      const user = userEvent.setup();
+  describe('Health ID search inside Identifiers section', () => {
+    it('renders Health ID search when in edit mode and patient has no Health ID attached', () => {
       mockResourcesContextValue.identifierTypes = mockIdentifierTypes;
-      renderIdentifiers();
+      renderIdentifiers({
+        ...mockContextValues,
+        inEditMode: true,
+        onHealthIdOverwrite: jest.fn(),
+        values: {
+          ...mockInitialFormValues,
+          identifiers: {
+            openmrsId: {
+              identifierTypeUuid: 'some-uuid',
+              identifierName: 'OpenMRS ID',
+              identifierValue: '10001V',
+            },
+          },
+        },
+      } as any);
 
-      const configureButton = screen.getByRole('button', { name: 'Configure' });
-      await user.click(configureButton);
+      expect(screen.getByText(/Health ID Search/i)).toBeInTheDocument();
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    });
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Close overlay' })).toBeInTheDocument();
-      });
+    it('does NOT render Health ID search when patient already has a Health ID attached', () => {
+      mockResourcesContextValue.identifierTypes = mockIdentifierTypes;
+      renderIdentifiers({
+        ...mockContextValues,
+        inEditMode: true,
+        onHealthIdOverwrite: jest.fn(),
+        values: {
+          ...mockInitialFormValues,
+          identifiers: {
+            healthId: {
+              identifierTypeUuid: 'cce42242-9e55-40a6-8739-1e6be1369bbe',
+              identifierName: 'Health ID',
+              identifierValue: 'HID-12345',
+            },
+          },
+        },
+      } as any);
+
+      expect(screen.queryByText(/Health ID Search/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    });
+
+    it('does NOT render Health ID search when in registration mode (not inEditMode)', () => {
+      mockResourcesContextValue.identifierTypes = mockIdentifierTypes;
+      renderIdentifiers({
+        ...mockContextValues,
+        inEditMode: false,
+        onHealthIdOverwrite: jest.fn(),
+        values: mockInitialFormValues,
+      } as any);
+
+      expect(screen.queryByText(/Health ID Search/i)).not.toBeInTheDocument();
     });
   });
 });

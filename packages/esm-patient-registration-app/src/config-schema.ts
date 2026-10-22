@@ -44,6 +44,10 @@ export interface RegistrationConfig {
    * when demographics should be locked in edit mode.
    */
   healthIdIdentifierTypeUuid?: string;
+  /**
+   * Base URL for the Health ID lookup API (MPI).
+   */
+  healthIdLookupUrl?: string;
   fieldConfigurations: {
     causeOfDeath: {
       conceptUuid: string;
@@ -403,6 +407,11 @@ export const esmPatientRegistrationSchema = {
     _default: '',
     _description:
       'Patient identifier type UUID used to store the Health ID (MPI/eMPI). When set, patient demographics will be locked in Edit mode for patients who have this identifier.',
+  },
+  healthIdLookupUrl: {
+    _type: Type.String,
+    _default: 'openmrs/ws/rest/v1/ethiopiaemrcustommodule/mpi/patient',
+    _description: 'Base URL for the Health ID lookup API (MPI). The healthId query param will be appended to this URL.',
   },
   registrationObs: {
     encounterTypeUuid: {
