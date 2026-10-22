@@ -1,4 +1,8 @@
-import { createBillableAvailabilityLookup, type BillableServiceAvailability } from './billable-availability.resource';
+import {
+  createBillableAvailabilityLookup,
+  createBillablePriceLookup,
+  type BillableServiceAvailability,
+} from './billable-availability.resource';
 
 describe('billable availability lookup', () => {
   it('maps concept uuid to enabled state', () => {
@@ -24,5 +28,30 @@ describe('billable availability lookup', () => {
 
     expect(lookup.has('valid-concept')).toBe(true);
     expect(lookup.size).toBe(1);
+  });
+});
+
+describe('billable price lookup', () => {
+  it('maps a concept to its payment-method prices', () => {
+    const services: Array<BillableServiceAvailability> = [
+      {
+        serviceStatus: 'ENABLED',
+        concept: { uuid: 'cbc' },
+        servicePrices: [{ uuid: 'price-1', price: 1000, paymentMode: { name: 'Cash' } }],
+      },
+    ];
+
+    const prices = createBillablePriceLookup(services);
+
+    expect(prices.get('cbc')).toEqual([{ uuid: 'price-1', price: 1000, paymentModeName: 'Cash' }]);
+  });
+
+  it('stores an empty price list when a service has no prices', () => {
+    const services: Array<BillableServiceAvailability> = [
+      { serviceStatus: 'ENABLED', concept: { uuid: 'unpriced' }, servicePrices: [] },
+    ];
+
+    expect(createBillablePriceLookup(services).get('unpriced')).toEqual([]);
+    expect(createBillablePriceLookup(services).has('missing')).toBe(false);
   });
 });

@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, Close } from '@carbon/react/icons';
 import classNames from 'classnames';
+import { useBillableAvailabilityLookup } from '../api/billable-availability.resource';
 import { collectSelectedItems, togglePanelSelection, toggleTestSelection } from '../api/order-catalog.utils';
 import { type OrderDetailValidationError } from '../api/order-catalog-validation';
 import { type CatalogTab, type CatalogTest, type OrderDetail } from '../types/order-catalog.types';
 import OrderCatalogOrderDetailForm from './order-catalog-order-detail-form.component';
+import { resolveExpandedSelection } from './order-catalog-selected-list.utils';
 import styles from './order-catalog-selected-list.scss';
 
 export interface OrderCatalogSelectedListProps {
@@ -46,32 +48,29 @@ const OrderCatalogSelectedList: React.FC<OrderCatalogSelectedListProps> = ({
 }) => {
   const { t } = useTranslation();
   const items = useMemo(() => collectSelectedItems(tab, selectedUuids), [tab, selectedUuids]);
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const itemUuids = useMemo(() => items.map((item) => item.uuid), [items]);
+  const [expandedUuid, setExpandedUuid] = useState<string | null>(null);
+  const [trackedUuids, setTrackedUuids] = useState<Array<string>>([]);
+  const { prices, isLoading: pricesLoading, error: pricesError } = useBillableAvailabilityLookup();
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   useEffect(() => {
-    const invalidUuids = Object.keys(validationErrorsByUuid);
-    if (!invalidUuids.length) {
-      return;
+    setExpandedUuid((current) => resolveExpandedSelection(trackedUuids, itemUuids, current));
+    setTrackedUuids(itemUuids);
+    // trackedUuids is the previous list; listing it as a dependency would retrigger this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemUuids]);
+
+  useEffect(() => {
+    const firstInvalid = itemsRef.current.find((item) => validationErrorsByUuid[item.uuid]?.length)?.uuid;
+    if (firstInvalid) {
+      setExpandedUuid(firstInvalid);
     }
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      for (const uuid of invalidUuids) {
-        next.add(uuid);
-      }
-      return next;
-    });
   }, [validationErrorsByUuid]);
 
   const toggleExpanded = (uuid: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(uuid)) {
-        next.delete(uuid);
-      } else {
-        next.add(uuid);
-      }
-      return next;
-    });
+    setExpandedUuid((current) => (current === uuid ? null : uuid));
   };
 
   const handleRemove = (uuid: string, isPanel: boolean) => {
@@ -84,14 +83,6 @@ const OrderCatalogSelectedList: React.FC<OrderCatalogSelectedListProps> = ({
       }
     }
     onRemoveDetail(uuid);
-    setExpanded((prev) => {
-      if (!prev.has(uuid)) {
-        return prev;
-      }
-      const next = new Set(prev);
-      next.delete(uuid);
-      return next;
-    });
   };
 
   return (
@@ -106,7 +97,7 @@ const OrderCatalogSelectedList: React.FC<OrderCatalogSelectedListProps> = ({
         ) : (
           <ul className={styles.selectedList}>
             {items.map((item) => {
-              const isExpanded = expanded.has(item.uuid);
+              const isExpanded = expandedUuid === item.uuid;
               const itemErrors = validationErrorsByUuid[item.uuid];
               const hasErrors = Boolean(itemErrors?.length);
               return (
@@ -137,6 +128,10 @@ const OrderCatalogSelectedList: React.FC<OrderCatalogSelectedListProps> = ({
                     <OrderCatalogOrderDetailForm
                       idPrefix={`order-detail-${item.uuid}`}
                       orderType={tab.orderType}
+                      displayName={item.displayName}
+                      prices={prices.get(item.uuid)}
+                      pricesLoading={pricesLoading}
+                      pricesError={Boolean(pricesError)}
                       value={orderDetails[item.uuid]}
                       validationErrors={itemErrors}
                       onChange={(detail) => onDetailsChange(item.uuid, detail)}
