@@ -4,6 +4,7 @@ import type { ObjectSchema } from 'yup';
 import { type PatientIdentifierType, useConfig } from '@openmrs/esm-framework';
 import { type CapturePhotoProps, type FormValues } from './patient-registration.types';
 import { type RegistrationConfig } from '../config-schema';
+import { type HealthIdPatient } from './health-id/health-id.resource';
 
 export interface PatientRegistrationContextProps {
   currentPhoto: string;
@@ -18,6 +19,11 @@ export interface PatientRegistrationContextProps {
   setInitialFormValues?: React.Dispatch<SetStateAction<FormValues>>;
   validationSchema: ObjectSchema<any> | null;
   values: FormValues;
+  onHealthIdOverwrite?: (healthIdPatient: HealthIdPatient) => Promise<void>;
+  isHealthIdOverwritten?: boolean;
+  linkedHealthId?: string | null;
+  phoneAttributeTypeUuid?: string;
+  emailAttributeTypeUuid?: string;
 }
 
 export const PatientRegistrationContext = createContext<PatientRegistrationContextProps | undefined>(undefined);

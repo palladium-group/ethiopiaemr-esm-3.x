@@ -106,13 +106,19 @@ export class FormManager {
     savePatientTransactionManager,
     abortController,
   ) => {
-    const patientIdentifiers: Array<PatientIdentifier> = await FormManager.savePatientIdentifiers(
-      isNewPatient,
-      values.patientUuid,
-      values.identifiers,
-      initialIdentifierValues,
-      currentLocation,
-    );
+    let patientIdentifiers: Array<PatientIdentifier> = [];
+
+    // For new patients, identifiers must be prepared and included in the patient creation payload.
+    // For existing patients, identifiers are added/updated only AFTER patient details are successfully updated.
+    if (isNewPatient) {
+      patientIdentifiers = await FormManager.savePatientIdentifiers(
+        isNewPatient,
+        values.patientUuid,
+        values.identifiers,
+        initialIdentifierValues,
+        currentLocation,
+      );
+    }
 
     const createdPatient = FormManager.getPatientToCreate(
       isNewPatient,
@@ -123,10 +129,6 @@ export class FormManager {
       config,
     );
 
-    FormManager.getDeletedNames(values.patientUuid, patientUuidMap).forEach(async (name) => {
-      await deletePersonName(name.nameUuid, name.personUuid);
-    });
-
     const savePatientResponse = await savePatient(
       createdPatient,
       isNewPatient && !savePatientTransactionManager.patientSaved ? undefined : values.patientUuid,
@@ -134,6 +136,25 @@ export class FormManager {
 
     if (savePatientResponse.ok) {
       savePatientTransactionManager.patientSaved = true;
+
+      await Promise.all(
+        FormManager.getDeletedNames(values.patientUuid, patientUuidMap).map((name) =>
+          deletePersonName(name.nameUuid, name.personUuid),
+        ),
+      );
+
+      // Only add or update identifiers after patient details have been successfully updated.
+      // If patient details update fails, this block is not reached, preventing identifiers from being attached.
+      if (!isNewPatient) {
+        await FormManager.savePatientIdentifiers(
+          isNewPatient,
+          values.patientUuid,
+          values.identifiers,
+          initialIdentifierValues,
+          currentLocation,
+        );
+      }
+
       await this.saveRelationships(values.relationships, savePatientResponse);
 
       await this.saveObservations(values.obs, savePatientResponse, currentLocation, currentUser, config);
@@ -149,6 +170,8 @@ export class FormManager {
           patientPhotoConceptUuid,
         );
       }
+    } else {
+      throw new Error('Failed to update patient details');
     }
 
     return savePatientResponse.data.uuid;
@@ -280,11 +303,12 @@ export class FormManager {
     */
 
     if (patientUuid) {
-      Object.keys(initialIdentifierValues)
+      const deletions = Object.keys(initialIdentifierValues || {})
         .filter((identifierFieldName) => !patientIdentifiers[identifierFieldName])
-        .forEach(async (identifierFieldName) => {
-          await deletePatientIdentifier(patientUuid, initialIdentifierValues[identifierFieldName].identifierUuid);
-        });
+        .map((identifierFieldName) =>
+          deletePatientIdentifier(patientUuid, initialIdentifierValues[identifierFieldName].identifierUuid),
+        );
+      await Promise.all(deletions);
     }
 
     return Promise.all(identifierTypeRequests);

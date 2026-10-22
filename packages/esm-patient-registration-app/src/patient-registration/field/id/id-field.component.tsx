@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, SkeletonText } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
@@ -13,6 +13,9 @@ import type {
 } from '../../patient-registration.types';
 import IdentifierInput from '../../input/custom-input/identifier/identifier-input.component';
 import IdentifierSelectionOverlay from './identifier-selection-overlay.component';
+import { HealthIdSearch } from '../../health-id/health-id-search.component';
+import { isHealthIdIdentifierAttached } from '../../health-id/health-id.resource';
+import { type RegistrationConfig } from '../../../config-schema';
 import styles from '../field.scss';
 
 export function setIdentifierSource(
@@ -61,12 +64,33 @@ export function deleteIdentifierType(identifiers: FormValues['identifiers'], ide
 export const Identifiers: React.FC = () => {
   const { identifierTypes } = useResourcesContext();
   const isLoading = !identifierTypes?.length;
-  const { values, setFieldValue, initialFormValues, isOffline } = usePatientRegistrationContext();
+  const {
+    values,
+    setFieldValue,
+    initialFormValues,
+    isOffline,
+    inEditMode,
+    onHealthIdOverwrite,
+    isHealthIdOverwritten,
+    linkedHealthId,
+    phoneAttributeTypeUuid,
+    emailAttributeTypeUuid,
+  } = usePatientRegistrationContext();
   const { t } = useTranslation();
   const layout = useLayoutType();
   const [showIdentifierOverlay, setShowIdentifierOverlay] = useState(false);
-  const config = useConfig();
-  const { defaultPatientIdentifierTypes } = config;
+  const config = useConfig<RegistrationConfig>();
+  const { defaultPatientIdentifierTypes, healthIdIdentifierTypeUuid, healthIdLookupUrl } = config;
+
+  const hasHealthIdAttached = useMemo(() => {
+    return (
+      isHealthIdIdentifierAttached(values?.identifiers, healthIdIdentifierTypeUuid) ||
+      isHealthIdIdentifierAttached(initialFormValues?.identifiers, healthIdIdentifierTypeUuid) ||
+      Boolean(isHealthIdOverwritten)
+    );
+  }, [values?.identifiers, initialFormValues?.identifiers, healthIdIdentifierTypeUuid, isHealthIdOverwritten]);
+
+  const showHealthIdSearch = inEditMode && !hasHealthIdAttached && !isOffline && Boolean(onHealthIdOverwrite);
 
   useEffect(() => {
     if (identifierTypes) {
@@ -121,13 +145,24 @@ export const Identifiers: React.FC = () => {
   }
 
   return (
-    <div className={styles.halfWidthInDesktopView}>
+    <div style={{ width: '100%' }}>
       <UserHasAccess privilege={['Get Identifier Types', 'Add Patient Identifiers']}>
         <div className={styles.identifierLabelText}>
           <h4 className={styles.productiveHeading02Light}>{t('idFieldLabelText', 'Identifiers')}</h4>
         </div>
       </UserHasAccess>
-      <div>
+      {showHealthIdSearch && (
+        <HealthIdSearch
+          lookupUrl={healthIdLookupUrl || 'openmrs/ws/rest/v1/ethiopiaemrcustommodule/mpi/patient'}
+          currentFormValues={values}
+          isHealthIdOverwritten={Boolean(isHealthIdOverwritten)}
+          linkedHealthId={linkedHealthId}
+          phoneAttributeTypeUuid={phoneAttributeTypeUuid}
+          emailAttributeTypeUuid={emailAttributeTypeUuid}
+          onOverwriteConfirm={onHealthIdOverwrite}
+        />
+      )}
+      <div className={styles.halfWidthInDesktopView}>
         {Object.entries(values.identifiers).map(([fieldName, identifier]) => (
           <IdentifierInput key={fieldName} fieldName={fieldName} patientIdentifier={identifier} />
         ))}

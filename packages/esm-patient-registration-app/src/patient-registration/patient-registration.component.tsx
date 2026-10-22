@@ -5,7 +5,16 @@ import { XAxis } from '@carbon/react/icons';
 import { useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Form, Formik, type FormikHelpers, type FormikErrors } from 'formik';
-import { createErrorHandler, interpolateUrl, showSnackbar, useConfig, usePatientPhoto } from '@openmrs/esm-framework';
+import { mutate } from 'swr';
+import {
+  createErrorHandler,
+  fhirBaseUrl,
+  interpolateUrl,
+  restBaseUrl,
+  showSnackbar,
+  useConfig,
+  usePatientPhoto,
+} from '@openmrs/esm-framework';
 import { usePatientWithBirthtime } from './usePatientWithBirthtime';
 import { builtInSections, type RegistrationConfig, type SectionDefinition } from '../config-schema';
 import { cancelRegistration, filterOutUndefinedPatientIdentifiers, scrollIntoView } from './patient-registration-utils';
@@ -14,7 +23,7 @@ import { DummyDataInput } from './input/dummy-data/dummy-data-input.component';
 import { PatientRegistrationContextProvider } from './patient-registration-context';
 import { useResourcesContext } from '../resources-context';
 import { SectionWrapper } from './section/section-wrapper.component';
-import { type CapturePhotoProps, type FormValues } from './patient-registration.types';
+import { type CapturePhotoProps, type FormValues, type PatientIdentifierValue } from './patient-registration.types';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
 import {
   useInitialAddressFieldValues,
@@ -23,6 +32,7 @@ import {
   usePatientUuidMap,
 } from './patient-registration-hooks';
 import BeforeSavePrompt from './before-save-prompt.component';
+import { isHealthIdIdentifierAttached, type HealthIdPatient } from './health-id/health-id.resource';
 import styles from './patient-registration.scss';
 
 let exportedInitialFormValuesForTesting = {} as FormValues;
@@ -68,16 +78,211 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
   const validationSchema = getValidationSchema(config, t);
 
+  const [isHealthIdOverwritten, setIsHealthIdOverwritten] = useState(false);
+  const [linkedHealthId, setLinkedHealthId] = useState<string | null>(null);
+  const [preOverwriteFormValues, setPreOverwriteFormValues] = useState<FormValues | null>(null);
+
   const { data: patientIdentifiers } = useInitialPatientIdentifiers(uuidOfPatientToEdit);
-  const isEmpiDemographicsLocked = useMemo(() => {
-    if (!inEditMode || !healthIdIdentifierTypeUuid || !healthIdIdentifierTypeUuid.trim()) {
+
+  const hasHealthIdInitially = useMemo(() => {
+    if (!inEditMode) {
       return false;
     }
 
-    return Object.values(patientIdentifiers ?? {}).some(
-      (identifier) => identifier?.identifierTypeUuid === healthIdIdentifierTypeUuid,
+    return (
+      isHealthIdIdentifierAttached(patientIdentifiers, healthIdIdentifierTypeUuid) ||
+      isHealthIdIdentifierAttached(initialFormValues?.identifiers, healthIdIdentifierTypeUuid) ||
+      isHealthIdIdentifierAttached(patientToEdit?.identifier as any, healthIdIdentifierTypeUuid)
     );
-  }, [inEditMode, healthIdIdentifierTypeUuid, patientIdentifiers]);
+  }, [inEditMode, healthIdIdentifierTypeUuid, patientIdentifiers, initialFormValues?.identifiers, patientToEdit]);
+
+  const isEmpiDemographicsLocked = useMemo(() => {
+    return hasHealthIdInitially || isHealthIdOverwritten;
+  }, [hasHealthIdInitially, isHealthIdOverwritten]);
+
+  const handleOverwriteConfirm = useCallback(
+    async (healthIdPatient: HealthIdPatient, formikProps: FormikHelpers<FormValues> & { values: FormValues }) => {
+      const { values, resetForm } = formikProps;
+      const mpiPerson = healthIdPatient.fhir?.person;
+      const mpiName = mpiPerson?.names?.[0];
+      const mpiGender = mpiPerson?.gender?.trim().toLowerCase();
+      const mpiBirthdate = mpiPerson?.birthdate;
+      const mpiAddress = mpiPerson?.addresses?.[0];
+      const mpiPhone = healthIdPatient.fhir?.phone;
+      const mpiEmail = healthIdPatient.fhir?.email;
+      const resolvedHealthId = healthIdPatient.fhir?.healthId;
+
+      setPreOverwriteFormValues({ ...values });
+
+      const updatedValues: FormValues = {
+        ...values,
+        ...(mpiName?.givenName ? { givenName: mpiName.givenName } : {}),
+        ...(mpiName?.middleName ? { middleName: mpiName.middleName } : {}),
+        ...(mpiName?.familyName ? { familyName: mpiName.familyName } : {}),
+      };
+
+      if (mpiGender) {
+        const mappedGender = mpiGender.startsWith('m') ? 'male' : mpiGender.startsWith('f') ? 'female' : mpiGender;
+        updatedValues.gender = mappedGender;
+      }
+
+      if (mpiBirthdate) {
+        updatedValues.birthdate = new Date(mpiBirthdate);
+        updatedValues.birthdateEstimated = false;
+        updatedValues.yearsEstimated = 0;
+        updatedValues.monthsEstimated = 0;
+      }
+
+      if (mpiPhone) {
+        updatedValues.telephoneNumber = mpiPhone;
+        const phoneUuid = config.fieldConfigurations?.phone?.personAttributeUuid;
+        if (phoneUuid) {
+          updatedValues.attributes = {
+            ...(updatedValues.attributes || {}),
+            [phoneUuid]: mpiPhone,
+          };
+        }
+      }
+
+      if (mpiEmail) {
+        const emailFieldDef = config.fieldDefinitions?.find((f) => f.id === 'email' && f.type === 'person attribute');
+        if (emailFieldDef?.uuid) {
+          updatedValues.attributes = {
+            ...(updatedValues.attributes || {}),
+            [emailFieldDef.uuid]: mpiEmail,
+          };
+        }
+      }
+
+      if (mpiAddress) {
+        const currentAddress = updatedValues.address || {};
+        const countyDistrict = mpiAddress.countyDistrict || mpiAddress.district;
+        const stateProvince = mpiAddress.stateProvince || mpiAddress.state;
+        const address4 = mpiAddress.address4;
+        const address2 = mpiAddress.address2;
+        const cityVillage = mpiAddress.cityVillage || mpiAddress.city;
+
+        updatedValues.address = {
+          ...currentAddress,
+          ...(countyDistrict ? { countyDistrict } : {}),
+          ...(stateProvince ? { stateProvince } : {}),
+          ...(address4 ? { address4 } : {}),
+          ...(address2 ? { address2 } : {}),
+          ...(cityVillage ? { cityVillage } : {}),
+        };
+      }
+
+      const healthIdTypeUuid = healthIdIdentifierTypeUuid?.trim();
+      const healthIdType = identifierTypes?.find(
+        (t) => (healthIdTypeUuid && t.uuid === healthIdTypeUuid) || t.name?.toLowerCase().includes('health'),
+      );
+      const fieldName = healthIdType?.fieldName || 'healthId';
+      const newIdentifier: PatientIdentifierValue = {
+        identifierTypeUuid: healthIdType?.uuid || healthIdTypeUuid || '',
+        identifierName: healthIdType?.name || 'Health ID',
+        preferred: healthIdType?.isPrimary ?? false,
+        initialValue: '',
+        identifierValue: resolvedHealthId || '',
+        required: healthIdType?.isPrimary || healthIdType?.required || false,
+        selectedSource: null,
+        autoGeneration: false,
+      };
+
+      updatedValues.identifiers = {
+        ...(updatedValues.identifiers || {}),
+        [fieldName]: newIdentifier,
+      };
+
+      const abortController = new AbortController();
+      const formValuesToSave = {
+        ...updatedValues,
+        identifiers: filterOutUndefinedPatientIdentifiers(updatedValues.identifiers),
+      };
+
+      try {
+        await savePatientForm(
+          !inEditMode,
+          formValuesToSave,
+          patientUuidMap,
+          initialAddressFieldValues,
+          capturePhotoProps,
+          location,
+          initialFormValues['identifiers'],
+          currentSession,
+          config,
+          savePatientTransactionManager.current,
+          abortController,
+        );
+
+        resetForm({ values: updatedValues });
+        if (setInitialFormValues) {
+          setInitialFormValues(updatedValues);
+        }
+        setIsHealthIdOverwritten(true);
+        setLinkedHealthId(resolvedHealthId || null);
+
+        if (uuidOfPatientToEdit) {
+          mutate(
+            `${restBaseUrl}/patient/${uuidOfPatientToEdit}/identifier?v=custom:(uuid,identifier,identifierType:(uuid,required,name),preferred)`,
+          );
+          mutate(`${fhirBaseUrl}/Patient/${uuidOfPatientToEdit}`);
+          mutate(`${fhirBaseUrl}/Patient/${uuidOfPatientToEdit}?_summary=data`);
+        }
+
+        showSnackbar({
+          title: t('healthIdLinkedTitle', 'Health ID Linked & Saved'),
+          subtitle: t('healthIdLinkedSubtitle', 'Patient details updated and saved successfully to OpenMRS.'),
+          kind: 'success',
+          isLowContrast: true,
+        });
+      } catch (error: any) {
+        const errorMsg =
+          error?.responseBody?.error?.message ||
+          error?.message ||
+          t('overwriteSaveFailed', 'Failed to save updated patient details to OpenMRS.');
+        showSnackbar({
+          title: t('overwriteSaveFailedTitle', 'Failed to Save Patient Details'),
+          subtitle: errorMsg,
+          kind: 'error',
+        });
+        throw error;
+      }
+    },
+    [
+      config,
+      healthIdIdentifierTypeUuid,
+      identifierTypes,
+      inEditMode,
+      savePatientForm,
+      patientUuidMap,
+      initialAddressFieldValues,
+      capturePhotoProps,
+      location,
+      initialFormValues,
+      currentSession,
+      uuidOfPatientToEdit,
+      setInitialFormValues,
+      t,
+    ],
+  );
+
+  const handleUndoOverwrite = useCallback(
+    (formikProps: { setValues: (values: FormValues) => void }) => {
+      if (preOverwriteFormValues) {
+        formikProps.setValues(preOverwriteFormValues);
+        setIsHealthIdOverwritten(false);
+        setLinkedHealthId(null);
+        setPreOverwriteFormValues(null);
+        showSnackbar({
+          title: t('undoOverwriteTitle', 'Overwrite Undone'),
+          subtitle: t('undoOverwriteSubtitle', 'Previous patient details restored.'),
+          kind: 'info',
+          isLowContrast: true,
+        });
+      }
+    },
+    [preOverwriteFormValues, t],
+  );
 
   useEffect(() => {
     exportedInitialFormValuesForTesting = initialFormValues;
@@ -193,6 +398,12 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       isOffline,
       initialFormValues: formikProps.initialValues,
       setInitialFormValues,
+      onHealthIdOverwrite: (healthIdPatient: HealthIdPatient) => handleOverwriteConfirm(healthIdPatient, formikProps),
+      isHealthIdOverwritten,
+      linkedHealthId,
+      phoneAttributeTypeUuid: config.fieldConfigurations?.phone?.personAttributeUuid,
+      emailAttributeTypeUuid: config.fieldDefinitions?.find((f) => f.id === 'email' && f.type === 'person attribute')
+        ?.uuid,
     }),
     [
       identifierTypes,
@@ -203,6 +414,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       photo?.imageSrc,
       isOffline,
       setInitialFormValues,
+      handleOverwriteConfirm,
+      isHealthIdOverwritten,
+      linkedHealthId,
+      config,
     ],
   );
 
