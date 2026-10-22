@@ -32,7 +32,7 @@ import {
   usePatientUuidMap,
 } from './patient-registration-hooks';
 import BeforeSavePrompt from './before-save-prompt.component';
-import { isHealthIdIdentifierAttached, type HealthIdPatient } from './health-id/health-id.resource';
+import { isHealthIdIdentifierAttached, normalizeGender, type HealthIdPatient } from './health-id/health-id.resource';
 import styles from './patient-registration.scss';
 
 let exportedInitialFormValuesForTesting = {} as FormValues;
@@ -49,6 +49,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const { search } = useLocation();
   const { isLoading: isLoadingPatientToEdit, patient: patientToEdit } = usePatientWithBirthtime(uuidOfPatientToEdit);
   const config = useConfig<RegistrationConfig>();
+  const phoneAttributeTypeUuid = config.fieldConfigurations?.phone?.personAttributeUuid;
+  const emailAttributeTypeUuid = config.fieldDefinitions?.find(
+    (f) => f.id === 'email' && f.type === 'person attribute',
+  )?.uuid;
   const { healthIdIdentifierTypeUuid } = config;
 
   const [initialFormValues, setInitialFormValues] = useInitialFormValues(
@@ -79,8 +83,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const validationSchema = getValidationSchema(config, t);
 
   const [isHealthIdOverwritten, setIsHealthIdOverwritten] = useState(false);
-  const [linkedHealthId, setLinkedHealthId] = useState<string | null>(null);
-  const [preOverwriteFormValues, setPreOverwriteFormValues] = useState<FormValues | null>(null);
 
   const { data: patientIdentifiers } = useInitialPatientIdentifiers(uuidOfPatientToEdit);
 
@@ -96,9 +98,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     );
   }, [inEditMode, healthIdIdentifierTypeUuid, patientIdentifiers, initialFormValues?.identifiers, patientToEdit]);
 
-  const isEmpiDemographicsLocked = useMemo(() => {
-    return hasHealthIdInitially || isHealthIdOverwritten;
-  }, [hasHealthIdInitially, isHealthIdOverwritten]);
+  const isEmpiDemographicsLocked = hasHealthIdInitially || isHealthIdOverwritten;
 
   const handleOverwriteConfirm = useCallback(
     async (healthIdPatient: HealthIdPatient, formikProps: FormikHelpers<FormValues> & { values: FormValues }) => {
@@ -112,8 +112,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       const mpiEmail = healthIdPatient.fhir?.email;
       const resolvedHealthId = healthIdPatient.fhir?.healthId;
 
-      setPreOverwriteFormValues({ ...values });
-
       const updatedValues: FormValues = {
         ...values,
         ...(mpiName?.givenName ? { givenName: mpiName.givenName } : {}),
@@ -122,8 +120,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       };
 
       if (mpiGender) {
-        const mappedGender = mpiGender.startsWith('m') ? 'male' : mpiGender.startsWith('f') ? 'female' : mpiGender;
-        updatedValues.gender = mappedGender;
+        updatedValues.gender = normalizeGender(mpiGender);
       }
 
       if (mpiBirthdate) {
@@ -133,25 +130,19 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         updatedValues.monthsEstimated = 0;
       }
 
-      if (mpiPhone) {
+      if (mpiPhone && phoneAttributeTypeUuid) {
         updatedValues.telephoneNumber = mpiPhone;
-        const phoneUuid = config.fieldConfigurations?.phone?.personAttributeUuid;
-        if (phoneUuid) {
-          updatedValues.attributes = {
-            ...(updatedValues.attributes || {}),
-            [phoneUuid]: mpiPhone,
-          };
-        }
+        updatedValues.attributes = {
+          ...(updatedValues.attributes || {}),
+          [phoneAttributeTypeUuid]: mpiPhone,
+        };
       }
 
-      if (mpiEmail) {
-        const emailFieldDef = config.fieldDefinitions?.find((f) => f.id === 'email' && f.type === 'person attribute');
-        if (emailFieldDef?.uuid) {
-          updatedValues.attributes = {
-            ...(updatedValues.attributes || {}),
-            [emailFieldDef.uuid]: mpiEmail,
-          };
-        }
+      if (mpiEmail && emailAttributeTypeUuid) {
+        updatedValues.attributes = {
+          ...(updatedValues.attributes || {}),
+          [emailAttributeTypeUuid]: mpiEmail,
+        };
       }
 
       if (mpiAddress) {
@@ -219,7 +210,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           setInitialFormValues(updatedValues);
         }
         setIsHealthIdOverwritten(true);
-        setLinkedHealthId(resolvedHealthId || null);
 
         if (uuidOfPatientToEdit) {
           mutate(
@@ -249,6 +239,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       }
     },
     [
+      phoneAttributeTypeUuid,
+      emailAttributeTypeUuid,
       config,
       healthIdIdentifierTypeUuid,
       identifierTypes,
@@ -264,24 +256,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       setInitialFormValues,
       t,
     ],
-  );
-
-  const handleUndoOverwrite = useCallback(
-    (formikProps: { setValues: (values: FormValues) => void }) => {
-      if (preOverwriteFormValues) {
-        formikProps.setValues(preOverwriteFormValues);
-        setIsHealthIdOverwritten(false);
-        setLinkedHealthId(null);
-        setPreOverwriteFormValues(null);
-        showSnackbar({
-          title: t('undoOverwriteTitle', 'Overwrite Undone'),
-          subtitle: t('undoOverwriteSubtitle', 'Previous patient details restored.'),
-          kind: 'info',
-          isLowContrast: true,
-        });
-      }
-    },
-    [preOverwriteFormValues, t],
   );
 
   useEffect(() => {
@@ -400,10 +374,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       setInitialFormValues,
       onHealthIdOverwrite: (healthIdPatient: HealthIdPatient) => handleOverwriteConfirm(healthIdPatient, formikProps),
       isHealthIdOverwritten,
-      linkedHealthId,
-      phoneAttributeTypeUuid: config.fieldConfigurations?.phone?.personAttributeUuid,
-      emailAttributeTypeUuid: config.fieldDefinitions?.find((f) => f.id === 'email' && f.type === 'person attribute')
-        ?.uuid,
+      phoneAttributeTypeUuid,
+      emailAttributeTypeUuid,
     }),
     [
       identifierTypes,
@@ -416,8 +388,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       setInitialFormValues,
       handleOverwriteConfirm,
       isHealthIdOverwritten,
-      linkedHealthId,
-      config,
+      phoneAttributeTypeUuid,
+      emailAttributeTypeUuid,
     ],
   );
 

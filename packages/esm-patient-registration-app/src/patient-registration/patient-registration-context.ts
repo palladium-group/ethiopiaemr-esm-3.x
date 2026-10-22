@@ -21,7 +21,6 @@ export interface PatientRegistrationContextProps {
   values: FormValues;
   onHealthIdOverwrite?: (healthIdPatient: HealthIdPatient) => Promise<void>;
   isHealthIdOverwritten?: boolean;
-  linkedHealthId?: string | null;
   phoneAttributeTypeUuid?: string;
   emailAttributeTypeUuid?: string;
 }

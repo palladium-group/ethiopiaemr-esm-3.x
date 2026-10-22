@@ -26,7 +26,6 @@ describe('HealthIdSearch', () => {
       <HealthIdSearch
         lookupUrl="/mpi"
         currentFormValues={mockCurrentValues as FormValues}
-        isHealthIdOverwritten={false}
         onOverwriteConfirm={jest.fn()}
       />,
     );
@@ -52,7 +51,6 @@ describe('HealthIdSearch', () => {
       <HealthIdSearch
         lookupUrl="/mpi"
         currentFormValues={mockCurrentValues as FormValues}
-        isHealthIdOverwritten={false}
         onOverwriteConfirm={jest.fn()}
       />,
     );
@@ -93,7 +91,6 @@ describe('HealthIdSearch', () => {
       <HealthIdSearch
         lookupUrl="/mpi"
         currentFormValues={mockCurrentValues as FormValues}
-        isHealthIdOverwritten={false}
         onOverwriteConfirm={jest.fn()}
       />,
     );
@@ -109,24 +106,5 @@ describe('HealthIdSearch', () => {
     });
     expect(screen.getByText('RegistryGiven')).toBeInTheDocument();
     expect(screen.getByText('TestGiven')).toBeInTheDocument();
-  });
-
-  it('renders linked card when isHealthIdOverwritten is true', () => {
-    const mockUndo = jest.fn();
-
-    render(
-      <HealthIdSearch
-        lookupUrl="/mpi"
-        currentFormValues={mockCurrentValues as FormValues}
-        isHealthIdOverwritten={true}
-        linkedHealthId="HID-777"
-        onOverwriteConfirm={jest.fn()}
-        onUndoOverwrite={mockUndo}
-      />,
-    );
-
-    expect(screen.getByText(/Health ID Linked/i)).toBeInTheDocument();
-    expect(screen.getByText('HID-777')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /undo overwrite/i })).toBeInTheDocument();
   });
 });

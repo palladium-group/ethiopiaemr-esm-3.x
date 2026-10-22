@@ -18,7 +18,7 @@ import {
 } from '@carbon/react';
 import dayjs from 'dayjs';
 import { type FormValues } from '../patient-registration.types';
-import { type HealthIdPatient } from './health-id.resource';
+import { type HealthIdPatient, normalizeGender } from './health-id.resource';
 import styles from './health-id.scss';
 
 export interface HealthIdDiffModalProps {
@@ -55,19 +55,20 @@ function formatDate(date: Date | string | null | undefined): string {
   }
 }
 
-function normalizeGender(gender?: string | null): string {
-  if (!gender) {
-    return '';
-  }
-  const g = gender.trim().toLowerCase();
-  if (g.startsWith('m')) {
-    return 'Male';
-  }
-  if (g.startsWith('f')) {
-    return 'Female';
-  }
-  return gender;
-}
+const cmpStatus = (curr?: string, mpi?: string): 'identical' | 'new' | 'changed' =>
+  (curr || '').trim().toLowerCase() === (mpi || '').trim().toLowerCase() ? 'identical' : !curr ? 'new' : 'changed';
+
+const statusTagType: Record<DiffRow['status'], 'red' | 'blue' | 'green'> = {
+  changed: 'red',
+  new: 'blue',
+  identical: 'green',
+};
+
+const statusRowClass: Record<DiffRow['status'], string> = {
+  changed: styles.diffRowDifferent,
+  new: styles.diffRowNew,
+  identical: styles.diffRowSame,
+};
 
 export const HealthIdDiffModal: React.FC<HealthIdDiffModalProps> = ({
   open,
@@ -110,14 +111,14 @@ export const HealthIdDiffModal: React.FC<HealthIdDiffModalProps> = ({
 
     const mpiPerson = healthIdPatient.fhir.person;
     const mpiName = mpiPerson?.names?.[0];
-    const mpiGender = normalizeGender(mpiPerson?.gender);
+    const mpiGender = normalizeGender(mpiPerson?.gender, true);
     const mpiBirthdate = mpiPerson?.birthdate;
     const mpiAddress = mpiPerson?.addresses?.[0];
     const mpiPhone = healthIdPatient.fhir.phone;
     const mpiEmail = healthIdPatient.fhir.email;
     const resolvedHealthId = healthIdPatient.fhir.healthId || searchedHealthId;
 
-    const currentGender = normalizeGender(currentFormValues.gender);
+    const currentGender = normalizeGender(currentFormValues.gender, true);
     const currentPhone =
       (phoneAttributeTypeUuid && currentFormValues.attributes?.[phoneAttributeTypeUuid]) ||
       currentFormValues.telephoneNumber ||
@@ -138,162 +139,79 @@ export const HealthIdDiffModal: React.FC<HealthIdDiffModalProps> = ({
         label: t('givenNameLabel', 'Given Name (First Name)'),
         currentValue: currentFormValues.givenName || '—',
         healthIdValue: mpiName?.givenName || '—',
-        status:
-          (currentFormValues.givenName || '').trim().toLowerCase() === (mpiName?.givenName || '').trim().toLowerCase()
-            ? 'identical'
-            : !currentFormValues.givenName
-            ? 'new'
-            : 'changed',
+        status: cmpStatus(currentFormValues.givenName, mpiName?.givenName),
       },
       {
         fieldKey: 'middleName',
         label: t('middleNameLabel', "Father's Name (Middle Name)"),
         currentValue: currentFormValues.middleName || '—',
         healthIdValue: mpiName?.middleName || '—',
-        status:
-          (currentFormValues.middleName || '').trim().toLowerCase() === (mpiName?.middleName || '').trim().toLowerCase()
-            ? 'identical'
-            : !currentFormValues.middleName
-            ? 'new'
-            : 'changed',
+        status: cmpStatus(currentFormValues.middleName, mpiName?.middleName),
       },
       {
         fieldKey: 'familyName',
         label: t('familyNameLabel', "Grandfather's Name (Family Name)"),
         currentValue: currentFormValues.familyName || '—',
         healthIdValue: mpiName?.familyName || '—',
-        status:
-          (currentFormValues.familyName || '').trim().toLowerCase() === (mpiName?.familyName || '').trim().toLowerCase()
-            ? 'identical'
-            : !currentFormValues.familyName
-            ? 'new'
-            : 'changed',
+        status: cmpStatus(currentFormValues.familyName, mpiName?.familyName),
       },
       {
         fieldKey: 'gender',
         label: t('genderLabel', 'Sex'),
         currentValue: currentGender || '—',
         healthIdValue: mpiGender || '—',
-        status:
-          currentGender.toLowerCase() === mpiGender.toLowerCase() ? 'identical' : !currentGender ? 'new' : 'changed',
+        status: cmpStatus(currentGender, mpiGender),
       },
       {
         fieldKey: 'birthdate',
         label: t('birthdateLabel', 'Date of Birth'),
         currentValue: formatDate(currentFormValues.birthdate),
         healthIdValue: formatDate(mpiBirthdate),
-        status:
-          formatDate(currentFormValues.birthdate) === formatDate(mpiBirthdate)
-            ? 'identical'
-            : !currentFormValues.birthdate
-            ? 'new'
-            : 'changed',
+        status: cmpStatus(formatDate(currentFormValues.birthdate), formatDate(mpiBirthdate)),
       },
     ];
 
-    // Phone
-    if (mpiPhone || currentPhone) {
-      rows.push({
-        fieldKey: 'phone',
-        label: t('phoneLabel', 'Phone Number'),
-        currentValue: currentPhone || '—',
-        healthIdValue: mpiPhone || '—',
-        status:
-          (currentPhone || '').trim() === (mpiPhone || '').trim() ? 'identical' : !currentPhone ? 'new' : 'changed',
-      });
-    }
+    const pushIfPresent = (fieldKey: string, labelKey: string, defaultLabel: string, curr?: string, mpi?: string) => {
+      if (curr || mpi) {
+        rows.push({
+          fieldKey,
+          label: t(labelKey, defaultLabel),
+          currentValue: curr || '—',
+          healthIdValue: mpi || '—',
+          status: cmpStatus(curr, mpi),
+        });
+      }
+    };
 
-    // Email
-    if (mpiEmail || currentEmail) {
-      rows.push({
-        fieldKey: 'email',
-        label: t('emailLabel', 'Email Address'),
-        currentValue: currentEmail || '—',
-        healthIdValue: mpiEmail || '—',
-        status:
-          (currentEmail || '').trim().toLowerCase() === (mpiEmail || '').trim().toLowerCase()
-            ? 'identical'
-            : !currentEmail
-            ? 'new'
-            : 'changed',
-      });
-    }
-
-    // Address fields
-    const mpiRegion = mpiAddress?.countyDistrict || mpiAddress?.district || '';
-    const currentRegion = currentAddress.countyDistrict || '';
-    if (mpiRegion || currentRegion) {
-      rows.push({
-        fieldKey: 'addressRegion',
-        label: t('regionLabel', 'Region'),
-        currentValue: currentRegion || '—',
-        healthIdValue: mpiRegion || '—',
-        status:
-          currentRegion.trim().toLowerCase() === mpiRegion.trim().toLowerCase()
-            ? 'identical'
-            : !currentRegion
-            ? 'new'
-            : 'changed',
-      });
-    }
-
-    const mpiZone = mpiAddress?.stateProvince || mpiAddress?.state || '';
-    const currentZone = currentAddress.stateProvince || '';
-    if (mpiZone || currentZone) {
-      rows.push({
-        fieldKey: 'addressZone',
-        label: t('zoneLabel', 'Zone'),
-        currentValue: currentZone || '—',
-        healthIdValue: mpiZone || '—',
-        status:
-          currentZone.trim().toLowerCase() === mpiZone.trim().toLowerCase()
-            ? 'identical'
-            : !currentZone
-            ? 'new'
-            : 'changed',
-      });
-    }
-
-    const mpiWoreda = mpiAddress?.address4 || '';
-    const currentWoreda = currentAddress.address4 || '';
-    if (mpiWoreda || currentWoreda) {
-      rows.push({
-        fieldKey: 'addressWoreda',
-        label: t('woredaLabel', 'Woreda'),
-        currentValue: currentWoreda || '—',
-        healthIdValue: mpiWoreda || '—',
-        status:
-          currentWoreda.trim().toLowerCase() === mpiWoreda.trim().toLowerCase()
-            ? 'identical'
-            : !currentWoreda
-            ? 'new'
-            : 'changed',
-      });
-    }
-
-    const mpiKebele = mpiAddress?.address2 || '';
-    const currentKebele = currentAddress.address2 || '';
-    if (mpiKebele || currentKebele) {
-      rows.push({
-        fieldKey: 'addressKebele',
-        label: t('kebeleLabel', 'House Number / Kebele'),
-        currentValue: currentKebele || '—',
-        healthIdValue: mpiKebele || '—',
-        status:
-          currentKebele.trim().toLowerCase() === mpiKebele.trim().toLowerCase()
-            ? 'identical'
-            : !currentKebele
-            ? 'new'
-            : 'changed',
-      });
-    }
+    pushIfPresent('phone', 'phoneLabel', 'Phone Number', currentPhone, mpiPhone);
+    pushIfPresent('email', 'emailLabel', 'Email Address', currentEmail, mpiEmail);
+    pushIfPresent(
+      'addressRegion',
+      'regionLabel',
+      'Region',
+      currentAddress.countyDistrict,
+      mpiAddress?.countyDistrict || mpiAddress?.district,
+    );
+    pushIfPresent(
+      'addressZone',
+      'zoneLabel',
+      'Zone',
+      currentAddress.stateProvince,
+      mpiAddress?.stateProvince || mpiAddress?.state,
+    );
+    pushIfPresent('addressWoreda', 'woredaLabel', 'Woreda', currentAddress.address4, mpiAddress?.address4);
+    pushIfPresent(
+      'addressKebele',
+      'kebeleLabel',
+      'House Number / Kebele',
+      currentAddress.address2,
+      mpiAddress?.address2,
+    );
 
     return rows;
   }, [healthIdPatient, searchedHealthId, currentFormValues, phoneAttributeTypeUuid, emailAttributeTypeUuid, t]);
 
-  const changedCount = useMemo(() => {
-    return diffRows.filter((r) => r.status === 'changed' || r.status === 'new').length;
-  }, [diffRows]);
+  const changedCount = diffRows.filter((r) => r.status !== 'identical').length;
 
   if (!open || !healthIdPatient) {
     return null;
@@ -336,43 +254,22 @@ export const HealthIdDiffModal: React.FC<HealthIdDiffModalProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {diffRows.map((row) => {
-                const rowClass =
-                  row.status === 'new'
-                    ? styles.diffRowNew
-                    : row.status === 'changed'
-                    ? styles.diffRowDifferent
-                    : styles.diffRowSame;
-
-                return (
-                  <TableRow key={row.fieldKey} className={rowClass}>
-                    <TableCell className={styles.fieldNameCell}>
-                      <strong>{row.label}</strong>
-                    </TableCell>
-                    <TableCell className={styles.currentValueCell}>{row.currentValue}</TableCell>
-                    <TableCell className={styles.healthIdValueCell}>
-                      <strong>{row.healthIdValue}</strong>
-                    </TableCell>
-                    <TableCell>
-                      {row.status === 'changed' && (
-                        <Tag type="red" size="sm">
-                          {t('changed', 'Changed')}
-                        </Tag>
-                      )}
-                      {row.status === 'new' && (
-                        <Tag type="blue" size="sm">
-                          {t('new', 'New')}
-                        </Tag>
-                      )}
-                      {row.status === 'identical' && (
-                        <Tag type="green" size="sm">
-                          {t('identical', 'Identical')}
-                        </Tag>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {diffRows.map((row) => (
+                <TableRow key={row.fieldKey} className={statusRowClass[row.status]}>
+                  <TableCell className={styles.fieldNameCell}>
+                    <strong>{row.label}</strong>
+                  </TableCell>
+                  <TableCell className={styles.currentValueCell}>{row.currentValue}</TableCell>
+                  <TableCell className={styles.healthIdValueCell}>
+                    <strong>{row.healthIdValue}</strong>
+                  </TableCell>
+                  <TableCell>
+                    <Tag type={statusTagType[row.status]} size="sm">
+                      {t(row.status, row.status.charAt(0).toUpperCase() + row.status.slice(1))}
+                    </Tag>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>

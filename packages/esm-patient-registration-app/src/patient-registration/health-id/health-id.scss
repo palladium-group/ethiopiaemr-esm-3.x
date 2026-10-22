@@ -45,37 +45,6 @@
   margin-top: spacing.$spacing-04;
 }
 
-.linkedCard {
-  width: 100%;
-  margin-bottom: spacing.$spacing-06;
-  background-color: colors.$green-10;
-  border: 1px solid colors.$green-30;
-  border-left: 4px solid colors.$green-60;
-  padding: spacing.$spacing-05;
-}
-
-.linkedHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: spacing.$spacing-03;
-}
-
-.linkedTitle {
-  @include type.type-style('heading-compact-02');
-  color: colors.$green-80;
-  display: flex;
-  align-items: center;
-  gap: spacing.$spacing-03;
-}
-
-.linkedBody {
-  margin-top: spacing.$spacing-03;
-  @include type.type-style('body-compact-01');
-  color: theme.$text-primary;
-}
-
 /* Modal styles */
 .modalBody {
   padding-top: spacing.$spacing-04;
@@ -142,10 +111,6 @@
   &:hover > td {
     background-color: #d0e2ff !important;
   }
-}
-
-.diffRowHighlight {
-  background-color: rgba(15, 98, 254, 0.08) !important;
 }
 
 .fieldNameCell {

@@ -67,14 +67,13 @@ export const Identifiers: React.FC = () => {
   const {
     values,
     setFieldValue,
-    initialFormValues,
     isOffline,
     inEditMode,
+    isEmpiDemographicsLocked,
     onHealthIdOverwrite,
-    isHealthIdOverwritten,
-    linkedHealthId,
     phoneAttributeTypeUuid,
     emailAttributeTypeUuid,
+    initialFormValues,
   } = usePatientRegistrationContext();
   const { t } = useTranslation();
   const layout = useLayoutType();
@@ -82,13 +81,8 @@ export const Identifiers: React.FC = () => {
   const config = useConfig<RegistrationConfig>();
   const { defaultPatientIdentifierTypes, healthIdIdentifierTypeUuid, healthIdLookupUrl } = config;
 
-  const hasHealthIdAttached = useMemo(() => {
-    return (
-      isHealthIdIdentifierAttached(values?.identifiers, healthIdIdentifierTypeUuid) ||
-      isHealthIdIdentifierAttached(initialFormValues?.identifiers, healthIdIdentifierTypeUuid) ||
-      Boolean(isHealthIdOverwritten)
-    );
-  }, [values?.identifiers, initialFormValues?.identifiers, healthIdIdentifierTypeUuid, isHealthIdOverwritten]);
+  const hasHealthIdAttached =
+    isEmpiDemographicsLocked || isHealthIdIdentifierAttached(values?.identifiers, healthIdIdentifierTypeUuid);
 
   const showHealthIdSearch = inEditMode && !hasHealthIdAttached && !isOffline && Boolean(onHealthIdOverwrite);
 
@@ -153,10 +147,8 @@ export const Identifiers: React.FC = () => {
       </UserHasAccess>
       {showHealthIdSearch && (
         <HealthIdSearch
-          lookupUrl={healthIdLookupUrl || 'openmrs/ws/rest/v1/ethiopiaemrcustommodule/mpi/patient'}
+          lookupUrl={healthIdLookupUrl}
           currentFormValues={values}
-          isHealthIdOverwritten={Boolean(isHealthIdOverwritten)}
-          linkedHealthId={linkedHealthId}
           phoneAttributeTypeUuid={phoneAttributeTypeUuid}
           emailAttributeTypeUuid={emailAttributeTypeUuid}
           onOverwriteConfirm={onHealthIdOverwrite}

@@ -75,8 +75,6 @@ describe('Health ID Edit Workflow Integration', () => {
 
   const TestWrapper = () => {
     const [isHealthIdOverwritten, setIsHealthIdOverwritten] = React.useState(false);
-    const [linkedHealthId, setLinkedHealthId] = React.useState<string | null>(null);
-    const [preOverwriteFormValues, setPreOverwriteFormValues] = React.useState<FormValues | null>(null);
 
     const isEmpiDemographicsLocked = isHealthIdOverwritten;
 
@@ -84,7 +82,6 @@ describe('Health ID Edit Workflow Integration', () => {
       <Formik initialValues={initialValues} onSubmit={jest.fn()}>
         {(formikProps) => {
           const handleOverwriteConfirm = (patient: HealthIdPatient) => {
-            setPreOverwriteFormValues({ ...formikProps.values });
             const mpiPerson = patient.fhir.person;
             const mpiName = mpiPerson?.names?.[0];
 
@@ -108,15 +105,6 @@ describe('Health ID Edit Workflow Integration', () => {
               },
             });
             setIsHealthIdOverwritten(true);
-            setLinkedHealthId(patient.fhir.healthId);
-          };
-
-          const handleUndo = () => {
-            if (preOverwriteFormValues) {
-              formikProps.setValues(preOverwriteFormValues);
-              setIsHealthIdOverwritten(false);
-              setLinkedHealthId(null);
-            }
           };
 
           const contextValue = {
@@ -135,14 +123,13 @@ describe('Health ID Edit Workflow Integration', () => {
 
           return (
             <Form>
-              <HealthIdSearch
-                lookupUrl="/mpi"
-                currentFormValues={formikProps.values}
-                isHealthIdOverwritten={isHealthIdOverwritten}
-                linkedHealthId={linkedHealthId}
-                onOverwriteConfirm={handleOverwriteConfirm}
-                onUndoOverwrite={handleUndo}
-              />
+              {!isHealthIdOverwritten && (
+                <HealthIdSearch
+                  lookupUrl="/mpi"
+                  currentFormValues={formikProps.values}
+                  onOverwriteConfirm={handleOverwriteConfirm}
+                />
+              )}
               <PatientRegistrationContextProvider value={contextValue}>
                 <NameField />
               </PatientRegistrationContextProvider>
@@ -153,7 +140,7 @@ describe('Health ID Edit Workflow Integration', () => {
     );
   };
 
-  it('completes the full search -> diff modal -> overwrite -> lock -> undo cycle', async () => {
+  it('completes the full search -> diff modal -> overwrite -> lock cycle', async () => {
     const user = userEvent.setup();
 
     window.fetch = jest.fn().mockResolvedValue({
@@ -191,21 +178,8 @@ describe('Health ID Edit Workflow Integration', () => {
       expect(givenNameInput).toHaveValue('RegistryFirst');
     });
 
-    // 5. Demographics are now locked!
+    // 5. Demographics are now locked
     expect(givenNameInput).toBeDisabled();
-
-    // 6. Linked card is displayed
-    expect(screen.getByText(/Health ID Linked/i)).toBeInTheDocument();
-
-    // 7. Test Undo
-    const undoBtn = screen.getByRole('button', { name: /undo overwrite/i });
-    await user.click(undoBtn);
-
-    // Form reverts to initial values and unlocks
-    await waitFor(() => {
-      expect(givenNameInput).toHaveValue('OldGiven');
-      expect(givenNameInput).not.toBeDisabled();
-    });
   });
 
   it('persists data immediately to backend when Confirm and Overwrite is clicked', async () => {
@@ -226,7 +200,6 @@ describe('Health ID Edit Workflow Integration', () => {
               <HealthIdSearch
                 lookupUrl="/mpi"
                 currentFormValues={formikProps.values}
-                isHealthIdOverwritten={false}
                 onOverwriteConfirm={async (patient) => {
                   await mockSaveOnline(patient);
                   formikProps.setValues({

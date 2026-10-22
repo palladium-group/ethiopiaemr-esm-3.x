@@ -34,10 +34,7 @@ describe('health-id.resource', () => {
     } as any);
 
     const result = await fetchPatientByHealthId('HID-001', 'http://localhost/mpi');
-    expect(window.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('healthId=HID-001'),
-      expect.objectContaining({ method: 'GET' }),
-    );
+    expect(window.fetch).toHaveBeenCalledWith(expect.stringContaining('healthId=HID-001'));
     expect(result).toEqual(mockResponse);
   });
 

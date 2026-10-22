@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, InlineLoading, InlineNotification, Search, Tag, Tile } from '@carbon/react';
-import { Search as SearchIcon, Undo, CheckmarkFilled, Identification } from '@carbon/react/icons';
+import { Button, InlineLoading, InlineNotification, Search, Tag } from '@carbon/react';
+import { Search as SearchIcon, Identification } from '@carbon/react/icons';
 import { fetchPatientByHealthId, type HealthIdPatient } from './health-id.resource';
 import { HealthIdDiffModal } from './health-id-diff-modal.component';
 import { type FormValues } from '../patient-registration.types';
@@ -10,23 +10,17 @@ import styles from './health-id.scss';
 export interface HealthIdSearchProps {
   lookupUrl: string;
   currentFormValues: FormValues;
-  isHealthIdOverwritten: boolean;
-  linkedHealthId?: string | null;
   phoneAttributeTypeUuid?: string;
   emailAttributeTypeUuid?: string;
   onOverwriteConfirm: (patient: HealthIdPatient) => Promise<void> | void;
-  onUndoOverwrite?: () => void;
 }
 
 export const HealthIdSearch: React.FC<HealthIdSearchProps> = ({
   lookupUrl,
   currentFormValues,
-  isHealthIdOverwritten,
-  linkedHealthId,
   phoneAttributeTypeUuid,
   emailAttributeTypeUuid,
   onOverwriteConfirm,
-  onUndoOverwrite,
 }) => {
   const { t } = useTranslation();
   const [healthIdInput, setHealthIdInput] = useState('');
@@ -35,8 +29,6 @@ export const HealthIdSearch: React.FC<HealthIdSearchProps> = ({
   const [notFoundId, setNotFoundId] = useState<string | null>(null);
 
   const [foundPatient, setFoundPatient] = useState<HealthIdPatient | null>(null);
-  const [searchedIdForModal, setSearchedIdForModal] = useState('');
-  const [isDiffModalOpen, setIsDiffModalOpen] = useState(false);
 
   const handleSearch = useCallback(async () => {
     const trimmed = healthIdInput.trim();
@@ -52,8 +44,6 @@ export const HealthIdSearch: React.FC<HealthIdSearchProps> = ({
       const result = await fetchPatientByHealthId(trimmed, lookupUrl);
       if (result && result.success && result.fhir?.person) {
         setFoundPatient(result);
-        setSearchedIdForModal(trimmed);
-        setIsDiffModalOpen(true);
       } else {
         setNotFoundId(trimmed);
       }
@@ -71,46 +61,6 @@ export const HealthIdSearch: React.FC<HealthIdSearchProps> = ({
     setSearchError(null);
     setNotFoundId(null);
   };
-
-  const handleCloseModal = () => {
-    setIsDiffModalOpen(false);
-  };
-
-  const handleConfirmOverwrite = async (patient: HealthIdPatient) => {
-    await onOverwriteConfirm(patient);
-    setIsDiffModalOpen(false);
-    setNotFoundId(null);
-    setSearchError(null);
-  };
-
-  if (isHealthIdOverwritten && linkedHealthId) {
-    return (
-      <div className={styles.linkedCard}>
-        <div className={styles.linkedHeader}>
-          <div className={styles.linkedTitle}>
-            <CheckmarkFilled size={20} />
-            <span>{t('healthIdLinkedHeading', 'Health ID Linked')}</span>
-            <Tag type="green" size="md">
-              {linkedHealthId}
-            </Tag>
-          </div>
-          {onUndoOverwrite && (
-            <Button kind="ghost" size="sm" renderIcon={Undo} onClick={onUndoOverwrite}>
-              {t('undoOverwrite', 'Undo overwrite')}
-            </Button>
-          )}
-        </div>
-        <div className={styles.linkedBody}>
-          <p>
-            {t(
-              'healthIdLinkedDescription',
-              'Patient demographic details have been overwritten with official data from the Health ID registry and locked against manual changes. Click "Update patient" below to save these changes.',
-            )}
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.healthIdCard}>
@@ -193,10 +143,15 @@ export const HealthIdSearch: React.FC<HealthIdSearchProps> = ({
 
       {foundPatient && (
         <HealthIdDiffModal
-          open={isDiffModalOpen}
-          onClose={handleCloseModal}
-          onConfirmOverwrite={handleConfirmOverwrite}
-          searchedHealthId={searchedIdForModal}
+          open={true}
+          onClose={() => setFoundPatient(null)}
+          onConfirmOverwrite={async (p) => {
+            await onOverwriteConfirm(p);
+            setFoundPatient(null);
+            setNotFoundId(null);
+            setSearchError(null);
+          }}
+          searchedHealthId={foundPatient.fhir?.healthId || healthIdInput.trim()}
           healthIdPatient={foundPatient}
           currentFormValues={currentFormValues}
           phoneAttributeTypeUuid={phoneAttributeTypeUuid}

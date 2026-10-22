@@ -53,10 +53,7 @@ export async function fetchPatientByHealthId(healthId: string, lookupUrl: string
   const url = new URL(lookupUrl, window.location.origin);
   url.searchParams.set('healthId', trimmedId);
 
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const response = await fetch(url.toString());
 
   if (response.status === 404) {
     const errorBody = await response.json().catch(() => null);
@@ -111,13 +108,17 @@ export function isHealthIdIdentifierAttached(
     const typeName = (item.identifierName || item.identifierType?.name || item.type?.text)?.toLowerCase();
 
     const matchesUuid = targetUuid && typeUuid === targetUuid;
-    const matchesName =
-      typeName &&
-      (typeName.includes('health id') ||
-        typeName.includes('health') ||
-        typeName.includes('mpi') ||
-        typeName.includes('empi'));
+    const matchesName = typeName && (typeName.includes('health') || typeName.includes('mpi'));
 
     return Boolean(matchesUuid || matchesName);
   });
+}
+
+export function normalizeGender(gender?: string | null, capitalize = false): string {
+  if (!gender) {
+    return '';
+  }
+  const g = gender.trim().toLowerCase();
+  const normalized = g.startsWith('m') ? 'male' : g.startsWith('f') ? 'female' : g;
+  return capitalize ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : normalized;
 }

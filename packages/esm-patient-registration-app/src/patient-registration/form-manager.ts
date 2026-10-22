@@ -106,19 +106,15 @@ export class FormManager {
     savePatientTransactionManager,
     abortController,
   ) => {
-    let patientIdentifiers: Array<PatientIdentifier> = [];
-
-    // For new patients, identifiers must be prepared and included in the patient creation payload.
-    // For existing patients, identifiers are added/updated only AFTER patient details are successfully updated.
-    if (isNewPatient) {
-      patientIdentifiers = await FormManager.savePatientIdentifiers(
-        isNewPatient,
-        values.patientUuid,
-        values.identifiers,
-        initialIdentifierValues,
-        currentLocation,
-      );
-    }
+    const patientIdentifiers = isNewPatient
+      ? await FormManager.savePatientIdentifiers(
+          isNewPatient,
+          values.patientUuid,
+          values.identifiers,
+          initialIdentifierValues,
+          currentLocation,
+        )
+      : [];
 
     const createdPatient = FormManager.getPatientToCreate(
       isNewPatient,
