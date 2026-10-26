@@ -27,6 +27,7 @@ import {
   isDesktop as desktopLayout,
   launchWorkspace,
   showModal,
+  useConfig,
   useDebounce,
   useLayoutType,
   useSession,
@@ -37,6 +38,8 @@ import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { type LocationListItem, usePagedLocations } from './locations-table.resource';
 import { useLocationTags } from '../hooks/useLocationTags';
 import { AdminPermissions } from '../../../permissions.constants';
+import { type ConfigObject } from '../../../config-schema';
+import { attributeValueUuid, useDepartmentTypes } from '../hooks/useLocation';
 
 const PAGE_SIZES = [10, 20, 50, 100];
 const ALL_TAGS = '';
@@ -55,6 +58,8 @@ const LocationsTable: React.FC = () => {
 
   const canBulkImport = userHasAccess(AdminPermissions.ManageLocationBulkImport, session?.user);
   const { locationTagList } = useLocationTags();
+  const { departmentTypeAttributeTypeUuid, departmentTypesConceptSetUuid } = useConfig<ConfigObject>();
+  const { departmentTypes } = useDepartmentTypes(departmentTypesConceptSetUuid);
   const { locations, totalCount, isLoading, isValidating, error, mutate } = usePagedLocations({
     searchTerm: debouncedSearch,
     tag: selectedTag,
@@ -107,15 +112,28 @@ const LocationsTable: React.FC = () => {
     { key: 'name', header: t('locationName', 'Location Name') },
     { key: 'description', header: t('description', 'Description') },
     { key: 'parent', header: t('parentLocation', 'Parent location') },
+    { key: 'departmentType', header: t('departmentType', 'Department type') },
     { key: 'tags', header: t('tags', 'Tags') },
     { key: 'actions', header: '' },
   ];
+
+  const getDepartmentType = (location: LocationListItem) => {
+    const attribute = location.attributes?.find((attr) => attr.attributeType?.uuid === departmentTypeAttributeTypeUuid);
+    const uuid = attributeValueUuid(attribute as Parameters<typeof attributeValueUuid>[0]);
+    const value = attribute?.value as unknown as { display?: string } | string | undefined;
+    return (
+      departmentTypes.find((type) => type.uuid === uuid)?.display ||
+      (typeof value === 'object' ? value?.display : undefined) ||
+      '--'
+    );
+  };
 
   const rows = locations.map((location) => ({
     id: location.uuid,
     name: location.name || location.display || '--',
     description: location.description || '--',
     parent: location.parentLocation?.display || '--',
+    departmentType: getDepartmentType(location),
     tags: location.tags?.length ? (
       <div className={styles.tagList}>
         {location.tags.map((tag) => (
