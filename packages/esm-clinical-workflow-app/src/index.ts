@@ -31,6 +31,7 @@ import FinishServiceButton from './patient-chart/finish-service-button.extension
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { subscribeAdmittedPatientsSlotSync } from './ward/admitted-patients/sync-admitted-patients-slot';
 import { registerAdmitWorkspaceOverride } from './ward/admit-to-inpatient/register-admit-workspace-override';
+import { registerCreateQueueEntryWorkspaceOverride } from './queue-room/create-queue-entry/register-create-queue-entry-override';
 import { subscribeAwaitingAdmissionSlotSync } from './ward/awaiting-admission/sync-awaiting-admission-slot';
 import { subscribeDischargeInSlotSync } from './ward/discharge-in/sync-discharge-in-slot';
 import ImmunizationRegisterActionButton from './patient-immunization/immunization-register-action-button.component';
@@ -81,6 +82,7 @@ export function startupApp() {
 
   subscribeAdmittedPatientsSlotSync();
   registerAdmitWorkspaceOverride();
+  registerCreateQueueEntryWorkspaceOverride();
   subscribeAwaitingAdmissionSlotSync();
   subscribeDischargeInSlotSync();
   subscribeAppointmentCheckInQueueSync();
@@ -265,6 +267,11 @@ export const ethiopiaBedSwapWorkspace = getAsyncLifecycle(() => import('./ward/b
 
 export const ethiopiaAdmitPatientFormWorkspace = getAsyncLifecycle(
   () => import('./ward/admit-to-inpatient/ethiopia-admit-patient-form.workspace'),
+  options,
+);
+
+export const createQueueEntryWorkspace = getAsyncLifecycle(
+  () => import('./queue-room/create-queue-entry/create-queue-entry.workspace'),
   options,
 );
 

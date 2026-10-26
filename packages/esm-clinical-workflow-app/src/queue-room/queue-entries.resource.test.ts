@@ -40,4 +40,13 @@ describe('useQueueLocations', () => {
 
     expect(result.current.queueLocations).toEqual([]);
   });
+
+  it('uses custom tag when specified', () => {
+    mockUseFhirFetchAll.mockReturnValue({ data: [{ id: 'em-1', name: 'Emergency Room' }], isLoading: false });
+
+    const { result } = renderHook(() => useQueueLocations('Emergency'));
+
+    expect(mockUseFhirFetchAll).toHaveBeenCalledWith(expect.stringContaining('_tag=Emergency'));
+    expect(result.current.queueLocations).toEqual([{ id: 'em-1', name: 'Emergency Room' }]);
+  });
 });

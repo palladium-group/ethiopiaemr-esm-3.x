@@ -276,6 +276,12 @@
       "component": "ethiopiaAdmitPatientFormWorkspace",
       "title": "admissionRequests",
       "type": "admission-requests"
+    },
+    {
+      "name": "create-queue-entry-workspace",
+      "component": "createQueueEntryWorkspace",
+      "title": "Add Patient to Queue",
+      "type": "queue-entry"
     }
   ],
   "workspaces2": [
