@@ -59,6 +59,12 @@ import PrintComponent from '../print/print.component';
 import { type ReturnedPrescriptionBasketItem } from '../types';
 import { type DtpReturnReason, useDtpReturnObs } from '../utils/dtp-return-obs';
 import { useFailedPrescriptionSync } from '../utils/failed-prescription-sync';
+import {
+  getDistinctProtocolInstructions,
+  parseProtocolInstructions,
+  type ProtocolInstructions,
+  unescapeRestText,
+} from '../utils/protocol-instructions';
 import styles from './medications-details-table.scss';
 import { PatientMedicationsPermissions } from '../permissions.constants';
 
@@ -425,6 +431,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
     const pharmacyStatus = getPharmacyStatusDisplay(medication, t, pharmacyStatusReason);
     const showPharmacyReason =
       pharmacyStatus && shouldShowPharmacyReasonAlongside(pharmacyStatus, pharmacyStatusReason);
+    const protocol = parseProtocolInstructions(medication.instructions);
     return {
       id: medication.uuid,
       details: {
@@ -437,6 +444,11 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                 {medication.drug?.strength && <>&mdash; {medication.drug?.strength.toLowerCase()}</>}{' '}
                 {medication.drug?.dosageForm?.display && (
                   <>&mdash; {medication.drug.dosageForm.display.toLowerCase()}</>
+                )}
+                {protocol && (
+                  <Tag type="blue" className={styles.protocolTag}>
+                    {protocol.name}
+                  </Tag>
                 )}
                 {medication.dateStopped && (
                   <Tooltip align="right" label={<>{formatDate(new Date(medication.dateStopped))}</>}>
@@ -502,7 +514,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                       medication.frequency?.display ||
                       medication.duration != null ||
                       (medication.numRefills != null && medication.numRefills !== 0)) && <> &mdash; </>}
-                    {medication.dosingInstructions.toLocaleLowerCase()}
+                    <span className={styles.dosingInstructions}>{unescapeRestText(medication.dosingInstructions)}</span>
                   </span>
                 )}
               </p>
@@ -678,7 +690,8 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                       const dtpReturnReasons = isReturnedGroup ? dtpReturnInfo?.reasons ?? [] : [];
                       const failedSync = encounterUuid ? failedSyncByEncounter.get(encounterUuid) : undefined;
                       const hasFailedSync = Boolean(failedSync);
-                      const hasDetailsPanel = isReturnedGroup || hasFailedSync;
+                      const protocols = getDistinctProtocolInstructions(encounterMedications);
+                      const hasDetailsPanel = isReturnedGroup || hasFailedSync || protocols.length > 0;
 
                       renderedRows.push(
                         <TableRow key={`encounter-${encounterGroupKey}`} className={styles.encounterRow}>
@@ -740,6 +753,13 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                               {hasFailedSync && failedSync?.reason && (
                                 <div className={styles.failedSyncDetails}>{failedSync.reason}</div>
                               )}
+                              {protocols.map((protocol) => (
+                                <ProtocolInstructionsPanel
+                                  key={`${encounterGroupKey}-${protocol.name}`}
+                                  protocol={protocol}
+                                  alwaysExpanded={isPrinting}
+                                />
+                              ))}
                             </div>
                           </TableCell>
                         </TableRow>,
@@ -794,6 +814,40 @@ function InfoTooltip({ orderer }: { orderer: string }) {
     <IconButton className={styles.tooltip} align="top-left" label={orderer} kind="ghost" size="sm">
       <UserIcon size={16} />
     </IconButton>
+  );
+}
+
+function ProtocolInstructionsPanel({
+  protocol,
+  alwaysExpanded,
+}: {
+  protocol: ProtocolInstructions;
+  alwaysExpanded: boolean;
+}) {
+  const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const showInstructions = Boolean(protocol.instructions) && (alwaysExpanded || isExpanded);
+
+  return (
+    <div className={styles.protocolPanel}>
+      <div className={styles.protocolPanelHeader}>
+        <span>
+          <strong>{t('protocol', 'Protocol')}:</strong> {protocol.name}
+        </span>
+        {protocol.instructions && !alwaysExpanded && (
+          <Button
+            kind="ghost"
+            size="sm"
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((expanded) => !expanded)}>
+            {isExpanded
+              ? t('hideProtocolInstructions', 'Hide instructions')
+              : t('showProtocolInstructions', 'Show instructions')}
+          </Button>
+        )}
+      </div>
+      {showInstructions && <p className={styles.protocolPanelInstructions}>{protocol.instructions}</p>}
+    </div>
   );
 }
 

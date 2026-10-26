@@ -6,7 +6,8 @@ import {
   getDefaultDoseUnit,
   getTemplateOrderBasketItem,
 } from './drug-search.resource';
-import type { OrderSetMemberDetail } from './order-set.resource';
+import { buildProtocolInstructions, unescapeRestText } from '../../utils/protocol-instructions';
+import type { OrderSetDetail, OrderSetMemberDetail } from './order-set.resource';
 
 export type OrderSetOperator = 'ALL' | 'ONE' | 'ANY';
 
@@ -36,6 +37,20 @@ export function getMemberDrugUuid(member: OrderSetMemberDetail): string | undefi
   return parseMemberOrderTemplate(member.orderTemplate)?.drug;
 }
 
+export function getMemberInstructions(member: OrderSetMemberDetail): string {
+  const parsedTemplate = parseMemberOrderTemplate(member.orderTemplate);
+  if (!parsedTemplate?.dosingInstructions) {
+    return '';
+  }
+
+  return unescapeRestText(getDefault(parsedTemplate, 'instructions')?.value);
+}
+
+export function getOrderSetInstructions(orderSet: OrderSetDetail | undefined, attributeTypeUuid: string): string {
+  const attribute = orderSet?.attributes?.find((candidate) => candidate.attributeType?.uuid === attributeTypeUuid);
+  return unescapeRestText(attribute?.value).trim();
+}
+
 export async function fetchDrugByUuid(drugUuid: string): Promise<DrugSearchResult> {
   const response = await openmrsFetch<DrugSearchResult>(
     `${restBaseUrl}/drug/${drugUuid}?v=${drugSearchRepresentation}`,
@@ -63,19 +78,24 @@ export function buildBasketItemFromOrderSetMember(
     uuid: string;
     display: string;
   },
+  protocol?: { orderSetName: string; instructions: string },
 ): DrugOrderBasketItem {
   const parsedTemplate = parseMemberOrderTemplate(member.orderTemplate);
 
-  if (!parsedTemplate) {
-    return getTemplateOrderBasketItem(drug, visit, daysDurationUnit);
+  const basketItem = parsedTemplate
+    ? getTemplateOrderBasketItem(drug, visit, daysDurationUnit, {
+        uuid: member.uuid,
+        name: member.display ?? drug.display,
+        drug,
+        template: parsedTemplate,
+      })
+    : getTemplateOrderBasketItem(drug, visit, daysDurationUnit);
+
+  if (protocol?.instructions) {
+    basketItem.instructions = buildProtocolInstructions(protocol.orderSetName, protocol.instructions);
   }
 
-  return getTemplateOrderBasketItem(drug, visit, daysDurationUnit, {
-    uuid: member.uuid,
-    name: member.display ?? drug.display,
-    drug,
-    template: parsedTemplate,
-  });
+  return basketItem;
 }
 
 export function formatMemberDosingSummary(member: OrderSetMemberDetail): string {

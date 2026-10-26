@@ -14,8 +14,11 @@ import {
   getActiveOrderSetMembers,
   getDefaultSelectedMemberUuids,
   getMemberDrugUuid,
+  getMemberInstructions,
+  getOrderSetInstructions,
   isMemberSelectionValid,
 } from './order-set.helper';
+import { unescapeRestText } from '../../utils/protocol-instructions';
 import type { DrugSearchResult } from './drug-search.resource';
 import { type OrderSetSearchResult, useOrderSet } from './order-set.resource';
 import styles from './order-set-review.scss';
@@ -45,6 +48,11 @@ const OrderSetReview: React.FC<OrderSetReviewProps> = ({ orderSetSummary, patien
 
   const activeMembers = useMemo(() => getActiveOrderSetMembers(orderSet?.orderSetMembers), [orderSet?.orderSetMembers]);
   const operator = orderSet?.operator ?? orderSetSummary.operator ?? 'ALL';
+  const orderSetName = unescapeRestText(orderSet?.name ?? orderSetSummary.name);
+  const orderSetInstructions = useMemo(
+    () => getOrderSetInstructions(orderSet, config.orderSetInstructionsAttributeTypeUuid),
+    [orderSet, config.orderSetInstructionsAttributeTypeUuid],
+  );
 
   useEffect(() => {
     if (!orderSet?.orderSetMembers?.length) {
@@ -119,7 +127,10 @@ const OrderSetReview: React.FC<OrderSetReviewProps> = ({ orderSetSummary, patien
           return null;
         }
 
-        const basketItem = buildBasketItemFromOrderSetMember(drug, visit, member, config.daysDurationUnit);
+        const basketItem = buildBasketItemFromOrderSetMember(drug, visit, member, config.daysDurationUnit, {
+          orderSetName,
+          instructions: orderSetInstructions,
+        });
         basketItem.isOrderIncomplete = true;
         return basketItem;
       })
@@ -135,6 +146,8 @@ const OrderSetReview: React.FC<OrderSetReviewProps> = ({ orderSetSummary, patien
     closeWorkspace,
     config.daysDurationUnit,
     drugByUuid,
+    orderSetInstructions,
+    orderSetName,
     orders,
     selectedMemberUuids,
     setOrders,
@@ -182,9 +195,18 @@ const OrderSetReview: React.FC<OrderSetReviewProps> = ({ orderSetSummary, patien
       </div>
 
       <div className={styles.titleBlock}>
-        <span className={styles.name}>{orderSet.name}</span>
-        {orderSet.description ? <span className={styles.description}>{orderSet.description}</span> : null}
+        <span className={styles.name}>{orderSetName}</span>
+        {orderSet.description ? (
+          <span className={styles.description}>{unescapeRestText(orderSet.description)}</span>
+        ) : null}
       </div>
+
+      {orderSetInstructions ? (
+        <div className={styles.protocolInstructions}>
+          <span className={styles.protocolInstructionsLabel}>{t('protocolInstructions', 'Protocol instructions')}</span>
+          <p className={styles.protocolInstructionsText}>{orderSetInstructions}</p>
+        </div>
+      ) : null}
 
       <p className={styles.operatorHelp}>{operatorHelp}</p>
 
@@ -195,6 +217,7 @@ const OrderSetReview: React.FC<OrderSetReviewProps> = ({ orderSetSummary, patien
           const drugUuid = getMemberDrugUuid(member);
           const drug = drugUuid ? drugByUuid.get(drugUuid) : undefined;
           const dosingSummary = formatMemberDosingSummary(member);
+          const instructions = getMemberInstructions(member);
           const isSelected = selectedMemberUuids.includes(member.uuid);
           const selectionControl =
             operator === 'ONE' ? (
@@ -224,6 +247,7 @@ const OrderSetReview: React.FC<OrderSetReviewProps> = ({ orderSetSummary, patien
                 <div className={styles.memberDetails}>
                   <div className={styles.memberName}>{drug?.display ?? member.display ?? t('unknown', 'Unknown')}</div>
                   {dosingSummary ? <div className={styles.memberDosing}>{dosingSummary}</div> : null}
+                  {instructions ? <div className={styles.memberInstructions}>{instructions}</div> : null}
                 </div>
               </div>
             </div>

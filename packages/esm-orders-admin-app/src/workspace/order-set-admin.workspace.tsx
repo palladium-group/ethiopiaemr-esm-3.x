@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { type DefaultWorkspaceProps, ResponsiveWrapper, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { useDrugOrderType } from '../api/order-type.resource';
 import { revalidateOrderSets, saveOrderSet } from '../api/order-set.resource';
-import { orderSetOperators } from '../constants';
+import { ORDER_SET_DESCRIPTION_MAX_LENGTH, orderSetOperators } from '../constants';
 import OrderSetMembersField from '../order-sets/order-set-members-field.component';
 import {
   emptyOrderSetFormValues,
@@ -124,17 +124,49 @@ const OrderSetAdminWorkspace: React.FC<OrderSetAdminWorkspaceProps> = ({
         <Controller
           name="description"
           control={control}
-          rules={{ required: t('descriptionRequired', 'Description is required.') }}
+          rules={{
+            required: t('descriptionRequired', 'Description is required.'),
+            maxLength: {
+              value: ORDER_SET_DESCRIPTION_MAX_LENGTH,
+              message: t('orderSetDescriptionTooLong', 'Description cannot be longer than {{max}} characters.', {
+                max: ORDER_SET_DESCRIPTION_MAX_LENGTH,
+              }),
+            },
+          }}
           render={({ field }) => (
             <TextArea
               id="order-set-description"
               labelText={t('description', 'Description')}
               placeholder={t('orderSetDescriptionPlaceholder', 'Describe when clinicians should use this bundle')}
               required
+              enableCounter
+              maxCount={ORDER_SET_DESCRIPTION_MAX_LENGTH}
               invalid={Boolean(errors.description)}
               invalidText={errors.description?.message}
               rows={3}
               {...field}
+            />
+          )}
+        />
+
+        <Controller
+          name="instructions"
+          control={control}
+          render={({ field }) => (
+            <TextArea
+              id="order-set-instructions"
+              labelText={t('orderSetInstructions', 'Protocol instructions')}
+              helperText={t(
+                'orderSetInstructionsHelp',
+                'Optional. Shown to the prescriber when ordering and in the patient chart. Put instructions for a single drug on that drug instead.',
+              )}
+              placeholder={t(
+                'orderSetInstructionsPlaceholder',
+                'e.g. start criteria, dose adjustment rules, monitoring',
+              )}
+              rows={6}
+              {...field}
+              value={field.value ?? ''}
             />
           )}
         />

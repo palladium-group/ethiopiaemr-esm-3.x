@@ -17,6 +17,7 @@ import {
   type OrderTemplate,
 } from '@openmrs/esm-patient-common-lib';
 import { type ConfigObject } from '../../config-schema';
+import { unescapeRestText } from '../../utils/protocol-instructions';
 
 export interface DrugSearchResult {
   uuid: string;
@@ -367,7 +368,7 @@ export function getTemplateOrderBasketItem(
       route: getDefault(template.template, 'route'),
       commonMedicationName: drug.display,
       isFreeTextDosage: false,
-      patientInstructions: '',
+      patientInstructions: unescapeRestText(getDefault(template.template, 'instructions')?.value),
       asNeeded: template.template.dosingInstructions.asNeeded || false,
       asNeededCondition: template.template.dosingInstructions.asNeededCondition,
       scheduledDate: new Date(),
