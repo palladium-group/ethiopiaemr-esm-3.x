@@ -12,8 +12,16 @@ export interface AppointmentCheckInDetails {
 
 export type AppointmentCheckInListener = (details: AppointmentCheckInDetails) => void | Promise<void>;
 
+export interface VisitStopDetails {
+  patientUuid: string;
+  visitUuid: string;
+}
+
+export type VisitStopListener = (details: VisitStopDetails) => void | Promise<void>;
+
 const visitSaveListeners = new Set<VisitSaveListener>();
 const appointmentCheckInListeners = new Set<AppointmentCheckInListener>();
+const visitStopListeners = new Set<VisitStopListener>();
 let originalFetch: typeof window.fetch | null = null;
 let isPatched = false;
 
@@ -52,6 +60,16 @@ function getRequestUrl(input: RequestInfo | URL): string {
 export function isVisitCreateEndpoint(pathname: string): boolean {
   const normalized = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
   return normalized.endsWith('/ws/rest/v1/visit') || normalized.endsWith('/visit');
+}
+
+export function extractVisitUuidFromPathname(pathname: string): string | undefined {
+  return pathname.replace(/\/$/, '').match(/\/visit\/([a-zA-Z0-9-]+)$/)?.[1];
+}
+
+export const isVisitStopEndpoint = (pathname: string): boolean => Boolean(extractVisitUuidFromPathname(pathname));
+
+export function isVisitStopPayload(payload: unknown): boolean {
+  return Boolean(payload && typeof payload === 'object' && ('stopDatetime' in payload || 'stopDate' in payload));
 }
 
 export function isAppointmentEndpoint(pathname: string): boolean {
@@ -99,24 +117,34 @@ export function extractPatientUuidFromPayload(payload: unknown): string | null {
   return null;
 }
 
+function notify<T>(listeners: Set<(details: T) => void | Promise<void>>, details: T) {
+  listeners.forEach((listener) => {
+    try {
+      Promise.resolve(listener(details)).catch(() => undefined);
+    } catch {
+      // Never break unrelated fetch calls.
+    }
+  });
+}
+
 async function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const response = await originalFetch!.call(window, input, init);
 
-  if (visitSaveListeners.size > 0 || appointmentCheckInListeners.size > 0) {
+  if (visitSaveListeners.size > 0 || appointmentCheckInListeners.size > 0 || visitStopListeners.size > 0) {
     try {
       const url = getRequestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
       const pathname = getRequestPathname(url);
+      const reqBody = parseRequestBody(init?.body);
 
       // Handle Visit Creation
       if (visitSaveListeners.size > 0 && method === 'POST' && isVisitCreateEndpoint(pathname) && response.ok) {
-        let patientUuid = extractPatientUuidFromPayload(parseRequestBody(init?.body));
+        let patientUuid = extractPatientUuidFromPayload(reqBody);
         let visitUuid: string | undefined;
 
         if (!patientUuid) {
           try {
-            const cloned = response.clone();
-            const data = await cloned.json();
+            const data = await response.clone().json();
             patientUuid = extractPatientUuidFromPayload(data);
             if (typeof data?.uuid === 'string') {
               visitUuid = data.uuid;
@@ -127,13 +155,28 @@ async function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
         }
 
         if (patientUuid) {
-          for (const listener of Array.from(visitSaveListeners)) {
-            try {
-              Promise.resolve(listener({ patientUuid, visitUuid })).catch(() => undefined);
-            } catch {
-              // Never break unrelated fetch calls.
-            }
-          }
+          notify(visitSaveListeners, { patientUuid, visitUuid });
+        }
+      }
+
+      // Handle Visit Stop / Checkout (POST, PATCH, PUT to /visit/:uuid with stopDatetime)
+      const visitUuid =
+        visitStopListeners.size > 0 && (method === 'POST' || method === 'PATCH' || method === 'PUT')
+          ? extractVisitUuidFromPathname(pathname)
+          : undefined;
+
+      if (visitUuid && isVisitStopPayload(reqBody) && response.ok) {
+        const patientUuid =
+          extractPatientUuidFromPayload(reqBody) ||
+          (await response
+            .clone()
+            .json()
+            .then(extractPatientUuidFromPayload)
+            .catch(() => null)) ||
+          (typeof window !== 'undefined' ? window.location.pathname.match(/\/patient\/([a-zA-Z0-9-]+)/)?.[1] : null);
+
+        if (patientUuid) {
+          notify(visitStopListeners, { patientUuid, visitUuid });
         }
       }
 
@@ -144,15 +187,13 @@ async function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
         isAppointmentEndpoint(pathname) &&
         response.ok
       ) {
-        const reqBody = parseRequestBody(init?.body);
         let isCheckIn = isCheckedInPayload(reqBody);
         let patientUuid = extractPatientUuidFromPayload(reqBody);
         let appointmentUuid = extractAppointmentUuidFromPathname(pathname);
 
         if (!isCheckIn || !patientUuid) {
           try {
-            const cloned = response.clone();
-            const data = await cloned.json();
+            const data = await response.clone().json();
             if (!isCheckIn) {
               isCheckIn = isCheckedInPayload(data);
             }
@@ -168,13 +209,7 @@ async function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
         }
 
         if (isCheckIn && patientUuid) {
-          for (const listener of Array.from(appointmentCheckInListeners)) {
-            try {
-              Promise.resolve(listener({ patientUuid, appointmentUuid })).catch(() => undefined);
-            } catch {
-              // Never break unrelated fetch calls.
-            }
-          }
+          notify(appointmentCheckInListeners, { patientUuid, appointmentUuid });
         }
       }
     } catch {
@@ -198,7 +233,12 @@ function ensureFetchPatched(): boolean {
 }
 
 function checkAndRestoreFetch() {
-  if (isPatched && visitSaveListeners.size === 0 && appointmentCheckInListeners.size === 0) {
+  if (
+    isPatched &&
+    visitSaveListeners.size === 0 &&
+    appointmentCheckInListeners.size === 0 &&
+    visitStopListeners.size === 0
+  ) {
     if (originalFetch) {
       window.fetch = originalFetch;
       originalFetch = null;
@@ -220,6 +260,23 @@ export function installVisitSaveInterceptor(listener: VisitSaveListener): () => 
 
   return () => {
     visitSaveListeners.delete(listener);
+    checkAndRestoreFetch();
+  };
+}
+
+/**
+ * Observes successful visit stop / checkout requests (e.g. POST /visit/:uuid with stopDatetime).
+ * Supports multiple subscribers.
+ */
+export function installVisitStopInterceptor(listener: VisitStopListener): () => void {
+  if (!ensureFetchPatched()) {
+    return () => undefined;
+  }
+
+  visitStopListeners.add(listener);
+
+  return () => {
+    visitStopListeners.delete(listener);
     checkAndRestoreFetch();
   };
 }
