@@ -1,4 +1,5 @@
 import { ConfigSchema, Type } from '@openmrs/esm-framework';
+import { PAYMENT_METHOD_VISIT_ATTRIBUTE_TYPE_UUID } from './constants';
 
 export interface BillingConfig {
   visitAttributeTypes: {
@@ -105,7 +106,7 @@ export const configSchema: ConfigSchema = {
     paymentMethods: {
       _type: Type.String,
       _description: 'The payment methods visit attribute uuid',
-      _default: 'e6cb0c3b-04b0-4117-9bc6-ce24adbda802',
+      _default: PAYMENT_METHOD_VISIT_ATTRIBUTE_TYPE_UUID,
     },
     insuranceScheme: {
       _type: Type.String,

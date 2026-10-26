@@ -1,0 +1,15 @@
+@use '@carbon/layout';
+
+.visitAttributeTagsContainer {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+}
+
+.paymentTypeTag {
+  margin: 0;
+  margin-right: layout.$spacing-03;
+  white-space: nowrap;
+  font-weight: 500;
+}
