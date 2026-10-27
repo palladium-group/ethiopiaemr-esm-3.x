@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { ReferralDetail } from '../../api/types';
 
 export type ReferralActionKind =
@@ -39,4 +40,19 @@ export function availableActions(referral: ReferralDetail): Array<ReferralAction
     default:
       return [];
   }
+}
+
+/** Button and modal titles for each action. One map so a new kind is named in one place. */
+export function useActionLabels(): Record<ReferralActionKind, string> {
+  const { t } = useTranslation();
+  return {
+    submit: t('submitToLiaison', 'Submit to liaison'),
+    send: t('sendReferral', 'Send referral'),
+    cancel: t('cancelReferral', 'Cancel referral'),
+    accept: t('acceptReferral', 'Accept referral'),
+    reject: t('rejectReferral', 'Reject referral'),
+    'refer-back': t('referBack', 'Refer back'),
+    feedback: t('sendFeedback', 'Send feedback'),
+    're-refer': t('reRefer', 'Re-refer'),
+  };
 }

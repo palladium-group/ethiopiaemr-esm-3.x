@@ -51,15 +51,24 @@ export function useReferrals(params: {
   limit: number;
 }) {
   const url = buildReferralListUrl(params);
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<ReferralListResponse>, Error>(url, openmrsFetch, {
-    keepPreviousData: true,
-    refreshInterval: 30_000,
-  });
+  const { data, error, isLoading, isValidating, mutate } = useSWR<FetchResponse<ReferralListResponse>, Error>(
+    url,
+    openmrsFetch,
+    {
+      keepPreviousData: true,
+      refreshInterval: 30_000,
+    },
+  );
   const body = data?.data;
+  const list = body?.status === 'success' ? body : null;
   return {
-    data: body?.status === 'success' ? body : null,
+    data: list,
     error: error ?? bodyError(body),
-    isLoading: isLoading && !body,
+    // Previous rows stay on screen while the next page or filter loads, so the
+    // first-load flag has to ignore that kept body. isUpdating is the indicator
+    // for that later request, including the 30s refresh.
+    isLoading: isLoading && !list,
+    isUpdating: Boolean(list) && isValidating,
     mutate,
   };
 }
@@ -107,7 +116,7 @@ export function useReferralDashboard() {
   };
 }
 
-export function useCatchment(params: { service?: string; includeInactive?: boolean } = {}) {
+export function useCatchment(params: { service?: string; includeInactive?: boolean; enabled?: boolean } = {}) {
   const search = new URLSearchParams();
   if (params.service?.trim()) {
     search.set('service', params.service.trim());
@@ -117,7 +126,7 @@ export function useCatchment(params: { service?: string; includeInactive?: boole
   }
   const qs = search.toString();
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<CatchmentListResponse>, Error>(
-    `${CATCHMENT_BASE}${qs ? `?${qs}` : ''}`,
+    params.enabled === false ? null : `${CATCHMENT_BASE}${qs ? `?${qs}` : ''}`,
     openmrsFetch,
   );
   const body = data?.data;

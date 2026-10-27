@@ -31,7 +31,7 @@ import type { ReferralDetail, ReferralDetailResponse } from '../../api/types';
 import { extractErrorMessage } from '../../api/errors';
 import { toServerDateTime } from '../../utils/format';
 import { useCodeLabel } from '../../utils/labels';
-import type { ReferralActionKind } from './available-actions';
+import { useActionLabels, type ReferralActionKind } from './available-actions';
 
 interface ReferralActionModalProps {
   kind: ReferralActionKind;
@@ -47,7 +47,7 @@ const ReferralActionModal: React.FC<ReferralActionModalProps> = ({ kind, referra
   const label = useCodeLabel();
   const { options } = useReferralOptions();
   const needsCatchment = kind === 'send' || kind === 're-refer';
-  const { entries: catchment } = useCatchment({});
+  const { entries: catchment, isLoading: catchmentLoading } = useCatchment({ enabled: needsCatchment });
   const [fields, setFields] = useState<Fields>({
     requestedService: referral.requestedService ?? '',
   });
@@ -59,16 +59,7 @@ const ReferralActionModal: React.FC<ReferralActionModalProps> = ({ kind, referra
   const v = (name: string) => fields[name] ?? '';
   const opt = (name: string) => (v(name).trim() ? v(name).trim() : undefined);
 
-  const titles: Record<ReferralActionKind, string> = {
-    submit: t('submitToLiaison', 'Submit to liaison'),
-    send: t('sendReferral', 'Send referral'),
-    cancel: t('cancelReferral', 'Cancel referral'),
-    accept: t('acceptReferral', 'Accept referral'),
-    reject: t('rejectReferral', 'Reject referral'),
-    'refer-back': t('referBack', 'Refer back'),
-    feedback: t('sendFeedback', 'Send feedback'),
-    're-refer': t('reRefer', 'Re-refer'),
-  };
+  const titles = useActionLabels();
 
   // The facility the requested service is asked of must have recorded it; the server refuses
   // otherwise, so the picker only lists destinations that can take the referral.
@@ -89,6 +80,10 @@ const ReferralActionModal: React.FC<ReferralActionModalProps> = ({ kind, referra
     feedback: ['feedbackDiagnosis', 'treatmentSummary'],
   };
   const missing = (required[kind] ?? []).some((f) => !v(f).trim());
+  const showMissing = (name: string) => {
+    const waitingForCatchment = catchmentLoading && (name === 'receivingFacilityCode' || name === 'onwardFacilityCode');
+    return (required[kind] ?? []).includes(name) && !v(name).trim() && !waitingForCatchment;
+  };
 
   const run = async () => {
     const feedback = {
@@ -143,7 +138,13 @@ const ReferralActionModal: React.FC<ReferralActionModalProps> = ({ kind, referra
   };
 
   const facilityPicker = (name: string) => (
-    <Select id={name} labelText={t('destinationFacility', 'Destination facility')} value={v(name)} onChange={set(name)}>
+    <Select
+      id={name}
+      labelText={t('destinationFacility', 'Destination facility')}
+      value={v(name)}
+      invalid={showMissing(name)}
+      invalidText={t('destinationRequired', 'Choose a destination facility.')}
+      onChange={set(name)}>
       <SelectItem value="" text={t('chooseFacility', 'Choose a facility')} />
       {destinations.map((c) => (
         <SelectItem
@@ -162,6 +163,8 @@ const ReferralActionModal: React.FC<ReferralActionModalProps> = ({ kind, referra
         labelText={t('finalDiagnosis', 'Final diagnosis')}
         rows={2}
         value={v('feedbackDiagnosis')}
+        invalid={showMissing('feedbackDiagnosis')}
+        invalidText={t('finalDiagnosisRequired', 'Enter the final diagnosis.')}
         onChange={set('feedbackDiagnosis')}
       />
       <TextArea
@@ -169,6 +172,8 @@ const ReferralActionModal: React.FC<ReferralActionModalProps> = ({ kind, referra
         labelText={t('treatmentSummary', 'Treatment summary')}
         rows={3}
         value={v('treatmentSummary')}
+        invalid={showMissing('treatmentSummary')}
+        invalidText={t('treatmentSummaryRequired', 'Enter the treatment summary.')}
         onChange={set('treatmentSummary')}
       />
       <TextArea
@@ -278,6 +283,8 @@ const ReferralActionModal: React.FC<ReferralActionModalProps> = ({ kind, referra
               id="reasonCode"
               labelText={t('reason', 'Reason')}
               value={v('reasonCode')}
+              invalid={showMissing('reasonCode')}
+              invalidText={t('reasonRequired', 'Choose a reason.')}
               onChange={set('reasonCode')}>
               <SelectItem value="" text={t('chooseReason', 'Choose a reason')} />
               {(options?.rejectionReasons ?? []).map((r) => (
@@ -298,6 +305,8 @@ const ReferralActionModal: React.FC<ReferralActionModalProps> = ({ kind, referra
             labelText={kind === 'cancel' ? t('cancelReason', 'Reason for cancelling') : t('comment', 'Comment')}
             rows={2}
             value={v('comment')}
+            invalid={showMissing('comment')}
+            invalidText={t('cancelReasonRequired', 'Enter a reason for cancelling.')}
             onChange={set('comment')}
           />
 

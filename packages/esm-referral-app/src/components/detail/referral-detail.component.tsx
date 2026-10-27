@@ -8,7 +8,7 @@ import type { ReferralActionRecord, ReferralDetail as Detail } from '../../api/t
 import { formatDateTime } from '../../utils/format';
 import { useCodeLabel } from '../../utils/labels';
 import { PriorityTag, StatusTag } from '../shared/status-tag.component';
-import { availableActions, type ReferralActionKind } from './available-actions';
+import { availableActions, useActionLabels, type ReferralActionKind } from './available-actions';
 import ReferralActionModal from './referral-action-modal.component';
 import styles from './referral-detail.scss';
 
@@ -31,6 +31,7 @@ const ReferralDetail: React.FC = () => {
   const { uuid } = useParams();
   const { data, error, isLoading, mutate } = useReferral(uuid);
   const [action, setAction] = useState<ReferralActionKind | null>(null);
+  const actionLabel = useActionLabels();
 
   const back = () => navigate(data?.referral?.direction === 'OUTGOING' ? '/outgoing' : '/incoming');
 
@@ -61,16 +62,6 @@ const ReferralDetail: React.FC = () => {
   const isIncoming = r.direction === 'INCOMING';
   const undelivered = !isIncoming && r.status === 'REFERRED' && !r.delivered;
 
-  const actionLabel: Record<ReferralActionKind, string> = {
-    submit: t('submitToLiaison', 'Submit to liaison'),
-    send: t('sendReferral', 'Send referral'),
-    cancel: t('cancelReferral', 'Cancel referral'),
-    accept: t('acceptReferral', 'Accept referral'),
-    reject: t('rejectReferral', 'Reject referral'),
-    'refer-back': t('referBack', 'Refer back'),
-    feedback: t('sendFeedback', 'Send feedback'),
-    're-refer': t('reRefer', 'Re-refer'),
-  };
   const buttonKind = (kind: ReferralActionKind, index: number) =>
     kind === 'reject' || kind === 'cancel' ? 'danger--tertiary' : index === 0 ? 'primary' : 'tertiary';
 

@@ -5,6 +5,7 @@ import {
   Button,
   DataTableSkeleton,
   Dropdown,
+  InlineLoading,
   InlineNotification,
   Pagination,
   Search,
@@ -60,7 +61,7 @@ const ReferralList: React.FC<ReferralListProps> = ({ direction }) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  const { data, error, isLoading, mutate } = useReferrals({
+  const { data, error, isLoading, isUpdating, mutate } = useReferrals({
     direction,
     status: filter === ACTION_NEEDED ? ACTIONABLE[direction] : filter,
     q: debouncedQuery,
@@ -110,6 +111,7 @@ const ReferralList: React.FC<ReferralListProps> = ({ direction }) => {
         <Button kind="ghost" size="md" renderIcon={Renew} onClick={() => mutate()}>
           {t('refresh', 'Refresh')}
         </Button>
+        {isUpdating && <InlineLoading description={t('updatingList', 'Updating…')} />}
       </div>
 
       {isLoading && <DataTableSkeleton columnCount={7} rowCount={6} showHeader={false} showToolbar={false} />}
@@ -141,7 +143,7 @@ const ReferralList: React.FC<ReferralListProps> = ({ direction }) => {
 
       {!isLoading && !error && rows.length > 0 && (
         <>
-          <TableContainer className={styles.table}>
+          <TableContainer className={styles.table} aria-busy={isUpdating}>
             <Table size="md" useZebraStyles>
               <TableHead>
                 <TableRow>
