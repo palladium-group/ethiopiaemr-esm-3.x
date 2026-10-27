@@ -155,8 +155,8 @@ export function useQueueEntries(searchCriteria?: QueueEntrySearchCriteria) {
   };
 }
 
-export function useQueueLocations() {
-  const apiUrl = `${fhirBaseUrl}/Location?_summary=data&_tag=queue location`;
+export function useQueueLocations(tag: string = 'queue location') {
+  const apiUrl = `${fhirBaseUrl}/Location?_summary=data&_tag=${encodeURIComponent(tag)}`;
   const { data, error, isLoading } = useFhirFetchAll<fhir.Location>(apiUrl);
 
   const queueLocations = useMemo(
@@ -175,10 +175,12 @@ export function useQueueLocations() {
 interface Queue {
   uuid: string;
   display: string;
+  name?: string;
   service: {
     uuid: string;
     display: string;
   };
+  allowedPriorities?: Array<{ uuid: string; display: string }>;
   allowedStatuses?: Array<{ uuid: string; display: string }>;
 }
 
@@ -195,6 +197,54 @@ export function useQueues(locationUuid?: string) {
   );
 
   return { queues, ...rest };
+}
+
+export const DEFAULT_EMERGENCY_PRIORITY_CONCEPT_UUID = '037446f4-adfc-40b3-928c-a39a4826b1bf';
+
+export function resolveEmergencyPriorityUuid(
+  configuredUuid?: string,
+  availablePriorities: Array<{ uuid: string; display: string }> = [],
+): string {
+  return (
+    configuredUuid ||
+    availablePriorities.find((p) => p.display?.trim().toLowerCase() === 'emergency')?.uuid ||
+    DEFAULT_EMERGENCY_PRIORITY_CONCEPT_UUID
+  );
+}
+
+export function getDefaultPriorityUuid(
+  availablePriorities: Array<{ uuid: string; display: string }>,
+  defaultPriorityUuid?: string,
+): string {
+  return (
+    availablePriorities.find((item) => item.uuid === defaultPriorityUuid)?.uuid ?? availablePriorities[0]?.uuid ?? ''
+  );
+}
+
+export function useQueuePriorities(priorityConceptSetUuid?: string) {
+  const conceptUrl = priorityConceptSetUuid
+    ? `${restBaseUrl}/concept/${priorityConceptSetUuid}?v=custom:(uuid,display,setMembers:(uuid,display))`
+    : null;
+  const { data: conceptResponse, isLoading: isLoadingConcept } = useSWRImmutable<{
+    data?: { setMembers?: Array<{ uuid: string; display: string }> };
+  }>(conceptUrl, openmrsFetch);
+
+  const { queues, isLoading: isLoadingQueues } = useQueues();
+
+  const priorities = useMemo(() => {
+    const conceptSetMembers = conceptResponse?.data?.setMembers ?? [];
+    if (conceptSetMembers.length > 0) {
+      return conceptSetMembers;
+    }
+
+    const allPriorities = (queues ?? []).flatMap((queue) => queue?.allowedPriorities ?? []);
+    return Array.from(new Map(allPriorities.filter((p) => p?.uuid).map((p) => [p.uuid, p])).values());
+  }, [conceptResponse?.data?.setMembers, queues]);
+
+  const isLoading =
+    (Boolean(priorityConceptSetUuid) && isLoadingConcept) || (priorities.length === 0 && isLoadingQueues);
+
+  return { priorities, isLoadingQueuePriorities: isLoading };
 }
 
 export function useQueueStatuses() {

@@ -254,6 +254,16 @@ export const configSchema = {
       'Location tag names for emergency locations. Can specify multiple tags to support future OPD/IPD emergency separation.',
     _default: ['Emergency'],
   },
+  emergencyLocationTagUuid: {
+    _type: Type.UUID,
+    _description: 'Location tag UUID for emergency locations.',
+    _default: 'aa045812-4237-450e-8443-6294587323e8',
+  },
+  queueLocationTagName: {
+    _type: Type.String,
+    _description: 'Location tag name used to fetch default queue locations.',
+    _default: 'queue location',
+  },
   medicalRecordingUnitLocationTagUuid: {
     _type: Type.UUID,
     _description:
@@ -477,6 +487,8 @@ export type ClinicalWorkflowConfig = {
     severe: string;
   };
   emergencyLocationTags: string[];
+  emergencyLocationTagUuid: string;
+  queueLocationTagName: string;
   medicalRecordingUnitLocationTagUuid: string;
   medicalRecordingUnitLocationTagName: string;
   admissionRequestFormUuid: string;
