@@ -1,7 +1,11 @@
 import {
   installVisitSaveInterceptor,
   installAppointmentCheckInInterceptor,
+  installVisitStopInterceptor,
   isVisitCreateEndpoint,
+  extractVisitUuidFromPathname,
+  isVisitStopEndpoint,
+  isVisitStopPayload,
   isAppointmentEndpoint,
   isCheckedInPayload,
   extractPatientUuidFromPayload,
@@ -18,6 +22,23 @@ describe('visit-save-interceptor helpers', () => {
     expect(isVisitCreateEndpoint('/ws/rest/v1/visit/123-uuid')).toBe(false);
     expect(isVisitCreateEndpoint('/ws/rest/v1/visit/123-uuid/')).toBe(false);
     expect(isVisitCreateEndpoint('/ws/rest/v1/visittype')).toBe(false);
+  });
+
+  it('identifies visit stop endpoints and extracts visit UUID accurately', () => {
+    expect(isVisitStopEndpoint('/ws/rest/v1/visit/123-uuid')).toBe(true);
+    expect(isVisitStopEndpoint('/openmrs/ws/rest/v1/visit/123-uuid/')).toBe(true);
+    expect(extractVisitUuidFromPathname('/openmrs/ws/rest/v1/visit/abc-456')).toBe('abc-456');
+    expect(extractVisitUuidFromPathname('/openmrs/ws/rest/v1/visit/abc-456/')).toBe('abc-456');
+
+    expect(isVisitStopEndpoint('/ws/rest/v1/visit')).toBe(false);
+    expect(extractVisitUuidFromPathname('/ws/rest/v1/visit')).toBeUndefined();
+  });
+
+  it('identifies visit stop payload accurately', () => {
+    expect(isVisitStopPayload({ stopDatetime: '2026-10-26T19:26:51.000+0300' })).toBe(true);
+    expect(isVisitStopPayload({ stopDate: '2026-10-26' })).toBe(true);
+    expect(isVisitStopPayload({ location: 'xyz' })).toBe(false);
+    expect(isVisitStopPayload(null)).toBe(false);
   });
 
   it('identifies appointment endpoints accurately', () => {
@@ -249,6 +270,85 @@ describe('installAppointmentCheckInInterceptor', () => {
     await window.fetch('/ws/rest/v1/appointment/appt-2', {
       method: 'PATCH',
       body: JSON.stringify({ status: 'Cancelled' }),
+    });
+
+    expect(listener).not.toHaveBeenCalled();
+    uninstall();
+  });
+});
+
+describe('installVisitStopInterceptor', () => {
+  const underlyingFetch = jest.fn(
+    async () =>
+      ({
+        ok: true,
+        clone: () => ({
+          json: async () => ({
+            uuid: 'visit-999',
+            stopDatetime: '2026-10-26T19:26:51.000+0300',
+            patient: { uuid: 'patient-stopped' },
+          }),
+        }),
+      } as unknown as Response),
+  );
+
+  beforeEach(() => {
+    underlyingFetch.mockClear();
+    window.fetch = underlyingFetch as typeof window.fetch;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('notifies listeners when a visit is stopped / checked out via POST', async () => {
+    const listener = jest.fn();
+    const uninstall = installVisitStopInterceptor(listener);
+
+    await window.fetch('/openmrs/ws/rest/v1/visit/visit-999', {
+      method: 'POST',
+      body: JSON.stringify({
+        stopDatetime: '2026-10-26T19:26:51.000+0300',
+      }),
+    });
+
+    expect(listener).toHaveBeenCalledWith({
+      patientUuid: 'patient-stopped',
+      visitUuid: 'visit-999',
+    });
+
+    uninstall();
+  });
+
+  it('ignores visit updates without stopDatetime', async () => {
+    const listener = jest.fn();
+    const uninstall = installVisitStopInterceptor(listener);
+
+    await window.fetch('/openmrs/ws/rest/v1/visit/visit-999', {
+      method: 'POST',
+      body: JSON.stringify({
+        location: 'some-location',
+      }),
+    });
+
+    expect(listener).not.toHaveBeenCalled();
+    uninstall();
+  });
+
+  it('ignores failed visit stop requests', async () => {
+    underlyingFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    } as unknown as Response);
+
+    const listener = jest.fn();
+    const uninstall = installVisitStopInterceptor(listener);
+
+    await window.fetch('/openmrs/ws/rest/v1/visit/visit-999', {
+      method: 'POST',
+      body: JSON.stringify({
+        stopDatetime: '2026-10-26T19:26:51.000+0300',
+      }),
     });
 
     expect(listener).not.toHaveBeenCalled();

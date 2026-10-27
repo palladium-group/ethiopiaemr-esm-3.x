@@ -43,6 +43,10 @@ import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
 import AssignQueueRoomModal from './queue-room/assign-queue-room.modal';
 import AppointmentCheckInQueueHandler from './queue-room/appointment-checkin-queue-handler.component';
 import { subscribeAppointmentCheckInQueueSync } from './queue-room/appointment-checkin-queue-sync';
+import {
+  completePatientCheckedInAppointments,
+  subscribeVisitCheckoutAppointmentSync,
+} from './patient-chart/appointment-checkout-sync';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
@@ -86,6 +90,7 @@ export function startupApp() {
   subscribeAwaitingAdmissionSlotSync();
   subscribeDischargeInSlotSync();
   subscribeAppointmentCheckInQueueSync();
+  subscribeVisitCheckoutAppointmentSync();
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
@@ -282,3 +287,4 @@ export const shrAdminDashboardLink = getSyncLifecycle(ShrAdminDashboardLink, opt
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
 export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);
 export const appointmentCheckInQueueHandler = getSyncLifecycle(AppointmentCheckInQueueHandler, options);
+export { completePatientCheckedInAppointments, subscribeVisitCheckoutAppointmentSync };
