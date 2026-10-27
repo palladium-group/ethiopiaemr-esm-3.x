@@ -90,34 +90,6 @@
   border-radius: 0.25rem;
 }
 
-.creditDetailsContainer {
-  display: flex;
-  flex-direction: column;
-  gap: spacing.$spacing-05;
-  margin-top: spacing.$spacing-03;
-  height: auto;
-  border: 1px solid colors.$gray-20;
-  padding: spacing.$spacing-03;
-  overflow: visible;
-}
-
-.freeDetailsContainer {
-  display: flex;
-  flex-direction: column;
-  gap: spacing.$spacing-05;
-  margin-top: spacing.$spacing-03;
-  height: auto;
-  border: 1px solid colors.$gray-20;
-  padding: spacing.$spacing-03;
-  overflow: visible;
-}
-
-.creditTypeDetailsContainer {
-  display: flex;
-  flex-direction: column;
-  gap: spacing.$spacing-03;
-}
-
 .cashPointContainer {
   margin-top: spacing.$spacing-06;
   padding-top: spacing.$spacing-05;

@@ -15,7 +15,6 @@ import type { ClinicalWorkflowConfig } from '../../config-schema';
 import { usePatientCardValidity } from '../../queue-room/usePatientCardValidity';
 import {
   usePaymentModes,
-  useCreditCompanies,
   useBillingForm,
   useBillingType,
   usePopulateBillingFormFromVisit,
@@ -24,13 +23,7 @@ import {
   useCashPoints,
   useLastVisitPaymentMethod,
 } from './hooks';
-import {
-  BillingTypeAttributes,
-  CbhiBillingAttributes,
-  CreditSubTypeSelection,
-  CreditSubTypeFields,
-  BillableItemsSelection,
-} from './components';
+import { BillingTypeAttributes, CbhiBillingAttributes, BillableItemsSelection } from './components';
 import styles from './billing-information.scss';
 
 type BillingInformationWorkspaceProps = DefaultWorkspaceProps & {
@@ -77,14 +70,10 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
 
   // Watch form values
   const billingTypeUuid = watch('billingTypeUuid');
-  const creditSubType = watch('creditSubType');
   const attributes = watch('attributes') || {};
 
   // Billing type logic hook
-  const { selectedBillingType, isCreditType } = useBillingType(billingTypes, billingTypeUuid);
-
-  // Fetch credit companies conditionally
-  const { creditCompanies } = useCreditCompanies(isCreditType && creditSubType === 'creditCompany');
+  const { selectedBillingType } = useBillingType(billingTypes, billingTypeUuid);
 
   // Populate form from visit attributes
   usePopulateBillingFormFromVisit({
@@ -209,34 +198,8 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             ))}
           </ContentSwitcher>
 
-          {/* Credit sub-type selection */}
-          {isCreditType && (
-            <CreditSubTypeSelection
-              key={activeVisit?.uuid ?? 'no-visit'}
-              control={control}
-              errors={errors}
-              t={t}
-              creditSubType={creditSubType}
-              getValues={getValues}
-              setValue={setValue}
-            />
-          )}
-
-          {/* Conditional fields based on Credit sub-type */}
-          {isCreditType && creditSubType && (
-            <CreditSubTypeFields
-              control={control}
-              errors={errors}
-              t={t}
-              creditSubType={creditSubType}
-              creditCompanies={creditCompanies}
-              attributes={attributes}
-              setValue={setValue}
-            />
-          )}
-
           {/* CBHI: always show search when CBHI payment method is selected */}
-          {selectedBillingType && !isCreditType && selectedBillingType.name?.toLowerCase() === 'cbhi' && (
+          {selectedBillingType && selectedBillingType.name?.toLowerCase() === 'cbhi' && (
             <CbhiBillingAttributes
               control={control}
               errors={errors}
@@ -247,9 +210,8 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             />
           )}
 
-          {/* Default attribute types for other non-credit billing types */}
+          {/* Default attribute types for other billing types */}
           {selectedBillingType &&
-            !isCreditType &&
             selectedBillingType.name?.toLowerCase() !== 'cbhi' &&
             selectedBillingType.attributeTypes &&
             selectedBillingType.attributeTypes.length > 0 && (

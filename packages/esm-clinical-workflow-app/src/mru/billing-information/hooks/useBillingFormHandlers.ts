@@ -4,7 +4,6 @@ import type { BillingFormData } from '../billing-information.resource';
 
 type BillingTypeFormState = {
   attributes: Record<string, unknown>;
-  creditSubType?: string;
 };
 
 type UseBillingFormHandlersParams = {
@@ -27,7 +26,6 @@ const restoreBillingTypeState = (
     setValue(`attributes.${attrTypeUuid}`, undefined, { shouldDirty: false });
   });
 
-  setValue('creditSubType', cachedState?.creditSubType, { shouldDirty: false });
   setValue('attributes', cachedAttributes, { shouldDirty: false });
 
   Object.entries(cachedAttributes).forEach(([attrTypeUuid, value]) => {
@@ -63,7 +61,6 @@ export const useBillingFormHandlers = ({
       if (currentBillingTypeUuid) {
         billingTypeStateCacheRef.current[currentBillingTypeUuid] = {
           attributes: { ...(currentValues.attributes || {}) },
-          creditSubType: currentValues.creditSubType,
         };
       }
 

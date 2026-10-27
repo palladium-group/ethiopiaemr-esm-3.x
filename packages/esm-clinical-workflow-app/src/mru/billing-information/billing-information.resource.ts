@@ -54,7 +54,6 @@ export const createBillingFormSchema = (
   return z
     .object({
       billingTypeUuid: z.string().optional(),
-      creditSubType: z.string().optional(),
       attributes: z.record(z.string(), z.any()).optional(),
       billableItem: z
         .object({
@@ -142,36 +141,6 @@ export type BillingVisitAttributeTypesMap = {
 
 const hasAttributeValue = (value: unknown) =>
   value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '');
-
-const transformFormObjectToVisitAttributes = (
-  formObject: Record<string, any>,
-  visitAttributeTypeUuidsMap: Record<string, string>,
-) => {
-  return Object.entries(formObject)
-    .map(([key, value]) => ({
-      attributeType: visitAttributeTypeUuidsMap[key],
-      value: value,
-    }))
-    .filter((item) => {
-      // Filter out undefined, null, or empty string values
-      if (item.value === undefined || item.value === null || item.value === '') {
-        return false;
-      }
-      // Filter out empty creditTypeDetails object
-      if (item.value && typeof item.value === 'object' && !Array.isArray(item.value)) {
-        const creditDetails = item.value as Record<string, any>;
-        const hasAnyValue = Object.values(creditDetails).some((val) => val !== undefined && val !== null && val !== '');
-        if (!hasAnyValue) {
-          return false;
-        }
-      }
-      return true;
-    })
-    .map((item) => ({
-      attributeType: item.attributeType,
-      value: item.value && typeof item.value === 'object' ? JSON.stringify(item.value) : item.value,
-    }));
-};
 
 export const createBillingInformationVisitAttribute = (
   billingFormData: BillingFormData,

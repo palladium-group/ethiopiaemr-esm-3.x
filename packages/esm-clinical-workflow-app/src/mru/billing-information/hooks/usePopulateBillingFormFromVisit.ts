@@ -103,19 +103,9 @@ export const usePopulateBillingFormFromVisit = ({
       }
     }
 
-    if (billingVisitAttributeTypes.creditType && parsedAttributes[billingVisitAttributeTypes.creditType]) {
-      const creditSubTypeValue = parsedAttributes[billingVisitAttributeTypes.creditType];
-      setValue('creditSubType', creditSubTypeValue, { shouldDirty: false });
-      // Set the creditType attribute
-      setValue(`attributes.${billingVisitAttributeTypes.creditType}`, creditSubTypeValue, { shouldDirty: false });
-    }
-
-    // Populate all other attributes from the parsed summary
+    // Populate all attributes from the parsed summary
     Object.entries(parsedAttributes).forEach(([attrTypeUuid, value]) => {
-      // Skip creditType as it's already handled above
-      if (attrTypeUuid !== billingVisitAttributeTypes.creditType) {
-        setValue(`attributes.${attrTypeUuid}`, value, { shouldDirty: false });
-      }
+      setValue(`attributes.${attrTypeUuid}`, value, { shouldDirty: false });
     });
 
     if (parsedAttributes.expiryDate && !parsedAttributes.cbhiExpiryDate) {
