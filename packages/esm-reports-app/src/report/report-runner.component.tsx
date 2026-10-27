@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
   Button,
+  DismissibleTag,
   Dropdown,
   FilterableMultiSelect,
   InlineLoading,
@@ -253,34 +254,49 @@ const ReportRunner: React.FC = () => {
                 onChange={({ selectedItem }: { selectedItem: number | null }) => handleFiscalYearChange(selectedItem)}
               />
             ) : param.name === MONTHS_PARAM ? (
-              <FilterableMultiSelect
-                key={param.name}
-                id={`param-${param.name}`}
-                titleText={param.label}
-                placeholder={
-                  fiscalYear
-                    ? t('selectMonths', 'Select one or more months')
-                    : t('selectFiscalYearFirst', 'Select a fiscal year first')
-                }
-                className={styles.monthField}
-                disabled={!fiscalYear}
-                items={monthOptions}
-                itemToString={(month: ReportingMonth | null) => month?.label ?? ''}
-                /* Keyed on label so the chosen months survive the list being rebuilt. */
-                initialSelectedItems={monthOptions.filter((option) =>
-                  selectedMonths.some((m) => m.label === option.label),
-                )}
-                /* Identity, because the default sorts by label — which would order
+              <div key={param.name} className={styles.monthField}>
+                <FilterableMultiSelect
+                  id={`param-${param.name}`}
+                  titleText={param.label}
+                  placeholder={
+                    fiscalYear
+                      ? t('selectMonths', 'Select one or more months')
+                      : t('selectFiscalYearFirst', 'Select a fiscal year first')
+                  }
+                  disabled={!fiscalYear}
+                  items={monthOptions}
+                  itemToString={(month: ReportingMonth | null) => month?.label ?? ''}
+                  /* Controlled, so removing a month tag below also unticks it here. Keyed
+                   on label so the chosen months survive the list being rebuilt. */
+                  selectedItems={monthOptions.filter((option) => selectedMonths.some((m) => m.label === option.label))}
+                  /* Identity, because the default sorts by label — which would order
                    the months alphabetically (Ginbot, Hamle, Hidar…) instead of
                    chronologically. monthOptions is already in fiscal-year order. */
-                sortItems={(items: Array<ReportingMonth>) => items}
-                /* 'fixed' keeps the chronological order on reopen; the default
+                  sortItems={(items: Array<ReportingMonth>) => items}
+                  /* 'fixed' keeps the chronological order on reopen; the default
                    'top-after-reopen' hoists ticked months to the top. */
-                selectionFeedback="fixed"
-                onChange={({ selectedItems }: { selectedItems: Array<ReportingMonth> }) =>
-                  handleMonthsChange(selectedItems ?? [])
-                }
-              />
+                  selectionFeedback="fixed"
+                  onChange={({ selectedItems }: { selectedItems: Array<ReportingMonth> }) =>
+                    handleMonthsChange(selectedItems ?? [])
+                  }
+                />
+                {/* The field's own chip shows only a count, so the chosen months are
+                  named here. */}
+                {selectedMonths.length > 0 && (
+                  <div className={styles.selectedMonths}>
+                    {selectedMonths.map((month) => (
+                      <DismissibleTag
+                        key={month.label}
+                        type="blue"
+                        size="sm"
+                        text={month.label}
+                        dismissTooltipLabel={t('removeMonth', 'Remove {{month}}', { month: month.label })}
+                        onClose={() => handleMonthsChange(selectedMonths.filter((m) => m.label !== month.label))}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : isDateParam(param.type) ? (
               /* The shared EMR picker, so dates follow the deployment's configured
                  calendar. It returns a JS Date, stored here as a Gregorian ISO string. */

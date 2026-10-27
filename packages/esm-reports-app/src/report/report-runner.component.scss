@@ -68,6 +68,13 @@
   width: 22rem;
 }
 
+.selectedMonths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  margin-top: layout.$spacing-03;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
