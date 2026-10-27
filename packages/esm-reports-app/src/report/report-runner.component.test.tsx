@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useReportDefinition } from '../api/reports.resource';
 import { runReport, fetchFeederDatasetNames, downloadReportDesign } from '../api/report-request';
@@ -179,6 +179,11 @@ async function chooseFiscalYear(year: string) {
   await userEvent.click(await screen.findByRole('option', { name: year }));
 }
 
+/** Month names shown in the tags under the field, in display order. */
+function monthTagLabels() {
+  return Array.from(document.querySelectorAll('.selectedMonths .cds--tag__label')).map((label) => label.textContent);
+}
+
 async function chooseMonths(...labels: Array<string>) {
   await userEvent.click(screen.getByRole('combobox', { name: /month/i }));
   for (const label of labels) {
@@ -285,5 +290,34 @@ describe('ReportRunner Ethiopian period filter', () => {
     await chooseFiscalYear('2020');
 
     expect(screen.getByRole('button', { name: /run report/i })).toBeDisabled();
+    expect(monthTagLabels()).toEqual([]);
+  });
+
+  it('names the selected months below the field', async () => {
+    render(<ReportRunner />);
+
+    await chooseFiscalYear('2019');
+    await chooseMonths('Meskerem 2019', 'Nehase 2018');
+    await userEvent.keyboard('{Escape}');
+
+    expect(monthTagLabels()).toEqual(['Nehase 2018', 'Meskerem 2019']);
+  });
+
+  it('unselects a month when its tag is removed', async () => {
+    render(<ReportRunner />);
+
+    await chooseFiscalYear('2019');
+    await chooseMonths('Nehase 2018', 'Meskerem 2019');
+    await userEvent.keyboard('{Escape}');
+    const tag = screen
+      .getByText('Nehase 2018', { selector: '.selectedMonths .cds--tag__label' })
+      .closest('.cds--tag') as HTMLElement;
+    await userEvent.click(within(tag).getByRole('button'));
+    await userEvent.click(screen.getByRole('button', { name: /run report/i }));
+
+    expect(mockRunReport).toHaveBeenCalledWith('report-uuid', {
+      fiscalYear: '2019',
+      months: 'Meskerem 2019',
+    });
   });
 });
