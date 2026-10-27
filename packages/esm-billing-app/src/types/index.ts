@@ -511,6 +511,16 @@ export type PaymentMode = {
   resourceVersion?: string;
 };
 
+export type CreditCompany = {
+  uuid: string;
+  display: string;
+  name: string;
+  description?: string | null;
+  retired: boolean;
+  retireReason?: string | null;
+  auditInfo?: AuditInfo;
+};
+
 export type SHAIntervention = {
   interventionCode: string;
   interventionPackage: string;
