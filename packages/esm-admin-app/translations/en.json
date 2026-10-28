@@ -21,6 +21,7 @@
   "delete": "Delete",
   "deletingstockUserScope": "Delete Stock User Scope",
   "demographicInfo": "Demographic info",
+  "departmentType": "Department type",
   "description": "Description",
   "downloadFailed": "Download failed",
   "downloadRemainingRows": "Download remaining rows",

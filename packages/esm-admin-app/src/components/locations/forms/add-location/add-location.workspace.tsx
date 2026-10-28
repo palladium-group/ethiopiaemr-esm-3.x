@@ -58,13 +58,20 @@ const baseLocationFormSchema = z.object({
 type LocationFormType = z.infer<typeof baseLocationFormSchema>;
 
 // Departments are flat: a Department must carry a Department Type and cannot sit under another Department.
-export const buildLocationFormSchema = (departmentTagUuid: string) =>
+export const buildLocationFormSchema = (departmentTagUuid: string, hasDepartmentChild = false) =>
   baseLocationFormSchema.superRefine((data, ctx) => {
     if (!data.tags.some((tag) => tag.uuid === departmentTagUuid)) {
       return;
     }
     if (!data.departmentType) {
       ctx.addIssue({ code: 'custom', path: ['departmentType'], message: 'Department type is required' });
+    }
+    if (hasDepartmentChild) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['tags'],
+        message: 'This location contains departments, so it cannot be a department',
+      });
     }
     if (data.parentLocation?.isDepartment) {
       ctx.addIssue({
@@ -97,7 +104,13 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
     return location?.attributes?.some((attribute) => attribute.attributeType?.uuid !== departmentTypeAttributeTypeUuid);
   }, [location?.attributes, departmentTypeAttributeTypeUuid]);
 
-  const locationFormSchema = useMemo(() => buildLocationFormSchema(departmentTagUuid), [departmentTagUuid]);
+  const hasDepartmentChild = !!locationDetails?.childLocations?.some((child) =>
+    child.tags?.some((tag) => tag.uuid === departmentTagUuid),
+  );
+  const locationFormSchema = useMemo(
+    () => buildLocationFormSchema(departmentTagUuid, hasDepartmentChild),
+    [departmentTagUuid, hasDepartmentChild],
+  );
 
   const handleMutation = () => {
     const url = `${restBaseUrl}/location`;

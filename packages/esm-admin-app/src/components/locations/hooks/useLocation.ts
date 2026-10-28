@@ -21,14 +21,14 @@ export const saveOrUpdateLocation = async (locationPayload, locationUuid) => {
 export type LocationDetails = {
   uuid: string;
   parentLocation: { uuid: string; display: string; tags: Array<{ uuid: string }> } | null;
-  childLocations: Array<{ uuid: string }>;
+  childLocations: Array<{ uuid: string; tags: Array<{ uuid: string }> }>;
   attributes: Array<{ uuid: string; attributeType: { uuid: string }; value: { uuid: string } | string }>;
 };
 
 /** Parent, children and active attributes needed by the location form (not part of the table's rep). */
 export const useLocationDetails = (locationUuid?: string) => {
   const rep =
-    'custom:(uuid,parentLocation:(uuid,display,tags:(uuid)),childLocations:(uuid),attributes:(uuid,attributeType:(uuid),value))';
+    'custom:(uuid,parentLocation:(uuid,display,tags:(uuid)),childLocations:(uuid,tags:(uuid)),attributes:(uuid,attributeType:(uuid),value))';
   const { data, isLoading } = useSWR<FetchResponse<LocationDetails>>(
     locationUuid ? `${restBaseUrl}/location/${locationUuid}?v=${rep}` : null,
     openmrsFetch,
