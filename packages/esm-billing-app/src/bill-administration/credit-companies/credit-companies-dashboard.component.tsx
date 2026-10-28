@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -30,11 +31,12 @@ import {
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import BillingHeader from '../../billing-header/billing-header.component';
 import { Permissions } from '../../permission/permissions.constants';
-import { type CreditCompany } from '../../types';
+import { type Organization } from '../../types';
 import { unescapeHtml } from '../billable-exemption/exemption-rules.utils';
 import {
   getErrorMessage,
   mutateCreditCompanies,
+  parseContractDate,
   restoreCreditCompany,
   useCreditCompanies,
 } from './credit-company.resource';
@@ -48,15 +50,16 @@ const CreditCompaniesDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const filteredCompanies = useMemo(
-    () =>
-      creditCompanies.filter((company) =>
-        unescapeHtml(company.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
+  const filteredCompanies = useMemo(() => {
+    const term = debouncedSearchTerm.trim().toLowerCase();
+    return creditCompanies.filter((company) =>
+      [company.name, company.tin, company.contractNumber].some(
+        (value) => value && unescapeHtml(value).toLowerCase().includes(term),
       ),
-    [creditCompanies, debouncedSearchTerm],
-  );
+    );
+  }, [creditCompanies, debouncedSearchTerm]);
 
-  const launchCreditCompanyWorkspace = (creditCompany?: CreditCompany) =>
+  const launchCreditCompanyWorkspace = (creditCompany?: Organization) =>
     launchWorkspace('credit-company-workspace', {
       workspaceTitle: creditCompany
         ? t('editCreditCompany', 'Edit Credit Company')
@@ -64,14 +67,14 @@ const CreditCompaniesDashboard: React.FC = () => {
       initialCreditCompany: creditCompany,
     });
 
-  const showRetireCreditCompanyModal = (creditCompany: CreditCompany) => {
+  const showRetireCreditCompanyModal = (creditCompany: Organization) => {
     const dispose = showModal('retire-credit-company-modal', {
       closeModal: () => dispose(),
       creditCompany,
     });
   };
 
-  const handleRestore = async (creditCompany: CreditCompany) => {
+  const handleRestore = async (creditCompany: Organization) => {
     try {
       await restoreCreditCompany(creditCompany.uuid);
       showSnackbar({
@@ -104,28 +107,44 @@ const CreditCompaniesDashboard: React.FC = () => {
 
   const headers = [
     { key: 'name', header: t('name', 'Name') },
-    { key: 'description', header: t('description', 'Description') },
+    { key: 'phone', header: t('phone', 'Phone') },
+    { key: 'contractNumber', header: t('contractNumber', 'Contract number') },
+    { key: 'contractEnds', header: t('contractEnds', 'Contract ends') },
     { key: 'status', header: t('status', 'Status') },
-    { key: 'dateCreated', header: t('dateCreated', 'Date Created') },
   ];
 
-  const rows = filteredCompanies.map((company) => ({
-    id: company.uuid,
-    name: unescapeHtml(company.name),
-    description: company.description ? unescapeHtml(company.description) : '--',
-    status: company.retired ? (
-      <Tag type="gray" size="sm">
-        {t('retired', 'Retired')}
-      </Tag>
-    ) : (
-      <Tag type="green" size="sm">
-        {t('active', 'Active')}
-      </Tag>
-    ),
-    dateCreated: company.auditInfo?.dateCreated
-      ? formatDate(new Date(company.auditInfo.dateCreated), { mode: 'standard', time: false, noToday: true })
-      : '--',
-  }));
+  const today = dayjs().startOf('day');
+
+  const rows = filteredCompanies.map((company) => {
+    const contractEndDate = parseContractDate(company.contractEndDate);
+    return {
+      id: company.uuid,
+      name: unescapeHtml(company.name),
+      phone: company.phone ? unescapeHtml(company.phone) : '--',
+      contractNumber: company.contractNumber ? unescapeHtml(company.contractNumber) : '--',
+      contractEnds: contractEndDate ? (
+        <span className={styles.contractEnds}>
+          {formatDate(contractEndDate, { mode: 'standard', time: false, noToday: true })}
+          {dayjs(contractEndDate).isBefore(today) && (
+            <Tag type="red" size="sm">
+              {t('expired', 'Expired')}
+            </Tag>
+          )}
+        </span>
+      ) : (
+        '--'
+      ),
+      status: company.retired ? (
+        <Tag type="gray" size="sm">
+          {t('retired', 'Retired')}
+        </Tag>
+      ) : (
+        <Tag type="green" size="sm">
+          {t('active', 'Active')}
+        </Tag>
+      ),
+    };
+  });
 
   return (
     <div>

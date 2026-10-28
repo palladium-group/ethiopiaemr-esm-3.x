@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ModalBody, ModalFooter, ModalHeader, TextInput } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
-import { type CreditCompany } from '../../types';
+import { type Organization } from '../../types';
 import { unescapeHtml } from '../billable-exemption/exemption-rules.utils';
 import { getErrorMessage, mutateCreditCompanies, retireCreditCompany } from './credit-company.resource';
 
 type RetireCreditCompanyModalProps = {
   closeModal: () => void;
-  creditCompany: CreditCompany;
+  creditCompany: Organization;
 };
 
 const RetireCreditCompanyModal: React.FC<RetireCreditCompanyModalProps> = ({ closeModal, creditCompany }) => {

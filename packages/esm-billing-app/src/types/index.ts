@@ -511,11 +511,20 @@ export type PaymentMode = {
   resourceVersion?: string;
 };
 
-export type CreditCompany = {
+/** An organization from /ws/rest/v1/organization (e.g. a credit company). Dates come back as ISO date-times. */
+export type Organization = {
   uuid: string;
   display: string;
   name: string;
   description?: string | null;
+  organizationType?: { uuid: string; display: string };
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  tin?: string | null;
+  contractNumber?: string | null;
+  contractStartDate?: string | null;
+  contractEndDate?: string | null;
   retired: boolean;
   retireReason?: string | null;
   auditInfo?: AuditInfo;

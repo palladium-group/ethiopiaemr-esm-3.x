@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type CreditCompany } from '../../types';
+import { type Organization } from '../../types';
 import RetireCreditCompanyModal from './retire-credit-company.modal';
 import { retireCreditCompany } from './credit-company.resource';
 
@@ -18,7 +18,7 @@ const company = {
   display: 'Ethio Telecom',
   name: 'Ethio Telecom',
   retired: false,
-} as CreditCompany;
+} as Organization;
 
 describe('RetireCreditCompanyModal', () => {
   beforeEach(() => {
