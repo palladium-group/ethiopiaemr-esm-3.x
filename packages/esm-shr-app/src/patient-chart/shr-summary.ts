@@ -103,57 +103,69 @@ export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | und
     if (!key) {
       continue;
     }
-    const listed = (section.entry ?? []).map((ref) => resolve(ref?.reference)).filter(Boolean);
     if (key === 'visits') {
-      summary.visits.push(...visitRecords(listed, facilityOf));
+      summary.visits.push(...visitRecords(section.entry ?? [], resolve, facilityOf));
       continue;
     }
-    (section.entry ?? []).forEach((ref) => {
+    for (const ref of section.entry ?? []) {
       const resource = resolve(ref?.reference);
       if (!resource) {
-        return;
+        continue;
       }
       const local = resource.id ? `${resource.resourceType}/${resource.id}` : null;
       summary[key].push(toRecord(resource, local ?? ref.reference, facilityOf(resource, local), resolve));
-    });
+    }
   }
   return summary;
 }
 
 /**
  * One row per visit, its detail the diagnoses concluded on it. The Visits section lists the visits
- * and their diagnoses side by side; each diagnosis names its visit in Condition.encounter.
+ * and their diagnoses side by side; a diagnosis belongs to a visit when either names the other, in
+ * Condition.encounter or Encounter.diagnosis. References are compared by the resource they resolve
+ * to, so a record named only by urn:uuid is matched too.
  *
  * A diagnosis whose visit is not in the document gets a row of its own, so it is never dropped.
  */
 function visitRecords(
-  listed: Array<Resource>,
+  entries: Array<{ reference?: string }>,
+  resolve: (reference: string | undefined) => Resource | undefined,
   facilityOf: (resource: Resource, local: string | null) => string | null,
 ): Array<ShrRecord> {
-  const visits = listed.filter((resource) => resource.resourceType === 'Encounter');
-  const diagnoses = listed.filter((resource) => resource.resourceType === 'Condition');
+  // Each resource once, with the reference it was listed under to key its row when it has no id.
+  const listed = new Map<Resource, string>();
+  for (const ref of entries) {
+    const resource = resolve(ref?.reference);
+    if (resource && !listed.has(resource)) {
+      listed.set(resource, ref.reference);
+    }
+  }
+  const rowId = (resource: Resource) =>
+    resource.id ? `${resource.resourceType}/${resource.id}` : listed.get(resource);
+  const listedOf = (type: string) => [...listed.keys()].filter((resource) => resource.resourceType === type);
+  const visits = listedOf('Encounter');
+  const diagnoses = listedOf('Condition');
   const placed = new Set<Resource>();
 
   const records = visits.map((visit) => {
     const local = visit.id ? `Encounter/${visit.id}` : null;
+    const named = (visit.diagnosis ?? []).map((entry) => ({
+      diagnosis: resolve(entry?.condition?.reference),
+      main: (entry?.use?.coding ?? []).some((coding) => coding?.code === 'main'),
+    }));
+    // The visit marks which of its diagnoses was the main one.
+    const main = new Set(named.filter((entry) => entry.main).map((entry) => entry.diagnosis));
     const own = diagnoses.filter(
       (diagnosis) =>
-        local && diagnosis.encounter?.reference && relativeReference(diagnosis.encounter.reference) === local,
+        resolve(diagnosis.encounter?.reference) === visit || named.some((entry) => entry.diagnosis === diagnosis),
     );
     own.forEach((diagnosis) => placed.add(diagnosis));
-    // The visit marks which of its diagnoses was the main one.
-    const main = new Set(
-      (visit.diagnosis ?? [])
-        .filter((entry) => (entry.use?.coding ?? []).some((coding) => coding?.code === 'main'))
-        .map((entry) => (entry.condition?.reference ? relativeReference(entry.condition.reference) : null))
-        .filter(Boolean),
-    );
     return {
-      id: local ?? visit.id ?? '',
+      id: rowId(visit),
       name: joined((visit.type ?? []).map(codeText)) ?? codeText(visit.class) ?? visit.class?.code ?? null,
       date: visit.period?.start ?? null,
       status: null,
-      detail: joined(own.map((diagnosis) => diagnosisText(diagnosis, main.has(`Condition/${diagnosis.id}`)))),
+      detail: joined(own.map((diagnosis) => diagnosisText(diagnosis, main.has(diagnosis)))),
       facility: facilityOf(visit, local),
     };
   });
@@ -161,7 +173,7 @@ function visitRecords(
   for (const diagnosis of diagnoses.filter((d) => !placed.has(d))) {
     const local = diagnosis.id ? `Condition/${diagnosis.id}` : null;
     records.push({
-      id: local ?? diagnosis.id ?? '',
+      id: rowId(diagnosis),
       name: codeText(diagnosis.code),
       date: diagnosis.recordedDate ?? null,
       status: null,

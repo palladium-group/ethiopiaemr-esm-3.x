@@ -203,6 +203,69 @@ describe('parseSummary', () => {
 
       expect(summary.visits).toMatchObject([{ id: 'Condition/600', name: 'Malaria', detail: 'Malaria (Confirmed)' }]);
     });
+
+    it('matches a visit and its diagnoses named only by urn:uuid', () => {
+      const summary = parseSummary(
+        visitsDocument(
+          [
+            {
+              fullUrl: 'urn:uuid:visit',
+              resource: {
+                resourceType: 'Encounter',
+                type: [{ text: 'Outpatient' }],
+                diagnosis: [{ condition: { reference: 'urn:uuid:dx' }, use: { coding: [{ code: 'main' }] } }],
+              },
+            },
+            {
+              fullUrl: 'urn:uuid:dx',
+              resource: {
+                resourceType: 'Condition',
+                code: { text: 'Malaria' },
+                verificationStatus: { coding: [{ code: 'confirmed' }] },
+                encounter: { reference: 'urn:uuid:visit' },
+              },
+            },
+          ],
+          ['urn:uuid:visit', 'urn:uuid:dx'],
+        ),
+      );
+
+      expect(summary.visits).toMatchObject([
+        { id: 'urn:uuid:visit', name: 'Outpatient', detail: 'Malaria (main · Confirmed)' },
+      ]);
+    });
+
+    it('places a diagnosis the visit names even when the diagnosis does not name the visit', () => {
+      const summary = parseSummary(
+        visitsDocument(
+          [
+            {
+              resource: {
+                resourceType: 'Encounter',
+                id: '1527',
+                type: [{ text: 'Outpatient' }],
+                diagnosis: [{ condition: { reference: 'Condition/1530' } }],
+              },
+            },
+            diagnosis('1530', 'Malaria', 'confirmed'),
+          ],
+          ['Encounter/1527', 'Condition/1530'],
+        ),
+      );
+
+      expect(summary.visits).toMatchObject([{ id: 'Encounter/1527', detail: 'Malaria (Confirmed)' }]);
+    });
+
+    it('shows a visit listed twice once', () => {
+      const summary = parseSummary(
+        visitsDocument(
+          [{ resource: { resourceType: 'Encounter', id: '480', type: [{ text: 'Inpatient' }] } }],
+          ['Encounter/480', 'Encounter/480'],
+        ),
+      );
+
+      expect(summary.visits).toHaveLength(1);
+    });
   });
 
   it('reads medications from either a statement or a request', () => {
