@@ -11,6 +11,7 @@
   "coolingOff": "The patient declined a recent request from this facility. Try again later.",
   "date": "Date",
   "details": "Details",
+  "diagnoses": "Diagnoses",
   "filterByStatus": "ሁኔታ",
   "healthUnknown": "አልተዘገበም",
   "lastActivity": "የመጨረሻ እንቅስቃሴ",
