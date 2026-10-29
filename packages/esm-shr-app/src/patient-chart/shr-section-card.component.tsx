@@ -16,6 +16,7 @@ const ShrSectionCard: React.FC<ShrSectionCardProps> = ({ section, records }) => 
     problems: t('problems', 'Problems'),
     allergies: t('allergies', 'Allergies'),
     medications: t('medications', 'Medications'),
+    visits: t('visits', 'Visits'),
   }[section];
 
   return (

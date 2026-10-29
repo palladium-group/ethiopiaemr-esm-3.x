@@ -3,11 +3,12 @@ export const SECTION_CODES: Record<string, ShrSectionKey> = {
   '11450-4': 'problems',
   '48765-2': 'allergies',
   '10160-0': 'medications',
+  '46240-8': 'visits',
 };
 
-export type ShrSectionKey = 'problems' | 'allergies' | 'medications';
+export type ShrSectionKey = 'problems' | 'allergies' | 'medications' | 'visits';
 
-export const SECTION_ORDER: Array<ShrSectionKey> = ['problems', 'allergies', 'medications'];
+export const SECTION_ORDER: Array<ShrSectionKey> = ['problems', 'allergies', 'medications', 'visits'];
 
 export interface ShrRecord {
   id: string;
@@ -37,7 +38,7 @@ interface BundleEntry {
  * empty too.
  */
 export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | undefined): ShrSummary {
-  const summary: ShrSummary = { problems: [], allergies: [], medications: [] };
+  const summary: ShrSummary = { problems: [], allergies: [], medications: [], visits: [] };
   const entries = bundle?.entry ?? [];
 
   const byReference = new Map<string, Resource>();
@@ -88,29 +89,97 @@ export function parseSummary(bundle: { entry?: Array<BundleEntry> } | null | und
   const resolve = (reference: string | undefined) =>
     reference ? byReference.get(reference) ?? byReference.get(relativeReference(reference)) : undefined;
 
+  // An assembled record (a MedicationStatement, say) is named by urn:uuid and was never stored,
+  // so its Provenance covers the record it was derived from instead.
+  const facilityOf = (resource: Resource, local: string | null) =>
+    [fullUrlOf.get(resource), local, ...(resource.derivedFrom ?? []).map((from) => from?.reference)]
+      .filter(Boolean)
+      .map((reference) => facilityByReference.get(relativeReference(reference)))
+      .find(Boolean) ?? null;
+
   const composition = entries.find((entry) => entry.resource?.resourceType === 'Composition')?.resource;
   for (const section of composition?.section ?? []) {
     const key = (section.code?.coding ?? []).map((coding) => SECTION_CODES[coding.code]).find(Boolean);
     if (!key) {
       continue;
     }
-    for (const ref of section.entry ?? []) {
+    const listed = (section.entry ?? []).map((ref) => resolve(ref?.reference)).filter(Boolean);
+    if (key === 'visits') {
+      summary.visits.push(...visitRecords(listed, facilityOf));
+      continue;
+    }
+    (section.entry ?? []).forEach((ref) => {
       const resource = resolve(ref?.reference);
       if (!resource) {
-        continue;
+        return;
       }
       const local = resource.id ? `${resource.resourceType}/${resource.id}` : null;
-      // An assembled record (a MedicationStatement, say) is named by urn:uuid and was never stored,
-      // so its Provenance covers the record it was derived from instead.
-      const facility =
-        [fullUrlOf.get(resource), local, ...(resource.derivedFrom ?? []).map((from) => from?.reference)]
-          .filter(Boolean)
-          .map((reference) => facilityByReference.get(relativeReference(reference)))
-          .find(Boolean) ?? null;
-      summary[key].push(toRecord(resource, local ?? ref.reference, facility, resolve));
-    }
+      summary[key].push(toRecord(resource, local ?? ref.reference, facilityOf(resource, local), resolve));
+    });
   }
   return summary;
+}
+
+/**
+ * One row per visit, its detail the diagnoses concluded on it. The Visits section lists the visits
+ * and their diagnoses side by side; each diagnosis names its visit in Condition.encounter.
+ *
+ * A diagnosis whose visit is not in the document gets a row of its own, so it is never dropped.
+ */
+function visitRecords(
+  listed: Array<Resource>,
+  facilityOf: (resource: Resource, local: string | null) => string | null,
+): Array<ShrRecord> {
+  const visits = listed.filter((resource) => resource.resourceType === 'Encounter');
+  const diagnoses = listed.filter((resource) => resource.resourceType === 'Condition');
+  const placed = new Set<Resource>();
+
+  const records = visits.map((visit) => {
+    const local = visit.id ? `Encounter/${visit.id}` : null;
+    const own = diagnoses.filter(
+      (diagnosis) =>
+        local && diagnosis.encounter?.reference && relativeReference(diagnosis.encounter.reference) === local,
+    );
+    own.forEach((diagnosis) => placed.add(diagnosis));
+    // The visit marks which of its diagnoses was the main one.
+    const main = new Set(
+      (visit.diagnosis ?? [])
+        .filter((entry) => (entry.use?.coding ?? []).some((coding) => coding?.code === 'main'))
+        .map((entry) => (entry.condition?.reference ? relativeReference(entry.condition.reference) : null))
+        .filter(Boolean),
+    );
+    return {
+      id: local ?? visit.id ?? '',
+      name: joined((visit.type ?? []).map(codeText)) ?? codeText(visit.class) ?? visit.class?.code ?? null,
+      date: visit.period?.start ?? null,
+      status: null,
+      detail: joined(own.map((diagnosis) => diagnosisText(diagnosis, main.has(`Condition/${diagnosis.id}`)))),
+      facility: facilityOf(visit, local),
+    };
+  });
+
+  for (const diagnosis of diagnoses.filter((d) => !placed.has(d))) {
+    const local = diagnosis.id ? `Condition/${diagnosis.id}` : null;
+    records.push({
+      id: local ?? diagnosis.id ?? '',
+      name: codeText(diagnosis.code),
+      date: diagnosis.recordedDate ?? null,
+      status: null,
+      detail: diagnosisText(diagnosis, false),
+      facility: facilityOf(diagnosis, local),
+    });
+  }
+  return records;
+}
+
+/** "Malaria (main · Confirmed)": the diagnosis, whether it was the main one, and how certain it is. */
+function diagnosisText(diagnosis: Resource, main: boolean): string | null {
+  const name = codeText(diagnosis.code);
+  if (!name) {
+    return null;
+  }
+  const notes = [main ? 'main' : null, statusText(diagnosis.verificationStatus)].filter(Boolean);
+  return notes.length ? `${name} (${notes.join(' · ')})` : name;
 }
 
 function toRecord(

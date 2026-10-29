@@ -84,6 +84,7 @@
   "unnamedRecord": "Unnamed record",
   "visitNeeded": "A visit is needed",
   "visitNeededDetail": "Start a visit to view this patient's Shared Health Record.",
+  "visits": "Visits",
   "waitingForPatient": "Waiting for the patient to answer",
   "waitingForPatientDetail": "Asked for {{types}} on {{sent}}. The request lapses on {{expires}}."
 }

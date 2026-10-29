@@ -115,8 +115,94 @@ describe('parseSummary', () => {
   });
 
   it('shows every section empty when the document has nothing in it', () => {
-    expect(parseSummary({ entry: [] })).toEqual({ problems: [], allergies: [], medications: [] });
-    expect(parseSummary(null)).toEqual({ problems: [], allergies: [], medications: [] });
+    const empty = { problems: [], allergies: [], medications: [], visits: [] };
+    expect(parseSummary({ entry: [] })).toEqual(empty);
+    expect(parseSummary(null)).toEqual(empty);
+  });
+
+  describe('visits', () => {
+    const diagnosis = (id: string, name: string, verification: string, encounter?: string) => ({
+      resource: {
+        resourceType: 'Condition',
+        id,
+        code: { text: name },
+        category: [{ coding: [{ code: 'encounter-diagnosis' }] }],
+        verificationStatus: { coding: [{ code: verification }] },
+        ...(encounter ? { encounter: { reference: encounter } } : {}),
+        recordedDate: '2026-10-29T07:40:00Z',
+      },
+    });
+    const visitsDocument = (entries: Array<object>, listed: Array<string>) => ({
+      entry: [
+        {
+          resource: {
+            resourceType: 'Composition',
+            section: [{ code: { coding: [{ code: '46240-8' }] }, entry: listed.map((reference) => ({ reference })) }],
+          },
+        },
+        ...entries,
+      ],
+    });
+
+    it('shows each visit with the diagnoses concluded on it, the main one marked', () => {
+      const summary = parseSummary(
+        visitsDocument(
+          [
+            {
+              resource: {
+                resourceType: 'Encounter',
+                id: '1527',
+                type: [{ text: 'Outpatient' }],
+                period: { start: '2026-10-29T07:36:00Z' },
+                diagnosis: [
+                  { condition: { reference: 'Condition/1530' }, rank: 1 },
+                  { condition: { reference: 'Condition/1531' }, use: { coding: [{ code: 'main' }] }, rank: 1 },
+                ],
+              },
+            },
+            diagnosis('1530', 'Amelogenesis imperfecta', 'provisional', 'Encounter/1527'),
+            diagnosis('1531', 'Dental anomaly', 'confirmed', 'https://shr/fhir/Encounter/1527'),
+            {
+              resource: {
+                resourceType: 'Provenance',
+                target: [{ reference: 'Encounter/1527' }],
+                agent: [{ who: { identifier: FACILITY, display: 'Geda Health Center' } }],
+              },
+            },
+          ],
+          ['Encounter/1527', 'Condition/1530', 'Condition/1531'],
+        ),
+      );
+
+      expect(summary.problems).toEqual([]);
+      expect(summary.visits).toEqual([
+        {
+          id: 'Encounter/1527',
+          name: 'Outpatient',
+          date: '2026-10-29T07:36:00Z',
+          status: null,
+          detail: 'Amelogenesis imperfecta (Provisional), Dental anomaly (main · Confirmed)',
+          facility: 'Geda Health Center',
+        },
+      ]);
+    });
+
+    it('lists a visit with no diagnosis recorded', () => {
+      const summary = parseSummary(
+        visitsDocument(
+          [{ resource: { resourceType: 'Encounter', id: '480', type: [{ text: 'Inpatient' }] } }],
+          ['Encounter/480'],
+        ),
+      );
+
+      expect(summary.visits).toMatchObject([{ id: 'Encounter/480', name: 'Inpatient', detail: null }]);
+    });
+
+    it('keeps a diagnosis whose visit is not in the document, on a row of its own', () => {
+      const summary = parseSummary(visitsDocument([diagnosis('600', 'Malaria', 'confirmed')], ['Condition/600']));
+
+      expect(summary.visits).toMatchObject([{ id: 'Condition/600', name: 'Malaria', detail: 'Malaria (Confirmed)' }]);
+    });
   });
 
   it('reads medications from either a statement or a request', () => {
