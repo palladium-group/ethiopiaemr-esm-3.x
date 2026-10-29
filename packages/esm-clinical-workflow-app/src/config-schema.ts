@@ -127,7 +127,28 @@ export const configSchema = {
         membershipType: '935bb6fd-3aa0-4556-b4ec-8e227811579e',
         cbhiId: '2333b8ae-732a-4f0f-a192-ae84e1793071',
         insuredId: '7dc76b96-e889-48b4-aa26-3e2ac0add8d4',
+        cbhiRegion: '6ce27d93-9595-4296-bb21-de1ff1f4c15e',
+        cbhiZone: 'a62cb690-eb52-4aef-b279-70b26735a81f',
+        cbhiWoreda: 'd45dc73c-9350-4323-84c3-22d3cfb53564',
+        cbhiExpiryDate: '77704fac-33eb-4732-acb0-8c2b0b2a256f',
       },
+      insurance: {
+        insuranceId: 'd498a5e1-e7ed-4f6d-98f9-59aa4fb66686',
+        insuranceName: 'e0ab3a3a-a8f2-4bc3-b442-cadfea0be3f3',
+        insuranceCode: '3c14369b-a1d5-4ebb-a0c8-cb620bbfa0cf',
+        insuranceZone: '50e0ce2f-8fa3-43da-9ab0-cd71d7d65c50',
+        insuranceExpiryDate: '910e1dd1-a389-4019-95ea-8f0d862780c5',
+        accidentDate: '8eb13ec7-4ae6-4755-88c5-3401710f61f0',
+        accidentPlace: '6080c9f2-ef30-4d4d-b745-b2c397a4b69b',
+        policeOfficerName: 'f16587ff-621c-4972-8923-8abf6df0f365',
+        policeOfficerPhone: 'd4351d46-1590-4db2-b7c0-6517784c87d9',
+        atFaultDriverPlateNo: '0a693807-43fc-45fc-9467-e1feff1a5998',
+      },
+      shi: {
+        shiId: 'a30c0244-eba2-41ff-a273-71c168dd57f5',
+        shiExpiryDate: '248574a5-a9af-481f-a08e-95b716867bb4',
+      },
+      creditCompany: 'c760c7d2-a44e-480c-bc70-623b2a0db264',
     },
   },
   cardValidity: {
@@ -453,7 +474,28 @@ export type ClinicalWorkflowConfig = {
       membershipType: string;
       cbhiId: string;
       insuredId: string;
+      cbhiRegion?: string;
+      cbhiZone?: string;
+      cbhiWoreda?: string;
+      cbhiExpiryDate?: string;
     };
+    insurance?: {
+      insuranceId: string;
+      insuranceName: string;
+      insuranceCode: string;
+      insuranceZone: string;
+      insuranceExpiryDate: string;
+      accidentDate: string;
+      accidentPlace: string;
+      policeOfficerName: string;
+      policeOfficerPhone: string;
+      atFaultDriverPlateNo: string;
+    };
+    shi?: {
+      shiId: string;
+      shiExpiryDate: string;
+    };
+    creditCompany?: string;
   };
   cardValidity: {
     lastConsultationDateAttributeTypeUuid: string;

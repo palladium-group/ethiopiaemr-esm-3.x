@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import type { BillingFormData } from '../billing-information.resource';
 
@@ -8,7 +8,6 @@ type BillingTypeFormState = {
 
 type UseBillingFormHandlersParams = {
   billingTypeUuid?: string;
-  billingTypes: Array<{ uuid: string; name?: string }>;
   visitUuid?: string;
   getValues: UseFormGetValues<BillingFormData>;
   setValue: UseFormSetValue<BillingFormData>;
@@ -34,11 +33,10 @@ const restoreBillingTypeState = (
 };
 
 /**
- * Hook to handle billing form interactions (billing type changes, content switcher, etc.)
+ * Hook to handle billing form payment mode selection and attribute cache management
  */
 export const useBillingFormHandlers = ({
   billingTypeUuid,
-  billingTypes,
   visitUuid,
   getValues,
   setValue,
@@ -72,25 +70,7 @@ export const useBillingFormHandlers = ({
     [billingTypeUuid, getValues, setValue],
   );
 
-  const selectedIndex = useMemo(() => {
-    if (!billingTypeUuid) {
-      return -1;
-    }
-    return billingTypes.findIndex((bt) => bt.uuid === billingTypeUuid);
-  }, [billingTypeUuid, billingTypes]);
-
-  const handleContentSwitcherChange = useCallback(
-    ({ index }: { index: number }) => {
-      if (index >= 0 && index < billingTypes.length) {
-        handleBillingTypeChange(billingTypes[index].uuid);
-      }
-    },
-    [billingTypes, handleBillingTypeChange],
-  );
-
   return {
     handleBillingTypeChange,
-    selectedIndex,
-    handleContentSwitcherChange,
   };
 };

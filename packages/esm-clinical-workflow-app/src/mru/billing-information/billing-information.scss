@@ -57,37 +57,139 @@
   }
 }
 
-.paymentTypeSwitcher {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  border: none;
-  outline: none;
-  padding: 6px;
-  height: auto;
-  overflow: visible;
-  border-bottom: 1px solid colors.$gray-20;
-  padding-bottom: spacing.$spacing-03;
+.paymentModeSelectorContainer {
   margin-bottom: spacing.$spacing-06;
+}
 
-  :global(.cds--content-switcher) {
-    flex-direction: column;
-  }
+.sectionHeaderRow {
+  margin-bottom: spacing.$spacing-03;
+}
 
-  :global(.cds--content-switcher-btn) {
-    width: 100%;
-    margin-bottom: spacing.$spacing-03;
+.directPaymentModesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: spacing.$spacing-03;
+  margin-bottom: spacing.$spacing-04;
 
-    &:last-child {
-      margin-bottom: 0;
-    }
+  @media (max-width: 28rem) {
+    grid-template-columns: 1fr;
   }
 }
 
-.paymentTypeSwitch {
+.paymentModeCard {
+  display: flex;
+  align-items: center;
+  gap: spacing.$spacing-03;
+  padding: spacing.$spacing-03 spacing.$spacing-04;
+  min-height: 2.75rem;
+  background-color: colors.$white-0;
+  border: 1px solid colors.$gray-20;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 150ms cubic-bezier(0.2, 0, 0.38, 0.9);
+
+  &:hover {
+    border-color: colors.$blue-40;
+    background-color: colors.$blue-10;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: 2px;
+  }
+}
+
+.paymentModeCardSelected {
+  border-color: colors.$blue-60;
+  background-color: colors.$blue-10;
+  box-shadow: inset 0 0 0 1px colors.$blue-60;
+
+  .paymentModeName {
+    color: colors.$gray-100;
+    font-weight: 600;
+  }
+}
+
+.radioIndicator {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  border: 2px solid colors.$gray-40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 150ms ease;
+}
+
+.paymentModeCardSelected .radioIndicator {
+  border-color: colors.$blue-60;
+}
+
+.radioInnerDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: colors.$blue-60;
+}
+
+.paymentModeName {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-80;
+  font-weight: 500;
+}
+
+.creditSection {
+  background-color: colors.$gray-10;
+  border: 1px solid colors.$gray-20;
+  border-radius: 0.5rem;
+  padding: spacing.$spacing-04;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.creditSectionActive {
+  border-color: colors.$blue-40;
+  background-color: rgba(colors.$blue-10, 0.4);
+}
+
+.creditSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: spacing.$spacing-03;
   margin-bottom: spacing.$spacing-03;
-  height: 2rem;
-  border-radius: 0.25rem;
+}
+
+.creditTitleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.creditTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+  font-weight: 600;
+}
+
+.creditSubtitle {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+}
+
+.creditActiveTag {
+  margin: 0;
+}
+
+.creditPaymentModesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: spacing.$spacing-03;
+
+  @media (max-width: 28rem) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cashPointContainer {

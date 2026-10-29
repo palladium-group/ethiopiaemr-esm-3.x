@@ -1,16 +1,18 @@
 import {
   createBillingInformationVisitAttribute,
-  CBHI_VISIT_ATTRIBUTE_FIELDS,
   type BillingVisitAttributeTypesMap,
   type BillingFormData,
 } from './billing-information.resource';
+import {
+  INSURANCE_ATTRIBUTE_UUIDS,
+  SHI_ATTRIBUTE_UUIDS,
+  CREDIT_COMPANY_ATTRIBUTE_UUIDS,
+  CBHI_ATTRIBUTE_UUIDS,
+} from './billing-constants';
 
 describe('createBillingInformationVisitAttribute', () => {
   const visitAttributeTypesMap: BillingVisitAttributeTypesMap = {
     paymentMethod: 'pm-uuid-1',
-    creditType: 'ct-uuid-2',
-    creditTypeDetails: 'ctd-uuid-3',
-    paymentAttributesSummary: 'pas-uuid-4',
     cbhi: {
       id: 'cbhi-attr-id',
       fullName: 'cbhi-attr-fullname',
@@ -18,10 +20,20 @@ describe('createBillingInformationVisitAttribute', () => {
       membershipType: 'cbhi-attr-membershiptype',
       cbhiId: 'cbhi-attr-cbhiid',
       insuredId: 'cbhi-attr-insuredid',
+      cbhiExpiryDate: 'cbhi-attr-expirydate',
     },
+    insurance: {
+      insuranceId: 'ins-attr-id',
+      insuranceExpiryDate: 'ins-attr-expiry',
+    },
+    shi: {
+      shiId: 'shi-attr-id',
+      shiExpiryDate: 'shi-attr-expiry',
+    },
+    creditCompany: 'credit-company-attr-uuid',
   };
 
-  it('persists only cbhiId and expiryDate when manual entry values are provided', () => {
+  it('persists only cbhiId and expiryDate as separate attributes when manual entry values are provided', () => {
     const formData: BillingFormData = {
       billingTypeUuid: 'payment-mode-cbhi-uuid',
       attributes: {
@@ -44,12 +56,10 @@ describe('createBillingInformationVisitAttribute', () => {
       value: 'CBHI-12345',
     });
 
-    // 3. paymentAttributesSummary contains expiryDate
-    const summaryPayload = payload.find((item) => item.attributeType === 'pas-uuid-4');
-    expect(summaryPayload).toBeDefined();
-    const parsedSummary = JSON.parse(summaryPayload!.value);
-    expect(parsedSummary).toEqual({
-      expiryDate: '2026-12-31',
+    // 3. expiryDate saved as separate attribute
+    expect(payload).toContainEqual({
+      attributeType: 'cbhi-attr-expirydate',
+      value: '2026-12-31',
     });
 
     // Should NOT contain other unselected CBHI attributes
@@ -59,7 +69,7 @@ describe('createBillingInformationVisitAttribute', () => {
     expect(payload.find((item) => item.attributeType === 'cbhi-attr-insuredid')).toBeUndefined();
   });
 
-  it('persists full CBHI member attributes when online search values are provided', () => {
+  it('persists full CBHI member attributes as separate attributes when online search values are provided', () => {
     const formData: BillingFormData = {
       billingTypeUuid: 'payment-mode-cbhi-uuid',
       attributes: {
@@ -81,8 +91,56 @@ describe('createBillingInformationVisitAttribute', () => {
     expect(payload).toContainEqual({ attributeType: 'cbhi-attr-membershiptype', value: 'MAIN' });
     expect(payload).toContainEqual({ attributeType: 'cbhi-attr-cbhiid', value: 'CBHI-999' });
     expect(payload).toContainEqual({ attributeType: 'cbhi-attr-insuredid', value: 'member-id-1' });
+  });
 
-    // Since all CBHI attributes are independent, summary payload should not be created
-    expect(payload.find((item) => item.attributeType === 'pas-uuid-4')).toBeUndefined();
+  it('persists insurance fields as separate visit attributes', () => {
+    const formData: BillingFormData = {
+      billingTypeUuid: 'payment-mode-insurance-uuid',
+      attributes: {
+        [INSURANCE_ATTRIBUTE_UUIDS.insuranceId]: 'INS-555',
+        [INSURANCE_ATTRIBUTE_UUIDS.insuranceName]: 'Nyala Insurance',
+        [INSURANCE_ATTRIBUTE_UUIDS.insuranceExpiryDate]: '2027-05-01',
+      },
+    };
+
+    const payload = createBillingInformationVisitAttribute(formData, visitAttributeTypesMap);
+
+    expect(payload).toContainEqual({ attributeType: 'pm-uuid-1', value: 'payment-mode-insurance-uuid' });
+    expect(payload).toContainEqual({ attributeType: INSURANCE_ATTRIBUTE_UUIDS.insuranceId, value: 'INS-555' });
+    expect(payload).toContainEqual({
+      attributeType: INSURANCE_ATTRIBUTE_UUIDS.insuranceName,
+      value: 'Nyala Insurance',
+    });
+    expect(payload).toContainEqual({
+      attributeType: INSURANCE_ATTRIBUTE_UUIDS.insuranceExpiryDate,
+      value: '2027-05-01',
+    });
+  });
+
+  it('persists SHI and Credit Company as separate visit attributes', () => {
+    const shiFormData: BillingFormData = {
+      billingTypeUuid: 'payment-mode-shi-uuid',
+      attributes: {
+        [SHI_ATTRIBUTE_UUIDS.shiId]: 'SHI-888',
+        [SHI_ATTRIBUTE_UUIDS.shiExpiryDate]: '2028-01-01',
+      },
+    };
+
+    const shiPayload = createBillingInformationVisitAttribute(shiFormData, visitAttributeTypesMap);
+    expect(shiPayload).toContainEqual({ attributeType: SHI_ATTRIBUTE_UUIDS.shiId, value: 'SHI-888' });
+    expect(shiPayload).toContainEqual({ attributeType: SHI_ATTRIBUTE_UUIDS.shiExpiryDate, value: '2028-01-01' });
+
+    const creditCompanyFormData: BillingFormData = {
+      billingTypeUuid: 'payment-mode-credit-company-uuid',
+      attributes: {
+        [CREDIT_COMPANY_ATTRIBUTE_UUIDS.creditCompany]: 'company-uuid-123',
+      },
+    };
+
+    const creditPayload = createBillingInformationVisitAttribute(creditCompanyFormData, visitAttributeTypesMap);
+    expect(creditPayload).toContainEqual({
+      attributeType: CREDIT_COMPANY_ATTRIBUTE_UUIDS.creditCompany,
+      value: 'company-uuid-123',
+    });
   });
 });
