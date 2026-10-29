@@ -16,7 +16,10 @@ const ShrSectionCard: React.FC<ShrSectionCardProps> = ({ section, records }) => 
     problems: t('problems', 'Problems'),
     allergies: t('allergies', 'Allergies'),
     medications: t('medications', 'Medications'),
+    visits: t('visits', 'Visits'),
   }[section];
+  // A visit's detail is the diagnoses concluded on it.
+  const detailHeader = section === 'visits' ? t('diagnoses', 'Diagnoses') : t('details', 'Details');
 
   return (
     <Tile className={styles.card}>
@@ -32,7 +35,7 @@ const ShrSectionCard: React.FC<ShrSectionCardProps> = ({ section, records }) => 
             <TableRow>
               <TableHeader>{t('name', 'Name')}</TableHeader>
               <TableHeader>{t('date', 'Date')}</TableHeader>
-              <TableHeader>{t('details', 'Details')}</TableHeader>
+              <TableHeader>{detailHeader}</TableHeader>
               <TableHeader>{t('sharedBy', 'Shared by')}</TableHeader>
             </TableRow>
           </TableHead>

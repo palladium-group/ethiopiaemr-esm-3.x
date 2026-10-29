@@ -97,7 +97,8 @@ describe('ShrDashboard', () => {
 
     expect(await screen.findByText('Hypertension')).toBeInTheDocument();
     expect(screen.getByText('Geda Health Center')).toBeInTheDocument();
-    expect(screen.getAllByText('Nothing shared')).toHaveLength(2);
+    // Allergies, Medications and Visits have nothing in this summary.
+    expect(screen.getAllByText('Nothing shared')).toHaveLength(3);
     expect(screen.getByRole('button', { name: /request more access/i })).toBeInTheDocument();
   });
 

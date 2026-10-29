@@ -11,6 +11,7 @@
   "coolingOff": "The patient declined a recent request from this facility. Try again later.",
   "date": "Date",
   "details": "Details",
+  "diagnoses": "Diagnoses",
   "filterByStatus": "Status",
   "healthUnknown": "Not reported",
   "lastActivity": "Last activity",
@@ -84,6 +85,7 @@
   "unnamedRecord": "Unnamed record",
   "visitNeeded": "A visit is needed",
   "visitNeededDetail": "Start a visit to view this patient's Shared Health Record.",
+  "visits": "Visits",
   "waitingForPatient": "Waiting for the patient to answer",
   "waitingForPatientDetail": "Asked for {{types}} on {{sent}}. The request lapses on {{expires}}."
 }
