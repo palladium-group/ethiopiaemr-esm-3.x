@@ -268,6 +268,29 @@ describe('parseSummary', () => {
     });
   });
 
+  it('does not show a medication status of unknown', () => {
+    const summary = parseSummary({
+      entry: [
+        {
+          resource: {
+            resourceType: 'Composition',
+            section: [{ code: { coding: [{ code: '10160-0' }] }, entry: [{ reference: 'MedicationStatement/30' }] }],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'MedicationStatement',
+            id: '30',
+            status: 'unknown',
+            medicationCodeableConcept: { text: 'Paracetamol' },
+          },
+        },
+      ],
+    });
+
+    expect(summary.medications[0]).toMatchObject({ name: 'Paracetamol', status: null });
+  });
+
   it('reads medications from either a statement or a request', () => {
     const summary = parseSummary({
       entry: [
