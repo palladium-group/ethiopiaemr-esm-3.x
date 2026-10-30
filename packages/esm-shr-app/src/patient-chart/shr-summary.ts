@@ -233,7 +233,9 @@ function toRecord(
           resource.dateAsserted ??
           resource.authoredOn ??
           null,
-        status: resource.status ?? null,
+        // The SHR marks a medication "unknown" when it cannot say whether the patient is taking it,
+        // which tells the reader nothing.
+        status: resource.status && resource.status !== 'unknown' ? resource.status : null,
         detail: joined((resource.dosage ?? resource.dosageInstruction ?? []).map((dosage) => dosage?.text)),
         facility,
       };

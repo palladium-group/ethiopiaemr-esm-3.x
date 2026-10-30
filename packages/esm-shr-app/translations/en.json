@@ -65,7 +65,7 @@
   "sharedHealthRecord": "Shared Health Record",
   "shrAdminDescription": "Clinical records captured here are queued and sent to the national Shared Health Record on a schedule. Use this page to see what is queued, what has been sent, and what failed.",
   "shrAdministration": "Shared Health Record Administration",
-  "shrDescription": "Records other facilities have shared, as far as the patient's consent to this facility allows. Read live; nothing is stored in this EMR.",
+  "shrDescription": "Records other facilities have shared, as far as the patient's consent to this facility allows.",
   "shrNotSwitchedOn": "The Shared Health Record is not switched on at this facility.",
   "shrScheduleNote": "Records are also sent automatically by the SHR Sync Task, on the interval configured in Administration → Manage Scheduler.",
   "shrUnavailable": "The Shared Health Record can't be reached right now",

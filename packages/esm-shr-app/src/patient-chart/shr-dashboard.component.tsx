@@ -79,7 +79,7 @@ const ShrDashboard: React.FC<ShrDashboardProps> = ({ patientUuid: givenUuid, pat
           <p className={styles.description}>
             {t(
               'shrDescription',
-              "Records other facilities have shared, as far as the patient's consent to this facility allows. Read live; nothing is stored in this EMR.",
+              "Records other facilities have shared, as far as the patient's consent to this facility allows.",
             )}
           </p>
         </div>
