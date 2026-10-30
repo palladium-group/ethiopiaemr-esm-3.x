@@ -237,6 +237,21 @@
       "slot": "payment-mode-dashboard-slot"
     },
     {
+      "name": "credit-companies-dashboard-link",
+      "component": "creditCompaniesLink",
+      "slot": "billing-admin-dashboard-slot",
+      "meta": {
+        "name": "credit-companies",
+        "title": "Credit Companies",
+        "slot": "credit-companies-dashboard-slot"
+      }
+    },
+    {
+      "name": "credit-companies-dashboard",
+      "component": "creditCompaniesDashboard",
+      "slot": "credit-companies-dashboard-slot"
+    },
+    {
       "name": "bill-deposit-dashboard-link",
       "component": "billDepositDashboardLink",
       "slot": "billing-admin-dashboard-slot",
@@ -399,6 +414,12 @@
       "type": "other-form"
     },
     {
+      "name": "credit-company-workspace",
+      "component": "creditCompanyWorkspace",
+      "title": "Credit Company",
+      "type": "other-form"
+    },
+    {
       "name": "exemption-rule-workspace",
       "component": "exemptionRuleWorkspace",
       "title": "Exemption Rule",
@@ -451,6 +472,10 @@
     {
       "name": "delete-payment-mode-modal",
       "component": "deletePaymentModeModal"
+    },
+    {
+      "name": "retire-credit-company-modal",
+      "component": "retireCreditCompanyModal"
     },
     {
       "name": "delete-exemption-rule-modal",
