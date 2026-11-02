@@ -47,6 +47,8 @@ export const CREDIT_COMPANY_ATTRIBUTE_UUIDS = {
   creditCompany: 'c760c7d2-a44e-480c-bc70-623b2a0db264',
 } as const;
 
+export const CREDIT_ORGANIZATION_TYPE_UUID = 'e6cd2a97-c3ed-40ca-8fa2-4856ca6cbe60';
+
 export const isExcludedPaymentMode = (mode: { uuid?: string; name?: string }): boolean => {
   if (mode.uuid && (EXCLUDED_PAYMENT_MODE_UUIDS as readonly string[]).includes(mode.uuid)) {
     return true;

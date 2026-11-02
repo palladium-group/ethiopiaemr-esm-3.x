@@ -20,7 +20,7 @@ export const CreditCompanyBillingAttributes: React.FC<CreditCompanyBillingAttrib
   attributes,
   setValue,
 }) => {
-  const { creditCompanies, isLoading } = useCreditCompanies(true);
+  const { creditCompanies, isLoading } = useCreditCompanies();
   const selectedCompanyUuid = attributes?.[CREDIT_COMPANY_ATTRIBUTE_UUIDS.creditCompany] ?? '';
 
   const selectedCompany = creditCompanies.find((c) => c.uuid === selectedCompanyUuid || c.id === selectedCompanyUuid);
