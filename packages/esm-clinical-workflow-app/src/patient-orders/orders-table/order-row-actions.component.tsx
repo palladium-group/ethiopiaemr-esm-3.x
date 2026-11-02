@@ -15,6 +15,7 @@ import {
   buildLabOrder,
   buildMedicationOrder,
   getOrderGrouping,
+  isOrderInBasket,
   ORDER_TYPES,
 } from './order-basket-items';
 import { type OrderRowAction } from './order-status';
@@ -30,7 +31,7 @@ const OrderRowActions: React.FC<OrderRowActionsProps> = ({ actions, order, patie
   const { t } = useTranslation();
   const { orders, setOrders } = useOrderBasket<OrderBasketItem>(patient, getOrderGrouping(order));
   const { mutate: globalMutate } = useSWRConfig();
-  const alreadyInBasket = orders.some((item) => item.uuid === order.uuid);
+  const alreadyInBasket = isOrderInBasket(orders, order);
   const isTestOrder = order.type === ORDER_TYPES.TEST_ORDER;
 
   const windowProps = useMemo(() => ({ encounterUuid: order.encounter.uuid }), [order.encounter.uuid]);

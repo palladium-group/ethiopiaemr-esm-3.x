@@ -19,6 +19,10 @@ export function getOrderGrouping(order: Order) {
   return order.type === ORDER_TYPES.DRUG_ORDER ? 'medications' : order.orderType?.uuid || 'general';
 }
 
+/** Basket items for an existing order have no uuid of their own; they point back at it through previousOrder. */
+export const isOrderInBasket = (basketItems: Array<OrderBasketItem>, order: Order) =>
+  basketItems.some((item) => item.previousOrder === order.uuid);
+
 export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrderBasketItem {
   const isFreeText = order.dosingType === 'org.openmrs.FreeTextDosingInstructions';
   const scheduledDate =
