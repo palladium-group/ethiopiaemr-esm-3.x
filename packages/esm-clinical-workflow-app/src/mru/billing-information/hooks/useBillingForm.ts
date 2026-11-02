@@ -15,7 +15,6 @@ export const useBillingForm = (t: TFunction, billingTypes: any[], isEditMode = f
     mode: 'onTouched',
     defaultValues: {
       billingTypeUuid: undefined,
-      creditSubType: undefined,
       attributes: {},
       billableItem: null,
       cashPointUuid: undefined,

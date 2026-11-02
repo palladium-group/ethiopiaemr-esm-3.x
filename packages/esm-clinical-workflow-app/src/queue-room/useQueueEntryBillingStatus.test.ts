@@ -4,6 +4,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
 import { usePaymentModes } from '../mru/billing-information/hooks/usePaymentModes';
 import { usePatientCardValidity } from './usePatientCardValidity';
+import { useLocationBillingExemption } from './useLocationBillingExemption';
 import { useQueueEntryBillingStatus } from './useQueueEntryBillingStatus';
 
 jest.mock('react-i18next', () => ({
@@ -38,6 +39,10 @@ jest.mock('./usePatientCardValidity', () => ({
   usePatientCardValidity: jest.fn(),
 }));
 
+jest.mock('./useLocationBillingExemption', () => ({
+  useLocationBillingExemption: jest.fn(),
+}));
+
 const PAYMENT_METHOD_ATTRIBUTE_TYPE = 'payment-method-attribute-type';
 const CASH_PAYMENT_MODE_UUID = 'cash-payment-mode-uuid';
 const CBHI_PAYMENT_MODE_UUID = 'cbhi-payment-mode-uuid';
@@ -70,6 +75,11 @@ describe('useQueueEntryBillingStatus', () => {
       hasValidCard: false,
       cardExpiryDate: null,
       lastConsultationDate: null,
+      isLoading: false,
+    });
+
+    (useLocationBillingExemption as jest.Mock).mockReturnValue({
+      isLocationExempted: false,
       isLoading: false,
     });
   });
@@ -329,6 +339,96 @@ describe('useQueueEntryBillingStatus', () => {
             value: CASH_PAYMENT_MODE_UUID,
           },
         ],
+      },
+    } as unknown as QueueEntry;
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(false);
+    expect(result.current.status).toBe('LOADING');
+    expect(result.current.badgeType).toBe('cool-gray');
+  });
+
+  it('clears patient when location is exempted for all services, even without payment method', () => {
+    (useLocationBillingExemption as jest.Mock).mockReturnValue({
+      isLocationExempted: true,
+      isLoading: false,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [], // No payment method attached
+      },
+    } as unknown as QueueEntry;
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
+    expect(result.current.badgeType).toBe('green');
+    expect(result.current.badgeText).toBe('Exempted');
+  });
+
+  it('clears patient when location is exempted, bypassing unpaid cashier bills', () => {
+    (useLocationBillingExemption as jest.Mock).mockReturnValue({
+      isLocationExempted: true,
+      isLoading: false,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [
+          {
+            attributeType: { uuid: PAYMENT_METHOD_ATTRIBUTE_TYPE },
+            value: CASH_PAYMENT_MODE_UUID,
+          },
+        ],
+      },
+    } as unknown as QueueEntry;
+
+    // Bills would normally be pending/unpaid
+    (useSWR as unknown as jest.Mock).mockReturnValue({
+      data: {
+        data: {
+          results: [
+            {
+              uuid: 'bill-1',
+              status: 'PENDING',
+              balance: 100,
+              lineItems: [{ uuid: 'item-1', paymentStatus: 'PENDING' }],
+            },
+          ],
+        },
+      },
+      isLoading: false,
+    });
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
+    expect(result.current.badgeType).toBe('green');
+    expect(result.current.badgeText).toBe('Exempted');
+  });
+
+  it('shows loading state while location exemption check is in progress', () => {
+    (useLocationBillingExemption as jest.Mock).mockReturnValue({
+      isLocationExempted: false,
+      isLoading: true,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [],
       },
     } as unknown as QueueEntry;
 

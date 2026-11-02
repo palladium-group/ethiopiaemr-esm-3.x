@@ -93,7 +93,14 @@ export const usePopulateBillingFormFromVisit = ({
     // Set billing type UUID
     setValue('billingTypeUuid', existingBillingTypeUuid, { shouldDirty: false });
 
-    // Parse Payment Attributes Summary if it exists
+    // Populate form with all visit attributes
+    activeVisit.attributes.forEach((attr) => {
+      if (attr.attributeType.uuid !== billingVisitAttributeTypes.paymentMethod) {
+        setValue(`attributes.${attr.attributeType.uuid}`, attr.value, { shouldDirty: false });
+      }
+    });
+
+    // Parse legacy Payment Attributes Summary if it exists
     let parsedAttributes: Record<string, any> = {};
     if (paymentAttributesSummaryAttribute?.value) {
       try {
@@ -103,41 +110,44 @@ export const usePopulateBillingFormFromVisit = ({
       }
     }
 
-    if (billingVisitAttributeTypes.creditType && parsedAttributes[billingVisitAttributeTypes.creditType]) {
-      const creditSubTypeValue = parsedAttributes[billingVisitAttributeTypes.creditType];
-      setValue('creditSubType', creditSubTypeValue, { shouldDirty: false });
-      // Set the creditType attribute
-      setValue(`attributes.${billingVisitAttributeTypes.creditType}`, creditSubTypeValue, { shouldDirty: false });
-    }
-
-    // Populate all other attributes from the parsed summary
+    // Populate attributes from parsed legacy summary
     Object.entries(parsedAttributes).forEach(([attrTypeUuid, value]) => {
-      // Skip creditType as it's already handled above
-      if (attrTypeUuid !== billingVisitAttributeTypes.creditType) {
-        setValue(`attributes.${attrTypeUuid}`, value, { shouldDirty: false });
-      }
+      setValue(`attributes.${attrTypeUuid}`, value, { shouldDirty: false });
     });
 
-    if (parsedAttributes.expiryDate && !parsedAttributes.cbhiExpiryDate) {
-      setValue('attributes.cbhiExpiryDate', parsedAttributes.expiryDate, { shouldDirty: false });
-    }
-    if (parsedAttributes.cbhiExpiryDate && !parsedAttributes.expiryDate) {
-      setValue('attributes.expiryDate', parsedAttributes.cbhiExpiryDate, { shouldDirty: false });
-    }
-
-    // Prefer independent CBHI visit attributes (for reporting) over any legacy summary values
+    // Backwards compatibility aliases
     const cbhiAttributeTypes = billingVisitAttributeTypes.cbhi || {};
     CBHI_VISIT_ATTRIBUTE_FIELDS.forEach((field: CbhiVisitAttributeField) => {
       const attributeTypeUuid = cbhiAttributeTypes[field];
-      if (!attributeTypeUuid) {
-        return;
-      }
+      const val =
+        (attributeTypeUuid
+          ? activeVisit.attributes?.find((a) => a.attributeType.uuid === attributeTypeUuid)?.value
+          : undefined) ??
+        parsedAttributes[field] ??
+        (attributeTypeUuid ? parsedAttributes[attributeTypeUuid] : undefined);
 
-      const visitAttribute = activeVisit.attributes?.find((attr) => attr.attributeType.uuid === attributeTypeUuid);
-      if (visitAttribute?.value !== undefined && visitAttribute.value !== null && visitAttribute.value !== '') {
-        setValue(`attributes.${field}`, visitAttribute.value, { shouldDirty: false });
+      if (val !== undefined && val !== null && val !== '') {
+        setValue(`attributes.${field}`, val, { shouldDirty: false });
+        if (attributeTypeUuid) {
+          setValue(`attributes.${attributeTypeUuid}`, val, { shouldDirty: false });
+        }
       }
     });
+
+    const expiryVal =
+      activeVisit.attributes?.find(
+        (a) =>
+          a.attributeType.uuid ===
+          ((cbhiAttributeTypes as Record<string, string | undefined>)?.cbhiExpiryDate ||
+            '77704fac-33eb-4732-acb0-8c2b0b2a256f'),
+      )?.value ??
+      parsedAttributes.expiryDate ??
+      parsedAttributes.cbhiExpiryDate;
+
+    if (expiryVal) {
+      setValue('attributes.expiryDate', expiryVal, { shouldDirty: false });
+      setValue('attributes.cbhiExpiryDate', expiryVal, { shouldDirty: false });
+    }
 
     // Mark as populated
     hasPopulatedFormRef.current = true;

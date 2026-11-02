@@ -23,6 +23,8 @@ jest.mock('./CbhiMemberSearch', () => ({
 
 const mockedUseCbhiManualEntrySetting = useCbhiManualEntrySetting as jest.Mock;
 
+import { CBHI_ATTRIBUTE_UUIDS } from '../billing-constants';
+
 describe('CbhiBillingAttributes', () => {
   const t = (key: string, defaultMessage?: string) => defaultMessage || key;
   const setValueMock = jest.fn();
@@ -34,20 +36,11 @@ describe('CbhiBillingAttributes', () => {
   it('renders online member search when allowCbhiManualEntry is false', () => {
     mockedUseCbhiManualEntrySetting.mockReturnValue({ isManualEntryEnabled: false });
 
-    render(
-      <CbhiBillingAttributes
-        control={{} as any}
-        errors={{}}
-        t={t as any}
-        attributeTypes={[]}
-        attributes={{}}
-        setValue={setValueMock}
-      />,
-    );
+    render(<CbhiBillingAttributes errors={{}} t={t as any} attributes={{}} setValue={setValueMock} />);
 
     expect(screen.getByTestId('cbhi-member-search')).toBeInTheDocument();
-    expect(screen.queryByLabelText('CBHI ID')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Expiry Date')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/CBHI ID/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Expiry Date/)).not.toBeInTheDocument();
   });
 
   it('renders manual entry fields (CBHI ID and Expiry Date) when allowCbhiManualEntry is true', () => {
@@ -55,13 +48,8 @@ describe('CbhiBillingAttributes', () => {
 
     render(
       <CbhiBillingAttributes
-        control={{} as any}
         errors={{}}
         t={t as any}
-        attributeTypes={[
-          { uuid: 'cbhi-attr-type-uuid', name: 'CBHI ID' },
-          { uuid: 'expiry-attr-type-uuid', name: 'Expiry Date' },
-        ]}
         attributes={{
           cbhiId: 'CBHI-5555',
           expiryDate: '2026-10-15',
@@ -74,12 +62,12 @@ describe('CbhiBillingAttributes', () => {
     expect(screen.queryByTestId('cbhi-member-search')).not.toBeInTheDocument();
 
     // CBHI ID text input
-    const cbhiIdInput = screen.getByLabelText('CBHI ID') as HTMLInputElement;
+    const cbhiIdInput = screen.getByLabelText(/CBHI ID/) as HTMLInputElement;
     expect(cbhiIdInput).toBeInTheDocument();
     expect(cbhiIdInput.value).toBe('CBHI-5555');
 
     // Expiry Date input
-    const expiryDateInput = screen.getByLabelText('Expiry Date') as HTMLInputElement;
+    const expiryDateInput = screen.getByLabelText(/Expiry Date/) as HTMLInputElement;
     expect(expiryDateInput).toBeInTheDocument();
     expect(expiryDateInput.value).toBe('2026-10-15');
 
@@ -89,7 +77,7 @@ describe('CbhiBillingAttributes', () => {
       'attributes',
       expect.objectContaining({
         cbhiId: 'CBHI-7777',
-        'cbhi-attr-type-uuid': 'CBHI-7777',
+        [CBHI_ATTRIBUTE_UUIDS.cbhiId]: 'CBHI-7777',
       }),
       { shouldDirty: true },
     );
@@ -101,7 +89,7 @@ describe('CbhiBillingAttributes', () => {
       expect.objectContaining({
         expiryDate: '2027-12-31',
         cbhiExpiryDate: '2027-12-31',
-        'expiry-attr-type-uuid': '2027-12-31',
+        [CBHI_ATTRIBUTE_UUIDS.cbhiExpiryDate]: '2027-12-31',
       }),
       { shouldDirty: true },
     );

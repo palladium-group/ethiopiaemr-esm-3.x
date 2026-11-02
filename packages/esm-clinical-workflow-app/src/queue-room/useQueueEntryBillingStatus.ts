@@ -8,6 +8,7 @@ import type { QueueEntry } from '../types';
 import { getVisitPaymentModeUuid } from '../ward/bed-fee/bed-fee.utils';
 import { usePaymentModes } from '../mru/billing-information/hooks/usePaymentModes';
 import { usePatientCardValidity } from './usePatientCardValidity';
+import { useLocationBillingExemption } from './useLocationBillingExemption';
 
 export type QueueEntryBillingStatusType =
   | 'LOADING'
@@ -50,9 +51,11 @@ const CASHIER_BILL_REP =
 /**
  * Evaluates the billing and MRU registration clearance status of a service queue entry.
  *
- * Strict policy: NO bypass.
+ * Clearance policy:
+ * - Location exemption: If the queue / login location has all services exempted, patient is CLEARED.
  * - Missing paymentMethod visit attribute => BLOCKED (MRU Pending).
  * - Non-cash payment method (CBHI, Credit, Waiver, Free, Exempt) => CLEARED.
+ * - Valid patient card => CLEARED (Card Valid).
  * - Cash / Paying payment method:
  *     - No bill found => BLOCKED (Fee Not Created).
  *     - Bill found with positive balance or pending payment => BLOCKED (Payment Pending).
@@ -62,6 +65,9 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
   const { t } = useTranslation();
   const { billingVisitAttributeTypes } = useConfig<ClinicalWorkflowConfig>();
   const { billingTypes, isLoading: isLoadingPaymentModes } = usePaymentModes();
+  const { isLocationExempted, isLoading: isLoadingExemption } = useLocationBillingExemption(
+    queueEntry?.queue?.location,
+  );
 
   const paymentMethodAttributeTypeUuid =
     billingVisitAttributeTypes?.paymentMethod ?? 'e6cb0c3b-04b0-4117-9bc6-ce24adbda802';
@@ -92,7 +98,9 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     cardExpiryDate,
     isLoading: isLoadingCard,
   } = usePatientCardValidity(patientUuid, personAttributes);
-  const shouldFetchBills = Boolean(patientUuid && paymentModeUuid && !isKnownNonCash && !hasValidCard);
+  const shouldFetchBills = Boolean(
+    patientUuid && paymentModeUuid && !isKnownNonCash && !hasValidCard && !isLocationExempted,
+  );
 
   const billsUrl = shouldFetchBills
     ? `${restBaseUrl}/cashier/bill?v=${CASHIER_BILL_REP}&patientUuid=${patientUuid}`
@@ -108,6 +116,15 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
   );
 
   return useMemo<QueueEntryBillingStatus>(() => {
+    const loadingStatus = (message: string): QueueEntryBillingStatus => ({
+      status: 'LOADING',
+      isCleared: false,
+      isLoading: true,
+      badgeText: t('checkingStatus', 'Checking...'),
+      badgeType: 'cool-gray',
+      message,
+    });
+
     if (!queueEntry?.visit) {
       return {
         status: 'NO_PAYMENT_METHOD',
@@ -119,15 +136,24 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
       };
     }
 
-    if (isLoadingPaymentModes && !matchedPaymentMode && paymentModeUuid) {
+    if (isLoadingExemption) {
+      return loadingStatus(t('verifyingExemptions', 'Verifying location billing exemptions...'));
+    }
+
+    if (isLocationExempted) {
       return {
-        status: 'LOADING',
-        isCleared: false,
-        isLoading: true,
-        badgeText: t('checkingStatus', 'Checking...'),
-        badgeType: 'cool-gray',
-        message: t('verifyingPaymentMode', 'Verifying registered payment mode...'),
+        status: 'CLEARED',
+        isCleared: true,
+        isLoading: false,
+        paymentModeName: modeName || 'Exempt',
+        badgeText: t('exempted', 'Exempted'),
+        badgeType: 'green',
+        message: t('locationExemptedFromBilling', 'Location is exempted from billing. Patient cleared for service.'),
       };
+    }
+
+    if (isLoadingPaymentModes && !matchedPaymentMode && paymentModeUuid) {
+      return loadingStatus(t('verifyingPaymentMode', 'Verifying registered payment mode...'));
     }
 
     // Non-cash modes (CBHI, Credit Company, Waiver / Free / Exempt) are cleared once registered at MRU
@@ -149,14 +175,7 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     // If the patient has a valid consultation card from a previous visit,
     // they are cleared for service and do not need a new consultation bill.
     if (isLoadingCard) {
-      return {
-        status: 'LOADING',
-        isCleared: false,
-        isLoading: true,
-        badgeText: t('checkingStatus', 'Checking...'),
-        badgeType: 'cool-gray',
-        message: t('verifyingCardValidity', 'Verifying card validity...'),
-      };
+      return loadingStatus(t('verifyingCardValidity', 'Verifying card validity...'));
     }
 
     if (hasValidCard) {
@@ -197,14 +216,7 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
 
     // For Cash / Paying patients, verify consultation fee bill
     if (isLoadingBills) {
-      return {
-        status: 'LOADING',
-        isCleared: false,
-        isLoading: true,
-        badgeText: t('checkingStatus', 'Checking...'),
-        badgeType: 'cool-gray',
-        message: t('checkingCashierBills', 'Checking cashier bills...'),
-      };
+      return loadingStatus(t('checkingCashierBills', 'Checking cashier bills...'));
     }
 
     const nonVoidedBills = (billsData?.data?.results ?? []).filter((bill) => !bill.voided);
@@ -266,6 +278,8 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     };
   }, [
     queueEntry?.visit,
+    isLoadingExemption,
+    isLocationExempted,
     paymentModeUuid,
     isLoadingPaymentModes,
     matchedPaymentMode,
