@@ -8,6 +8,14 @@
   "pages": [],
   "extensions": [
     {
+      "name": "patient-orders-table",
+      "component": "patientOrdersTable",
+      "slot": "patient-chart-orders-dashboard-slot",
+      "meta": {
+        "fullWidth": false
+      }
+    },
+    {
       "name": "ewf-mru-dashboard-link",
       "component": "mruLeftPanelLink",
       "slot": "homepage-dashboard-slot",

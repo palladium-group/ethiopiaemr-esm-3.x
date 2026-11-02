@@ -1,0 +1,136 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.container {
+  margin-bottom: layout.$spacing-06;
+}
+
+.filterContainer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+}
+
+.dropdownContainer {
+  min-width: max-content;
+
+  :global(.cds--dropdown__wrapper--inline) {
+    grid-gap: 0 0.5rem;
+  }
+}
+
+.inlineDateRange {
+  :global(.cds--form-item) {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  :global(.cds--date-picker-container) {
+    display: inline-grid;
+    grid-auto-flow: column;
+    align-items: center;
+    grid-column-gap: layout.$spacing-03;
+  }
+
+  :global(.cds--label) {
+    @include type.type-style('helper-text-02');
+    margin-right: 0;
+    margin-bottom: 0;
+  }
+}
+
+.widgetCard {
+  border: 1px solid colors.$gray-20;
+}
+
+.buttons {
+  justify-content: flex-end;
+}
+
+.button {
+  svg {
+    fill: currentColor !important;
+  }
+}
+
+.table {
+  td {
+    &::after {
+      display: none;
+    }
+  }
+}
+
+.row {
+  span {
+    margin: auto;
+  }
+
+  p {
+    padding: layout.$spacing-02 0;
+  }
+}
+
+.singleLineText {
+  white-space: nowrap;
+}
+
+.hiddenRow {
+  display: none;
+}
+
+.layer {
+  height: 100%;
+}
+
+.menuItem {
+  max-width: none;
+}
+
+.toolBarContent {
+  background-color: colors.$gray-10;
+
+  :global(.cds--table-toolbar-content) {
+    width: 100%;
+  }
+
+  :global(.cds--search) {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.paginationContainer {
+  > div {
+    border-top: none !important;
+  }
+}
+
+.tileContainer {
+  background-color: colors.$white-0;
+  border-top: 1px solid colors.$gray-70;
+  padding: layout.$spacing-11 0;
+}
+
+.emptyStateTile {
+  margin: auto;
+  width: fit-content;
+}
+
+.tileContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+}
+
+.helperText {
+  @include type.type-style('helper-text-02');
+}
