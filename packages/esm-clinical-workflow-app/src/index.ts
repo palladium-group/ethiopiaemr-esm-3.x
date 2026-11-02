@@ -287,4 +287,8 @@ export const shrAdminDashboardLink = getSyncLifecycle(ShrAdminDashboardLink, opt
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
 export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);
 export const appointmentCheckInQueueHandler = getSyncLifecycle(AppointmentCheckInQueueHandler, options);
+export const patientOrdersTable = getAsyncLifecycle(
+  () => import('./patient-orders/orders-table/patient-orders-table.component'),
+  options,
+);
 export { completePatientCheckedInAppointments, subscribeVisitCheckoutAppointmentSync };
