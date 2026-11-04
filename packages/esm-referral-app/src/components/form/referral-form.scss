@@ -1,0 +1,131 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.page {
+  padding: layout.$spacing-05 layout.$spacing-07 layout.$spacing-09;
+  max-width: 72rem;
+}
+
+.back {
+  margin-bottom: layout.$spacing-04;
+}
+
+.title {
+  @include type.type-style('heading-05');
+  color: colors.$gray-100;
+  margin: 0 0 layout.$spacing-03;
+}
+
+.lede {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0 0 layout.$spacing-07;
+  max-width: 44rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-07;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding-top: layout.$spacing-05;
+  border-top: 1px solid colors.$gray-20;
+}
+
+.legend {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-100;
+  margin-bottom: layout.$spacing-05;
+}
+
+.row3,
+.row4,
+.row5 {
+  display: grid;
+  gap: layout.$spacing-05;
+}
+
+.row3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.row4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.row5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.patientSearch {
+  position: relative;
+  max-width: 32rem;
+}
+
+.matches {
+  list-style: none;
+  margin: layout.$spacing-02 0 0;
+  padding: 0;
+  border: 1px solid colors.$gray-20;
+  background: colors.$white-0;
+}
+
+.match {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+
+  &:hover,
+  &:focus {
+    background: colors.$gray-10;
+    outline: none;
+  }
+}
+
+.matchMeta {
+  color: colors.$gray-60;
+}
+
+.linked {
+  @include type.type-style('body-compact-01');
+  color: colors.$green-60;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.buttons {
+  max-width: 32rem;
+}
+
+@media (max-width: 66rem) {
+  .row4,
+  .row5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 42rem) {
+  .page {
+    padding: layout.$spacing-05;
+  }
+
+  .row3,
+  .row4,
+  .row5 {
+    grid-template-columns: 1fr;
+  }
+}

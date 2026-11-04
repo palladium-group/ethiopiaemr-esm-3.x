@@ -1,0 +1,143 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-07;
+}
+
+.headline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: layout.$spacing-05;
+  margin: 0;
+}
+
+.metric {
+  padding: layout.$spacing-05 0;
+  border-top: 2px solid colors.$blue-60;
+
+  dt {
+    @include type.type-style('label-01');
+    color: colors.$gray-60;
+    margin-bottom: layout.$spacing-03;
+  }
+
+  dd {
+    @include type.type-style('heading-05');
+    color: colors.$gray-100;
+    margin: 0;
+  }
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: layout.$spacing-07;
+}
+
+.panel {
+  min-width: 0;
+}
+
+.panelTitle {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-100;
+  margin: 0 0 layout.$spacing-05;
+}
+
+.panelTotal {
+  color: colors.$gray-60;
+  font-weight: 400;
+}
+
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.bar {
+  display: grid;
+  grid-template-columns: 9rem 1fr 3rem;
+  align-items: center;
+  gap: layout.$spacing-04;
+}
+
+.barLabel {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-80;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barTrack {
+  height: 0.5rem;
+  background: colors.$gray-10;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  background: colors.$gray-50;
+  transform-origin: left;
+  animation: grow 400ms ease-out;
+}
+
+.barValue {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+  text-align: right;
+}
+
+.tone-blue {
+  background: colors.$blue-60;
+}
+.tone-green {
+  background: colors.$green-50;
+}
+.tone-teal {
+  background: colors.$teal-50;
+}
+.tone-cyan {
+  background: colors.$cyan-50;
+}
+.tone-red {
+  background: colors.$red-50;
+}
+.tone-magenta {
+  background: colors.$magenta-50;
+}
+.tone-purple {
+  background: colors.$purple-50;
+}
+.tone-gray {
+  background: colors.$gray-50;
+}
+
+.muted {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  margin: 0;
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barFill {
+    animation: none;
+  }
+}

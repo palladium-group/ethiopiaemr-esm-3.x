@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "ethiopiaemr-module-referral": ">=1.0.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "referral",
+      "online": true,
+      "privilege": "Manage Referrals"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "referral-dashboard-link",
+      "component": "referralDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "order": 18,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "name": "liaison-referrals",
+        "title": "Liaison referrals",
+        "path": "referral"
+      }
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1 1 20rem;
+  max-width: 28rem;
+}
+
+.filter {
+  min-width: 14rem;
+}
+
+.table {
+  background: colors.$white-0;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.patientName {
+  @include type.type-style('body-compact-01');
+  display: block;
+  color: colors.$gray-100;
+  font-weight: 600;
+}
+
+.secondary {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
+.undelivered {
+  display: inline-flex;
+  fill: colors.$orange-40;
+}
+
+.empty {
+  padding: layout.$spacing-09 layout.$spacing-07;
+  text-align: center;
+  background: colors.$gray-10;
+}
+
+.emptyTitle {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-100;
+  margin: 0 0 layout.$spacing-03;
+}
+
+.emptyHint {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  margin: 0;
+}

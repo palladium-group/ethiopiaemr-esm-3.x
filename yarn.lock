@@ -3634,6 +3634,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@palladium-ethiopia/esm-referral-app@workspace:packages/esm-referral-app":
+  version: 0.0.0-use.local
+  resolution: "@palladium-ethiopia/esm-referral-app@workspace:packages/esm-referral-app"
+  peerDependencies:
+    "@carbon/react": ^1.x
+    "@openmrs/esm-framework": 8.x
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 11.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@palladium-ethiopia/esm-reports-app@workspace:packages/esm-reports-app":
   version: 0.0.0-use.local
   resolution: "@palladium-ethiopia/esm-reports-app@workspace:packages/esm-reports-app"
