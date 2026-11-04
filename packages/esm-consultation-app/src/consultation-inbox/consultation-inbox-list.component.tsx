@@ -11,7 +11,7 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { formatDatetime } from '@openmrs/esm-framework';
+import { ConfigurableLink, formatDatetime } from '@openmrs/esm-framework';
 import type { ConsultationThread } from '../types/consultation.types';
 import styles from './consultation-inbox-list.scss';
 
@@ -59,7 +59,18 @@ const ConsultationInboxList: React.FC<ConsultationInboxListProps> = ({
 
             return (
               <TableRow key={consultation.encounterUuid}>
-                <TableCell>{consultation.patientDisplay || '--'}</TableCell>
+                <TableCell>
+                  {consultation.patientUuid ? (
+                    <ConfigurableLink
+                      className={styles.patientLink}
+                      to="${openmrsSpaBase}/patient/${patientUuid}/chart/Patient Summary"
+                      templateParams={{ patientUuid: consultation.patientUuid }}>
+                      {consultation.patientDisplay || '--'}
+                    </ConfigurableLink>
+                  ) : (
+                    consultation.patientDisplay || '--'
+                  )}
+                </TableCell>
                 <TableCell>{consultation.consultingDepartment || '--'}</TableCell>
                 <TableCell>{consultation.requestingProvider?.display || '--'}</TableCell>
                 <TableCell>{consultation.consultationType || '--'}</TableCell>
