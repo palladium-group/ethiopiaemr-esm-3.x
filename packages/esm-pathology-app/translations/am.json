@@ -8,6 +8,7 @@
   "pathology": "ፓቶሎጂ",
   "Pathology": "ፓቶሎጂ",
   "pathologyFormNotConfigured": "ምንም የፓቶሎጂ ትእዛዝ ቅጽ አልተዋቀረም።",
+  "pathologyOrderNotPermitted": "የፓቶሎጂ ትእዛዝ ለመስጠት ፈቃድ የለዎትም።",
   "pathologyOrders": "የፓቶሎጂ ትእዛዞች",
   "pathologyOrdersTitle": "የፓቶሎጂ ትእዛዞች",
   "pathologyResultsTitle": "የፓቶሎጂ ውጤቶች",

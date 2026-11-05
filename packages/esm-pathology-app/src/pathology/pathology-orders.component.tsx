@@ -12,9 +12,17 @@ import {
   TableExpandRow,
 } from '@carbon/react';
 import { CardHeader, EmptyState, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
-import { formatDatetime, parseDate, useConfig, useLayoutType, type Visit } from '@openmrs/esm-framework';
+import {
+  formatDatetime,
+  parseDate,
+  useConfig,
+  userHasAccess,
+  useLayoutType,
+  useSession,
+  type Visit,
+} from '@openmrs/esm-framework';
 import { type PathologyConfig } from '../config-schema';
-import { PATHOLOGY_ORDER_WORKSPACE } from '../constants';
+import { PATHOLOGY_ORDER_PRIVILEGE, PATHOLOGY_ORDER_WORKSPACE } from '../constants';
 import { usePathologyRequestEncounters } from './pathology-orders.resource';
 import { useResultConceptSetMembers } from './pathology-results.resource';
 import RequestObservations from './request-observations.component';
@@ -42,6 +50,8 @@ const ExpandDefaultRow: React.FC<{ expandRow: (rowId: string) => void; rowId?: s
 const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid, visitContext }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const session = useSession();
+  const canOrderPathology = userHasAccess(PATHOLOGY_ORDER_PRIVILEGE, session?.user ?? { privileges: [], roles: [] });
   const { pathologyRequestForms, pathologyResultConceptSetUuid, cytologyResultConceptSetUuid } =
     useConfig<PathologyConfig>();
   const resolvedPatientUuid = patientUuid ?? patient?.id;
@@ -95,7 +105,13 @@ const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid,
     return <ErrorState error={error} headerTitle={title} />;
   }
   if (!encounters.length) {
-    return <EmptyState displayText={t('orders', 'Orders')} headerTitle={title} launchForm={openNewOrder} />;
+    return (
+      <EmptyState
+        displayText={t('orders', 'Orders')}
+        headerTitle={title}
+        launchForm={canOrderPathology ? openNewOrder : undefined}
+      />
+    );
   }
 
   const headers = [{ key: 'summary', header: '' }];
@@ -110,9 +126,11 @@ const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid,
   return (
     <div className={styles.container}>
       <CardHeader title={title}>
-        <Button kind="ghost" size={isTablet ? 'md' : 'sm'} onClick={openNewOrder}>
-          {t('recordOrders', 'Record Orders')}
-        </Button>
+        {canOrderPathology ? (
+          <Button kind="ghost" size={isTablet ? 'md' : 'sm'} onClick={openNewOrder}>
+            {t('recordOrders', 'Record Orders')}
+          </Button>
+        ) : null}
       </CardHeader>
       <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'} useZebraStyles>
         {({ rows, getRowProps, getTableProps, expandRow }) => (
