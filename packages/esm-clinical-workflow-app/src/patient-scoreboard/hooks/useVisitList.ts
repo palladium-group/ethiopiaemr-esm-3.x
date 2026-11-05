@@ -10,14 +10,9 @@ export interface VisitResponse {
   totalCount?: number;
 }
 
-type LocationTag = {
-  uuid: string;
-  display?: string;
-};
-
 type LocationResponse = {
   uuid: string;
-  tags?: Array<LocationTag>;
+  tags?: Array<{ uuid: string; display?: string }>;
 };
 
 interface PaginationParams {
@@ -31,94 +26,119 @@ const VISIT_CUSTOM_REPRESENTATION =
 
 const LOCATION_TAGS_REPRESENTATION = 'custom:(uuid,tags:(uuid,display))';
 
-function useMruLocationState() {
+export interface BuildScoreboardVisitsUrlOptions {
+  sessionLocation?: string;
+  shouldFilterByLocation: boolean;
+  assignedQueueAttributeTypeUuid?: string;
+  includeInactive: boolean;
+  totalCount?: boolean;
+  fromStartDate?: string;
+  representation?: string;
+  startIndex?: number;
+  limit?: number;
+}
+
+export function buildScoreboardVisitsUrl({
+  sessionLocation,
+  shouldFilterByLocation,
+  assignedQueueAttributeTypeUuid,
+  includeInactive,
+  totalCount,
+  fromStartDate,
+  representation = VISIT_CUSTOM_REPRESENTATION,
+  startIndex,
+  limit,
+}: BuildScoreboardVisitsUrlOptions): string | null {
+  if (!sessionLocation) {
+    return null;
+  }
+
+  const urlSearchParams = new URLSearchParams();
+  urlSearchParams.append('includeParentLocations', 'true');
+  urlSearchParams.append('includeInactive', String(includeInactive));
+  if (totalCount) {
+    urlSearchParams.append('totalCount', 'true');
+  }
+  if (fromStartDate) {
+    urlSearchParams.append('fromStartDate', fromStartDate);
+  }
+
+  const useQueueAttr = shouldFilterByLocation && assignedQueueAttributeTypeUuid;
+  const baseUrl = useQueueAttr ? `${restBaseUrl}/ethiopiaemrcustommodule/visit` : `${restBaseUrl}/visit`;
+
+  if (useQueueAttr) {
+    urlSearchParams.append('attributeType', assignedQueueAttributeTypeUuid);
+    urlSearchParams.append('attributeValue', sessionLocation);
+  } else if (shouldFilterByLocation) {
+    urlSearchParams.append('location', sessionLocation);
+  } else if (limit === undefined) {
+    urlSearchParams.append('limit', String(MRU_VISITS_FETCH_LIMIT));
+  }
+
+  if (startIndex !== undefined) {
+    urlSearchParams.append('startIndex', String(startIndex));
+  }
+  if (limit !== undefined) {
+    urlSearchParams.append('limit', String(limit));
+  }
+
+  return `${baseUrl}?v=${representation}&${urlSearchParams.toString()}`;
+}
+
+export function useScoreboardLocationFilter() {
   const config = useConfig<ClinicalWorkflowConfig>();
   const session = useSession();
-  const sessionLocationUuid = session?.sessionLocation?.uuid;
+  const sessionLocation = session?.sessionLocation?.uuid;
 
-  const locationUrl = sessionLocationUuid
-    ? `${restBaseUrl}/location/${sessionLocationUuid}?v=${LOCATION_TAGS_REPRESENTATION}`
+  const locationUrl = sessionLocation
+    ? `${restBaseUrl}/location/${sessionLocation}?v=${LOCATION_TAGS_REPRESENTATION}`
     : null;
-
   const { data, error, isLoading } = useSWR<{ data: LocationResponse }>(locationUrl, openmrsFetch);
 
-  const tags = data?.data?.tags ?? [];
-  const normalizedName = config.medicalRecordingUnitLocationTagName?.trim().toLowerCase();
-  const tagUuid = config.medicalRecordingUnitLocationTagUuid;
-
-  const isMruLocation = tags.some((t) => {
-    if (t.uuid === tagUuid) {
-      return true;
-    }
-    if (normalizedName && t.display) {
-      return t.display.trim().toLowerCase() === normalizedName;
-    }
-    return false;
-  });
+  const normalizedName = config?.medicalRecordingUnitLocationTagName?.trim().toLowerCase();
+  const tagUuid = config?.medicalRecordingUnitLocationTagUuid;
+  const isMruLocation =
+    !isLoading &&
+    !error &&
+    Boolean(
+      data?.data?.tags?.some(
+        (t) => t.uuid === tagUuid || (normalizedName && t.display?.trim().toLowerCase() === normalizedName),
+      ),
+    );
 
   return {
-    isMruLocation,
-    isLocationTagLoading: isLoading,
-    locationTagError: error,
+    sessionLocation,
+    shouldFilterByLocation: !isMruLocation,
+    assignedQueueAttributeTypeUuid: config?.assignedQueueVisitAttributeTypeUuid,
   };
 }
 
-/**
- * While the MRU tag check is pending, default to location-filtered (non-MRU) so visit
- * fetches can start immediately. Re-fetches without location once MRU is confirmed.
- */
-function getShouldFilterByLocation(
-  isMruLocation: boolean,
-  isLocationTagLoading: boolean,
-  locationTagError: unknown,
-): boolean {
-  if (isLocationTagLoading || locationTagError) {
-    return true;
-  }
-  return !isMruLocation;
-}
-
-function appendLocationFilter(params: URLSearchParams, sessionLocation: string, shouldFilterByLocation: boolean) {
-  if (shouldFilterByLocation) {
-    params.append('location', sessionLocation);
-  }
-}
-
-function appendMruFetchLimit(params: URLSearchParams, shouldFilterByLocation: boolean) {
-  if (!shouldFilterByLocation) {
-    params.append('limit', String(MRU_VISITS_FETCH_LIMIT));
-  }
-}
-
 export const useActiveVisits = (paginationParams?: PaginationParams) => {
-  const session = useSession();
-  const sessionLocation = session?.sessionLocation?.uuid;
-  const { isMruLocation, isLocationTagLoading, locationTagError } = useMruLocationState();
+  const { sessionLocation, shouldFilterByLocation, assignedQueueAttributeTypeUuid } = useScoreboardLocationFilter();
   const shouldSkip = paginationParams?.skip === true;
-  const shouldFilterByLocation = getShouldFilterByLocation(isMruLocation, isLocationTagLoading, locationTagError);
 
   const visitsUrl = useMemo(() => {
-    if (shouldSkip || !sessionLocation) {
+    if (shouldSkip) {
       return null;
     }
 
-    const urlSearchParams = new URLSearchParams();
-    urlSearchParams.append('includeParentLocations', 'true');
-    urlSearchParams.append('includeInactive', 'false');
-    urlSearchParams.append('totalCount', 'true');
-    appendLocationFilter(urlSearchParams, sessionLocation, shouldFilterByLocation);
-
-    if (paginationParams?.startIndex !== undefined) {
-      urlSearchParams.append('startIndex', paginationParams.startIndex.toString());
-    }
-    if (paginationParams?.limit !== undefined) {
-      urlSearchParams.append('limit', paginationParams.limit.toString());
-    } else if (!shouldFilterByLocation) {
-      appendMruFetchLimit(urlSearchParams, shouldFilterByLocation);
-    }
-
-    return `${restBaseUrl}/visit?v=${VISIT_CUSTOM_REPRESENTATION}&${urlSearchParams.toString()}`;
-  }, [shouldSkip, sessionLocation, shouldFilterByLocation, paginationParams?.startIndex, paginationParams?.limit]);
+    return buildScoreboardVisitsUrl({
+      sessionLocation,
+      shouldFilterByLocation,
+      assignedQueueAttributeTypeUuid,
+      includeInactive: false,
+      totalCount: true,
+      startIndex: paginationParams?.startIndex,
+      limit: paginationParams?.limit,
+    });
+  }, [
+    shouldSkip,
+    sessionLocation,
+    shouldFilterByLocation,
+    assignedQueueAttributeTypeUuid,
+    paginationParams?.startIndex,
+    paginationParams?.limit,
+  ]);
 
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(visitsUrl, openmrsFetch);
 
@@ -130,72 +150,65 @@ export const useActiveVisits = (paginationParams?: PaginationParams) => {
   };
 };
 
-// Fetch all past visits without pagination, then filter locally
-export const usePastVisits = () => {
-  const session = useSession();
-  const sessionLocation = session?.sessionLocation?.uuid;
-  const { isMruLocation, isLocationTagLoading, locationTagError } = useMruLocationState();
+// Fetch all visits for today without pagination, then filter locally for completed visits
+export const useTotalVisits = (paginationParams?: PaginationParams) => {
+  const { sessionLocation, shouldFilterByLocation, assignedQueueAttributeTypeUuid } = useScoreboardLocationFilter();
   const startDate = dayjs().format('YYYY-MM-DD');
-  const shouldFilterByLocation = getShouldFilterByLocation(isMruLocation, isLocationTagLoading, locationTagError);
+  const shouldSkip = paginationParams?.skip === true;
 
   const visitsUrl = useMemo(() => {
-    if (!sessionLocation) {
+    if (shouldSkip) {
       return null;
     }
 
-    const urlSearchParams = new URLSearchParams();
-    urlSearchParams.append('includeParentLocations', 'true');
-    urlSearchParams.append('includeInactive', 'true');
-    urlSearchParams.append('fromStartDate', startDate);
-    appendLocationFilter(urlSearchParams, sessionLocation, shouldFilterByLocation);
-    appendMruFetchLimit(urlSearchParams, shouldFilterByLocation);
-
-    return `${restBaseUrl}/visit?v=${VISIT_CUSTOM_REPRESENTATION}&${urlSearchParams.toString()}`;
-  }, [sessionLocation, startDate, shouldFilterByLocation]);
+    return buildScoreboardVisitsUrl({
+      sessionLocation,
+      shouldFilterByLocation,
+      assignedQueueAttributeTypeUuid,
+      includeInactive: true,
+      fromStartDate: startDate,
+      limit: MRU_VISITS_FETCH_LIMIT,
+    });
+  }, [shouldSkip, sessionLocation, shouldFilterByLocation, assignedQueueAttributeTypeUuid, startDate]);
 
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(visitsUrl, openmrsFetch);
 
-  const pastVisits =
-    data?.data?.results?.filter((visit) => {
-      return !!visit.stopDatetime;
-    }) ?? [];
+  const completedTodayVisits = data?.data?.results?.filter((visit) => Boolean(visit.stopDatetime)) ?? [];
 
   return {
-    visits: pastVisits,
-    count: pastVisits.length,
+    visits: shouldSkip ? [] : completedTodayVisits,
+    count: completedTodayVisits.length,
     error,
     isLoading,
   };
 };
 
+// Past visits are completed visits started today
+export const usePastVisits = useTotalVisits;
+
 // Fetch all visits for today (for score cards) - fetch all without pagination, filter locally
 export const useTodayVisits = () => {
-  const session = useSession();
-  const sessionLocation = session?.sessionLocation?.uuid;
-  const { isMruLocation, isLocationTagLoading, locationTagError } = useMruLocationState();
+  const { sessionLocation, shouldFilterByLocation, assignedQueueAttributeTypeUuid } = useScoreboardLocationFilter();
   const startDate = dayjs().format('YYYY-MM-DD');
-  const shouldFilterByLocation = getShouldFilterByLocation(isMruLocation, isLocationTagLoading, locationTagError);
 
-  const visitsUrl = useMemo(() => {
-    if (!sessionLocation) {
-      return null;
-    }
-
-    const urlSearchParams = new URLSearchParams();
-    urlSearchParams.append('includeParentLocations', 'true');
-    urlSearchParams.append('includeInactive', 'true');
-    urlSearchParams.append('fromStartDate', startDate);
-    appendLocationFilter(urlSearchParams, sessionLocation, shouldFilterByLocation);
-    appendMruFetchLimit(urlSearchParams, shouldFilterByLocation);
-
-    return `${restBaseUrl}/visit?v=${VISIT_CUSTOM_REPRESENTATION}&${urlSearchParams.toString()}`;
-  }, [sessionLocation, startDate, shouldFilterByLocation]);
+  const visitsUrl = useMemo(
+    () =>
+      buildScoreboardVisitsUrl({
+        sessionLocation,
+        shouldFilterByLocation,
+        assignedQueueAttributeTypeUuid,
+        includeInactive: true,
+        fromStartDate: startDate,
+        limit: MRU_VISITS_FETCH_LIMIT,
+      }),
+    [sessionLocation, shouldFilterByLocation, assignedQueueAttributeTypeUuid, startDate],
+  );
 
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(visitsUrl, openmrsFetch);
 
   const allTodayVisits = data?.data?.results ?? [];
   const activeVisits = allTodayVisits.filter((visit) => !visit.stopDatetime);
-  const pastVisits = allTodayVisits.filter((visit) => !!visit.stopDatetime);
+  const pastVisits = allTodayVisits.filter((visit) => Boolean(visit.stopDatetime));
 
   return {
     allVisits: allTodayVisits,
@@ -209,67 +222,23 @@ export const useTodayVisits = () => {
   };
 };
 
-// Fetch all visits for today without pagination, then filter locally for completed visits
-export const useTotalVisits = (paginationParams?: PaginationParams) => {
-  const session = useSession();
-  const sessionLocation = session?.sessionLocation?.uuid;
-  const { isMruLocation, isLocationTagLoading, locationTagError } = useMruLocationState();
-  const startDate = dayjs().format('YYYY-MM-DD');
-  const shouldSkip = paginationParams?.skip === true;
-  const shouldFilterByLocation = getShouldFilterByLocation(isMruLocation, isLocationTagLoading, locationTagError);
-
-  const visitsUrl = useMemo(() => {
-    if (!sessionLocation) {
-      return null;
-    }
-
-    const urlSearchParams = new URLSearchParams();
-    urlSearchParams.append('includeInactive', 'true');
-    urlSearchParams.append('includeParentLocations', 'true');
-    urlSearchParams.append('v', VISIT_CUSTOM_REPRESENTATION);
-    urlSearchParams.append('fromStartDate', startDate);
-    appendLocationFilter(urlSearchParams, sessionLocation, shouldFilterByLocation);
-    appendMruFetchLimit(urlSearchParams, shouldFilterByLocation);
-
-    return `${restBaseUrl}/visit?${urlSearchParams.toString()}`;
-  }, [sessionLocation, startDate, shouldFilterByLocation]);
-
-  const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(visitsUrl, openmrsFetch);
-
-  const completedTodayVisits =
-    data?.data?.results?.filter((visit) => {
-      return !!visit.stopDatetime;
-    }) ?? [];
-
-  return {
-    visits: shouldSkip ? [] : completedTodayVisits,
-    count: completedTodayVisits.length,
-    error,
-    isLoading,
-  };
-};
-
 // Hook to get count of all active visits (for card display)
 export const useActiveVisitsCount = () => {
-  const session = useSession();
-  const sessionLocation = session?.sessionLocation?.uuid;
-  const { isMruLocation, isLocationTagLoading, locationTagError } = useMruLocationState();
-  const shouldFilterByLocation = getShouldFilterByLocation(isMruLocation, isLocationTagLoading, locationTagError);
+  const { sessionLocation, shouldFilterByLocation, assignedQueueAttributeTypeUuid } = useScoreboardLocationFilter();
 
-  const visitsUrl = useMemo(() => {
-    if (!sessionLocation) {
-      return null;
-    }
-
-    const urlSearchParams = new URLSearchParams();
-    urlSearchParams.append('includeParentLocations', 'true');
-    urlSearchParams.append('includeInactive', 'false');
-    urlSearchParams.append('totalCount', 'true');
-    appendLocationFilter(urlSearchParams, sessionLocation, shouldFilterByLocation);
-    urlSearchParams.append('limit', '1');
-
-    return `${restBaseUrl}/visit?v=${VISIT_CUSTOM_REPRESENTATION}&${urlSearchParams.toString()}`;
-  }, [sessionLocation, shouldFilterByLocation]);
+  const visitsUrl = useMemo(
+    () =>
+      buildScoreboardVisitsUrl({
+        sessionLocation,
+        shouldFilterByLocation,
+        assignedQueueAttributeTypeUuid,
+        includeInactive: false,
+        totalCount: true,
+        limit: 1,
+        representation: 'custom:(uuid)',
+      }),
+    [sessionLocation, shouldFilterByLocation, assignedQueueAttributeTypeUuid],
+  );
 
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(visitsUrl, openmrsFetch);
 
@@ -282,34 +251,26 @@ export const useActiveVisitsCount = () => {
 
 // Hook to get count of all completed visits from today (for card display)
 export const useTotalVisitsCount = () => {
-  const session = useSession();
-  const sessionLocation = session?.sessionLocation?.uuid;
-  const { isMruLocation, isLocationTagLoading, locationTagError } = useMruLocationState();
+  const { sessionLocation, shouldFilterByLocation, assignedQueueAttributeTypeUuid } = useScoreboardLocationFilter();
   const startDate = dayjs().format('YYYY-MM-DD');
-  const shouldFilterByLocation = getShouldFilterByLocation(isMruLocation, isLocationTagLoading, locationTagError);
 
-  const visitsUrl = useMemo(() => {
-    if (!sessionLocation) {
-      return null;
-    }
-
-    const urlSearchParams = new URLSearchParams();
-    urlSearchParams.append('includeInactive', 'true');
-    urlSearchParams.append('includeParentLocations', 'true');
-    urlSearchParams.append('v', VISIT_CUSTOM_REPRESENTATION);
-    urlSearchParams.append('fromStartDate', startDate);
-    appendLocationFilter(urlSearchParams, sessionLocation, shouldFilterByLocation);
-    appendMruFetchLimit(urlSearchParams, shouldFilterByLocation);
-
-    return `${restBaseUrl}/visit?${urlSearchParams.toString()}`;
-  }, [sessionLocation, startDate, shouldFilterByLocation]);
+  const visitsUrl = useMemo(
+    () =>
+      buildScoreboardVisitsUrl({
+        sessionLocation,
+        shouldFilterByLocation,
+        assignedQueueAttributeTypeUuid,
+        includeInactive: true,
+        fromStartDate: startDate,
+        limit: MRU_VISITS_FETCH_LIMIT,
+        representation: 'custom:(uuid,stopDatetime)',
+      }),
+    [sessionLocation, startDate, shouldFilterByLocation, assignedQueueAttributeTypeUuid],
+  );
 
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }>(visitsUrl, openmrsFetch);
 
-  const completedTodayCount =
-    data?.data?.results?.filter((visit) => {
-      return !!visit.stopDatetime;
-    }).length ?? 0;
+  const completedTodayCount = data?.data?.results?.filter((visit) => Boolean(visit.stopDatetime)).length ?? 0;
 
   return {
     count: completedTodayCount,
