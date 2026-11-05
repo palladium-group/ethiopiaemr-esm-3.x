@@ -107,7 +107,7 @@ export const Identifiers: React.FC = () => {
         });
       /*
         Identifier value should only be updated if there is any update in the
-        identifier values, otherwise, if the below 'if' clause is removed, it will
+        identifier values, otherwise,if the below 'if' clause is removed, it will
         fall into an infinite run.
       */
       if (Object.keys(identifiers).length) {
