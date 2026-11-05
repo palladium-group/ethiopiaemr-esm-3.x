@@ -1,7 +1,7 @@
 import {
   Button,
   ButtonSet,
-  Dropdown,
+  ComboBox,
   DropdownSkeleton,
   Form,
   InlineNotification,
@@ -251,17 +251,22 @@ const EthSwitchPaymentDialog: React.FC<EthSwitchPaymentDialogProps> = ({ closeMo
                 control={control}
                 name="payerDfs"
                 render={({ field }) => (
-                  <Dropdown
+                  <ComboBox
                     id="ethswitch-bank"
                     titleText={t('bank', 'Bank')}
-                    label={t('selectBank', 'Select bank')}
+                    placeholder={t('selectBank', 'Select bank')}
                     items={banks}
                     itemToString={(item) => (item ? `${item.name} (${item.BIC})` : '')}
                     selectedItem={selectedBank}
+                    shouldFilterItem={({ item, inputValue }) => {
+                      const label = item ? `${item.name} (${item.BIC})` : '';
+                      return label.toLowerCase().includes((inputValue ?? '').toLowerCase());
+                    }}
                     onChange={({ selectedItem }) => field.onChange(selectedItem?.BIC ?? '')}
                     invalid={!!errors.payerDfs}
                     invalidText={errors.payerDfs?.message}
                     disabled={formDisabled || banks.length === 0}
+                    autoAlign
                   />
                 )}
               />
