@@ -20,6 +20,7 @@ const bill = {
       amountTendered: 40,
       dateCreated: '2026-10-01T12:16:00.000Z',
       instanceType: { name: 'Cash' },
+      cashierName: 'Cashier Two',
     },
     {
       uuid: 'pay-2',
@@ -83,7 +84,7 @@ describe('buildTimelineEvents', () => {
     expect(byId['opened-bill-1']).toMatchObject({ kind: 'opened', actor: 'Cashier One' });
     expect(byId['item-li-1']).toMatchObject({ kind: 'itemAdded', name: 'Paracetamol', amount: 50, status: 'EXEMPTED' });
     expect(byId['item-li-2']).toMatchObject({ name: 'Consultation', amount: 40, actor: 'Dr Who', status: 'PAID' });
-    expect(byId['payment-pay-1']).toMatchObject({ kind: 'payment', amount: 40, detail: 'Cash' });
+    expect(byId['payment-pay-1']).toMatchObject({ kind: 'payment', amount: 40, detail: 'Cash', actor: 'Cashier Two' });
     expect(byId['closed-bill-1']).toMatchObject({ kind: 'closed', detail: 'Visit checked out', actor: 'admin' });
   });
 
