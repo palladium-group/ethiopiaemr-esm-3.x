@@ -16,6 +16,9 @@ const RedirectLogout: React.FC = () => {
         navigate({ to: config.provider.loginUrl });
       } else if (config.provider.type === 'oauth2') {
         // do nothing, do not redirect
+      } else if (isLoginEnabled) {
+        // performLogout's clearCurrentUser re-runs this effect before its own redirect, so reload here too
+        reloadToLogin();
       } else {
         navigate({ to: '${openmrsSpaBase}/login' });
       }

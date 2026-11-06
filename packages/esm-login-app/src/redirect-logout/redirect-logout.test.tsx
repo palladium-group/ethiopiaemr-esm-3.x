@@ -99,14 +99,15 @@ describe('RedirectLogout', () => {
     expect(mockReloadToLogin).not.toHaveBeenCalled();
   });
 
-  it('should redirect to login if the session is already unauthenticated', async () => {
+  it('should reload to login if the session is already unauthenticated', async () => {
     mockUseSession.mockReturnValue({
       authenticated: false,
     } as Session);
 
     render(<RedirectLogout />);
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+    expect(mockReloadToLogin).toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('should redirect to login if the application is offline', async () => {
