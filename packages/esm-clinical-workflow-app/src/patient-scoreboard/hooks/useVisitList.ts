@@ -22,7 +22,7 @@ interface PaginationParams {
 }
 
 const VISIT_CUSTOM_REPRESENTATION =
-  'custom:(uuid,patient:(uuid,identifiers:(identifier,uuid),person:(age,display,gender,uuid)),visitType:(uuid,name,display),location:(uuid,name,display),startDatetime,stopDatetime)';
+  'custom:(uuid,patient:(uuid,identifiers:(identifier,uuid),person:(age,display,gender,uuid)),visitType:(uuid,name,display),location:(uuid,name,display),attributes:(uuid,value,attributeType:(uuid)),startDatetime,stopDatetime)';
 
 const LOCATION_TAGS_REPRESENTATION = 'custom:(uuid,tags:(uuid,display))';
 
