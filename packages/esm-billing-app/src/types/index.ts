@@ -307,6 +307,8 @@ export interface Payment {
   amountTendered: number;
   dateCreated: number;
   voided: boolean;
+  /** Who took the payment */
+  cashierName?: string;
   resourceVersion: string;
 }
 

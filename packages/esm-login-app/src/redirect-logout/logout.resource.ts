@@ -17,3 +17,9 @@ export async function performLogout() {
     // do nothing, silence the user-visible error
   }
 }
+
+// A full page load drops in-memory frontend state from the previous user. The pinned core
+// (10.0.1-pre.5263) leaks one user's extension display conditions into the next login otherwise.
+export function reloadToLogin() {
+  window.location.assign(`${window.getOpenmrsSpaBase()}login`);
+}

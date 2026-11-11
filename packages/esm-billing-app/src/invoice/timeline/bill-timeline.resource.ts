@@ -89,6 +89,7 @@ export function buildTimelineEvents(bill: MappedBill, details?: BillTimelineDeta
           date,
           detail: payment.instanceType?.name,
           amount: payment.amountTendered,
+          actor: payment.cashierName,
         });
       }
     });
