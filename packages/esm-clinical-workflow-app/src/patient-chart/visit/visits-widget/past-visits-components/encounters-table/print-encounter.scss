@@ -1,0 +1,53 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.preview {
+  background: colors.$white;
+  color: colors.$gray-100;
+  padding: layout.$spacing-05;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  border-block-end: 1px solid colors.$gray-20;
+  margin-block-end: layout.$spacing-05;
+  padding-block-end: layout.$spacing-05;
+}
+
+.title {
+  @include type.type-style('heading-compact-02');
+  margin: 0 0 layout.$spacing-03;
+}
+
+.meta {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin: 0 0 layout.$spacing-02;
+}
+
+.patientBlock {
+  text-align: end;
+}
+
+.patientName {
+  @include type.type-style('heading-compact-01');
+  margin: 0 0 layout.$spacing-02;
+}
+
+@media print {
+  @page {
+    size: auto;
+    margin: layout.$spacing-08;
+  }
+
+  .preview {
+    padding: 0;
+  }
+
+  .header {
+    break-inside: avoid;
+  }
+}

@@ -184,6 +184,11 @@ export const queueTableActionsColumn = getAsyncLifecycle(
 
 export const assignQueueRoomModal = getSyncLifecycle(AssignQueueRoomModal, options);
 
+export const printEncounterModal = getAsyncLifecycle(
+  () => import('./patient-chart/visit/visits-widget/past-visits-components/encounters-table/print-encounter.modal'),
+  options,
+);
+
 export const triageQueueAssignmentModal = getAsyncLifecycle(
   () => import('./triage/triage-queue-assignment.modal'),
   options,
