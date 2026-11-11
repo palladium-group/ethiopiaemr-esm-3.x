@@ -205,6 +205,7 @@
   "variableDoseNoon": "Noon{{unitSuffix}}",
   "variableDoseSchedule": "Dose schedule",
   "variablePattern": "Pattern",
+  "variablePatternBid": "2 times daily (BID)",
   "variablePatternQ6h": "4 times daily (Q6H)",
   "variablePatternTid": "3 times daily (TID)",
   "variableValidationError": "Complete route, dose unit, all dose slots, and prescription duration before saving.",
