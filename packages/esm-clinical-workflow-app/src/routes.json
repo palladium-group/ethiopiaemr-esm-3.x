@@ -383,6 +383,10 @@
     {
       "name": "triage-queue-assignment-modal",
       "component": "triageQueueAssignmentModal"
+    },
+    {
+      "name": "print-encounter-modal",
+      "component": "printEncounterModal"
     }
   ]
 }
