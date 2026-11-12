@@ -73,18 +73,7 @@ export function createInitialTaperingState(defaultDurationUnit?: DurationUnit | 
   };
 }
 
-export type VariablePattern = 'bid' | 'tid' | 'q6h';
-
-export const VARIABLE_PATTERNS: Array<VariablePattern> = ['bid', 'tid', 'q6h'];
-
-export function isVariablePattern(value: unknown): value is VariablePattern {
-  return VARIABLE_PATTERNS.includes(value as VariablePattern);
-}
-
-export type VariableBidDoses = {
-  morning: number | null;
-  evening: number | null;
-};
+export type VariablePattern = 'tid' | 'q6h';
 
 export type VariableTidDoses = {
   morning: number | null;
@@ -103,7 +92,6 @@ export type VariableDosingState = {
   route: MedicationRoute | null;
   unit: DosingUnit | null;
   pattern: VariablePattern;
-  bidDoses: VariableBidDoses;
   tidDoses: VariableTidDoses;
   q6hDoses: VariableQ6hDoses;
 };
@@ -113,13 +101,12 @@ export function createInitialVariableState(): VariableDosingState {
     route: null,
     unit: null,
     pattern: 'tid',
-    bidDoses: { morning: null, evening: null },
     tidDoses: { morning: null, noon: null, evening: null },
     q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
   };
 }
 
-export type VariableSlotKey = keyof VariableBidDoses | keyof VariableTidDoses | keyof VariableQ6hDoses;
+export type VariableSlotKey = keyof VariableTidDoses | keyof VariableQ6hDoses;
 
 export type VariableSlotFieldErrors = {
   dose?: string;
@@ -153,7 +140,6 @@ export type HybridPhase = {
   duration: number | null;
   durationUnit: DurationUnit | null;
   pattern: VariablePattern;
-  bidDoses: VariableBidDoses;
   tidDoses: VariableTidDoses;
   q6hDoses: VariableQ6hDoses;
 };
@@ -178,7 +164,6 @@ export function createEmptyHybridPhase(defaultDurationUnit?: DurationUnit | null
     duration: null,
     durationUnit: defaultDurationUnit ?? null,
     pattern: 'tid',
-    bidDoses: { morning: null, evening: null },
     tidDoses: { morning: null, noon: null, evening: null },
     q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
   };
