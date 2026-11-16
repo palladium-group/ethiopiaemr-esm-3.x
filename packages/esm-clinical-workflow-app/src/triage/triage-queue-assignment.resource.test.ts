@@ -79,4 +79,66 @@ describe('setAssignedQueueVisitAttribute', () => {
 
     expect(mockedOpenmrsFetch).not.toHaveBeenCalled();
   });
+
+  it('updates the existing attribute when the queue location changes', async () => {
+    const visit = {
+      uuid: 'visit-1',
+      attributes: [
+        { uuid: 'attr-1', attributeType: { uuid: ASSIGNED_QUEUE_ATTRIBUTE_TYPE_UUID }, value: 'general-opd' },
+      ],
+    } as unknown as Visit;
+
+    await setAssignedQueueVisitAttribute(visit, ASSIGNED_QUEUE_ATTRIBUTE_TYPE_UUID, 'orthopedic');
+
+    expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/visit/visit-1`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          attributes: [
+            {
+              uuid: 'attr-1',
+              attributeType: ASSIGNED_QUEUE_ATTRIBUTE_TYPE_UUID,
+              value: 'orthopedic',
+            },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it('fetches visit attributes if not provided on the visit object', async () => {
+    mockedOpenmrsFetch.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        uuid: 'visit-1',
+        attributes: [
+          { uuid: 'attr-old', attributeType: { uuid: ASSIGNED_QUEUE_ATTRIBUTE_TYPE_UUID }, value: 'general-opd' },
+        ],
+      },
+    } as never);
+
+    const visit = { uuid: 'visit-1' } as unknown as Visit;
+
+    await setAssignedQueueVisitAttribute(visit, ASSIGNED_QUEUE_ATTRIBUTE_TYPE_UUID, 'orthopedic');
+
+    expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/visit/visit-1?v=custom:(uuid,attributes:(uuid,value,attributeType:(uuid)))'),
+    );
+    expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/visit/visit-1`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          attributes: [
+            {
+              uuid: 'attr-old',
+              attributeType: ASSIGNED_QUEUE_ATTRIBUTE_TYPE_UUID,
+              value: 'orthopedic',
+            },
+          ],
+        }),
+      }),
+    );
+  });
 });

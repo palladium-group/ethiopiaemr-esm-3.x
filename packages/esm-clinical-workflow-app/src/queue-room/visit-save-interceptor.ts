@@ -19,9 +19,19 @@ export interface VisitStopDetails {
 
 export type VisitStopListener = (details: VisitStopDetails) => void | Promise<void>;
 
+export interface QueueTransitionDetails {
+  queueEntryToTransition?: string;
+  newQueue: string;
+  patientUuid?: string;
+  visitUuid?: string;
+}
+
+export type QueueTransitionListener = (details: QueueTransitionDetails) => void | Promise<void>;
+
 const visitSaveListeners = new Set<VisitSaveListener>();
 const appointmentCheckInListeners = new Set<AppointmentCheckInListener>();
 const visitStopListeners = new Set<VisitStopListener>();
+const queueTransitionListeners = new Set<QueueTransitionListener>();
 let originalFetch: typeof window.fetch | null = null;
 let isPatched = false;
 
@@ -77,6 +87,11 @@ export function isAppointmentEndpoint(pathname: string): boolean {
   return normalized.includes('/ws/rest/v1/appointment') || normalized.includes('/appointment');
 }
 
+export function isQueueTransitionEndpoint(pathname: string): boolean {
+  const normalized = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  return normalized.endsWith('/queue-entry/transition');
+}
+
 export function isCheckedInPayload(payload: unknown): boolean {
   if (!payload || typeof payload !== 'object') {
     return false;
@@ -130,7 +145,12 @@ function notify<T>(listeners: Set<(details: T) => void | Promise<void>>, details
 async function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const response = await originalFetch!.call(window, input, init);
 
-  if (visitSaveListeners.size > 0 || appointmentCheckInListeners.size > 0 || visitStopListeners.size > 0) {
+  if (
+    visitSaveListeners.size > 0 ||
+    appointmentCheckInListeners.size > 0 ||
+    visitStopListeners.size > 0 ||
+    queueTransitionListeners.size > 0
+  ) {
     try {
       const url = getRequestUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -212,6 +232,33 @@ async function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
           notify(appointmentCheckInListeners, { patientUuid, appointmentUuid });
         }
       }
+
+      // Handle Queue Transition (POST to /queue-entry/transition with newQueue)
+      if (
+        queueTransitionListeners.size > 0 &&
+        method === 'POST' &&
+        isQueueTransitionEndpoint(pathname) &&
+        response.ok
+      ) {
+        const recordBody = reqBody as Record<string, unknown> | null;
+        const newQueue = typeof recordBody?.newQueue === 'string' ? recordBody.newQueue : undefined;
+
+        if (newQueue) {
+          const res = (await response
+            .clone()
+            .json()
+            .catch(() => null)) as Record<string, unknown> | null;
+          const extractUuid = (val: unknown) => (typeof val === 'string' ? val : (val as { uuid?: string })?.uuid);
+
+          notify(queueTransitionListeners, {
+            queueEntryToTransition:
+              typeof recordBody?.queueEntryToTransition === 'string' ? recordBody.queueEntryToTransition : undefined,
+            newQueue,
+            patientUuid: extractPatientUuidFromPayload(res) ?? undefined,
+            visitUuid: extractUuid(res?.visit),
+          });
+        }
+      }
     } catch {
       // Never break unrelated fetch calls.
     }
@@ -237,7 +284,8 @@ function checkAndRestoreFetch() {
     isPatched &&
     visitSaveListeners.size === 0 &&
     appointmentCheckInListeners.size === 0 &&
-    visitStopListeners.size === 0
+    visitStopListeners.size === 0 &&
+    queueTransitionListeners.size === 0
   ) {
     if (originalFetch) {
       window.fetch = originalFetch;
@@ -294,6 +342,23 @@ export function installAppointmentCheckInInterceptor(listener: AppointmentCheckI
 
   return () => {
     appointmentCheckInListeners.delete(listener);
+    checkAndRestoreFetch();
+  };
+}
+
+/**
+ * Observes successful queue transitions when a patient is moved to a new queue.
+ * Supports multiple subscribers.
+ */
+export function installQueueTransitionInterceptor(listener: QueueTransitionListener): () => void {
+  if (!ensureFetchPatched()) {
+    return () => undefined;
+  }
+
+  queueTransitionListeners.add(listener);
+
+  return () => {
+    queueTransitionListeners.delete(listener);
     checkAndRestoreFetch();
   };
 }

@@ -2,11 +2,13 @@ import {
   installVisitSaveInterceptor,
   installAppointmentCheckInInterceptor,
   installVisitStopInterceptor,
+  installQueueTransitionInterceptor,
   isVisitCreateEndpoint,
   extractVisitUuidFromPathname,
   isVisitStopEndpoint,
   isVisitStopPayload,
   isAppointmentEndpoint,
+  isQueueTransitionEndpoint,
   isCheckedInPayload,
   extractPatientUuidFromPayload,
 } from './visit-save-interceptor';
@@ -46,6 +48,13 @@ describe('visit-save-interceptor helpers', () => {
     expect(isAppointmentEndpoint('/ws/rest/v1/appointment/123-uuid')).toBe(true);
     expect(isAppointmentEndpoint('/openmrs/ws/rest/v1/appointment/123-uuid/')).toBe(true);
     expect(isAppointmentEndpoint('/openmrs/ws/rest/v1/patient')).toBe(false);
+  });
+
+  it('identifies queue transition endpoints accurately', () => {
+    expect(isQueueTransitionEndpoint('/ws/rest/v1/queue-entry/transition')).toBe(true);
+    expect(isQueueTransitionEndpoint('/openmrs/ws/rest/v1/queue-entry/transition/')).toBe(true);
+    expect(isQueueTransitionEndpoint('/openmrs/ws/rest/v1/queue-entry')).toBe(false);
+    expect(isQueueTransitionEndpoint('/openmrs/ws/rest/v1/queue')).toBe(false);
   });
 
   it('identifies CheckedIn payload accurately', () => {
@@ -353,5 +362,91 @@ describe('installVisitStopInterceptor', () => {
 
     expect(listener).not.toHaveBeenCalled();
     uninstall();
+  });
+
+  describe('installQueueTransitionInterceptor', () => {
+    it('notifies listeners when a queue transition is posted with newQueue', async () => {
+      underlyingFetch.mockResolvedValueOnce({
+        ok: true,
+        clone: () => ({
+          json: () =>
+            Promise.resolve({
+              uuid: 'new-entry-uuid',
+              patient: { uuid: 'patient-abc' },
+              visit: { uuid: 'visit-123' },
+            }),
+        }),
+      } as unknown as Response);
+
+      const listener = jest.fn();
+      const uninstall = installQueueTransitionInterceptor(listener);
+
+      await window.fetch('/openmrs/ws/rest/v1/queue-entry/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          queueEntryToTransition: 'old-entry-uuid',
+          newQueue: 'new-queue-uuid',
+          newStatus: 'status-uuid',
+        }),
+      });
+
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queueEntryToTransition: 'old-entry-uuid',
+          newQueue: 'new-queue-uuid',
+          patientUuid: 'patient-abc',
+          visitUuid: 'visit-123',
+        }),
+      );
+
+      uninstall();
+    });
+
+    it('ignores queue transitions without newQueue', async () => {
+      underlyingFetch.mockResolvedValueOnce({
+        ok: true,
+        clone: () => ({
+          json: () => Promise.resolve({ uuid: 'entry-uuid' }),
+        }),
+      } as unknown as Response);
+
+      const listener = jest.fn();
+      const uninstall = installQueueTransitionInterceptor(listener);
+
+      await window.fetch('/openmrs/ws/rest/v1/queue-entry/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          queueEntryToTransition: 'entry-uuid',
+          newStatus: 'new-status-uuid',
+        }),
+      });
+
+      expect(listener).not.toHaveBeenCalled();
+      uninstall();
+    });
+
+    it('ignores failed queue transition requests', async () => {
+      underlyingFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+      } as unknown as Response);
+
+      const listener = jest.fn();
+      const uninstall = installQueueTransitionInterceptor(listener);
+
+      await window.fetch('/openmrs/ws/rest/v1/queue-entry/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          queueEntryToTransition: 'old-entry-uuid',
+          newQueue: 'new-queue-uuid',
+        }),
+      });
+
+      expect(listener).not.toHaveBeenCalled();
+      uninstall();
+    });
   });
 });
