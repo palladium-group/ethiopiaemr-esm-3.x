@@ -239,6 +239,55 @@ describe('getTemplateOrderBasketItem', () => {
     });
   });
 
+  it('leaves unit unset when the template lists units but none is the default', () => {
+    const template = createDrugOrderTemplate({
+      ...baseOrderTemplate,
+      dosingInstructions: {
+        ...baseOrderTemplate.dosingInstructions,
+        unit: [
+          { value: 'International units', valueCoded: '162264AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+          { value: 'Ampule(s)', valueCoded: '162335AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+        ],
+      },
+    } as OrderTemplate);
+
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null, undefined, template);
+
+    expect(result.unit).toBeNull();
+    expect(result.quantityUnits).toBeNull();
+  });
+
+  it('leaves unit unset for a single template unit that is not flagged default', () => {
+    const template = createDrugOrderTemplate({
+      ...baseOrderTemplate,
+      dosingInstructions: {
+        ...baseOrderTemplate.dosingInstructions,
+        unit: [{ value: 'Capsule', valueCoded: '1608AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' }],
+      },
+    } as OrderTemplate);
+
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null, undefined, template);
+
+    expect(result.unit).toBeNull();
+  });
+
+  it('uses the flagged unit even when it is not the first in the list', () => {
+    const template = createDrugOrderTemplate({
+      ...baseOrderTemplate,
+      dosingInstructions: {
+        ...baseOrderTemplate.dosingInstructions,
+        unit: [
+          { value: 'International units', valueCoded: '162264AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+          { value: 'Ampule(s)', valueCoded: '162335AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', default: true },
+        ],
+      },
+    } as OrderTemplate);
+
+    const result = getTemplateOrderBasketItem(drugWithTabletDosageForm, null, undefined, template);
+
+    expect(result.unit?.valueCoded).toBe('162335AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+  });
+
   it('falls back to drug dosage form when template has no unit list', () => {
     const template = createDrugOrderTemplate(baseOrderTemplate);
 
