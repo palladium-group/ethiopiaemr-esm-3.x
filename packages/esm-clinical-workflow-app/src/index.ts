@@ -43,6 +43,7 @@ import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
 import AssignQueueRoomModal from './queue-room/assign-queue-room.modal';
 import AppointmentCheckInQueueHandler from './queue-room/appointment-checkin-queue-handler.component';
 import { subscribeAppointmentCheckInQueueSync } from './queue-room/appointment-checkin-queue-sync';
+import { subscribeQueueTransitionSync } from './queue-room/queue-transition-sync';
 import {
   completePatientCheckedInAppointments,
   subscribeVisitCheckoutAppointmentSync,
@@ -91,6 +92,7 @@ export function startupApp() {
   subscribeDischargeInSlotSync();
   subscribeAppointmentCheckInQueueSync();
   subscribeVisitCheckoutAppointmentSync();
+  subscribeQueueTransitionSync();
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
@@ -296,4 +298,4 @@ export const patientOrdersTable = getAsyncLifecycle(
   () => import('./patient-orders/orders-table/patient-orders-table.component'),
   options,
 );
-export { completePatientCheckedInAppointments, subscribeVisitCheckoutAppointmentSync };
+export { completePatientCheckedInAppointments, subscribeVisitCheckoutAppointmentSync, subscribeQueueTransitionSync };
