@@ -84,6 +84,8 @@ export interface LineItem {
   auditInfo?: { dateCreated?: string };
   /** The urgency of the order the item was billed for; only in the full representation. */
   orderUrgency?: string;
+  /** What is still owed on the item after payments and applied deposits. */
+  balance?: number;
 }
 
 interface PatientLink {

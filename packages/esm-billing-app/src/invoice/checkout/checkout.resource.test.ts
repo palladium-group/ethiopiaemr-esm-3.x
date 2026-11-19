@@ -54,6 +54,14 @@ describe('buildPaymentGroups', () => {
     expect(groups[0].lineItems.map((lineItem) => lineItem.uuid)).toEqual(['l1', 'l5']);
   });
 
+  it('asks only for what a partly paid line item still owes', () => {
+    const partlyPaid = { ...line('l1', 'consultation', 40), balance: 15 } as LineItem;
+
+    const groups = buildPaymentGroups([partlyPaid, line('l5', 'consultation', 15, 2)], methodOf);
+
+    expect(groups).toEqual([expect.objectContaining({ methodUuid: 'cash', amount: 45 })]);
+  });
+
   it('groups items without a configured price under a null method', () => {
     const groups = buildPaymentGroups([line('l3', 'unpriced', 10)], methodOf);
 

@@ -5,6 +5,7 @@ import { restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import { mutate } from 'swr';
 import { type BillDepositTransaction } from '../../types/bill-deposit.types';
 import { reverseTransaction } from '../../utils/bill-deposit.utils';
+import { extractErrorMessagesFromResponse } from '../../../../utils';
 
 type ReverseTransactionModalProps = {
   onClose: () => void;
@@ -18,26 +19,31 @@ const ReverseTransactionModal: React.FC<ReverseTransactionModalProps> = ({ onClo
 
   const handleReverse = async () => {
     setIsLoading(true);
-    const response = await reverseTransaction(depositUuid, transaction.uuid);
-    if (response.status === 204) {
+    try {
+      await reverseTransaction(depositUuid, transaction.uuid);
       showSnackbar({
         title: t('success', 'Success'),
         kind: 'success',
         subtitle: t('transactionReversed', 'Transaction reversed successfully'),
       });
-      mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/cashier/deposit`), undefined, {
-        revalidate: true,
-      });
-
+      // the line item the deposit was applied to changes too
+      mutate(
+        (key) =>
+          typeof key === 'string' &&
+          (key.startsWith(`${restBaseUrl}/cashier/deposit`) || key.startsWith(`${restBaseUrl}/cashier/bill`)),
+        undefined,
+        { revalidate: true },
+      );
       onClose();
-    } else {
+    } catch (error) {
       showSnackbar({
-        title: t('error', 'Error'),
+        title: t('transactionReverseError', 'Error reversing transaction'),
         kind: 'error',
-        subtitle: t('transactionReverseError', 'Error reversing transaction'),
+        subtitle: error?.responseBody ? extractErrorMessagesFromResponse(error.responseBody) : error?.message,
       });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
