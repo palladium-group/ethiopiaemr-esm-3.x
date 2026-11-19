@@ -311,6 +311,8 @@ export interface Payment {
   voided: boolean;
   /** Who took the payment */
   cashierName?: string;
+  /** The line items the payment was applied to. */
+  allocations?: Array<{ lineItem: string; amount: number }>;
   resourceVersion: string;
 }
 

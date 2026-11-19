@@ -1,5 +1,5 @@
 import React from 'react';
-import { ModalHeader, ModalBody, ModalFooter, Button } from '@carbon/react';
+import { ModalHeader, ModalBody, ModalFooter, Button, TextInput } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import { mutate } from 'swr';
@@ -16,11 +16,12 @@ type ReverseTransactionModalProps = {
 const ReverseTransactionModal: React.FC<ReverseTransactionModalProps> = ({ onClose, depositUuid, transaction }) => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [reason, setReason] = React.useState('');
 
   const handleReverse = async () => {
     setIsLoading(true);
     try {
-      await reverseTransaction(depositUuid, transaction.uuid);
+      await reverseTransaction(depositUuid, transaction.uuid, reason.trim());
       showSnackbar({
         title: t('success', 'Success'),
         kind: 'success',
@@ -49,12 +50,20 @@ const ReverseTransactionModal: React.FC<ReverseTransactionModalProps> = ({ onClo
   return (
     <div>
       <ModalHeader closeModal={onClose}>{t('reverseTransaction', 'Reverse Transaction')}</ModalHeader>
-      <ModalBody>{t('reverseTransactionConfirmation', 'Are you sure you want to reverse this transaction?')}</ModalBody>
+      <ModalBody>
+        <p>{t('reverseTransactionConfirmation', 'Are you sure you want to reverse this transaction?')}</p>
+        <TextInput
+          id="reverseTransactionReason"
+          labelText={t('reverseTransactionReason', 'Reason for reversing')}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+        />
+      </ModalBody>
       <ModalFooter>
         <Button kind="secondary" onClick={onClose}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={handleReverse} disabled={isLoading}>
+        <Button kind="danger" onClick={handleReverse} disabled={isLoading || !reason.trim()}>
           {t('reverse', 'Reverse')}
         </Button>
       </ModalFooter>
