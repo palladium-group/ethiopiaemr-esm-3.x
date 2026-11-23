@@ -4,9 +4,12 @@ import { Type } from '@openmrs/esm-framework';
 const HISTOPATHOLOGY_REQUEST_FORM_UUID = 'a2b3c4d5-2222-4a2b-8c3d-0e1f2a3b4c5d';
 /** Cytopathology Request Form UUID. */
 const CYTOPATHOLOGY_REQUEST_FORM_UUID = 'a3b4c5d6-3333-4a2b-8c3d-0e1f2a3b4c5d';
+/** Hematopathology Request Form UUID. */
+const HEMATOPATHOLOGY_REQUEST_FORM_UUID = 'a4c5d6e7-4444-4a2b-8c3d-0e1f2a3b4c5d';
 
 const HISTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID = 'c2000010-2222-4a2b-8c3d-0e1f2a3b4c10';
 const CYTOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID = 'c3000010-3333-4a2b-8c3d-0e1f2a3b4c10';
+const HEMATOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID = 'c5000010-5555-4a2b-8c3d-0e1f2a3b4c10';
 
 const BIOPSY_ANSWER_UUID = 'c2000001-2222-4a2b-8c3d-0e1f2a3b4c01';
 const FROZEN_SECTION_ANSWER_UUID = 'c2000005-2222-4a2b-8c3d-0e1f2a3b4c05';
@@ -14,6 +17,9 @@ const FNAC_ANSWER_UUID = 'c3000001-3333-4a2b-8c3d-0e1f2a3b4c01';
 const FLUID_ANSWER_UUID = 'c3000002-3333-4a2b-8c3d-0e1f2a3b4c02';
 const PAP_ANSWER_UUID = 'c3000003-3333-4a2b-8c3d-0e1f2a3b4c03';
 const IMAGE_GUIDED_FNAC_ANSWER_UUID = 'c3000004-3333-4a2b-8c3d-0e1f2a3b4c04';
+const PERIPHERAL_MORPHOLOGY_ANSWER_UUID = 'c5000001-5555-4a2b-8c3d-0e1f2a3b4c01';
+const BONE_MARROW_ASPIRATE_ANSWER_UUID = 'c5000002-5555-4a2b-8c3d-0e1f2a3b4c02';
+const FLOW_CYTOMETRY_ANSWER_UUID = 'c5000003-5555-4a2b-8c3d-0e1f2a3b4c03';
 
 const HISTOPATHOLOGY_ORDER_CONCEPT_UUID = 'b1a7f0c2-9d34-4e51-8a26-1c2d3e4f5a60';
 const FROZEN_SECTION_ORDER_CONCEPT_UUID = 'b1a7f0c4-9d34-4e51-8a26-1c2d3e4f5a62';
@@ -21,6 +27,9 @@ const FNAC_ORDER_CONCEPT_UUID = 'b2a8f1c3-9e45-4f62-9b37-2d3e4f5a6b71';
 const IMAGE_GUIDED_FNAC_ORDER_CONCEPT_UUID = 'b2a8f1c4-9e45-4f62-9b37-2d3e4f5a6b72';
 const FLUID_ORDER_CONCEPT_UUID = 'b2a8f1c5-9e45-4f62-9b37-2d3e4f5a6b73';
 const PAP_ORDER_CONCEPT_UUID = 'b2a8f1c6-9e45-4f62-9b37-2d3e4f5a6b74';
+const PERIPHERAL_MORPHOLOGY_ORDER_CONCEPT_UUID = 'b1a7f0c3-9d34-4e51-8a26-1c2d3e4f5a61';
+const BONE_MARROW_ASPIRATE_ORDER_CONCEPT_UUID = 'b3a9f2c1-9f56-4a73-8c48-3e4f5a6b7c81';
+const FLOW_CYTOMETRY_ORDER_CONCEPT_UUID = 'b3a9f2c2-9f56-4a73-8c48-3e4f5a6b7c82';
 
 export const configSchema = {
   /**
@@ -95,6 +104,23 @@ export const configSchema = {
           { answerConceptUuid: PAP_ANSWER_UUID, orderConceptUuid: PAP_ORDER_CONCEPT_UUID },
         ],
       },
+      {
+        id: 'hematopathology',
+        label: 'Hematopathology',
+        formUuid: HEMATOPATHOLOGY_REQUEST_FORM_UUID,
+        sampleTypeConceptUuid: HEMATOPATHOLOGY_SAMPLE_TYPE_CONCEPT_UUID,
+        sampleTypeToOrderConcept: [
+          {
+            answerConceptUuid: PERIPHERAL_MORPHOLOGY_ANSWER_UUID,
+            orderConceptUuid: PERIPHERAL_MORPHOLOGY_ORDER_CONCEPT_UUID,
+          },
+          {
+            answerConceptUuid: BONE_MARROW_ASPIRATE_ANSWER_UUID,
+            orderConceptUuid: BONE_MARROW_ASPIRATE_ORDER_CONCEPT_UUID,
+          },
+          { answerConceptUuid: FLOW_CYTOMETRY_ANSWER_UUID, orderConceptUuid: FLOW_CYTOMETRY_ORDER_CONCEPT_UUID },
+        ],
+      },
     ],
   },
   careSettingUuid: {
@@ -113,6 +139,12 @@ export const configSchema = {
     _description:
       'Concept set (Cytology Result Form) whose members are the cytology result fields rendered on the Pathology Results dashboard.',
     _default: 'c4000020-4444-4a2b-8c3d-0e1f2a3b4c20',
+  },
+  hematopathologyResultConceptSetUuid: {
+    _type: Type.UUID,
+    _description:
+      'Concept set (Hematopathology Result Form) whose members are the hematopathology result fields rendered on the Pathology Results dashboard.',
+    _default: 'c4000030-4444-4a2b-8c3d-0e1f2a3b4c30',
   },
 };
 
@@ -136,4 +168,5 @@ export interface PathologyConfig {
   careSettingUuid: string;
   pathologyResultConceptSetUuid: string;
   cytologyResultConceptSetUuid: string;
+  hematopathologyResultConceptSetUuid: string;
 }

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-export type ResultKind = 'pathology' | 'cytology';
+export type ResultKind = 'pathology' | 'cytology' | 'hematopathology';
 
 export type ResultConceptMember = {
   uuid: string;
@@ -57,7 +57,7 @@ type ResultConceptSetInput = {
 };
 
 /**
- * Loads members of pathology/cytology result-form concept sets, tagged by result kind.
+ * Loads members of pathology/cytology/hematopathology result-form concept sets, tagged by result kind.
  */
 export function useResultConceptSetMembers(conceptSets: Array<ResultConceptSetInput>) {
   const sets = (conceptSets ?? []).filter((set) => set?.uuid);
@@ -153,10 +153,19 @@ export function usePathologyResultObservations(patientUuid: string, members: Arr
   };
 }
 
-function resolveResultKind(observations: Array<PathologyResultObservation>): ResultKind {
-  const pathologyCount = observations.filter((obs) => obs.resultKind === 'pathology').length;
-  const cytologyCount = observations.filter((obs) => obs.resultKind === 'cytology').length;
-  return cytologyCount > pathologyCount ? 'cytology' : 'pathology';
+/** The kind most observations in an encounter belong to (ties keep the earlier kind: pathology first). */
+export function resolveResultKind(observations: Array<PathologyResultObservation>): ResultKind {
+  const kinds: Array<ResultKind> = ['pathology', 'cytology', 'hematopathology'];
+  let best: ResultKind = 'pathology';
+  let bestCount = 0;
+  for (const kind of kinds) {
+    const count = observations.filter((obs) => obs.resultKind === kind).length;
+    if (count > bestCount) {
+      best = kind;
+      bestCount = count;
+    }
+  }
+  return best;
 }
 
 function groupObservationsByEncounter(

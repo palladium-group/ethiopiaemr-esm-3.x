@@ -66,7 +66,8 @@ const ResultObservations: React.FC<{ observations: Array<PathologyResultObservat
 const PathologyResults: React.FC<PathologyResultsProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { pathologyResultConceptSetUuid, cytologyResultConceptSetUuid } = useConfig<PathologyConfig>();
+  const { pathologyResultConceptSetUuid, cytologyResultConceptSetUuid, hematopathologyResultConceptSetUuid } =
+    useConfig<PathologyConfig>();
   const resolvedPatientUuid = patientUuid ?? patient?.id;
   const {
     members,
@@ -75,6 +76,7 @@ const PathologyResults: React.FC<PathologyResultsProps> = ({ patient, patientUui
   } = useResultConceptSetMembers([
     { uuid: pathologyResultConceptSetUuid, resultKind: 'pathology' },
     { uuid: cytologyResultConceptSetUuid, resultKind: 'cytology' },
+    { uuid: hematopathologyResultConceptSetUuid, resultKind: 'hematopathology' },
   ]);
   const { encounterGroups, error, isLoading, isValidating } = usePathologyResultObservations(
     resolvedPatientUuid,
@@ -121,6 +123,8 @@ const PathologyResults: React.FC<PathologyResultsProps> = ({ patient, patientUui
                   const resultLabel =
                     group?.resultKind === 'cytology'
                       ? t('cytologyResultsTitle', 'Cytology Results')
+                      : group?.resultKind === 'hematopathology'
+                      ? t('hematopathologyResultsTitle', 'Hematopathology Results')
                       : t('pathologyResultsTitle', 'Pathology Results');
                   const datetime = group?.encounterDatetime ? formatDatetime(parseDate(group.encounterDatetime)) : '—';
 
