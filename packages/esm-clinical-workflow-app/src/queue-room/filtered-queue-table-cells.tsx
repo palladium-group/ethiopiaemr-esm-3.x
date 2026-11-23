@@ -18,7 +18,7 @@ const defaultColumnHeaders: Record<string, string> = {
   priority: 'Priority',
   status: 'Status',
   'transfer-status': 'Linkage',
-  'room-assignment': 'Room',
+  'room-assignment': 'Desk',
   queue: 'Queue',
   'wait-time': 'Wait Time',
   actions: 'Actions',
