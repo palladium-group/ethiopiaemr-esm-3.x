@@ -124,6 +124,7 @@
   "dischargeConfirmedSuccessfully": "Nurse discharge confirmation recorded. Liaison can unassign the bed after bills are settled.",
   "dischargeInPatients": "Discharge in patients",
   "dischargePatient": "Discharge Patient",
+  "dischargeRequiresMainDiagnosis": "A main diagnosis must be set on the current visit before discharging a patient",
   "discontinued": "Discontinued",
   "dose": "Dose",
   "dosingInstructions": "Dosing Instructions",

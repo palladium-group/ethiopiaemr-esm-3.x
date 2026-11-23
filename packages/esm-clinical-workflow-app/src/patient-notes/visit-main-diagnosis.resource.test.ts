@@ -1,5 +1,6 @@
 import {
   collectVisitPrimaryConceptUuids,
+  visitHasMainDiagnosis,
   visitHasMainDiagnosisOnOtherEncounter,
   visitHasPrimaryDiagnosis,
   type ActiveVisitWithEncounters,
@@ -77,6 +78,54 @@ describe('visit-main-diagnosis.resource', () => {
             },
           ],
         }),
+      ).toBe(false);
+    });
+  });
+
+  describe('visitHasMainDiagnosis', () => {
+    it('returns true when any encounter has a main diagnosis', () => {
+      expect(visitHasMainDiagnosis(visit, MAIN_ATTR)).toBe(true);
+    });
+
+    it('returns false when the visit has no main diagnosis', () => {
+      expect(visitHasMainDiagnosis(null, MAIN_ATTR)).toBe(false);
+      expect(
+        visitHasMainDiagnosis(
+          {
+            uuid: 'visit-2',
+            encounters: [
+              {
+                uuid: 'enc-c',
+                diagnoses: [{ rank: 1, voided: false, diagnosis: { coded: { uuid: 'p1' } } }],
+              },
+            ],
+          },
+          MAIN_ATTR,
+        ),
+      ).toBe(false);
+    });
+
+    it('ignores a voided diagnosis even when it is flagged as main', () => {
+      expect(
+        visitHasMainDiagnosis(
+          {
+            uuid: 'visit-voided',
+            encounters: [
+              {
+                uuid: 'enc-voided',
+                diagnoses: [
+                  {
+                    rank: 1,
+                    voided: true,
+                    diagnosis: { coded: { uuid: 'voided-main' } },
+                    attributes: [{ attributeType: { uuid: MAIN_ATTR }, value: true }],
+                  },
+                ],
+              },
+            ],
+          },
+          MAIN_ATTR,
+        ),
       ).toBe(false);
     });
   });

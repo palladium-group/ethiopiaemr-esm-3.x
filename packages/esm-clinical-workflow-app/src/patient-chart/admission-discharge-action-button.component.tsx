@@ -1,9 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OverflowMenuItem } from '@carbon/react';
 import { showSnackbar, useConfig, userHasAccess, useSession, useVisit } from '@openmrs/esm-framework';
 import { useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import type { ClinicalWorkflowConfig } from '../config-schema';
+import { useActiveVisitWithEncounters, visitHasMainDiagnosis } from '../patient-notes/visit-main-diagnosis.resource';
 import { Permissions } from '../permission/permissions.constants';
 import styles from './action-button.scss';
 
@@ -14,34 +15,48 @@ interface AdmissionDischargeOverflowMenuItemProps {
 
 /**
  * Patient chart overflow action that opens the Admission Discharge form.
- * Enabled only when the patient has an active inpatient visit.
+ * Enabled only when the patient has an active inpatient visit with a main diagnosis.
  */
 const AdmissionDischargeOverflowMenuItem: React.FC<AdmissionDischargeOverflowMenuItemProps> = ({
   patient,
   closeMenu,
 }) => {
   const { t } = useTranslation();
-  const { inPatientVisitTypeUuid, inpatientDischargeFormUuid, inpatientDischargeFormName } =
+  const { inPatientVisitTypeUuid, inpatientDischargeFormUuid, inpatientDischargeFormName, visitNoteConfig } =
     useConfig<ClinicalWorkflowConfig>();
   const session = useSession();
   const patientUuid = patient?.id ?? '';
   const isDeceased = Boolean(patient?.deceasedDateTime);
   const { visitContext, patient: chartPatient } = usePatientChartStore(patientUuid);
   const { activeVisit, isLoading: isLoadingActiveVisit } = useVisit(patientUuid || null);
+  const { visitWithEncounters, isLoading: isLoadingVisitDiagnoses } = useActiveVisitWithEncounters(
+    patientUuid,
+    activeVisit?.uuid,
+  );
 
   const isInpatientVisit = Boolean(
     activeVisit?.visitType?.uuid && activeVisit.visitType.uuid === inPatientVisitTypeUuid,
   );
-  const isDischargeDisabled = isLoadingActiveVisit || !isInpatientVisit;
+  const hasMainDiagnosis = useMemo(
+    () => visitHasMainDiagnosis(visitWithEncounters, visitNoteConfig?.mainDiagnosisAttributeTypeUuid ?? ''),
+    [visitNoteConfig?.mainDiagnosisAttributeTypeUuid, visitWithEncounters],
+  );
+  const isCheckingDischarge = isLoadingActiveVisit || (isInpatientVisit && isLoadingVisitDiagnoses);
+  const isDischargeDisabled = isCheckingDischarge || !isInpatientVisit || !hasMainDiagnosis;
   const inpatientVisitRequiredMessage = t(
     'admissionDischargeRequiresInpatientVisit',
     'An active inpatient visit is required before discharging a patient',
   );
+  const mainDiagnosisRequiredMessage = t(
+    'dischargeRequiresMainDiagnosis',
+    'A main diagnosis must be set on the current visit before discharging a patient',
+  );
+  const dischargeDisabledMessage = !isInpatientVisit ? inpatientVisitRequiredMessage : mainDiagnosisRequiredMessage;
 
   const launchAdmissionDischargeForm = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
 
   const handleClick = useCallback(() => {
-    if (!isInpatientVisit) {
+    if (!isInpatientVisit || !hasMainDiagnosis) {
       return;
     }
 
@@ -72,6 +87,7 @@ const AdmissionDischargeOverflowMenuItem: React.FC<AdmissionDischargeOverflowMen
   }, [
     chartPatient,
     closeMenu,
+    hasMainDiagnosis,
     inpatientDischargeFormName,
     inpatientDischargeFormUuid,
     isInpatientVisit,
@@ -97,9 +113,9 @@ const AdmissionDischargeOverflowMenuItem: React.FC<AdmissionDischargeOverflowMen
     />
   );
 
-  if (isDischargeDisabled && !isLoadingActiveVisit) {
+  if (isDischargeDisabled && !isCheckingDischarge) {
     return (
-      <span className={styles.menuitemTooltipWrapper} title={inpatientVisitRequiredMessage}>
+      <span className={styles.menuitemTooltipWrapper} title={dischargeDisabledMessage}>
         {menuItem}
       </span>
     );
