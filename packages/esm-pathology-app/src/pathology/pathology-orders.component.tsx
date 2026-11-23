@@ -52,8 +52,12 @@ const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid,
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const canOrderPathology = userHasAccess(PATHOLOGY_ORDER_PRIVILEGE, session?.user ?? { privileges: [], roles: [] });
-  const { pathologyRequestForms, pathologyResultConceptSetUuid, cytologyResultConceptSetUuid } =
-    useConfig<PathologyConfig>();
+  const {
+    pathologyRequestForms,
+    pathologyResultConceptSetUuid,
+    cytologyResultConceptSetUuid,
+    hematopathologyResultConceptSetUuid,
+  } = useConfig<PathologyConfig>();
   const resolvedPatientUuid = patientUuid ?? patient?.id;
 
   const formUuids = useMemo(
@@ -64,6 +68,7 @@ const PathologyOrders: React.FC<PathologyOrdersProps> = ({ patient, patientUuid,
   const { members: resultConceptMembers } = useResultConceptSetMembers([
     { uuid: pathologyResultConceptSetUuid, resultKind: 'pathology' },
     { uuid: cytologyResultConceptSetUuid, resultKind: 'cytology' },
+    { uuid: hematopathologyResultConceptSetUuid, resultKind: 'hematopathology' },
   ]);
 
   const resultConceptUuids = useMemo(() => {
