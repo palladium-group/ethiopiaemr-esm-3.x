@@ -96,6 +96,17 @@
   margin: 0.5rem 0;
 }
 
+.searchResultGroup + .searchResultGroup {
+  margin-top: 1.25rem;
+}
+
+.searchResultTitle {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 @media (max-width: 48rem) {
   .dashboard {
     grid-template-columns: 1fr;

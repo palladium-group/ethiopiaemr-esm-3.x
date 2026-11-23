@@ -98,6 +98,21 @@ export function getStandaloneOrderablesSectionLabel(
   }
 }
 
+/** Search box hint: the query covers the active order type, not the highlighted category. */
+export function getOrderCatalogSearchPlaceholder(
+  orderType: OrderCatalogOrderType,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  switch (orderType) {
+    case 'radiology':
+      return t('searchRadiologyOrderables', 'Search radiology orderables');
+    case 'procedure':
+      return t('searchProcedureOrderables', 'Search procedure orderables');
+    default:
+      return t('searchLabOrderables', 'Search lab orderables');
+  }
+}
+
 function resolveTestAvailability(
   conceptUuid: string,
   availabilityLookup: BillableAvailabilityLookup,
@@ -309,6 +324,24 @@ export function filterPartitionedTests(
 
 export function hasVisiblePartitionedTests(partition: PartitionedCategoryTests): boolean {
   return partition.panels.length > 0 || partition.panelMembers.length > 0 || partition.standaloneTests.length > 0;
+}
+
+/**
+ * Categories in one order-type tab (lab, radiology, or procedure) that contain a matching orderable.
+ * A blank query matches nothing; the browse view shows the highlighted category instead.
+ */
+export function getCategoriesMatchingSearch(
+  categories: Array<CatalogCategory>,
+  searchTerm: string,
+): Array<CatalogCategory> {
+  const query = searchTerm.trim();
+  if (!query) {
+    return [];
+  }
+
+  return categories.filter((category) =>
+    hasVisiblePartitionedTests(filterPartitionedTests(partitionCategoryTests(category.tests), query)),
+  );
 }
 
 export function isConceptSelected(testUuid: string, selectedUuids: Set<string>): boolean {
