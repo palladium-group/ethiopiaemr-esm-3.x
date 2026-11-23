@@ -10,6 +10,9 @@ export const lineItemName = (lineItem: LineItem) =>
 
 export const lineItemTotal = (lineItem: LineItem) => Number(lineItem.price) * Number(lineItem.quantity);
 
+/** What is still owed on a line item; the server rejects a payment above it. */
+export const lineItemAmountDue = (lineItem: LineItem) => Number(lineItem.balance ?? lineItemTotal(lineItem));
+
 export const isPayable = (lineItem: LineItem) =>
   lineItem.paymentStatus !== PaymentStatus.PAID && lineItem.paymentStatus !== PaymentStatus.EXEMPTED;
 
@@ -52,7 +55,7 @@ export function buildPaymentGroups(
       group = { methodUuid, amount: 0, lineItems: [] };
       groups.push(group);
     }
-    group.amount += lineItemTotal(lineItem);
+    group.amount += lineItemAmountDue(lineItem);
     group.lineItems.push(lineItem);
   });
   return groups;
@@ -63,7 +66,10 @@ export function useLineItemSelection(bill: MappedBill, onChange?: (lineItems: Ar
   // The invoice page rebuilds the bill object on every render, so key the items off their content rather
   // than the array's identity. Otherwise reporting the selection upward would reset it on every render.
   const signature = (bill?.lineItems ?? [])
-    .map((lineItem) => `${lineItem.uuid}:${lineItem.paymentStatus}:${lineItem.price}:${lineItem.quantity}`)
+    .map(
+      (lineItem) =>
+        `${lineItem.uuid}:${lineItem.paymentStatus}:${lineItem.price}:${lineItem.quantity}:${lineItem.balance}`,
+    )
     .join('|');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const lineItems = useMemo(() => bill?.lineItems ?? [], [signature]);

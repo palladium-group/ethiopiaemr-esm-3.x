@@ -27,6 +27,7 @@ import {
 import { useEthSwitchRequestStatus } from '../../../hooks/useEthSwitchRequestStatus';
 import { LineItem, MappedBill, PaymentStatus } from '../../../types';
 import styles from './ethswitch-payment.scss';
+import { lineItemAmountDue } from '../../checkout/checkout.resource';
 
 const ethSwitchPaymentSchema = z
   .object({
@@ -69,7 +70,7 @@ const EthSwitchPaymentDialog: React.FC<EthSwitchPaymentDialogProps> = ({ closeMo
   const canRetryInitiate = Boolean(merchantOrderNumber) && !hasInitiated && !isWaitingForPayment && !isSettlementFailed;
   const pendingLineItems = selectedLineItems.filter((item) => item.paymentStatus === PaymentStatus.PENDING);
   const selectedLineItemsPendingAmount = pendingLineItems.reduce(
-    (curr: number, prev) => curr + Number(prev.price * prev.quantity),
+    (curr: number, prev) => curr + lineItemAmountDue(prev),
     0,
   );
 

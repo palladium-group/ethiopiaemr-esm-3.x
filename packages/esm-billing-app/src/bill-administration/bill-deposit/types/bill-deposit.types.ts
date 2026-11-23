@@ -23,6 +23,16 @@ export interface BillDepositTransaction {
   dateCreated: string;
   reason?: string;
   voided: boolean;
+  billLineItem?: { uuid: string };
+  /** Who applied or reversed the transaction, when, and why; only in the full representation. */
+  auditInfo?: {
+    creator?: { display?: string };
+    voidedBy?: { display?: string } | null;
+    dateVoided?: string | null;
+    /** Reversals made before the void date was recorded only have this. */
+    dateChanged?: string | null;
+    voidReason?: string | null;
+  };
 }
 
 export interface DepositFormData {

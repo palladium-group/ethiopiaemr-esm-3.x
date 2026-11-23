@@ -22,6 +22,8 @@ import { usePatientBills } from '../../../../../prompt-payment/prompt-payment.re
 import { LineItem, PaymentStatus } from '../../../../../types';
 import { extractString } from '../../../../../helpers';
 import { useCurrencyFormatting } from '../../../../../helpers/currency';
+import { lineItemAmountDue } from '../../../../../invoice/checkout/checkout.resource';
+import { extractErrorMessagesFromResponse } from '../../../../../utils';
 
 type DepositTransactionWorkspaceProps = DefaultWorkspaceProps & {
   deposit: FormattedDeposit;
@@ -65,14 +67,14 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
       (data) => {
         const selectedLineItem = pendingLineItems?.find((item) => item.uuid === data.billLineItem);
         const maxFromBalance = deposit?.availableBalance ?? 0;
-        const maxFromLineItem = selectedLineItem?.price ?? Infinity;
+        const maxFromLineItem = selectedLineItem ? lineItemAmountDue(selectedLineItem) : Infinity;
         const maxAmount = Math.min(maxFromBalance, maxFromLineItem);
         return data.amount <= maxAmount;
       },
       {
         message: t(
           'amountExceedsLimit',
-          'Amount must not exceed the available balance or the selected line item amount',
+          'Amount must not exceed the available balance or what the selected line item still owes',
         ),
         path: ['amount'],
       },
@@ -103,41 +105,32 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
     };
 
     try {
-      const response = await addDepositTransaction(deposit.id, payload);
-      if (response.ok) {
-        showSnackbar({
-          title: t('transactionAdded', 'Transaction added successfully'),
-          kind: 'success',
-          subtitle: t('transactionAddedDetails', 'The transaction has been added successfully.'),
-          isLowContrast: true,
-          timeoutInMs: 5000,
-          autoClose: true,
-        });
-        mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/cashier/deposit`), undefined, {
-          revalidate: true,
-        });
-      } else {
-        showSnackbar({
-          title: t('errorAddingTransaction', 'Error adding transaction'),
-          kind: 'error',
-          subtitle: t('errorAddingTransactionDetails', 'Please try again later. Check the console for more details.'),
-          isLowContrast: true,
-          timeoutInMs: 5000,
-          autoClose: true,
-        });
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
+      await addDepositTransaction(deposit.id, payload);
       showSnackbar({
-        title: t('errorSubmittingForm', 'Error submitting form'),
-        kind: 'error',
-        subtitle: t('errorSubmittingFormDetails', 'Please try again later. Check the console for more details.'),
+        title: t('transactionAdded', 'Transaction added successfully'),
+        kind: 'success',
+        subtitle: t('transactionAddedDetails', 'The transaction has been added successfully.'),
         isLowContrast: true,
         timeoutInMs: 5000,
         autoClose: true,
       });
-    } finally {
+      // the applied line item's balance and status change too
+      mutate(
+        (key) =>
+          typeof key === 'string' &&
+          (key.startsWith(`${restBaseUrl}/cashier/deposit`) || key.startsWith(`${restBaseUrl}/cashier/bill`)),
+        undefined,
+        { revalidate: true },
+      );
       closeWorkspaceWithSavedChanges();
+    } catch (error) {
+      // keep the form open so the cashier can correct the amount
+      showSnackbar({
+        title: t('errorAddingTransaction', 'Error adding transaction'),
+        kind: 'error',
+        subtitle: error?.responseBody ? extractErrorMessagesFromResponse(error.responseBody) : error?.message,
+        isLowContrast: true,
+      });
     }
   };
   const selectedBillLineItemUuid = watch('billLineItem');
@@ -145,7 +138,7 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
   const maxAmount =
     selectedLineItem == null
       ? deposit?.availableBalance ?? 0
-      : Math.min(deposit?.availableBalance ?? 0, selectedLineItem.price);
+      : Math.min(deposit?.availableBalance ?? 0, lineItemAmountDue(selectedLineItem));
 
   const handleError = (error: any) => {
     console.error('Error submitting form:', error);
