@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from '@carbon/react';
-import { filterPartitionedTests, hasVisiblePartitionedTests, partitionCategoryTests } from '../api/order-catalog.utils';
+import { getCategoriesMatchingSearch, getOrderCatalogSearchPlaceholder } from '../api/order-catalog.utils';
 import { type OrderDetailValidationError } from '../api/order-catalog-validation';
 import { type CatalogTab, type OrderDetail } from '../types/order-catalog.types';
 import OrderCatalogSelectedList from './order-catalog-selected-list.component';
@@ -42,12 +42,48 @@ const OrderCatalogTabView: React.FC<OrderCatalogTabViewProps> = ({
     [tab.categories, activeCategoryUuid],
   );
 
-  const hasVisibleTests = useMemo(() => {
-    if (!activeCategory) {
-      return false;
+  const trimmedSearch = searchTerm.trim();
+  const isSearching = trimmedSearch.length > 0;
+  const matchingCategories = useMemo(
+    () => (isSearching ? getCategoriesMatchingSearch(tab.categories, trimmedSearch) : []),
+    [isSearching, tab.categories, trimmedSearch],
+  );
+  const searchPlaceholder = getOrderCatalogSearchPlaceholder(tab.orderType, t);
+
+  const renderOrderables = () => {
+    if (isSearching) {
+      if (matchingCategories.length === 0) {
+        return <p className={styles.empty}>{t('noMatchingTests', 'No orderables match your search.')}</p>;
+      }
+
+      return matchingCategories.map((category) => (
+        <section key={category.uuid} className={styles.searchResultGroup} aria-label={category.displayName}>
+          <h3 className={styles.searchResultTitle}>{category.displayName}</h3>
+          <OrderCatalogTestGrid
+            tests={category.tests}
+            orderType={tab.orderType}
+            searchTerm={trimmedSearch}
+            selectedUuids={selectedUuids}
+            onSelectionChange={onSelectionChange}
+          />
+        </section>
+      ));
     }
-    return hasVisiblePartitionedTests(filterPartitionedTests(partitionCategoryTests(activeCategory.tests), searchTerm));
-  }, [activeCategory, searchTerm]);
+
+    if (!activeCategory?.tests.length) {
+      return <p className={styles.empty}>{t('noTestsInCategory', 'No orderables in this category.')}</p>;
+    }
+
+    return (
+      <OrderCatalogTestGrid
+        tests={activeCategory.tests}
+        orderType={tab.orderType}
+        searchTerm=""
+        selectedUuids={selectedUuids}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+  };
 
   return (
     <div className={styles.tabView}>
@@ -89,28 +125,14 @@ const OrderCatalogTabView: React.FC<OrderCatalogTabViewProps> = ({
             <Search
               id={`order-catalog-search-${tab.uuid}`}
               labelText={t('searchOrders', 'Search')}
-              placeholder={t('searchOrdersPlaceholder', 'Search in this category')}
+              placeholder={searchPlaceholder}
               size="sm"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </div>
 
-          <div className={styles.testGrids}>
-            {!activeCategory?.tests.length ? (
-              <p className={styles.empty}>{t('noTestsInCategory', 'No orderables in this category.')}</p>
-            ) : !hasVisibleTests ? (
-              <p className={styles.empty}>{t('noMatchingTests', 'No orderables match your search.')}</p>
-            ) : (
-              <OrderCatalogTestGrid
-                tests={activeCategory.tests}
-                orderType={tab.orderType}
-                searchTerm={searchTerm}
-                selectedUuids={selectedUuids}
-                onSelectionChange={onSelectionChange}
-              />
-            )}
-          </div>
+          <div className={styles.testGrids}>{renderOrderables()}</div>
         </section>
       </div>
     </div>
