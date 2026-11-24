@@ -124,6 +124,7 @@
   "dischargeConfirmedSuccessfully": "የነርስ የመልቀቅ ማረጋገጫ ተመዝግቧል። ክፍያ ከተከፈለ በኋላ ሊያሰን አልጋውን ማስወገድ ይችላል።",
   "dischargeInPatients": "የሚለቀቁ ታካሚዎች",
   "dischargePatient": "ታካሚን አስወጣ",
+  "dischargeRequiresMainDiagnosis": "A main diagnosis must be set on the current visit before discharging a patient",
   "discontinued": "Discontinued",
   "dose": "Dose",
   "dosingInstructions": "Dosing Instructions",

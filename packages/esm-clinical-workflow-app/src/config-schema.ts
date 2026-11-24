@@ -550,6 +550,7 @@ export type ClinicalWorkflowConfig = {
   nurseDischargeConfirmationYesConceptUuid: string;
   legacySummaryDisplayEnabled: boolean;
   showOrderBasketDiagnosisBanner: boolean;
+  visitNoteConfig: VisitNoteConfigObject;
 };
 
 export interface VisitNoteConfig {

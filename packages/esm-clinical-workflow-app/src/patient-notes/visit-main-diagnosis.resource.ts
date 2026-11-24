@@ -50,6 +50,21 @@ export function getActiveVisitWithEncountersSwrKey(patientUuid: string, activeVi
   return ['activeVisitWithEncounters', patientUuid, activeVisitUuid] as const;
 }
 
+/** True when any encounter on the visit has a non-voided main diagnosis. */
+export function visitHasMainDiagnosis(
+  visit: ActiveVisitWithEncounters | null,
+  mainDiagnosisAttributeTypeUuid: string,
+): boolean {
+  for (const encounter of visit?.encounters ?? []) {
+    for (const diagnosis of encounter.diagnoses ?? []) {
+      if (!diagnosis.voided && diagnosisHasMainAttribute(diagnosis.attributes, mainDiagnosisAttributeTypeUuid)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /** True when another encounter on the visit already has a main diagnosis. */
 export function visitHasMainDiagnosisOnOtherEncounter(
   visit: ActiveVisitWithEncounters | null,
