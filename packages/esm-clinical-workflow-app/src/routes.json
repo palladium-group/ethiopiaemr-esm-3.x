@@ -385,6 +385,14 @@
       "component": "triageQueueAssignmentModal"
     },
     {
+      "name": "ethiopia-move-queue-entry-modal",
+      "component": "ethiopiaMoveQueueEntryModal"
+    },
+    {
+      "name": "ethiopia-transition-patient-to-latest-queue-modal",
+      "component": "ethiopiaTransitionPatientToLatestQueueModal"
+    },
+    {
       "name": "print-encounter-modal",
       "component": "printEncounterModal"
     }
