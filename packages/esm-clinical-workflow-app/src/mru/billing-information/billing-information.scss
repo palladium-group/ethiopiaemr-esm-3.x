@@ -328,3 +328,14 @@
   color: colors.$gray-100;
   word-break: break-word;
 }
+
+.comboInputEntries {
+  position: relative;
+  width: 100%;
+}
+
+.comboInputItemOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
