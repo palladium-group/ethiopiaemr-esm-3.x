@@ -8,15 +8,15 @@ export function useVisit(visitUuid: string) {
     // Use default representation for orders to safely include subclass-specific fields (e.g., DrugOrder)
     // without requesting properties that are not present on other subclasses (e.g., TestOrder).
     'orders,' +
-    'obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),' +
+    'obs:(uuid,obsDatetime,concept:(uuid,display,conceptClass:(uuid,display)),' +
     'display,groupMembers:(uuid,concept:(uuid,display),' +
     'value:(uuid,display)),value),encounterType:(uuid,display),' +
     'encounterProviders:(uuid,display,encounterRole:(uuid,display),' +
-    'provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime';
+    'provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,location:(uuid,display)';
 
   const apiUrl = `${restBaseUrl}/visit/${visitUuid}?v=${customRepresentation}`;
 
-  const { data, error, isLoading, isValidating } = useSWR<{ data: Visit }, Error>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: Visit }, Error>(
     visitUuid ? apiUrl : null,
     openmrsFetch,
   );
@@ -26,6 +26,7 @@ export function useVisit(visitUuid: string) {
     error,
     isLoading,
     isValidating,
+    mutate,
   };
 }
 

@@ -12,7 +12,7 @@ interface CurrentVisitProps {
 
 const CurrentVisit: React.FC<CurrentVisitProps> = ({ patientUuid, visitUuid }) => {
   const { t } = useTranslation();
-  const { visit, isLoading } = useVisit(visitUuid);
+  const { visit, isLoading, mutate } = useVisit(visitUuid);
 
   if (isLoading) {
     return <DataTableSkeleton />;
@@ -28,7 +28,7 @@ const CurrentVisit: React.FC<CurrentVisitProps> = ({ patientUuid, visitUuid }) =
           </div>
         </div>
         <div className={styles.visitContainer}>
-          <CurrentVisitDetails encounters={visit.encounters} patientUuid={patientUuid} />
+          <CurrentVisitDetails patientUuid={patientUuid} visit={visit} mutateVisit={mutate} />
         </div>
       </div>
     );

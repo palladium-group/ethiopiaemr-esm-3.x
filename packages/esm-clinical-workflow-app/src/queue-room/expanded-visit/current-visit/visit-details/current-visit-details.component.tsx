@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   StructuredListBody,
@@ -7,67 +7,20 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import { type OpenmrsResource, formatTime, parseDate } from '@openmrs/esm-framework';
-import {
-  type Note,
-  type Encounter,
-  type Observation,
-  type DiagnosisItem,
-} from '@openmrs/esm-service-queues-app/src/types/index';
+import { type Visit } from '@openmrs/esm-framework';
 import { useVitalsFromObs } from '../hooks/useVitalsConceptMetadata';
-import TriageNote from './triage-note.component';
 import Vitals from './vitals.component';
 import styles from '../current-visit.scss';
 
-interface CurrentVisitProps {
+interface CurrentVisitDetailsProps {
   patientUuid: string;
-  encounters: Array<Encounter | OpenmrsResource>;
+  visit: Visit;
+  mutateVisit?: () => void;
 }
 
-enum visitTypes {
-  CURRENT = 'currentVisit',
-  PAST = 'pastVisit',
-}
-
-const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encounters }) => {
+const CurrentVisitDetails: React.FC<CurrentVisitDetailsProps> = ({ patientUuid, visit, mutateVisit }) => {
   const { t } = useTranslation();
-
-  const [diagnoses, notes, vitalsToRetrieve]: [Array<DiagnosisItem>, Array<Note>, Array<Encounter>] = useMemo(() => {
-    const notes: Array<Note> = [];
-    const vitalsToRetrieve: Array<Encounter> = [];
-    const diagnoses: Array<DiagnosisItem> = [];
-
-    // Iterating through every Encounter
-    encounters?.forEach((enc: Encounter) => {
-      // Check for Visit Diagnoses and Notes
-      if (enc.encounterType?.display === 'Visit Note') {
-        enc.obs.forEach((obs: Observation) => {
-          if (obs.concept && obs.concept.display === 'Visit Diagnoses') {
-            const problemListObs = obs.groupMembers?.find((mem) => mem.concept?.display === 'PROBLEM LIST');
-            if (problemListObs?.value?.display) {
-              diagnoses.push({
-                diagnosis: problemListObs.value.display,
-              });
-            }
-          } else if (obs.concept && obs.concept.display === 'General patient note') {
-            // Putting all notes in a single array.
-            notes.push({
-              note: obs.value,
-              provider: {
-                name: enc.encounterProviders.length ? enc.encounterProviders[0].provider.person.display : '',
-                role: enc.encounterProviders.length ? enc.encounterProviders[0].encounterRole.display : '',
-              },
-              time: formatTime(parseDate(obs.obsDatetime)),
-              concept: obs.concept,
-            });
-          }
-        });
-      }
-
-      vitalsToRetrieve.push(enc);
-    });
-    return [diagnoses, notes, vitalsToRetrieve];
-  }, [encounters]);
+  const vitals = useVitalsFromObs(visit?.encounters);
 
   return (
     <div className={styles.wrapper}>
@@ -76,19 +29,14 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
           <StructuredListHead />
           <StructuredListBody>
             <StructuredListRow className={styles.structuredListRow}>
-              <StructuredListCell>{t('triageNote', 'Triage note')}</StructuredListCell>
-              <StructuredListCell>
-                <TriageNote notes={notes} diagnoses={diagnoses} patientUuid={patientUuid} />
-              </StructuredListCell>
-            </StructuredListRow>
-            <StructuredListRow className={styles.structuredListRow}>
               <StructuredListCell>{t('vitals', 'Vitals')}</StructuredListCell>
               <StructuredListCell>
-                {' '}
                 <Vitals
-                  vitals={useVitalsFromObs(vitalsToRetrieve)}
+                  vitals={vitals}
                   patientUuid={patientUuid}
-                  visitType={visitTypes.CURRENT}
+                  visitType="currentVisit"
+                  visit={visit}
+                  mutateVisit={mutateVisit}
                 />
               </StructuredListCell>
             </StructuredListRow>
