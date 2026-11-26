@@ -7,6 +7,7 @@ import { CBHI_VISIT_ATTRIBUTE_FIELDS, type BillingFormData } from '../billing-in
 import { CBHI_ATTRIBUTE_UUIDS } from '../billing-constants';
 import styles from '../billing-information.scss';
 import { CbhiMemberSearch } from './CbhiMemberSearch';
+import { AddressComboInput, useAddressEntries } from './AddressComboInput';
 import { useCbhiManualEntrySetting } from '../hooks/useCbhiManualEntrySetting';
 import type { CbhiPersistFields } from '../hooks/useCbhiSearch';
 
@@ -92,6 +93,52 @@ export const CbhiBillingAttributes: React.FC<CbhiBillingAttributesProps> = ({ er
   const zoneValue = attributes?.[CBHI_ATTRIBUTE_UUIDS.cbhiZone] ?? attributes?.cbhiZone ?? '';
   const woredaValue = attributes?.[CBHI_ATTRIBUTE_UUIDS.cbhiWoreda] ?? attributes?.cbhiWoreda ?? '';
 
+  const regionEntries = useAddressEntries(isManualEntryEnabled, '');
+  const zoneEntries = useAddressEntries(isManualEntryEnabled && Boolean(regionValue), regionValue);
+  const woredaEntries = useAddressEntries(
+    isManualEntryEnabled && Boolean(regionValue && zoneValue),
+    `${regionValue}|${zoneValue}`,
+  );
+
+  const updateAddressHierarchy = (updates: Partial<Record<'cbhiRegion' | 'cbhiZone' | 'cbhiWoreda', string>>) => {
+    const nextAttributes = { ...attributes };
+    Object.entries(updates).forEach(([field, value]) => {
+      nextAttributes[CBHI_ATTRIBUTE_UUIDS[field as keyof typeof updates]] = value;
+      nextAttributes[field] = value;
+    });
+    setValue('attributes', nextAttributes, { shouldDirty: true });
+  };
+
+  const addressLevels = [
+    {
+      name: 'cbhiRegion' as const,
+      label: t('cbhiRegion', 'CBHI Region'),
+      placeholder: t('enterCbhiRegion', 'Enter CBHI Region'),
+      value: regionValue,
+      entries: regionEntries,
+      disabled: false,
+      childResets: { cbhiZone: '', cbhiWoreda: '' },
+    },
+    {
+      name: 'cbhiZone' as const,
+      label: t('cbhiZone', 'CBHI Zone'),
+      placeholder: t('enterCbhiZone', 'Enter CBHI Zone'),
+      value: zoneValue,
+      entries: zoneEntries,
+      disabled: !regionValue,
+      childResets: { cbhiWoreda: '' },
+    },
+    {
+      name: 'cbhiWoreda' as const,
+      label: t('cbhiWoreda', 'CBHI Woreda'),
+      placeholder: t('enterCbhiWoreda', 'Enter CBHI Woreda'),
+      value: woredaValue,
+      entries: woredaEntries,
+      disabled: !regionValue || !zoneValue,
+      childResets: {},
+    },
+  ];
+
   const cbhiIdError = errors.attributes?.[CBHI_ATTRIBUTE_UUIDS.cbhiId] || errors.attributes?.cbhiId;
   const cbhiIdErrorMessage =
     cbhiIdError && typeof cbhiIdError === 'object' && 'message' in cbhiIdError
@@ -142,27 +189,27 @@ export const CbhiBillingAttributes: React.FC<CbhiBillingAttributesProps> = ({ er
             invalid={!!expiryDateError}
             invalidText={expiryDateErrorMessage}
           />
-          <TextInput
-            id="attribute-cbhiRegion"
-            labelText={t('cbhiRegion', 'CBHI Region')}
-            value={regionValue}
-            onChange={(e) => handleFieldChange(CBHI_ATTRIBUTE_UUIDS.cbhiRegion, 'cbhiRegion', e.target.value)}
-            placeholder={t('enterCbhiRegion', 'Enter CBHI Region')}
-          />
-          <TextInput
-            id="attribute-cbhiZone"
-            labelText={t('cbhiZone', 'CBHI Zone')}
-            value={zoneValue}
-            onChange={(e) => handleFieldChange(CBHI_ATTRIBUTE_UUIDS.cbhiZone, 'cbhiZone', e.target.value)}
-            placeholder={t('enterCbhiZone', 'Enter CBHI Zone')}
-          />
-          <TextInput
-            id="attribute-cbhiWoreda"
-            labelText={t('cbhiWoreda', 'CBHI Woreda')}
-            value={woredaValue}
-            onChange={(e) => handleFieldChange(CBHI_ATTRIBUTE_UUIDS.cbhiWoreda, 'cbhiWoreda', e.target.value)}
-            placeholder={t('enterCbhiWoreda', 'Enter CBHI Woreda')}
-          />
+          {addressLevels.map(({ name, label, placeholder, value, entries, disabled, childResets }) => (
+            <AddressComboInput
+              key={name}
+              name={name}
+              entries={entries}
+              fieldProps={{ id: `attribute-${name}`, labelText: label, value, placeholder, disabled }}
+              handleInputChange={(newValue) =>
+                updateAddressHierarchy(newValue ? { [name]: newValue } : { [name]: '', ...childResets })
+              }
+              handleSelection={(newSelection) => {
+                if (newSelection !== value) {
+                  updateAddressHierarchy({ [name]: newSelection, ...childResets });
+                }
+              }}
+              onDropdownClose={() => {
+                if (entries && value && !entries.includes(value)) {
+                  updateAddressHierarchy({ [name]: '', ...childResets });
+                }
+              }}
+            />
+          ))}
         </div>
       </FormGroup>
     );

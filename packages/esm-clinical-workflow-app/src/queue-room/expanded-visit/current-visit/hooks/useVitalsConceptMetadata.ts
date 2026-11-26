@@ -1,7 +1,22 @@
 import useSWRImmutable from 'swr/immutable';
 import { openmrsFetch, useConfig, formatTime, parseDate, restBaseUrl } from '@openmrs/esm-framework';
-import { type Observation, type PatientVitals } from '@openmrs/esm-service-queues-app/src/types/index';
+import { type PatientVitals } from '@openmrs/esm-service-queues-app/src/types/index';
 import { type ConfigObject } from '@openmrs/esm-service-queues-app/src/config-schema';
+
+interface VitalsObs {
+  concept?: { uuid?: string };
+  value?: unknown;
+  obsDatetime?: string;
+}
+
+interface VitalsEncounter {
+  encounterDatetime?: string;
+  encounterProviders?: Array<{
+    provider?: { display?: string; person?: { display?: string } };
+    encounterRole?: { display?: string };
+  }>;
+  obs?: Array<VitalsObs>;
+}
 
 export function useVitalsConceptMetadata() {
   const customRepresentation =
@@ -49,51 +64,65 @@ interface VitalsConceptMetadataResponse {
   }>;
 }
 
-export const useVitalsFromObs = (encounter) => {
+const compareDatesAsc = (a?: string, b?: string): number => {
+  if (!a || !b) {
+    return 0;
+  }
+  const timeA = parseDate(a).getTime();
+  const timeB = parseDate(b).getTime();
+  return Number.isNaN(timeA) || Number.isNaN(timeB) ? 0 : timeA - timeB;
+};
+
+type VitalNumericField =
+  | 'pulse'
+  | 'oxygenSaturation'
+  | 'respiratoryRate'
+  | 'temperature'
+  | 'systolic'
+  | 'diastolic'
+  | 'weight'
+  | 'height';
+
+export const useVitalsFromObs = (encounters: Array<VitalsEncounter> = []) => {
   const config = useConfig<ConfigObject>({ externalModuleName: '@openmrs/esm-service-queues-app' });
+
+  const conceptFieldMap = new Map<string, VitalNumericField>([
+    [config.concepts.pulseUuid, 'pulse'],
+    [config.concepts.oxygenSaturationUuid, 'oxygenSaturation'],
+    [config.concepts.respiratoryRateUuid, 'respiratoryRate'],
+    [config.concepts.temperatureUuid, 'temperature'],
+    [config.concepts.systolicBloodPressureUuid, 'systolic'],
+    [config.concepts.diastolicBloodPressureUuid, 'diastolic'],
+    [config.concepts.weightUuid, 'weight'],
+    [config.concepts.heightUuid, 'height'],
+  ]);
 
   const vitals: Array<PatientVitals> = [];
 
-  encounter.forEach((enc) => {
-    enc.obs?.forEach((obs: Observation) => {
-      if (obs.concept?.uuid === config.concepts.pulseUuid) {
-        vitals.push({
-          pulse: obs.value,
-          provider: {
-            name: encounter.encounterProviders?.length ? encounter.encounterProviders[0].provider.person.display : '',
-            role: encounter.encounterProviders?.length ? encounter.encounterProviders[0].encounterRole.display : '',
-          },
-          time: formatTime(parseDate(obs.obsDatetime)),
-        });
-      } else if (obs.concept?.uuid === config.concepts.oxygenSaturationUuid) {
-        vitals.push({
-          oxygenSaturation: obs.value,
-        });
-      } else if (obs.concept?.uuid === config.concepts.respiratoryRateUuid) {
-        vitals.push({
-          respiratoryRate: obs.value,
-        });
-      } else if (obs.concept?.uuid === config.concepts.temperatureUuid) {
-        vitals.push({
-          temperature: obs.value,
-        });
-      } else if (obs.concept?.uuid === config.concepts.systolicBloodPressureUuid) {
-        vitals.push({
-          systolic: obs.value,
-        });
-      } else if (obs.concept?.uuid === config.concepts.diastolicBloodPressureUuid) {
-        vitals.push({
-          diastolic: obs.value,
-        });
-      } else if (obs.concept?.uuid === config.concepts.weightUuid) {
-        vitals.push({
-          weight: obs.value,
-        });
-      } else if (obs.concept?.uuid === config.concepts.heightUuid) {
-        vitals.push({
-          height: obs.value,
-        });
+  // Sort oldest -> newest so Vitals' Object.assign merge ends with the latest readings.
+  const sortedEncounters = [...(encounters ?? [])].sort((a, b) =>
+    compareDatesAsc(a.encounterDatetime, b.encounterDatetime),
+  );
+
+  sortedEncounters.forEach((enc) => {
+    const sortedObs = [...(enc.obs ?? [])].sort((a, b) => compareDatesAsc(a.obsDatetime, b.obsDatetime));
+    const firstProvider = enc.encounterProviders?.[0];
+    const provider = {
+      name: firstProvider?.provider?.person?.display ?? firstProvider?.provider?.display ?? '',
+      role: firstProvider?.encounterRole?.display ?? '',
+    };
+
+    sortedObs.forEach((obs: VitalsObs) => {
+      const field = obs.concept?.uuid ? conceptFieldMap.get(obs.concept.uuid) : undefined;
+      if (!field) {
+        return;
       }
+      const recordedAt = obs.obsDatetime ?? enc.encounterDatetime;
+      vitals.push({
+        [field]: obs.value,
+        provider,
+        time: recordedAt ? formatTime(parseDate(recordedAt)) : '',
+      });
     });
   });
 
