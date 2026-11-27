@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Autosuggest } from '../../locations/auto-suggest/autosuggest.component';
 import { fetchProvidersByName, type ProviderSearchResult } from './provider-search.resource';
-
-const SEARCH_DEBOUNCE_MS = 300;
 
 interface ProviderAutosuggestProps {
   onProviderSelected: (providerData: ProviderSearchResult) => void;
@@ -47,38 +45,10 @@ export const ProviderAutosuggest: React.FC<ProviderAutosuggestProps> = ({
     [onProviderSelected, searchResults],
   );
 
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const previousResolveRef = useRef<((results: ProviderSearchResult[]) => void) | null>(null);
-
-  const handleSearchResults = useCallback((query: string) => {
-    return new Promise<ProviderSearchResult[]>((resolve, reject) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        previousResolveRef.current?.([]);
-      }
-      previousResolveRef.current = resolve;
-      timeoutRef.current = setTimeout(async () => {
-        try {
-          const abortController = new AbortController();
-          const results = await fetchProvidersByName(query, abortController);
-          setSearchResults(results);
-          previousResolveRef.current?.(results);
-        } catch (err) {
-          reject(err);
-        } finally {
-          timeoutRef.current = null;
-          previousResolveRef.current = null;
-        }
-      }, SEARCH_DEBOUNCE_MS);
-    });
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
+  const handleSearchResults = useCallback(async (query: string) => {
+    const results = await fetchProvidersByName(query, new AbortController());
+    setSearchResults(results);
+    return results;
   }, []);
 
   const renderSuggestionItem = useCallback((item: ProviderSearchResult) => {

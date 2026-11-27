@@ -60,6 +60,22 @@
   background-color: colors.$green-50;
 }
 
+.depositApplied .dot {
+  background-color: colors.$teal-50;
+}
+
+.depositReversed .dot {
+  background-color: colors.$red-50;
+}
+
+.depositApplied .amount {
+  color: colors.$teal-60;
+}
+
+.depositReversed .amount {
+  color: colors.$red-60;
+}
+
 .closed .dot {
   background-color: colors.$gray-100;
 }

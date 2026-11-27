@@ -32,7 +32,6 @@ export type UserFormSchema = {
 
 interface UseUserManagementFormParams {
   initialUserValue: User;
-  usernames: string[];
   providerValues: ProviderValues;
   loadingProvider: boolean;
   isInitialValuesEmpty: boolean;
@@ -41,14 +40,13 @@ interface UseUserManagementFormParams {
 
 export function useUserManagementForm({
   initialUserValue,
-  usernames,
   providerValues,
   loadingProvider,
   isInitialValuesEmpty,
   isProviderReadOnly = false,
 }: UseUserManagementFormParams) {
   const { userManagementFormSchema } = UserManagementFormSchema(
-    usernames,
+    initialUserValue?.username,
     undefined,
     !isProviderReadOnly,
     isInitialValuesEmpty,

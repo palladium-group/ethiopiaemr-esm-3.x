@@ -15,10 +15,18 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import RedirectLogout from './redirect-logout.component';
+import { reloadToLogin } from './logout.resource';
 
 jest.mock('swr', () => ({
   mutate: jest.fn(),
 }));
+
+jest.mock('./logout.resource', () => ({
+  ...jest.requireActual('./logout.resource'),
+  reloadToLogin: jest.fn(),
+}));
+
+const mockReloadToLogin = jest.mocked(reloadToLogin);
 
 const mockClearCurrentUser = jest.mocked(clearCurrentUser);
 const mockNavigate = jest.mocked(navigate);
@@ -62,7 +70,8 @@ describe('RedirectLogout', () => {
       authenticated: false,
       sessionId: '',
     });
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+    expect(mockReloadToLogin).toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('should not redirect if the configured provider is `oauth2`', async () => {
@@ -87,16 +96,18 @@ describe('RedirectLogout', () => {
       sessionId: '',
     });
     expect(mockNavigate).toHaveBeenCalledTimes(0);
+    expect(mockReloadToLogin).not.toHaveBeenCalled();
   });
 
-  it('should redirect to login if the session is already unauthenticated', async () => {
+  it('should reload to login if the session is already unauthenticated', async () => {
     mockUseSession.mockReturnValue({
       authenticated: false,
     } as Session);
 
     render(<RedirectLogout />);
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+    expect(mockReloadToLogin).toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('should redirect to login if the application is offline', async () => {
@@ -146,7 +157,7 @@ describe('RedirectLogout', () => {
     rerender(<RedirectLogout />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+      expect(mockReloadToLogin).toHaveBeenCalled();
     });
   });
 

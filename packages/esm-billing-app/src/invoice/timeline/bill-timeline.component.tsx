@@ -11,6 +11,8 @@ const kindClass: Record<TimelineEventKind, string> = {
   opened: styles.opened,
   itemAdded: styles.itemAdded,
   payment: styles.payment,
+  depositApplied: styles.depositApplied,
+  depositReversed: styles.depositReversed,
   closed: styles.closed,
 };
 
@@ -44,6 +46,10 @@ const BillTimeline: React.FC<BillTimelineProps> = ({ bill }) => {
         return event.name || t('itemAdded', 'Item added');
       case 'payment':
         return t('paymentReceived', 'Payment received');
+      case 'depositApplied':
+        return t('depositApplied', 'Deposit applied to {{item}}', { item: event.name });
+      case 'depositReversed':
+        return t('depositReversed', 'Deposit reversed on {{item}}', { item: event.name });
       case 'closed':
         return t('billClosed', 'Bill closed');
     }
@@ -52,6 +58,9 @@ const BillTimeline: React.FC<BillTimelineProps> = ({ bill }) => {
   const detailOf = (event: TimelineEvent) => {
     if (event.kind === 'itemAdded') {
       return `${t('itemAdded', 'Item added')} · ${event.quantity} × ${formatCurrency(event.price)}`;
+    }
+    if (event.kind === 'payment' && event.items?.length) {
+      return `${event.detail} · ${t('paidFor', 'for {{items}}', { items: event.items.join(', ') })}`;
     }
     return event.detail;
   };

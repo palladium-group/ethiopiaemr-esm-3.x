@@ -1,0 +1,44 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.description {
+  @include type.type-style('body-01');
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.sectionTitle {
+  @include type.type-style('heading-compact-01');
+}
+
+.errorList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  padding-left: layout.$spacing-05;
+  list-style: disc;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: layout.$spacing-03;
+  }
+}
+
+.snippet {
+  max-width: 100%;
+}
+
+.notification {
+  max-width: 100%;
+}

@@ -6,7 +6,6 @@ import {
   PageableResult,
   Provider,
   ProviderAttributes,
-  ProviderLocation,
   ProviderResponse,
   Role,
   StockOperationType,
@@ -15,19 +14,6 @@ import {
 } from './types';
 import uniqBy from 'lodash-es/uniqBy';
 import { useMemo } from 'react';
-
-export const useUser = () => {
-  const url = `${restBaseUrl}/user?v=custom:(uuid,username,display,systemId,retired,person:(uuid,display,gender,names:(givenName,familyName,middleName),attributes:(uuid,display)),roles:(uuid,description,display,name))`;
-  const { data, isLoading, error, mutate } = useSWR<{ data: { results: Array<User> } }>(url, openmrsFetch, {
-    errorRetryCount: 2,
-  });
-  return {
-    users: data?.data?.results,
-    isLoading,
-    mutate,
-    error,
-  };
-};
 
 export const postUser = async (user: Partial<User>, url: string) => {
   const response = await openmrsFetch(url, {
@@ -104,20 +90,11 @@ export const useRoles = () => {
   };
 };
 
-export const usePersonAttribute = () => {
-  const url = `${restBaseUrl}/personattributetype?v=custom:(name,uuid)`;
-  const { data, isLoading, error } = useSWR<{ data: { results: Array<AttributeType> } }>(url, openmrsFetch, {
-    errorRetryCount: 2,
-  });
-  return {
-    attributeTypes: data?.data?.results,
-    isLoading,
-    error,
-  };
-};
-
-export const useProvider = (searchQuery: string) => {
-  const url = `${restBaseUrl}/provider?q=${searchQuery}&v=custom:(uuid,identifier,retired,attributes:(uuid,display,value:(name),attributeType:(uuid,name)))`;
+/** Provider account(s) linked to a user. Matching by name could pick up another person's provider. */
+export const useProviderByUser = (userUuid?: string) => {
+  const url = userUuid
+    ? `${restBaseUrl}/provider?user=${userUuid}&v=custom:(uuid,identifier,retired,attributes:(uuid,display,value:(name),attributeType:(uuid,name)))`
+    : null;
   const { data, isLoading, error } = useSWR<{ data: { results: Array<ProviderResponse> } }>(url, openmrsFetch, {
     errorRetryCount: 2,
   });
@@ -148,18 +125,6 @@ export const useProviderAttributeType = () => {
     providerAttributeType: data?.data?.results,
     isLoading,
     error,
-  };
-};
-
-export const useLocation = () => {
-  const url = `${restBaseUrl}/location?v=custom:(uuid,name,description,retired,attributes:(value))`;
-  const { data, isLoading, error } = useSWR<{ data: { results: Array<ProviderLocation> } }>(url, openmrsFetch, {
-    errorRetryCount: 2,
-  });
-  return {
-    location: data?.data?.results,
-    loadingLocation: isLoading,
-    locationError: error,
   };
 };
 

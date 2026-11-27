@@ -83,7 +83,10 @@ export function useOrderCatalogActions({
       setValidationErrorsByUuid(errorsByUuid);
       showSnackbar({
         title: t('validationErrorTitle', 'Missing required fields'),
-        subtitle: t('validationErrorSubtitle', 'Expand each selected order and complete the required fields.'),
+        subtitle: t(
+          'validationErrorSubtitle',
+          'Complete the required fields. The order that needs attention is expanded in the selected list.',
+        ),
         kind: 'error',
       });
       return false;

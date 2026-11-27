@@ -7,14 +7,14 @@ import { ButtonSet, Button, InlineLoading, Stack, ProgressIndicator, ProgressSte
 import classNames from 'classnames';
 import {
   useRoles,
-  useProvider,
+  useProviderByUser,
   useProviderAttributeType,
   type ProviderWithAttributes,
 } from '../../../user-management.resources';
 import { useSystemUserRoleConfigSetting } from '../../hook/useSystemRoleSetting';
 import { User } from '../../../types';
 import { ConfigObject } from '../../../config-schema';
-import { useUsers } from './user-list/user-list.resource';
+import { clearUsernameChecks } from './user-list/user-list.resource';
 import { type ProviderSearchResult } from './provider-search.resource';
 import { extractNameParts, extractProviderFormValues, hasExternalOrIhrisAttributes } from './user-management.utils';
 import { useProviderAttributeMapping } from './hooks/useProviderAttributeMapping';
@@ -66,8 +66,12 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
   const [selectedProvider, setSelectedProvider] = useState<ProviderSearchResult | null>(null);
   const [formResetKey, setFormResetKey] = useState(0);
 
-  // Gets providers by name and returns all rows if there is no match
-  const { provider = [], loadingProvider, providerError } = useProvider(initialUserValue?.person?.display);
+  // The provider account linked to the user being edited (none when adding a user).
+  const {
+    provider = [],
+    loadingProvider,
+    providerError,
+  } = useProviderByUser(initialProvider ? undefined : initialUserValue?.uuid);
 
   const providerSource: ProviderWithAttributes[] = selectedProvider
     ? [selectedProvider as ProviderWithAttributes]
@@ -75,9 +79,8 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     ? [initialProvider as ProviderWithAttributes]
     : provider;
 
-  const { users } = useUsers();
-  const usernames =
-    users?.map((user) => user.username).filter((username) => username !== initialUserValue?.username) || [];
+  // Username availability is checked against the server; start each workspace session with fresh answers.
+  useEffect(() => clearUsernameChecks(), []);
   const isInitialValuesEmpty = Object.keys(initialUserValue).length === 0;
 
   const { providerAttributeType = [] } = useProviderAttributeType();
@@ -95,7 +98,6 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
 
   const { userFormMethods, errors, isSubmitting, isDirty } = useUserManagementForm({
     initialUserValue,
-    usernames,
     providerValues,
     loadingProvider,
     isInitialValuesEmpty,

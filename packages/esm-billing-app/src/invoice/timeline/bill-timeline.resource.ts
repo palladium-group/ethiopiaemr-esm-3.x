@@ -1,17 +1,20 @@
 import { openmrsFetch, parseDate, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { MappedBill } from '../../types';
+import { type BillDeposit } from '../../bill-administration/bill-deposit/types/bill-deposit.types';
 
-export type TimelineEventKind = 'opened' | 'itemAdded' | 'payment' | 'closed';
+export type TimelineEventKind = 'opened' | 'itemAdded' | 'payment' | 'depositApplied' | 'depositReversed' | 'closed';
 
 export type TimelineEvent = {
   id: string;
   kind: TimelineEventKind;
   date: Date;
-  /** Item name for itemAdded events. */
+  /** Item name for itemAdded and deposit events. */
   name?: string;
-  /** Payment method for payments, close reason for closed. */
+  /** Payment method for payments, deposit reference or reversal reason for deposits, close reason for closed. */
   detail?: string;
+  /** The line items a payment was applied to. */
+  items?: Array<string>;
   amount?: number;
   quantity?: number;
   price?: number;
@@ -47,12 +50,28 @@ const toDate = (value?: string | number | null): Date | null => {
   return typeof value === 'number' ? new Date(value) : parseDate(value);
 };
 
-/** Builds the bill's history, oldest first, from the bill itself and its line item audit details. */
-export function buildTimelineEvents(bill: MappedBill, details?: BillTimelineDetails): Array<TimelineEvent> {
+type DepositsForTimeline = Array<Pick<BillDeposit, 'uuid' | 'referenceNumber' | 'transactions'>>;
+
+const lineItemName = (lineItem: { billableService?: string; item?: string }) =>
+  lineItem.billableService?.split(':')[1] || lineItem.item?.split(':')[1] || '';
+
+/**
+ * Builds the bill's history, oldest first, from the bill itself, its line item audit details, and the patient's
+ * deposit transactions applied to the bill's line items.
+ */
+export function buildTimelineEvents(
+  bill: MappedBill,
+  details?: BillTimelineDetails,
+  deposits?: DepositsForTimeline,
+): Array<TimelineEvent> {
   const events: Array<TimelineEvent> = [];
   if (!bill) {
     return events;
   }
+
+  const namesByLineItem = new Map(
+    (details?.lineItems ?? []).map((lineItem) => [lineItem.uuid, lineItemName(lineItem)]),
+  );
 
   const opened = toDate(bill.dateCreatedUnformatted);
   if (opened) {
@@ -68,7 +87,7 @@ export function buildTimelineEvents(bill: MappedBill, details?: BillTimelineDeta
           id: `item-${lineItem.uuid}`,
           kind: 'itemAdded',
           date,
-          name: lineItem.billableService?.split(':')[1] || lineItem.item?.split(':')[1] || '',
+          name: lineItemName(lineItem),
           amount: lineItem.price * lineItem.quantity,
           quantity: lineItem.quantity,
           price: lineItem.price,
@@ -88,10 +107,47 @@ export function buildTimelineEvents(bill: MappedBill, details?: BillTimelineDeta
           kind: 'payment',
           date,
           detail: payment.instanceType?.name,
+          items: (payment.allocations ?? [])
+            .map((allocation) => namesByLineItem.get(allocation.lineItem))
+            .filter(Boolean),
           amount: payment.amountTendered,
+          actor: payment.cashierName,
         });
       }
     });
+
+  deposits?.forEach((deposit) =>
+    deposit.transactions
+      ?.filter((transaction) => transaction.transactionType === 'APPLY')
+      .filter((transaction) => namesByLineItem.has(transaction.billLineItem?.uuid))
+      .forEach((transaction) => {
+        const name = namesByLineItem.get(transaction.billLineItem.uuid);
+        const applied = toDate(transaction.dateCreated);
+        if (applied) {
+          events.push({
+            id: `deposit-applied-${transaction.uuid}`,
+            kind: 'depositApplied',
+            date: applied,
+            name,
+            detail: deposit.referenceNumber,
+            amount: transaction.amount,
+            actor: transaction.auditInfo?.creator?.display,
+          });
+        }
+        const reversed = toDate(transaction.auditInfo?.dateVoided ?? transaction.auditInfo?.dateChanged);
+        if (transaction.voided && reversed) {
+          events.push({
+            id: `deposit-reversed-${transaction.uuid}`,
+            kind: 'depositReversed',
+            date: reversed,
+            name,
+            detail: transaction.auditInfo?.voidReason ?? undefined,
+            amount: transaction.amount,
+            actor: transaction.auditInfo?.voidedBy?.display,
+          });
+        }
+      }),
+  );
 
   const closed = toDate(bill.dateClosed);
   if (bill.closed && closed) {
@@ -127,10 +183,17 @@ export function useBillTimeline(bill: MappedBill) {
     bill?.uuid ? `${restBaseUrl}/cashier/bill/${bill.uuid}?v=${timelineRepresentation}` : null,
     openmrsFetch,
   );
+  // Deposits belong to the patient, not the bill; their transactions name the line item they were applied to.
+  const { data: depositData, isLoading: isLoadingDeposits } = useSWR<{ data: { results: DepositsForTimeline } }>(
+    bill?.patientUuid
+      ? `${restBaseUrl}/cashier/deposit?patient=${bill.patientUuid}&v=custom:(uuid,referenceNumber,transactions:full)`
+      : null,
+    openmrsFetch,
+  );
 
   return {
-    events: data?.data ? buildTimelineEvents(bill, data.data) : [],
-    isLoading,
+    events: data?.data ? buildTimelineEvents(bill, data.data, depositData?.data?.results) : [],
+    isLoading: isLoading || isLoadingDeposits,
     error,
   };
 }

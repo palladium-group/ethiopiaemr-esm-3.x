@@ -11,6 +11,7 @@
   "loading": "Loading…",
   "noData": "No data returned.",
   "noRows": "No rows.",
+  "removeMonth": "Remove {{month}}",
   "reportCompleted": "Report completed successfully.",
   "reportFailed": "Report evaluation failed on the server.",
   "reports": "Reports",

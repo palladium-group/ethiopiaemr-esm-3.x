@@ -8,7 +8,7 @@
 
 .dashboard {
   display: grid;
-  grid-template-columns: 12rem minmax(0, 1fr);
+  grid-template-columns: 18rem minmax(0, 1fr);
   gap: 0.625rem;
   block-size: 100%;
   min-block-size: 0;
@@ -53,7 +53,9 @@
   color: var(--text-primary);
   text-align: left;
   font-size: 0.75rem;
-  line-height: 1.2;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: break-word;
   cursor: pointer;
   transition: background 0.11s;
 
@@ -92,6 +94,17 @@
   color: var(--text-secondary);
   font-size: 0.75rem;
   margin: 0.5rem 0;
+}
+
+.searchResultGroup + .searchResultGroup {
+  margin-top: 1.25rem;
+}
+
+.searchResultTitle {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 @media (max-width: 48rem) {

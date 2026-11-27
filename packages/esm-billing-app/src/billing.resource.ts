@@ -12,10 +12,11 @@ import {
 import dayjs from 'dayjs';
 import isEmpty from 'lodash-es/isEmpty';
 import sortBy from 'lodash-es/sortBy';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { z } from 'zod';
 import { BillingConfig } from './config-schema';
+import { PAYMENT_METHOD_VISIT_ATTRIBUTE_TYPE_UUID } from './constants';
 import { extractString } from './helpers';
 import { FacilityDetail, MappedBill, PatientInvoice, PaymentMethod, PaymentStatus } from './types';
 
@@ -295,17 +296,46 @@ export function useFetchSearchResults(searchVal, category) {
   return { data: data?.data, error, isLoading: isLoading, isValidating };
 }
 
-export const usePatientPaymentInfo = (patientUuid: string) => {
-  const { currentVisit } = useVisit(patientUuid);
-  const attributes = currentVisit?.attributes ?? [];
-  const paymentInformation = attributes
-    .map((attribute) => ({
-      name: attribute.attributeType.name,
-      value: attribute.value,
-    }))
-    .filter(({ name }) => name === 'Insurance scheme' || name === 'Policy Number');
+export interface PatientPaymentInfo {
+  activeVisit: any | null;
+  paymentType: string | null;
+  isLoading: boolean;
+}
 
-  return paymentInformation;
+export const usePatientPaymentInfo = (patientUuid: string): PatientPaymentInfo => {
+  const { activeVisit, isLoading: isVisitLoading } = useVisit(patientUuid);
+  const { visitAttributeTypes } = useConfig<BillingConfig>();
+  const { paymentModes, isLoading: isPaymentModesLoading } = usePaymentModes(false);
+
+  return useMemo(() => {
+    if (!patientUuid || !activeVisit || activeVisit.stopDatetime !== null) {
+      return {
+        activeVisit: null,
+        paymentType: null,
+        isLoading: isVisitLoading,
+      };
+    }
+
+    const targetUuid = visitAttributeTypes?.paymentMethods || PAYMENT_METHOD_VISIT_ATTRIBUTE_TYPE_UUID;
+    const paymentMethodAttr = (activeVisit.attributes ?? []).find((attr) => attr.attributeType?.uuid === targetUuid);
+
+    let paymentTypeName: string | null = null;
+    if (paymentMethodAttr) {
+      const rawValue = paymentMethodAttr.value;
+      const paymentModeUuid = typeof rawValue === 'string' ? rawValue : (rawValue as any)?.uuid;
+      const matched = paymentModes?.find((mode) => mode.uuid === paymentModeUuid);
+      paymentTypeName =
+        matched?.name ||
+        (typeof rawValue === 'string' && !/^[0-9a-f-]{36}$/i.test(rawValue) ? rawValue : (rawValue as any)?.name) ||
+        null;
+    }
+
+    return {
+      activeVisit,
+      paymentType: paymentTypeName,
+      isLoading: isVisitLoading || isPaymentModesLoading,
+    };
+  }, [patientUuid, activeVisit, isVisitLoading, isPaymentModesLoading, visitAttributeTypes, paymentModes]);
 };
 
 export const processBillItems = (payload) => {

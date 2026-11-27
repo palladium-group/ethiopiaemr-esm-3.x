@@ -12,7 +12,9 @@ import {
   partitionCategoryTests,
   togglePanelSelection,
   toggleTestSelection,
+  getCategoriesMatchingSearch,
   getConceptClassGroups,
+  getOrderCatalogSearchPlaceholder,
   defaultConceptClassGroupKey,
 } from './order-catalog.utils';
 import { type CatalogConceptResponse } from '../types/order-catalog.types';
@@ -211,6 +213,30 @@ describe('order-catalog.utils', () => {
     expect(getStandaloneOrderablesSectionLabel('lab', t)).toBe('Tests');
     expect(getStandaloneOrderablesSectionLabel('radiology', t)).toBe('Studies');
     expect(getStandaloneOrderablesSectionLabel('procedure', t)).toBe('Procedures');
+  });
+
+  it('uses order-type-specific search placeholders', () => {
+    const t = (key: string, defaultValue: string) => defaultValue;
+    expect(getOrderCatalogSearchPlaceholder('lab', t)).toBe('Search lab orderables');
+    expect(getOrderCatalogSearchPlaceholder('radiology', t)).toBe('Search radiology orderables');
+    expect(getOrderCatalogSearchPlaceholder('procedure', t)).toBe('Search procedure orderables');
+  });
+
+  it('searches every category in the active order type', () => {
+    const blood = parseOrderCatalogCategory(mockTab.setMembers![0], 'en');
+    const chemistry = parseOrderCatalogCategory(
+      {
+        uuid: 'chem',
+        display: 'Chemistry',
+        setMembers: [{ uuid: 'glucose', display: 'Glucose' }],
+      },
+      'en',
+    );
+    const categories = [blood, chemistry];
+
+    expect(getCategoriesMatchingSearch(categories, 'glucose').map((category) => category.uuid)).toEqual(['chem']);
+    expect(getCategoriesMatchingSearch(categories, 'wbc').map((category) => category.uuid)).toEqual(['blood']);
+    expect(getCategoriesMatchingSearch(categories, '   ')).toEqual([]);
   });
 
   it('partitions panels above standalone tests', () => {

@@ -1,7 +1,7 @@
 import {
   Button,
   ButtonSet,
-  Dropdown,
+  ComboBox,
   DropdownSkeleton,
   Form,
   InlineNotification,
@@ -27,6 +27,7 @@ import {
 import { useEthSwitchRequestStatus } from '../../../hooks/useEthSwitchRequestStatus';
 import { LineItem, MappedBill, PaymentStatus } from '../../../types';
 import styles from './ethswitch-payment.scss';
+import { lineItemAmountDue } from '../../checkout/checkout.resource';
 
 const ethSwitchPaymentSchema = z
   .object({
@@ -69,7 +70,7 @@ const EthSwitchPaymentDialog: React.FC<EthSwitchPaymentDialogProps> = ({ closeMo
   const canRetryInitiate = Boolean(merchantOrderNumber) && !hasInitiated && !isWaitingForPayment && !isSettlementFailed;
   const pendingLineItems = selectedLineItems.filter((item) => item.paymentStatus === PaymentStatus.PENDING);
   const selectedLineItemsPendingAmount = pendingLineItems.reduce(
-    (curr: number, prev) => curr + Number(prev.price * prev.quantity),
+    (curr: number, prev) => curr + lineItemAmountDue(prev),
     0,
   );
 
@@ -251,17 +252,22 @@ const EthSwitchPaymentDialog: React.FC<EthSwitchPaymentDialogProps> = ({ closeMo
                 control={control}
                 name="payerDfs"
                 render={({ field }) => (
-                  <Dropdown
+                  <ComboBox
                     id="ethswitch-bank"
                     titleText={t('bank', 'Bank')}
-                    label={t('selectBank', 'Select bank')}
+                    placeholder={t('selectBank', 'Select bank')}
                     items={banks}
                     itemToString={(item) => (item ? `${item.name} (${item.BIC})` : '')}
                     selectedItem={selectedBank}
+                    shouldFilterItem={({ item, inputValue }) => {
+                      const label = item ? `${item.name} (${item.BIC})` : '';
+                      return label.toLowerCase().includes((inputValue ?? '').toLowerCase());
+                    }}
                     onChange={({ selectedItem }) => field.onChange(selectedItem?.BIC ?? '')}
                     invalid={!!errors.payerDfs}
                     invalidText={errors.payerDfs?.message}
                     disabled={formDisabled || banks.length === 0}
+                    autoAlign
                   />
                 )}
               />

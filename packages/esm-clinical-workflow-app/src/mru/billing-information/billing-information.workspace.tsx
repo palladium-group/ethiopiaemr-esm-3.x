@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Button, ButtonSet, InlineLoading, ContentSwitcher, Switch, Form, InlineNotification } from '@carbon/react';
+import { Button, ButtonSet, InlineLoading, Form, InlineNotification } from '@carbon/react';
 import dayjs from 'dayjs';
 import {
   DefaultWorkspaceProps,
@@ -15,7 +15,6 @@ import type { ClinicalWorkflowConfig } from '../../config-schema';
 import { usePatientCardValidity } from '../../queue-room/usePatientCardValidity';
 import {
   usePaymentModes,
-  useCreditCompanies,
   useBillingForm,
   useBillingType,
   usePopulateBillingFormFromVisit,
@@ -25,12 +24,24 @@ import {
   useLastVisitPaymentMethod,
 } from './hooks';
 import {
-  BillingTypeAttributes,
   CbhiBillingAttributes,
-  CreditSubTypeSelection,
-  CreditSubTypeFields,
+  InsuranceBillingAttributes,
+  ShiBillingAttributes,
+  CreditCompanyBillingAttributes,
+  PaymentModeSelector,
   BillableItemsSelection,
 } from './components';
+import {
+  isCbhiPaymentMode,
+  isShiPaymentMode,
+  isInsurancePaymentMode,
+  isCreditCompanyPaymentMode,
+  CBHI_ATTRIBUTE_UUIDS,
+  SHI_ATTRIBUTE_UUIDS,
+  INSURANCE_ATTRIBUTE_UUIDS,
+  CREDIT_COMPANY_ATTRIBUTE_UUIDS,
+  hasAttributeValue,
+} from './billing-constants';
 import styles from './billing-information.scss';
 
 type BillingInformationWorkspaceProps = DefaultWorkspaceProps & {
@@ -77,14 +88,10 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
 
   // Watch form values
   const billingTypeUuid = watch('billingTypeUuid');
-  const creditSubType = watch('creditSubType');
   const attributes = watch('attributes') || {};
 
   // Billing type logic hook
-  const { selectedBillingType, isCreditType } = useBillingType(billingTypes, billingTypeUuid);
-
-  // Fetch credit companies conditionally
-  const { creditCompanies } = useCreditCompanies(isCreditType && creditSubType === 'creditCompany');
+  const { selectedBillingType } = useBillingType(billingTypes, billingTypeUuid);
 
   // Populate form from visit attributes
   usePopulateBillingFormFromVisit({
@@ -127,9 +134,8 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
   });
 
   // Form interaction handlers
-  const { selectedIndex, handleContentSwitcherChange } = useBillingFormHandlers({
+  const { handleBillingTypeChange } = useBillingFormHandlers({
     billingTypeUuid,
-    billingTypes,
     visitUuid: activeVisit?.uuid,
     getValues,
     setValue,
@@ -192,76 +198,32 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             />
           )}
 
-          <p className={styles.sectionTitle}>{t('paymentMethods', 'Payment Methods')}</p>
+          <PaymentModeSelector
+            billingTypes={billingTypes}
+            selectedBillingTypeUuid={billingTypeUuid}
+            onSelectBillingType={handleBillingTypeChange}
+            t={t}
+          />
 
-          <ContentSwitcher
-            className={styles.paymentTypeSwitcher}
-            onChange={handleContentSwitcherChange}
-            selectedIndex={selectedIndex}
-            size="md">
-            {billingTypes?.map((billingType) => (
-              <Switch
-                className={styles.paymentTypeSwitch}
-                key={billingType.uuid}
-                name={billingType.uuid}
-                text={billingType.name}
-              />
-            ))}
-          </ContentSwitcher>
-
-          {/* Credit sub-type selection */}
-          {isCreditType && (
-            <CreditSubTypeSelection
-              key={activeVisit?.uuid ?? 'no-visit'}
-              control={control}
-              errors={errors}
-              t={t}
-              creditSubType={creditSubType}
-              getValues={getValues}
-              setValue={setValue}
-            />
+          {/* CBHI */}
+          {isCbhiPaymentMode(billingTypeUuid, selectedBillingType?.name) && (
+            <CbhiBillingAttributes errors={errors} t={t} attributes={attributes} setValue={setValue} />
           )}
 
-          {/* Conditional fields based on Credit sub-type */}
-          {isCreditType && creditSubType && (
-            <CreditSubTypeFields
-              control={control}
-              errors={errors}
-              t={t}
-              creditSubType={creditSubType}
-              creditCompanies={creditCompanies}
-              attributes={attributes}
-              setValue={setValue}
-            />
+          {/* SHI */}
+          {isShiPaymentMode(billingTypeUuid, selectedBillingType?.name) && (
+            <ShiBillingAttributes errors={errors} t={t} attributes={attributes} setValue={setValue} />
           )}
 
-          {/* CBHI: always show search when CBHI payment method is selected */}
-          {selectedBillingType && !isCreditType && selectedBillingType.name?.toLowerCase() === 'cbhi' && (
-            <CbhiBillingAttributes
-              control={control}
-              errors={errors}
-              t={t}
-              attributeTypes={selectedBillingType.attributeTypes || []}
-              attributes={attributes}
-              setValue={setValue}
-            />
+          {/* Insurance */}
+          {isInsurancePaymentMode(billingTypeUuid, selectedBillingType?.name) && (
+            <InsuranceBillingAttributes errors={errors} t={t} attributes={attributes} setValue={setValue} />
           )}
 
-          {/* Default attribute types for other non-credit billing types */}
-          {selectedBillingType &&
-            !isCreditType &&
-            selectedBillingType.name?.toLowerCase() !== 'cbhi' &&
-            selectedBillingType.attributeTypes &&
-            selectedBillingType.attributeTypes.length > 0 && (
-              <BillingTypeAttributes
-                control={control}
-                errors={errors}
-                t={t}
-                attributeTypes={selectedBillingType.attributeTypes}
-                attributes={attributes}
-                setValue={setValue}
-              />
-            )}
+          {/* Credit Company */}
+          {isCreditCompanyPaymentMode(billingTypeUuid, selectedBillingType?.name) && (
+            <CreditCompanyBillingAttributes errors={errors} t={t} attributes={attributes} setValue={setValue} />
+          )}
 
           {/* Billable Items Selection */}
           <BillableItemsSelection
@@ -285,15 +247,16 @@ const BillingInformationWorkspace: React.FC<BillingInformationWorkspaceProps> = 
             disabled={
               !isDirty ||
               (isEditMode ? isSubmitting : false) ||
-              (() => {
-                const isCbhiBillingType = selectedBillingType?.name?.toLowerCase() === 'cbhi';
-                if (!isCbhiBillingType) {
-                  return false;
-                }
-
-                const cbhiIdValue = attributes?.cbhiId;
-                return cbhiIdValue === undefined || cbhiIdValue === null || String(cbhiIdValue).trim() === '';
-              })()
+              (isCbhiPaymentMode(billingTypeUuid, selectedBillingType?.name) &&
+                !hasAttributeValue(attributes?.[CBHI_ATTRIBUTE_UUIDS.cbhiId] ?? attributes?.cbhiId)) ||
+              (isShiPaymentMode(billingTypeUuid, selectedBillingType?.name) &&
+                !hasAttributeValue(attributes?.[SHI_ATTRIBUTE_UUIDS.shiId] ?? attributes?.shiId)) ||
+              (isInsurancePaymentMode(billingTypeUuid, selectedBillingType?.name) &&
+                !hasAttributeValue(attributes?.[INSURANCE_ATTRIBUTE_UUIDS.insuranceId] ?? attributes?.insuranceId)) ||
+              (isCreditCompanyPaymentMode(billingTypeUuid, selectedBillingType?.name) &&
+                !hasAttributeValue(
+                  attributes?.[CREDIT_COMPANY_ATTRIBUTE_UUIDS.creditCompany] ?? attributes?.creditCompany,
+                ))
             }
             className={styles.button}
             kind="primary"

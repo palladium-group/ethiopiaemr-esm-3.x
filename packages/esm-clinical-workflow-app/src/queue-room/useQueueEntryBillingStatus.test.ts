@@ -4,6 +4,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import type { QueueEntry } from '../types';
 import { usePaymentModes } from '../mru/billing-information/hooks/usePaymentModes';
 import { usePatientCardValidity } from './usePatientCardValidity';
+import { useLocationBillingExemption } from './useLocationBillingExemption';
 import { useQueueEntryBillingStatus } from './useQueueEntryBillingStatus';
 
 jest.mock('react-i18next', () => ({
@@ -38,10 +39,43 @@ jest.mock('./usePatientCardValidity', () => ({
   usePatientCardValidity: jest.fn(),
 }));
 
+jest.mock('./useLocationBillingExemption', () => ({
+  useLocationBillingExemption: jest.fn(),
+}));
+
 const PAYMENT_METHOD_ATTRIBUTE_TYPE = 'payment-method-attribute-type';
 const CASH_PAYMENT_MODE_UUID = 'cash-payment-mode-uuid';
 const CBHI_PAYMENT_MODE_UUID = 'cbhi-payment-mode-uuid';
 const CREDIT_PAYMENT_MODE_UUID = 'credit-payment-mode-uuid';
+const CLINICAL_CONSULTATION_SERVICE_TYPE_UUID = '167410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const LAB_SERVICE_TYPE_UUID = '1283AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+const cashQueueEntry = () =>
+  ({
+    uuid: 'q1',
+    patient: { uuid: 'p1' },
+    visit: {
+      uuid: 'v1',
+      attributes: [
+        {
+          attributeType: { uuid: PAYMENT_METHOD_ATTRIBUTE_TYPE },
+          value: CASH_PAYMENT_MODE_UUID,
+        },
+      ],
+    },
+  } as unknown as QueueEntry);
+
+const mockBillsSwr = (bills: unknown[], services: unknown[] = []) => {
+  (useSWR as unknown as jest.Mock).mockImplementation((key: string | null) => {
+    if (key?.includes('/cashier/bill?')) {
+      return { data: { data: { results: bills } }, isLoading: false };
+    }
+    if (key?.includes('/cashier/billableService')) {
+      return { data: { data: { results: services } }, isLoading: false };
+    }
+    return { data: undefined, isLoading: false };
+  });
+};
 
 describe('useQueueEntryBillingStatus', () => {
   beforeEach(() => {
@@ -70,6 +104,11 @@ describe('useQueueEntryBillingStatus', () => {
       hasValidCard: false,
       cardExpiryDate: null,
       lastConsultationDate: null,
+      isLoading: false,
+    });
+
+    (useLocationBillingExemption as jest.Mock).mockReturnValue({
+      isLocationExempted: false,
       isLoading: false,
     });
   });
@@ -174,44 +213,172 @@ describe('useQueueEntryBillingStatus', () => {
     expect(result.current.message).toContain('Consultation fee has not been created');
   });
 
-  it('blocks Cash patient when bill is unpaid or pending payment', () => {
-    (useSWR as unknown as jest.Mock).mockReturnValue({
-      data: {
-        data: {
-          results: [
-            {
-              uuid: 'bill-1',
-              voided: false,
-              status: 'PENDING',
-              balance: 150,
-              lineItems: [{ uuid: 'item-1', paymentStatus: 'PENDING', price: 150, quantity: 1 }],
-            },
-          ],
-        },
-      },
-      isLoading: false,
-    });
-
-    const queueEntry = {
-      uuid: 'q1',
-      patient: { uuid: 'p1' },
-      visit: {
-        uuid: 'v1',
-        attributes: [
+  it('blocks Cash patient when clinical consultation service bill is unpaid or pending payment', () => {
+    mockBillsSwr([
+      {
+        uuid: 'bill-1',
+        voided: false,
+        lineItems: [
           {
-            attributeType: { uuid: PAYMENT_METHOD_ATTRIBUTE_TYPE },
-            value: CASH_PAYMENT_MODE_UUID,
+            uuid: 'item-1',
+            paymentStatus: 'PENDING',
+            billableService: 'consult-svc-uuid:General Consultation',
+            serviceTypeUuid: CLINICAL_CONSULTATION_SERVICE_TYPE_UUID,
           },
         ],
       },
-    } as unknown as QueueEntry;
+    ]);
 
-    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+    const { result } = renderHook(() => useQueueEntryBillingStatus(cashQueueEntry()));
 
     expect(result.current.isCleared).toBe(false);
     expect(result.current.status).toBe('PENDING_PAYMENT');
     expect(result.current.badgeType).toBe('red');
     expect(result.current.message).toContain('Consultation fee payment is pending');
+  });
+
+  it('clears Cash patient when unpaid bill line item is a non-consultation service (e.g. Laboratory)', () => {
+    mockBillsSwr([
+      {
+        uuid: 'bill-1',
+        voided: false,
+        lineItems: [
+          {
+            uuid: 'item-1',
+            paymentStatus: 'PENDING',
+            billableService: 'lab-svc-uuid:CBC',
+            serviceTypeUuid: LAB_SERVICE_TYPE_UUID,
+          },
+        ],
+      },
+    ]);
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(cashQueueEntry()));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
+    expect(result.current.badgeType).toBe('green');
+  });
+
+  it('clears Cash patient when unpaid bill line item is a commodity/stock item (not a service)', () => {
+    mockBillsSwr([
+      {
+        uuid: 'bill-1',
+        voided: false,
+        lineItems: [{ uuid: 'item-1', paymentStatus: 'PENDING', billableService: null }],
+      },
+    ]);
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(cashQueueEntry()));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
+  });
+
+  it('clears Cash patient when clinical consultation is paid even if another service on the same bill is pending', () => {
+    mockBillsSwr([
+      {
+        uuid: 'bill-1',
+        voided: false,
+        lineItems: [
+          {
+            uuid: 'item-consult',
+            paymentStatus: 'PAID',
+            billableService: 'consult-svc-uuid:General Consultation',
+            serviceTypeUuid: CLINICAL_CONSULTATION_SERVICE_TYPE_UUID,
+          },
+          {
+            uuid: 'item-lab',
+            paymentStatus: 'PENDING',
+            billableService: 'lab-svc-uuid:Urinalysis',
+            serviceTypeUuid: LAB_SERVICE_TYPE_UUID,
+          },
+        ],
+      },
+    ]);
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(cashQueueEntry()));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
+  });
+
+  it('ignores voided clinical consultation line items when checking unpaid status', () => {
+    mockBillsSwr([
+      {
+        uuid: 'bill-1',
+        voided: false,
+        lineItems: [
+          {
+            uuid: 'item-voided',
+            voided: true,
+            paymentStatus: 'PENDING',
+            billableService: 'consult-svc-uuid:General Consultation',
+            serviceTypeUuid: CLINICAL_CONSULTATION_SERVICE_TYPE_UUID,
+          },
+          {
+            uuid: 'item-paid',
+            voided: false,
+            paymentStatus: 'PAID',
+            billableService: 'consult-svc-uuid:General Consultation',
+            serviceTypeUuid: CLINICAL_CONSULTATION_SERVICE_TYPE_UUID,
+          },
+        ],
+      },
+    ]);
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(cashQueueEntry()));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
+  });
+
+  it('blocks Cash patient when clinical consultation serviceType is resolved via billableService lookup', () => {
+    mockBillsSwr(
+      [
+        {
+          uuid: 'bill-1',
+          voided: false,
+          lineItems: [
+            { uuid: 'item-1', paymentStatus: 'PENDING', billableService: 'consult-svc-uuid:General Consultation' },
+          ],
+        },
+      ],
+      [
+        {
+          uuid: 'consult-svc-uuid',
+          serviceType: { uuid: CLINICAL_CONSULTATION_SERVICE_TYPE_UUID, display: 'Clinical consultation' },
+        },
+      ],
+    );
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(cashQueueEntry()));
+
+    expect(result.current.isCleared).toBe(false);
+    expect(result.current.status).toBe('PENDING_PAYMENT');
+  });
+
+  it('clears Cash patient when unpaid service without serviceTypeUuid is resolved as non-consultation via billableService lookup', () => {
+    mockBillsSwr(
+      [
+        {
+          uuid: 'bill-1',
+          voided: false,
+          lineItems: [{ uuid: 'item-1', paymentStatus: 'PENDING', billableService: 'rad-svc-uuid:Chest X-Ray' }],
+        },
+      ],
+      [
+        {
+          uuid: 'rad-svc-uuid',
+          serviceType: { uuid: '160463AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Radiology department' },
+        },
+      ],
+    );
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(cashQueueEntry()));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
   });
 
   it('clears Cash patient when consultation fee bill is fully paid', () => {
@@ -329,6 +496,96 @@ describe('useQueueEntryBillingStatus', () => {
             value: CASH_PAYMENT_MODE_UUID,
           },
         ],
+      },
+    } as unknown as QueueEntry;
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(false);
+    expect(result.current.status).toBe('LOADING');
+    expect(result.current.badgeType).toBe('cool-gray');
+  });
+
+  it('clears patient when location is exempted for all services, even without payment method', () => {
+    (useLocationBillingExemption as jest.Mock).mockReturnValue({
+      isLocationExempted: true,
+      isLoading: false,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [], // No payment method attached
+      },
+    } as unknown as QueueEntry;
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
+    expect(result.current.badgeType).toBe('green');
+    expect(result.current.badgeText).toBe('Exempted');
+  });
+
+  it('clears patient when location is exempted, bypassing unpaid cashier bills', () => {
+    (useLocationBillingExemption as jest.Mock).mockReturnValue({
+      isLocationExempted: true,
+      isLoading: false,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [
+          {
+            attributeType: { uuid: PAYMENT_METHOD_ATTRIBUTE_TYPE },
+            value: CASH_PAYMENT_MODE_UUID,
+          },
+        ],
+      },
+    } as unknown as QueueEntry;
+
+    // Bills would normally be pending/unpaid
+    (useSWR as unknown as jest.Mock).mockReturnValue({
+      data: {
+        data: {
+          results: [
+            {
+              uuid: 'bill-1',
+              status: 'PENDING',
+              balance: 100,
+              lineItems: [{ uuid: 'item-1', paymentStatus: 'PENDING' }],
+            },
+          ],
+        },
+      },
+      isLoading: false,
+    });
+
+    const { result } = renderHook(() => useQueueEntryBillingStatus(queueEntry));
+
+    expect(result.current.isCleared).toBe(true);
+    expect(result.current.status).toBe('CLEARED');
+    expect(result.current.badgeType).toBe('green');
+    expect(result.current.badgeText).toBe('Exempted');
+  });
+
+  it('shows loading state while location exemption check is in progress', () => {
+    (useLocationBillingExemption as jest.Mock).mockReturnValue({
+      isLocationExempted: false,
+      isLoading: true,
+    });
+
+    const queueEntry = {
+      uuid: 'q1',
+      patient: { uuid: 'p1' },
+      visit: {
+        uuid: 'v1',
+        attributes: [],
       },
     } as unknown as QueueEntry;
 

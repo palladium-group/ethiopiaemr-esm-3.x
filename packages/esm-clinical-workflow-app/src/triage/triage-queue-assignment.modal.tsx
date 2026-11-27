@@ -22,7 +22,15 @@ import {
 import { ChevronDown } from '@carbon/react/icons';
 import { showSnackbar, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
 import type { ClinicalWorkflowConfig } from '../config-schema';
-import { useMutateQueueEntries, useQueueLocations, useQueues } from '../queue-room/queue-entries.resource';
+import {
+  getDefaultPriorityUuid,
+  resolveEmergencyPriorityUuid,
+  useMutateQueueEntries,
+  useQueueLocations,
+  useQueuePriorities,
+  useQueues,
+} from '../queue-room/queue-entries.resource';
+import { findTriageDefinition } from './triage-config';
 import {
   getErrorMessage,
   isDuplicateQueueEntryError,
@@ -38,6 +46,7 @@ type ServiceQueuesConfig = {
     defaultStatusConceptUuid?: string;
     defaultPriorityConceptUuid?: string;
     emergencyPriorityConceptUuid?: string;
+    priorityConceptSetUuid?: string;
   };
 };
 
@@ -62,70 +71,129 @@ const TriageQueueAssignmentModal: React.FC<TriageQueueAssignmentModalProps> = ({
   const { t } = useTranslation();
   const { sessionLocation } = useSession();
   const { mutateQueueEntries } = useMutateQueueEntries();
-  const { assignedQueueVisitAttributeTypeUuid } = useConfig<ClinicalWorkflowConfig>();
+  const {
+    assignedQueueVisitAttributeTypeUuid,
+    triageVisitAttributeTypeUuid,
+    triageDefinitions,
+    emergencyLocationTags,
+    queueLocationTagName,
+  } = useConfig<ClinicalWorkflowConfig>();
   const serviceQueuesConfig = useConfig<ServiceQueuesConfig>({
     externalModuleName: '@openmrs/esm-service-queues-app',
   });
-  const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations();
+
+  const resolvedTriageId =
+    triageId ??
+    activeVisit?.attributes
+      ?.find((attr) => attr.attributeType?.uuid === triageVisitAttributeTypeUuid)
+      ?.value?.toString();
+
+  const isEmergencyTriage = useMemo(() => {
+    if (!resolvedTriageId) {
+      return false;
+    }
+    const triageDef = findTriageDefinition(triageDefinitions, resolvedTriageId);
+    const id = (triageDef?.id ?? resolvedTriageId).toLowerCase();
+    return (
+      id === 'emergency' || id === 'emergency-triage' || triageDef?.routePath?.toLowerCase() === 'emergency-triage'
+    );
+  }, [resolvedTriageId, triageDefinitions]);
+
+  const { priorities: availablePriorities, isLoadingQueuePriorities } = useQueuePriorities(
+    serviceQueuesConfig.concepts?.priorityConceptSetUuid,
+  );
+
+  const emergencyPriorityUuid = resolveEmergencyPriorityUuid(
+    serviceQueuesConfig.concepts?.emergencyPriorityConceptUuid,
+    availablePriorities,
+  );
+
+  const [priority, setPriority] = useState('');
+
+  useEffect(() => {
+    if (isEmergencyTriage) {
+      setPriority(emergencyPriorityUuid);
+    } else if (availablePriorities.length) {
+      const defaultUuid = serviceQueuesConfig.concepts?.defaultPriorityConceptUuid;
+      setPriority((curr) =>
+        curr && availablePriorities.some((item) => item.uuid === curr)
+          ? curr
+          : getDefaultPriorityUuid(availablePriorities, defaultUuid),
+      );
+    }
+  }, [
+    isEmergencyTriage,
+    emergencyPriorityUuid,
+    availablePriorities,
+    serviceQueuesConfig.concepts?.defaultPriorityConceptUuid,
+  ]);
+
+  const isEmergencyPrioritySelected = isEmergencyTriage || Boolean(priority && priority === emergencyPriorityUuid);
+
+  const emergencyLocationTag = emergencyLocationTags?.[0] || 'Emergency';
+  const defaultQueueLocationTag = queueLocationTagName || 'queue location';
+  const activeLocationTag =
+    !isEmergencyTriage && isEmergencyPrioritySelected ? emergencyLocationTag : defaultQueueLocationTag;
+
+  const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations(activeLocationTag);
   const queueLocationUuids = useMemo(
-    () => queueLocations.map((location) => location.id).filter((id): id is string => Boolean(id)),
+    () => queueLocations.map((l) => l.id).filter(Boolean) as string[],
     [queueLocations],
   );
-  const { byLocationUuid, isLoading: isLoadingCounts } = useTriageAssignmentCounts(triageId, queueLocationUuids);
+  const { byLocationUuid, isLoading: isLoadingCounts } = useTriageAssignmentCounts(
+    resolvedTriageId,
+    queueLocationUuids,
+  );
 
   const [queueLocation, setQueueLocation] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [queueService, setQueueService] = useState('');
-  const [priority, setPriority] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // When location tag changes between emergency and queue location, clear previous selection
+  const prevActiveLocationTagRef = useRef(activeLocationTag);
+  useEffect(() => {
+    if (prevActiveLocationTagRef.current !== activeLocationTag) {
+      prevActiveLocationTagRef.current = activeLocationTag;
+      setQueueLocation('');
+      setQueueService('');
+    }
+  }, [activeLocationTag]);
+
   const { queues, isLoading: isLoadingQueues } = useQueues(queueLocation);
   const assignmentQueues = queues as AssignmentQueue[];
 
-  const selectedLocation = useMemo(
-    () => queueLocations.find((location) => location.id === queueLocation),
-    [queueLocations, queueLocation],
-  );
+  const selectedLocation = queueLocations.find((location) => location.id === queueLocation);
   const selectedCount = selectedLocation?.id ? byLocationUuid[selectedLocation.id] ?? 0 : 0;
 
   const filteredLocations = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) {
-      return queueLocations;
-    }
-    return queueLocations.filter((location) => (location.name ?? location.id ?? '').toLowerCase().includes(term));
+    return term ? queueLocations.filter((l) => (l.name ?? l.id ?? '').toLowerCase().includes(term)) : queueLocations;
   }, [searchTerm, queueLocations]);
 
-  const selectedQueue = useMemo(
-    () => assignmentQueues.find((queue) => queue.uuid === queueService),
-    [assignmentQueues, queueService],
-  );
-  const priorities = useMemo(() => selectedQueue?.allowedPriorities ?? [], [selectedQueue?.allowedPriorities]);
-
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
+    if (!isDropdownOpen) {
+      return;
     }
+    const onMouseDown = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    };
 
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
     };
   }, [isDropdownOpen]);
 
@@ -141,18 +209,7 @@ const TriageQueueAssignmentModal: React.FC<TriageQueueAssignmentModalProps> = ({
 
   useEffect(() => {
     setQueueService('');
-    setPriority('');
   }, [queueLocation]);
-
-  useEffect(() => {
-    if (!priorities.length) {
-      setPriority('');
-      return;
-    }
-    const defaultPriorityUuid = serviceQueuesConfig.concepts?.defaultPriorityConceptUuid;
-    const defaultPriority = priorities.find((item) => item.uuid === defaultPriorityUuid) ?? priorities[0];
-    setPriority((current) => (priorities.some((item) => item.uuid === current) ? current : defaultPriority.uuid));
-  }, [priorities, serviceQueuesConfig.concepts?.defaultPriorityConceptUuid]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -163,13 +220,15 @@ const TriageQueueAssignmentModal: React.FC<TriageQueueAssignmentModalProps> = ({
       showSnackbar({
         title: t('incompleteForm', 'Incomplete form'),
         kind: 'error',
-        subtitle: t('missingRequiredFields', 'Select a queue location, service, and priority'),
+        subtitle: isEmergencyTriage
+          ? t('missingRequiredFieldsEmergency', 'Select a queue location and service')
+          : t('missingRequiredFields', 'Select a queue location, service, and priority'),
       });
       return;
     }
 
     setIsSubmitting(true);
-    const sortWeight = priority === serviceQueuesConfig.concepts?.emergencyPriorityConceptUuid ? 1 : 0;
+    const sortWeight = isEmergencyPrioritySelected ? 1 : 0;
 
     try {
       await postQueueEntry(
@@ -215,6 +274,36 @@ const TriageQueueAssignmentModal: React.FC<TriageQueueAssignmentModalProps> = ({
       <ModalHeader closeModal={closeModal} title={t('addPatientToQueue', 'Add patient to queue')} />
       <ModalBody className={styles.modalBody}>
         <Stack gap={5}>
+          {!isEmergencyTriage && (
+            <FormGroup legendText={t('priority', 'Priority')}>
+              {isLoadingQueuePriorities ? (
+                <RadioButtonGroup name="triage-queue-priority-skeleton">
+                  <RadioButtonSkeleton />
+                  <RadioButtonSkeleton />
+                </RadioButtonGroup>
+              ) : !availablePriorities.length ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  title={t('noPrioritiesForServiceTitle', 'No priorities available')}>
+                  {t(
+                    'noPrioritiesForService',
+                    'The selected service does not have any allowed priorities. This is an error in configuration. Please contact your system administrator.',
+                  )}
+                </InlineNotification>
+              ) : (
+                <RadioButtonGroup
+                  name="triage-queue-priority"
+                  valueSelected={priority}
+                  onChange={(uuid) => setPriority(String(uuid))}>
+                  {availablePriorities.map(({ uuid, display }) => (
+                    <RadioButton key={uuid} labelText={display} value={uuid} />
+                  ))}
+                </RadioButtonGroup>
+              )}
+            </FormGroup>
+          )}
+
           <FormGroup className={styles.locationFormGroup} legendText={t('queueLocation', 'Queue location')}>
             {isLoadingQueueLocations || isLoadingCounts ? (
               <InlineLoading description={t('loadingQueueLocations', 'Loading queue locations...')} />
@@ -338,36 +427,6 @@ const TriageQueueAssignmentModal: React.FC<TriageQueueAssignmentModalProps> = ({
                     <SelectItem key={queue.uuid} text={queue.name || queue.display} value={queue.uuid} />
                   ))}
                 </Select>
-              )}
-            </FormGroup>
-          ) : null}
-
-          {queueLocation && queueService ? (
-            <FormGroup legendText={t('priority', 'Priority')}>
-              {isLoadingQueues ? (
-                <RadioButtonGroup name="triage-queue-priority-skeleton">
-                  <RadioButtonSkeleton />
-                  <RadioButtonSkeleton />
-                </RadioButtonGroup>
-              ) : !priorities.length ? (
-                <InlineNotification
-                  kind="error"
-                  lowContrast
-                  title={t('noPrioritiesForServiceTitle', 'No priorities available')}>
-                  {t(
-                    'noPrioritiesForService',
-                    'The selected service does not have any allowed priorities. This is an error in configuration. Please contact your system administrator.',
-                  )}
-                </InlineNotification>
-              ) : (
-                <RadioButtonGroup
-                  name="triage-queue-priority"
-                  valueSelected={priority}
-                  onChange={(uuid) => setPriority(String(uuid))}>
-                  {priorities.map(({ uuid, display }) => (
-                    <RadioButton key={uuid} labelText={display} value={uuid} />
-                  ))}
-                </RadioButtonGroup>
               )}
             </FormGroup>
           ) : null}

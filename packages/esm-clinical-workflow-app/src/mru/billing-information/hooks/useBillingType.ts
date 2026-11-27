@@ -6,10 +6,7 @@ export const useBillingType = (billingTypes: any[], billingTypeUuid?: string) =>
     [billingTypes, billingTypeUuid],
   );
 
-  const isCreditType = useMemo(() => selectedBillingType?.name?.toLowerCase() === 'credit', [selectedBillingType]);
-
   return {
     selectedBillingType,
-    isCreditType,
   };
 };

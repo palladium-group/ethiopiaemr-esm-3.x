@@ -9,7 +9,8 @@ import {
   type HybridDosingState,
   type HybridPhase,
   type HybridValidationErrors,
-  type VariablePattern,
+  isVariablePattern,
+  type VariableBidDoses,
   type VariableQ6hDoses,
   type VariableTidDoses,
 } from './complex-dosing.types';
@@ -54,6 +55,18 @@ export function HybridDoseForm({
       onStateChange({
         ...state,
         phases: state.phases.map((phase) => (phase.id === phaseId ? { ...phase, ...updates } : phase)),
+      });
+    },
+    [onStateChange, state],
+  );
+
+  const updateBidDose = useCallback(
+    (phaseId: string, slot: keyof VariableBidDoses, dose: number | null) => {
+      onStateChange({
+        ...state,
+        phases: state.phases.map((phase) =>
+          phase.id === phaseId ? { ...phase, bidDoses: { ...phase.bidDoses, [slot]: dose } } : phase,
+        ),
       });
     },
     [onStateChange, state],
@@ -202,10 +215,15 @@ export function HybridDoseForm({
                 orientation="horizontal"
                 valueSelected={phase.pattern}
                 onChange={(selection) => {
-                  if (selection === 'tid' || selection === 'q6h') {
-                    updatePhase(phase.id, { pattern: selection as VariablePattern });
+                  if (isVariablePattern(selection)) {
+                    updatePhase(phase.id, { pattern: selection });
                   }
                 }}>
+                <RadioButton
+                  id={`hybridPatternBid-${phase.id}`}
+                  labelText={t('variablePatternBid', '2 times daily (BID)')}
+                  value="bid"
+                />
                 <RadioButton
                   id={`hybridPatternTid-${phase.id}`}
                   labelText={t('variablePatternTid', '3 times daily (TID)')}
@@ -219,7 +237,50 @@ export function HybridDoseForm({
               </RadioButtonGroup>
             </div>
             <span className={styles.scheduleLabel}>{t('variableDoseSchedule', 'Dose schedule')}</span>
-            {phase.pattern === 'tid' ? (
+            {phase.pattern === 'bid' ? (
+              <Grid className={formStyles.gridRow}>
+                <Column lg={16} md={4} sm={4}>
+                  <InputWrapper>
+                    <div className={formStyles.numberInput}>
+                      <NumberInput
+                        allowEmpty
+                        disableWheel
+                        hideSteppers
+                        id={`hybridBidMorning-${phase.id}`}
+                        invalid={Boolean(phaseErrors?.slots?.morning?.dose)}
+                        invalidText={phaseErrors?.slots?.morning?.dose}
+                        label={t('variableDoseMorning', 'Morning{{unitSuffix}}', { unitSuffix })}
+                        min={0.01}
+                        onChange={(_, { value }) => updateBidDose(phase.id, 'morning', parseDoseValue(value))}
+                        size={inputSize}
+                        step={0.01}
+                        value={typeof phase.bidDoses.morning === 'number' ? phase.bidDoses.morning : ''}
+                      />
+                    </div>
+                  </InputWrapper>
+                </Column>
+                <Column lg={16} md={4} sm={4}>
+                  <InputWrapper>
+                    <div className={formStyles.numberInput}>
+                      <NumberInput
+                        allowEmpty
+                        disableWheel
+                        hideSteppers
+                        id={`hybridBidEvening-${phase.id}`}
+                        invalid={Boolean(phaseErrors?.slots?.evening?.dose)}
+                        invalidText={phaseErrors?.slots?.evening?.dose}
+                        label={t('variableDoseEvening', 'Evening{{unitSuffix}}', { unitSuffix })}
+                        min={0.01}
+                        onChange={(_, { value }) => updateBidDose(phase.id, 'evening', parseDoseValue(value))}
+                        size={inputSize}
+                        step={0.01}
+                        value={typeof phase.bidDoses.evening === 'number' ? phase.bidDoses.evening : ''}
+                      />
+                    </div>
+                  </InputWrapper>
+                </Column>
+              </Grid>
+            ) : phase.pattern === 'tid' ? (
               <Grid className={formStyles.gridRow}>
                 <Column lg={16} md={4} sm={4}>
                   <InputWrapper>

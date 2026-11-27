@@ -90,7 +90,7 @@ function useActionPropsByKey() {
         label: 'move',
         text: 'Move',
         onClick: (queueEntry: QueueEntry) => {
-          openModal('move-queue-entry-modal', queueEntry);
+          openModal('ethiopia-move-queue-entry-modal', queueEntry);
         },
       },
       transition: {

@@ -3,4 +3,23 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.5rem 0.25rem 0.625rem 0.5rem;
+  min-inline-size: 0;
+}
+
+.testType {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.testTypeLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #525252);
+}
+
+.testTypeValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #161616);
+  overflow-wrap: break-word;
 }

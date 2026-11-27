@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   type DefaultWorkspaceProps,
   ResponsiveWrapper,
@@ -25,7 +25,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import styles from './add-location.workspace.scss';
 import { type LocationResponse } from '../../types';
-import { extractErrorMessagesFromResponse } from '../../helpers';
+import { showServerErrorModal } from '../../../../utils/server-error';
 import { useLocationTags } from '../../hooks/useLocationTags';
 import { mutate } from 'swr';
 import {
@@ -58,13 +58,20 @@ const baseLocationFormSchema = z.object({
 type LocationFormType = z.infer<typeof baseLocationFormSchema>;
 
 // Departments are flat: a Department must carry a Department Type and cannot sit under another Department.
-export const buildLocationFormSchema = (departmentTagUuid: string) =>
+export const buildLocationFormSchema = (departmentTagUuid: string, hasDepartmentChild = false) =>
   baseLocationFormSchema.superRefine((data, ctx) => {
     if (!data.tags.some((tag) => tag.uuid === departmentTagUuid)) {
       return;
     }
     if (!data.departmentType) {
       ctx.addIssue({ code: 'custom', path: ['departmentType'], message: 'Department type is required' });
+    }
+    if (hasDepartmentChild) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['tags'],
+        message: 'This location contains departments, so it cannot be a department',
+      });
     }
     if (data.parentLocation?.isDepartment) {
       ctx.addIssue({
@@ -97,7 +104,13 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
     return location?.attributes?.some((attribute) => attribute.attributeType?.uuid !== departmentTypeAttributeTypeUuid);
   }, [location?.attributes, departmentTypeAttributeTypeUuid]);
 
-  const locationFormSchema = useMemo(() => buildLocationFormSchema(departmentTagUuid), [departmentTagUuid]);
+  const hasDepartmentChild = !!locationDetails?.childLocations?.some((child) =>
+    child.tags?.some((tag) => tag.uuid === departmentTagUuid),
+  );
+  const locationFormSchema = useMemo(
+    () => buildLocationFormSchema(departmentTagUuid, hasDepartmentChild),
+    [departmentTagUuid, hasDepartmentChild],
+  );
 
   const handleMutation = () => {
     const url = `${restBaseUrl}/location`;
@@ -121,6 +134,9 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
     },
   });
 
+  // The parent autosuggest only reads its default value on mount, so remount it once the loaded details are in the form.
+  const [detailsApplied, setDetailsApplied] = useState(false);
+
   // Parent and department type are not in the table row, so load them before editing.
   useEffect(() => {
     if (!locationDetails) {
@@ -138,6 +154,7 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
         : null,
       departmentType: attributeValueUuid(existingDepartmentType) ?? null,
     });
+    setDetailsApplied(true);
   }, [locationDetails, existingDepartmentType, departmentTagUuid, reset, getValues]);
 
   const isDepartment = !!watch('tags')?.some((tag) => tag.uuid === departmentTagUuid);
@@ -187,13 +204,8 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
       });
       handleMutation();
       closeWorkspaceWithSavedChanges();
-    } catch (error: any) {
-      const errorMessages = extractErrorMessagesFromResponse(error);
-      showSnackbar({
-        title: t('error', 'Error'),
-        kind: 'error',
-        subtitle: errorMessages.join(', ') || t('locationSaveError', 'Error saving location'),
-      });
+    } catch (error) {
+      showServerErrorModal(t('locationSaveError', 'Error saving location'), error);
     }
   };
 
@@ -287,7 +299,7 @@ const AddLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
                   name="parentLocation"
                   render={({ field: { onChange, value } }) => (
                     <LocationAutosuggest
-                      key={locationDetails?.parentLocation?.uuid ?? 'none'}
+                      key={`${locationDetails?.parentLocation?.uuid ?? 'none'}-${detailsApplied}`}
                       labelText={t('parentLocationOptional', 'Parent location (optional)')}
                       placeholder={t('searchParentLocation', 'Search for location...')}
                       defaultValue={value?.display}

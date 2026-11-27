@@ -230,6 +230,7 @@ describe('calculateVariableQuantity', () => {
     route: null,
     unit: null,
     pattern: 'tid' as const,
+    bidDoses: { morning: null, evening: null },
     tidDoses: { morning: 12, noon: 8, evening: 10 },
     q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
   };
@@ -257,6 +258,17 @@ describe('calculateVariableQuantity', () => {
     );
   });
 
+  it('calculates quantity for BID using morning and evening slots', () => {
+    expect(
+      calculateVariableQuantity(
+        { ...tidState, pattern: 'bid', bidDoses: { morning: 2, evening: 1 } },
+        10,
+        '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        durationUnitsDaysMap,
+      ),
+    ).toBe(30);
+  });
+
   it('calculates quantity for Q6H using all four slots', () => {
     expect(
       calculateVariableQuantity(
@@ -264,6 +276,7 @@ describe('calculateVariableQuantity', () => {
           route: null,
           unit: null,
           pattern: 'q6h',
+          bidDoses: { morning: null, evening: null },
           tidDoses: { morning: null, noon: null, evening: null },
           q6hDoses: { at0600: 10, at1200: 10, at1800: 10, at0000: 5 },
         },
@@ -280,12 +293,19 @@ describe('serializeVariableDosage', () => {
     route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Subcutaneous' },
     unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Units' },
     pattern: 'tid',
+    bidDoses: { morning: null, evening: null },
     tidDoses: { morning: 12, noon: 8, evening: 10 },
     q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
   };
 
   it('serializes TID slots into freeTextDosage format', () => {
     expect(serializeVariableDosage(tidState)).toBe('Pattern: TID, Morning: 12 Units, Noon: 8 Units, Evening: 10 Units');
+  });
+
+  it('serializes BID slots into freeTextDosage format', () => {
+    expect(serializeVariableDosage({ ...tidState, pattern: 'bid', bidDoses: { morning: 12, evening: 10 } })).toBe(
+      'Pattern: BID, Morning: 12 Units, Evening: 10 Units',
+    );
   });
 
   it('serializes Q6H slots into freeTextDosage format', () => {
@@ -322,6 +342,7 @@ describe('validateVariableDosing', () => {
     route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
     unit: { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
     pattern: 'tid',
+    bidDoses: { morning: null, evening: null },
     tidDoses: { morning: 12, noon: 8, evening: 10 },
     q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
   };
@@ -351,6 +372,20 @@ describe('validateVariableDosing', () => {
     expect(result.errors.slots.noon?.dose).toBe('Dosage is required');
     expect(result.errors.duration).toBe('Duration is required');
     expect(result.errors.durationUnit).toBe('Duration unit is required');
+  });
+
+  it('validates only BID slots when pattern is bid', () => {
+    const result = validateVariableDosing(
+      { ...validState, pattern: 'bid', bidDoses: { morning: 10, evening: null } },
+      7,
+      durationUnit,
+      variableValidationMessages,
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.slots.evening?.dose).toBe('Dosage is required');
+    expect(result.errors.slots.morning).toBeUndefined();
+    expect(result.errors.slots.noon).toBeUndefined();
   });
 
   it('validates all Q6H slots when pattern is q6h', () => {
@@ -383,6 +418,7 @@ describe('calculateHybridQuantity', () => {
           duration: 7,
           durationUnit: daysUnit,
           pattern: 'tid',
+          bidDoses: { morning: null, evening: null },
           tidDoses: { morning: 10, noon: 6, evening: 8 },
           q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
         },
@@ -391,6 +427,7 @@ describe('calculateHybridQuantity', () => {
           duration: 3,
           durationUnit: daysUnit,
           pattern: 'q6h',
+          bidDoses: { morning: null, evening: null },
           tidDoses: { morning: null, noon: null, evening: null },
           q6hDoses: { at0600: 5, at1200: 5, at1800: 5, at0000: 5 },
         },
@@ -411,6 +448,7 @@ describe('calculateHybridQuantity', () => {
           duration: 7,
           durationUnit: daysUnit,
           pattern: 'tid',
+          bidDoses: { morning: null, evening: null },
           tidDoses: { morning: 10, noon: null, evening: 8 },
           q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
         },
@@ -430,6 +468,7 @@ describe('calculateHybridQuantity', () => {
           duration: null,
           durationUnit: daysUnit,
           pattern: 'tid',
+          bidDoses: { morning: null, evening: null },
           tidDoses: { morning: 10, noon: 6, evening: 8 },
           q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
         },
@@ -456,6 +495,7 @@ describe('serializeHybridDosage', () => {
         duration: 7,
         durationUnit: daysUnit,
         pattern: 'tid',
+        bidDoses: { morning: null, evening: null },
         tidDoses: { morning: 10, noon: 6, evening: 8 },
         q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
       },
@@ -464,6 +504,7 @@ describe('serializeHybridDosage', () => {
         duration: 7,
         durationUnit: daysUnit,
         pattern: 'tid',
+        bidDoses: { morning: null, evening: null },
         tidDoses: { morning: 12, noon: 8, evening: 10 },
         q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
       },
@@ -487,6 +528,7 @@ describe('serializeHybridDosage', () => {
             duration: 3,
             durationUnit: daysUnit,
             pattern: 'q6h',
+            bidDoses: { morning: null, evening: null },
             tidDoses: { morning: null, noon: null, evening: null },
             q6hDoses: { at0600: 10, at1200: 10, at1800: 10, at0000: 5 },
           },
@@ -506,6 +548,7 @@ describe('serializeHybridDosage', () => {
             duration: null,
             durationUnit: daysUnit,
             pattern: 'tid',
+            bidDoses: { morning: null, evening: null },
             tidDoses: { morning: 12, noon: 8, evening: 10 },
             q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
           },
@@ -525,6 +568,7 @@ describe('serializeHybridDosage', () => {
             duration: null,
             durationUnit: null,
             pattern: 'tid',
+            bidDoses: { morning: null, evening: null },
             tidDoses: { morning: null, noon: null, evening: null },
             q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
           },
@@ -546,6 +590,7 @@ describe('validateHybridDosing', () => {
         duration: 7,
         durationUnit: daysUnit,
         pattern: 'tid',
+        bidDoses: { morning: null, evening: null },
         tidDoses: { morning: 10, noon: 6, evening: 8 },
         q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
       },
@@ -574,6 +619,7 @@ describe('validateHybridDosing', () => {
             duration: null,
             durationUnit: null,
             pattern: 'tid',
+            bidDoses: { morning: null, evening: null },
             tidDoses: { morning: 10, noon: null, evening: 8 },
             q6hDoses: { at0600: null, at1200: null, at1800: null, at0000: null },
           },
@@ -598,6 +644,7 @@ describe('validateHybridDosing', () => {
             duration: 3,
             durationUnit: daysUnit,
             pattern: 'q6h',
+            bidDoses: { morning: null, evening: null },
             tidDoses: { morning: null, noon: null, evening: null },
             q6hDoses: { at0600: 5, at1200: null, at1800: 5, at0000: 5 },
           },

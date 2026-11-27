@@ -15,10 +15,8 @@ import type {
   HybridValidationResult,
   VariableDosingState,
   VariablePattern,
-  VariableQ6hDoses,
   VariableSlotFieldErrors,
   VariableSlotKey,
-  VariableTidDoses,
   VariableValidationErrors,
   VariableValidationMessages,
   VariableValidationResult,
@@ -125,36 +123,42 @@ function serializeVariableSlot(label: string, dose: number | null, unitValue: st
   return `${label}: ${dosePart}`;
 }
 
-function getPatternSlots(
-  pattern: VariablePattern,
-  tidDoses: VariableTidDoses,
-  q6hDoses: VariableQ6hDoses,
-): Array<{ label: string; dose: number | null }> {
-  if (pattern === 'tid') {
+type PatternDoses = Pick<VariableDosingState, 'pattern' | 'bidDoses' | 'tidDoses' | 'q6hDoses'>;
+
+const PATTERN_LABELS: Record<VariablePattern, string> = {
+  bid: 'BID',
+  tid: 'TID',
+  q6h: 'Q6H',
+};
+
+function getPatternSlots(doses: PatternDoses): Array<{ key: VariableSlotKey; label: string; dose: number | null }> {
+  if (doses.pattern === 'bid') {
     return [
-      { label: 'Morning', dose: tidDoses.morning },
-      { label: 'Noon', dose: tidDoses.noon },
-      { label: 'Evening', dose: tidDoses.evening },
+      { key: 'morning', label: 'Morning', dose: doses.bidDoses.morning },
+      { key: 'evening', label: 'Evening', dose: doses.bidDoses.evening },
+    ];
+  }
+
+  if (doses.pattern === 'tid') {
+    return [
+      { key: 'morning', label: 'Morning', dose: doses.tidDoses.morning },
+      { key: 'noon', label: 'Noon', dose: doses.tidDoses.noon },
+      { key: 'evening', label: 'Evening', dose: doses.tidDoses.evening },
     ];
   }
 
   return [
-    { label: '06:00', dose: q6hDoses.at0600 },
-    { label: '12:00', dose: q6hDoses.at1200 },
-    { label: '18:00', dose: q6hDoses.at1800 },
-    { label: '00:00', dose: q6hDoses.at0000 },
+    { key: 'at0600', label: '06:00', dose: doses.q6hDoses.at0600 },
+    { key: 'at1200', label: '12:00', dose: doses.q6hDoses.at1200 },
+    { key: 'at1800', label: '18:00', dose: doses.q6hDoses.at1800 },
+    { key: 'at0000', label: '00:00', dose: doses.q6hDoses.at0000 },
   ];
 }
 
-function serializePatternSlots(
-  pattern: VariablePattern,
-  tidDoses: VariableTidDoses,
-  q6hDoses: VariableQ6hDoses,
-  unitValue: string,
-): Array<string> {
+function serializePatternSlots(doses: PatternDoses, unitValue: string): Array<string> {
   const slotParts: Array<string> = [];
 
-  for (const slot of getPatternSlots(pattern, tidDoses, q6hDoses)) {
+  for (const slot of getPatternSlots(doses)) {
     const slotString = serializeVariableSlot(slot.label, slot.dose, unitValue);
     if (slotString) {
       slotParts.push(slotString);
@@ -166,8 +170,8 @@ function serializePatternSlots(
 
 export function serializeVariableDosage(state: VariableDosingState): string | null {
   const unitValue = state.unit?.value ?? '';
-  const patternLabel = state.pattern === 'tid' ? 'TID' : 'Q6H';
-  const slotParts = serializePatternSlots(state.pattern, state.tidDoses, state.q6hDoses, unitValue);
+  const patternLabel = PATTERN_LABELS[state.pattern];
+  const slotParts = serializePatternSlots(state, unitValue);
 
   return slotParts.length > 0 ? `Pattern: ${patternLabel}, ${slotParts.join(', ')}` : null;
 }
@@ -181,7 +185,7 @@ export function serializeHybridDosage(state: HybridDosingState): string | null {
       return;
     }
 
-    const slotParts = serializePatternSlots(phase.pattern, phase.tidDoses, phase.q6hDoses, unitValue);
+    const slotParts = serializePatternSlots(phase, unitValue);
     if (slotParts.length === 0) {
       return;
     }
@@ -211,12 +215,7 @@ export function calculateVariableQuantity(
   durationUnitValueCoded: string | null | undefined,
   durationUnitsDaysMap: Record<string, number>,
 ): number | null {
-  const slotDoses =
-    state.pattern === 'tid'
-      ? [state.tidDoses.morning, state.tidDoses.noon, state.tidDoses.evening]
-      : [state.q6hDoses.at0600, state.q6hDoses.at1200, state.q6hDoses.at1800, state.q6hDoses.at0000];
-
-  const dailyTotal = sumVariableSlotDoses(slotDoses);
+  const dailyTotal = sumVariableSlotDoses(getPatternSlots(state).map((slot) => slot.dose));
   if (dailyTotal == null) {
     return null;
   }
@@ -248,12 +247,7 @@ export function calculateHybridQuantity(
       return null;
     }
 
-    const slotDoses =
-      phase.pattern === 'tid'
-        ? [phase.tidDoses.morning, phase.tidDoses.noon, phase.tidDoses.evening]
-        : [phase.q6hDoses.at0600, phase.q6hDoses.at1200, phase.q6hDoses.at1800, phase.q6hDoses.at0000];
-
-    const dailyTotal = sumVariableSlotDoses(slotDoses);
+    const dailyTotal = sumVariableSlotDoses(getPatternSlots(phase).map((slot) => slot.dose));
     if (dailyTotal == null) {
       return null;
     }
@@ -285,32 +279,20 @@ function validateVariableSlotDose(
   return errors;
 }
 
-function getActivePatternSlotKeys(pattern: VariablePattern): Array<VariableSlotKey> {
-  if (pattern === 'tid') {
-    return ['morning', 'noon', 'evening'];
+function validatePatternSlots(
+  doses: PatternDoses,
+  messages: { doseRequired: string; doseGreaterThanZero: string },
+): Partial<Record<VariableSlotKey, VariableSlotFieldErrors>> {
+  const slotErrors: Partial<Record<VariableSlotKey, VariableSlotFieldErrors>> = {};
+
+  for (const slot of getPatternSlots(doses)) {
+    const doseErrors = validateVariableSlotDose(slot.dose, messages);
+    if (Object.keys(doseErrors).length > 0) {
+      slotErrors[slot.key] = doseErrors;
+    }
   }
 
-  return ['at0600', 'at1200', 'at1800', 'at0000'];
-}
-
-function getActiveVariableSlotKeys(state: VariableDosingState): Array<VariableSlotKey> {
-  return getActivePatternSlotKeys(state.pattern);
-}
-
-function getSlotDoseFromDoses(
-  tidDoses: VariableTidDoses,
-  q6hDoses: VariableQ6hDoses,
-  slotKey: VariableSlotKey,
-): number | null {
-  if (slotKey === 'morning' || slotKey === 'noon' || slotKey === 'evening') {
-    return tidDoses[slotKey];
-  }
-
-  return q6hDoses[slotKey];
-}
-
-function getVariableSlotDose(state: VariableDosingState, slotKey: VariableSlotKey): number | null {
-  return getSlotDoseFromDoses(state.tidDoses, state.q6hDoses, slotKey);
+  return slotErrors;
 }
 
 export function validateVariableDosing(
@@ -319,7 +301,7 @@ export function validateVariableDosing(
   durationUnit: { valueCoded?: string | null } | null,
   messages: VariableValidationMessages,
 ): VariableValidationResult {
-  const errors: VariableValidationErrors = { slots: {} };
+  const errors: VariableValidationErrors = { slots: validatePatternSlots(state, messages) };
 
   if (!state.route?.valueCoded) {
     errors.route = messages.routeRequired;
@@ -327,13 +309,6 @@ export function validateVariableDosing(
 
   if (!state.unit?.valueCoded) {
     errors.unit = messages.unitRequired;
-  }
-
-  for (const slotKey of getActiveVariableSlotKeys(state)) {
-    const slotErrors = validateVariableSlotDose(getVariableSlotDose(state, slotKey), messages);
-    if (Object.keys(slotErrors).length > 0) {
-      errors.slots[slotKey] = slotErrors;
-    }
   }
 
   if (duration == null) {
@@ -417,14 +392,7 @@ function validateHybridPhase(phase: HybridPhase, messages: HybridValidationMessa
     errors.durationUnit = messages.durationUnitRequired;
   }
 
-  const slotErrors: Partial<Record<VariableSlotKey, VariableSlotFieldErrors>> = {};
-  for (const slotKey of getActivePatternSlotKeys(phase.pattern)) {
-    const dose = getSlotDoseFromDoses(phase.tidDoses, phase.q6hDoses, slotKey);
-    const doseErrors = validateVariableSlotDose(dose, messages);
-    if (Object.keys(doseErrors).length > 0) {
-      slotErrors[slotKey] = doseErrors;
-    }
-  }
+  const slotErrors = validatePatternSlots(phase, messages);
 
   if (Object.keys(slotErrors).length > 0) {
     errors.slots = slotErrors;

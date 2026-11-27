@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DatePicker, DatePickerInput, NumberInput, Select, SelectItem, TextArea, TextInput } from '@carbon/react';
+import { type CatalogServicePrice } from '../api/billable-availability.resource';
 import { type OrderDetailValidationError } from '../api/order-catalog-validation';
 import {
   createDefaultOrderDetail,
@@ -9,12 +10,17 @@ import {
   type OrderLaterality,
   type OrderUrgency,
 } from '../types/order-catalog.types';
+import OrderCatalogPriceInfo from './order-catalog-price-info.component';
 import styles from './order-catalog-order-detail-form.scss';
 
 export interface OrderCatalogOrderDetailFormProps {
   /** Stable id prefix so each order's fields get unique ids. */
   idPrefix: string;
   orderType: OrderCatalogOrderType;
+  displayName: string;
+  prices: Array<CatalogServicePrice> | undefined;
+  pricesLoading: boolean;
+  pricesError: boolean;
   value: OrderDetail | undefined;
   onChange: (next: OrderDetail) => void;
   validationErrors?: Array<OrderDetailValidationError>;
@@ -30,6 +36,10 @@ function hasFieldError(
 const OrderCatalogOrderDetailForm: React.FC<OrderCatalogOrderDetailFormProps> = ({
   idPrefix,
   orderType,
+  displayName,
+  prices,
+  pricesLoading,
+  pricesError,
   value,
   onChange,
   validationErrors,
@@ -55,8 +65,20 @@ const OrderCatalogOrderDetailForm: React.FC<OrderCatalogOrderDetailFormProps> = 
   const showComments = orderType === 'radiology' || orderType === 'procedure';
   const reasonRequired = showReason;
 
+  const typeLabel =
+    orderType === 'radiology'
+      ? t('imagingType', 'Imaging')
+      : orderType === 'procedure'
+      ? t('procedureType', 'Procedure')
+      : t('testType', 'Test type');
+
   return (
     <div className={styles.form}>
+      <OrderCatalogPriceInfo prices={prices} isLoading={pricesLoading} hasError={pricesError} />
+      <div className={styles.testType}>
+        <span className={styles.testTypeLabel}>{typeLabel}</span>
+        <span className={styles.testTypeValue}>{displayName}</span>
+      </div>
       <Select
         id={`${idPrefix}-urgency`}
         size="sm"

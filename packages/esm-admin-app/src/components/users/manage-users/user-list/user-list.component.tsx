@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   DataTable,
   DataTableSkeleton,
   Dropdown,
+  InlineLoading,
   OverflowMenu,
   OverflowMenuItem,
   Pagination,
@@ -27,21 +28,20 @@ import {
   launchWorkspace,
   WorkspaceContainer,
   isDesktop,
-  usePagination,
+  useDebounce,
 } from '@openmrs/esm-framework';
-import { CardHeader, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
+import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
 import EmptyState from '../../../empty-state/empty-state-log.components';
 import { useSystemUserRoleConfigSetting } from '../../../hook/useSystemRoleSetting';
-import { useProvider, useUsers } from './user-list.resource';
+import { type LicenseFilter, useAdminUsers } from './user-list.resource';
 import styles from './user-list.scss';
 import { ConfigObject } from '../../../../config-schema';
 import { formatDateTime } from '../../../../utils/utils';
 import UserDetails from '../user-details/user-details.component';
 import upperCase from 'lodash-es/upperCase';
 
-type FilterType = 'allUsers' | 'activeLicensed' | 'expiredLicensed' | 'licensedExpiringSoon' | 'unlicensed';
+type FilterType = LicenseFilter;
 
 const getCardTitle = (filterName: FilterType): string => {
   const filterMap: Record<FilterType, string> = {
@@ -54,12 +54,17 @@ const getCardTitle = (filterName: FilterType): string => {
   return filterMap[filterName] || 'List of users';
 };
 
+const PAGE_SIZES = [10, 20, 50, 100];
+
+type WithAttributes = { attributes?: Array<{ attributeType?: { uuid: string }; value?: unknown }> };
+
+const findAttributeValue = (provider: WithAttributes | undefined, typeUuid: string) =>
+  provider?.attributes?.find((attr) => attr?.attributeType?.uuid === typeUuid)?.value;
+
 const UserList: React.FC = () => {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
-  const { users, isLoading: isLoadingUsers, error: usersError } = useUsers();
-  const { provider, isLoading, error: providerError } = useProvider();
   const {
     licenseNumberUuid,
     licenseExpiryDateUuid,
@@ -67,111 +72,45 @@ const UserList: React.FC = () => {
     providerUniqueIdentifierAttributeTypeUuid,
   } = useConfig<ConfigObject>();
 
+  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 400);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('allUsers');
+  const isLicenseFilter = selectedFilter !== 'allUsers';
 
   const { error } = useSystemUserRoleConfigSetting();
 
-  const isActiveLicensed = useCallback(
-    (provider) => {
-      const licenseAttr = provider.attributes.find((attr) => attr.attributeType.uuid === licenseNumberUuid);
-      const expiryAttr = provider.attributes.find((attr) => attr.attributeType.uuid === licenseExpiryDateUuid);
-      const licenseExpiryDate = expiryAttr ? dayjs(expiryAttr.value) : null;
-      return licenseAttr && licenseExpiryDate && licenseExpiryDate.isAfter(dayjs());
+  // One request per page: users come with their provider, and search + license filters run on the server.
+  const {
+    users: pageUsers,
+    totalCount,
+    isLoading: isLoadingUsers,
+    isValidating,
+    error: usersError,
+  } = useAdminUsers({
+    searchTerm: debouncedSearch,
+    licenseStatus: selectedFilter,
+    page,
+    pageSize,
+    licenseAttributeTypes: {
+      licenseNumber: licenseNumberUuid,
+      licenseExpiry: licenseExpiryDateUuid,
+      nationalId: providerNationalIdUuid,
     },
-    [licenseNumberUuid, licenseExpiryDateUuid],
-  );
+  });
 
-  const isExpiredLicensed = useCallback(
-    (provider) => {
-      const expiryAttr = provider.attributes.find((attr) => attr.attributeType.uuid === licenseExpiryDateUuid);
-      const licenseExpiryDate = expiryAttr ? dayjs(expiryAttr.value) : null;
-      return licenseExpiryDate && licenseExpiryDate.isBefore(dayjs());
-    },
-    [licenseExpiryDateUuid],
-  );
+  const resetToFirstPage = () => setPage(1);
 
-  const isExpiringSoon = useCallback(
-    (provider) => {
-      const expiryAttr = provider.attributes.find((attr) => attr.attributeType.uuid === licenseExpiryDateUuid);
-      const licenseExpiryDate = expiryAttr ? dayjs(expiryAttr.value) : null;
-      const today = dayjs();
-      return (
-        licenseExpiryDate &&
-        licenseExpiryDate.isAfter(today) &&
-        licenseExpiryDate.diff(today, 'day') > 0 &&
-        licenseExpiryDate.diff(today, 'day') <= 3
-      );
-    },
-    [licenseExpiryDateUuid],
-  );
-
-  const isUnlicensed = useCallback(
-    (provider) => {
-      const nationalId = provider.attributes.find((attr) => attr.attributeType.uuid === providerNationalIdUuid);
-      const licenseNumber = provider.attributes.find((attr) => attr.attributeType.uuid === licenseNumberUuid);
-      return !nationalId && !licenseNumber;
-    },
-    [providerNationalIdUuid, licenseNumberUuid],
-  );
-
-  const filteredUsers = useMemo(() => {
-    let filtered = users;
-
-    if (searchQuery) {
-      filtered = filtered.filter((user) => user.person.display.toLowerCase().includes(searchQuery.toLowerCase()));
+  // The REST API rejects a startIndex past the last record (e.g. after users were retired); go back to page 1.
+  useEffect(() => {
+    if (usersError && page > 1) {
+      setPage(1);
     }
+  }, [usersError, page]);
 
-    switch (selectedFilter) {
-      case 'activeLicensed':
-        filtered = filtered.filter((user) => {
-          const userProvider = provider.find((p) => p.person?.uuid === user.person.uuid);
-          return userProvider && isActiveLicensed(userProvider);
-        });
-        break;
-      case 'expiredLicensed':
-        filtered = filtered.filter((user) => {
-          const userProvider = provider.find((p) => p.person?.uuid === user.person.uuid);
-          return userProvider && isExpiredLicensed(userProvider);
-        });
-        break;
-      case 'licensedExpiringSoon':
-        filtered = filtered.filter((user) => {
-          const userProvider = provider.find((p) => p.person?.uuid === user.person.uuid);
-          return userProvider && isExpiringSoon(userProvider);
-        });
-        break;
-      case 'unlicensed':
-        filtered = filtered.filter((user) => {
-          const userProvider = provider.find((p) => p.person?.uuid === user.person.uuid);
-          return userProvider && isUnlicensed(userProvider);
-        });
-        break;
-      default:
-        break;
-    }
-
-    return filtered;
-  }, [users, searchQuery, selectedFilter, provider, isActiveLicensed, isExpiredLicensed, isExpiringSoon, isUnlicensed]);
-
-  const { paginated, goTo, results, currentPage } = usePagination(filteredUsers, pageSize);
-  const { pageSizes } = usePaginationInfo(pageSize, filteredUsers.length, currentPage, results?.length);
-
-  if (isLoadingUsers || isLoading) {
-    return (
-      <div className={styles.Container}>
-        <DataTableSkeleton />
-      </div>
-    );
-  }
-
-  if (error || usersError || providerError) {
+  if (error || usersError) {
     return <ErrorState error={error || usersError} headerTitle={t('usersManagement', 'Users management')} />;
-  }
-
-  if (users.length === 0) {
-    return <EmptyState subTitle={t('noUsersAvailable', 'No users available')} />;
   }
 
   const headerData = [
@@ -201,48 +140,34 @@ const UserList: React.FC = () => {
     },
   ];
 
-  const rowData = results?.map((user) => {
-    const userProvider = provider.find((p) => p.person?.uuid === user.person.uuid);
-
-    const licenseNumberAttribute = userProvider?.attributes.find(
-      (attr) => attr?.attributeType?.uuid === licenseNumberUuid,
-    );
-    const licenseExpiryDateAttribute = userProvider?.attributes.find(
-      (attr) => attr?.attributeType?.uuid === licenseExpiryDateUuid,
-    );
-    const licenseNumber = licenseNumberAttribute ? licenseNumberAttribute.value : '--';
-    const licenseExpiryDate = licenseExpiryDateAttribute ? licenseExpiryDateAttribute.value : '--';
-
-    const providerUniqueIdentifierAttribute = userProvider?.attributes.find(
-      (attr) => attr?.attributeType?.uuid === providerUniqueIdentifierAttributeTypeUuid,
-    );
-    const providerUniqueIdentifier = providerUniqueIdentifierAttribute ? providerUniqueIdentifierAttribute.value : '--';
+  const rowData = pageUsers.map((user) => {
+    const userProvider = user.provider ?? undefined;
+    const attributeValue = (attributeTypeUuid: string) => {
+      const value = findAttributeValue(userProvider, attributeTypeUuid);
+      return value ? String(value) : '--';
+    };
+    const licenseExpiryDate = attributeValue(licenseExpiryDateUuid);
 
     return {
       id: user.uuid,
       systemId: user.systemId,
-      names: upperCase(user.person.display),
-      licenseNumber: licenseNumber,
-      licenseExpiryDate: formatDateTime(new Date(licenseExpiryDate)),
-      providerUniqueIdentifier: providerUniqueIdentifier,
+      names: upperCase(user.person?.display),
+      licenseNumber: attributeValue(licenseNumberUuid),
+      licenseExpiryDate: licenseExpiryDate === '--' ? licenseExpiryDate : formatDateTime(licenseExpiryDate),
+      providerUniqueIdentifier: attributeValue(providerUniqueIdentifierAttributeTypeUuid),
       userProvider,
       user,
       actions: (
         <OverflowMenu className={styles.btnSet} flipped={true} aria-label="user-management-menu">
           <OverflowMenuItem
             className={styles.btn}
-            onClick={() => {
-              const selectedUser = users.find((u) => u.uuid === user.uuid);
-              if (selectedUser) {
-                launchWorkspace('manage-user-workspace', {
-                  workspaceTitle: t('editUser', 'Edit User'),
-                  initialUserValue: user,
-                  initialProvider: userProvider,
-                });
-              } else {
-                console.error('User not found:', user.uuid);
-              }
-            }}
+            onClick={() =>
+              launchWorkspace('manage-user-workspace', {
+                workspaceTitle: t('editUser', 'Edit User'),
+                initialUserValue: user,
+                initialProvider: userProvider,
+              })
+            }
             itemText={t('editUser', 'Edit user')}
           />
           <OverflowMenuItem
@@ -260,6 +185,17 @@ const UserList: React.FC = () => {
     };
   });
 
+  const filterItems: Array<{ id: FilterType; label: string }> = [
+    { id: 'allUsers', label: t('All users', 'All users') },
+    { id: 'activeLicensed', label: t('Active Licensed', 'Active Licensed') },
+    { id: 'expiredLicensed', label: t('Expired Licensed', 'Expired Licensed') },
+    { id: 'licensedExpiringSoon', label: t('Licensed expiring soon', 'Licensed expiring soon') },
+    { id: 'unlicensed', label: t('Unlicensed', 'Unlicensed') },
+  ];
+
+  const isFirstLoad = isLoadingUsers && pageUsers.length === 0;
+  const isRefreshing = !isFirstLoad && isValidating;
+
   return (
     <>
       <div>
@@ -272,16 +208,13 @@ const UserList: React.FC = () => {
               id="filter-dropdown"
               label={t('filter', 'Filter')}
               className={styles.dropDownFilter}
-              items={[
-                { id: 'allUsers', label: t('All users', 'All users') },
-                { id: 'activeLicensed', label: t('Active Licensed', 'Active Licensed') },
-                { id: 'expiredLicensed', label: t('Expired Licensed', 'Expired Licensed') },
-                { id: 'licensedExpiringSoon', label: t('Licensed expiring soon', 'Licensed expiring soon') },
-                { id: 'unlicensed', label: t('Unlicensed', 'Unlicensed') },
-              ]}
+              items={filterItems}
               itemToString={(item) => (item ? item.label : '')}
-              onChange={({ selectedItem }) => setSelectedFilter(selectedItem.id as FilterType)}
-              selectedItem={{ id: selectedFilter, label: t(selectedFilter, selectedFilter) }}
+              onChange={({ selectedItem }) => {
+                setSelectedFilter(selectedItem.id as FilterType);
+                resetToFirstPage();
+              }}
+              selectedItem={filterItems.find((item) => item.id === selectedFilter)}
               size={isDesktop(layout) ? 'lg' : 'sm'}
             />
             <Button
@@ -295,23 +228,33 @@ const UserList: React.FC = () => {
           </div>
 
           <div className={styles.providerContainer}>
-            <CardHeader
-              title={`${t(getCardTitle(selectedFilter), { count: filteredUsers.length })} (${filteredUsers.length})`}>
-              {''}
+            <CardHeader title={`${t(getCardTitle(selectedFilter))} (${isFirstLoad ? '…' : totalCount})`}>
+              {isRefreshing ? <InlineLoading description={t('loading', 'Loading...')} /> : <span />}
             </CardHeader>
             <Search
               labelText=""
-              placeholder={t('searchForUsers', 'Search for user')}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('searchForUsers', 'Search by name, username or system ID')}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                resetToFirstPage();
+              }}
               size={isDesktop(layout) ? 'sm' : 'lg'}
               value={searchQuery}
             />
 
-            {filteredUsers.length === 0 ? (
-              <EmptyState subTitle={t('noMatchingUsers', 'No matching users found')} />
+            {isFirstLoad ? (
+              <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />
+            ) : totalCount === 0 ? (
+              <EmptyState
+                subTitle={
+                  debouncedSearch || isLicenseFilter
+                    ? t('noMatchingUsers', 'No matching users found')
+                    : t('noUsersAvailable', 'No users available')
+                }
+              />
             ) : (
               <>
-                <DataTable isSortable rows={rowData} headers={headerData} size={responsiveSize} useZebraStyles>
+                <DataTable rows={rowData} headers={headerData} size={responsiveSize} useZebraStyles>
                   {({
                     rows,
                     headers,
@@ -334,47 +277,50 @@ const UserList: React.FC = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {rows.map((row, i) => (
-                            <React.Fragment key={row.id}>
-                              <TableExpandRow {...getRowProps({ row })}>
-                                {row.cells.map((cell) => (
-                                  <TableCell key={cell.id}>{cell.value}</TableCell>
-                                ))}
-                              </TableExpandRow>
-                              {row && row.isExpanded ? (
-                                <TableExpandedRow className={styles.expandedRow} colSpan={headers.length + 1}>
-                                  <div className={styles.container} key={i}>
-                                    <UserDetails provider={rowData[i].userProvider} user={rowData[i].user} />
-                                  </div>
-                                </TableExpandedRow>
-                              ) : (
-                                <TableExpandedRow className={styles.hiddenRow} colSpan={headers.length + 2} />
-                              )}
-                            </React.Fragment>
-                          ))}
+                          {rows.map((row) => {
+                            const source = rowData.find((item) => item.id === row.id);
+                            return (
+                              <React.Fragment key={row.id}>
+                                <TableExpandRow {...getRowProps({ row })}>
+                                  {row.cells.map((cell) => (
+                                    <TableCell key={cell.id}>{cell.value}</TableCell>
+                                  ))}
+                                </TableExpandRow>
+                                {row.isExpanded ? (
+                                  <TableExpandedRow className={styles.expandedRow} colSpan={headers.length + 1}>
+                                    <div className={styles.container}>
+                                      <UserDetails provider={source?.userProvider} user={source?.user} />
+                                    </div>
+                                  </TableExpandedRow>
+                                ) : (
+                                  <TableExpandedRow className={styles.hiddenRow} colSpan={headers.length + 2} />
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </TableContainer>
                   )}
                 </DataTable>
-                {paginated && (
-                  <Pagination
-                    forwardText={t('nextPage', 'Next page')}
-                    backwardText={t('previousPage', 'Previous page')}
-                    page={currentPage}
-                    pageSize={pageSize}
-                    pageSizes={pageSizes}
-                    totalItems={filteredUsers.length}
-                    className={styles.pagination}
-                    size={responsiveSize}
-                    onChange={({ page: newPage, pageSize }) => {
-                      if (newPage !== currentPage) {
-                        goTo(newPage);
-                      }
-                      setPageSize(pageSize);
-                    }}
-                  />
-                )}
+                <Pagination
+                  forwardText={t('nextPage', 'Next page')}
+                  backwardText={t('previousPage', 'Previous page')}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizes={PAGE_SIZES}
+                  totalItems={totalCount}
+                  className={styles.pagination}
+                  size={responsiveSize}
+                  onChange={({ page: newPage, pageSize: newPageSize }) => {
+                    if (newPageSize !== pageSize) {
+                      setPageSize(newPageSize);
+                      setPage(1);
+                    } else {
+                      setPage(newPage);
+                    }
+                  }}
+                />
               </>
             )}
           </div>

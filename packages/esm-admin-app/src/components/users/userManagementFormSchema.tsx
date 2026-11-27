@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import { isUsernameTaken } from './manage-users/user-list/user-list.resource';
 
 const PHONE_REGEX = /^\+?[\d\s\-()]+$/;
 const MIN_PHONE_DIGITS = 9;
@@ -7,7 +8,8 @@ const MIN_USERNAME_LENGTH = 3;
 const MIN_PASSWORD_LENGTH = 8;
 
 const UserManagementFormSchema = (
-  existingUsernames: Array<string>,
+  /** The username the user being edited already has; it is never reported as taken. */
+  currentUsername: string | undefined,
   isEdit?: boolean,
   shouldValidatePhoneEmail = true,
   isInitialValuesEmpty = true,
@@ -62,9 +64,11 @@ const UserManagementFormSchema = (
                 count: MIN_USERNAME_LENGTH,
               }),
             )
-            .refine((value) => !existingUsernames.includes(value), {
-              message: t('usernameTaken', 'Username already exists'),
-            }),
+            .refine(
+              async (value) =>
+                value.length < MIN_USERNAME_LENGTH || value === currentUsername || !(await isUsernameTaken(value)),
+              { message: t('usernameTaken', 'Username already exists') },
+            ),
         ),
       password: isInitialValuesEmpty
         ? z

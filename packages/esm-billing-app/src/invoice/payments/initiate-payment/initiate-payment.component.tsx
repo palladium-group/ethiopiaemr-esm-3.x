@@ -22,6 +22,7 @@ import { initiateTelebirrPayment } from '../../../telebirr/telebirr-resource';
 import { LineItem, MappedBill, PaymentStatus } from '../../../types';
 import { formatEthiopianPhoneNumber } from '../utils';
 import styles from './initiate-payment.scss';
+import { lineItemAmountDue } from '../../checkout/checkout.resource';
 
 const initiatePaymentSchema = z.object({
   phoneNumber: z
@@ -49,7 +50,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const isWaitingForTelebirr = requestStatus === 'INITIATED';
   const pendingLineItems = selectedLineItems.filter((item) => item.paymentStatus === PaymentStatus.PENDING);
   const selectedLineItemsPendingAmount = pendingLineItems.reduce(
-    (curr: number, prev) => curr + Number(prev.price * prev.quantity),
+    (curr: number, prev) => curr + lineItemAmountDue(prev),
     0,
   );
 

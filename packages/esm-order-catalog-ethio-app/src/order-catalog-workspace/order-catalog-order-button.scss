@@ -1,10 +1,11 @@
 .orderBtn {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
   gap: 0.375rem;
   min-height: 2.25rem;
-  padding: 0.375rem 0.625rem;
+  flex: 1;
+  padding: 0.375rem 0.75rem;
   border: 1px solid var(--border-strong-01, #8d8d8d);
   border-radius: 4px;
   background: var(--layer-01, #fff);
@@ -129,12 +130,13 @@
   justify-content: center;
   inline-size: 0.875rem;
   block-size: 0.875rem;
+  margin-block-start: 0.0625rem;
   flex-shrink: 0;
 }
 
 .label {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
 }

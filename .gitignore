@@ -95,6 +95,7 @@ e2e/storageState.json
 .claude/**
 .cursor/**
 .codegraph
+.agents
 
 # local dev frontend config (importmap/routes overrides + generator)
 dev-importmap.local.json

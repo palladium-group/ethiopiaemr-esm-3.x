@@ -97,6 +97,11 @@
       "name": "hwr-syncing-modal"
     },
     {
+      "component": "serverErrorDetailsModal",
+      "name": "admin-server-error-modal",
+      "size": "lg"
+    },
+    {
       "component": "locationBulkImportModal",
       "name": "location-bulk-import-modal",
       "size": "lg"

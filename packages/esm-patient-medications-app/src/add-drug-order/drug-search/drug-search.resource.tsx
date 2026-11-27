@@ -339,9 +339,11 @@ export function getTemplateDoseUnits(
   return units?.length ? units : undefined;
 }
 
+// Only a unit explicitly flagged `default` counts; with several units and none flagged,
+// the clinician must choose, so we deliberately do not fall back to the first one.
 export function getDefaultDoseUnit(template: OrderTemplate): DosingUnit | undefined {
   const units = getTemplateDoseUnits(template.dosingInstructions);
-  return units?.find((x) => x.default) ?? units?.[0];
+  return units?.find((x) => x.default);
 }
 
 export function getTemplateOrderBasketItem(
@@ -354,9 +356,14 @@ export function getTemplateOrderBasketItem(
   template?: DrugOrderTemplate,
 ): DrugOrderBasketItem {
   if (template) {
+    // Fall back to the dosage form only when the template lists no dose units at all;
+    // when it lists units but none is the default, leave the unit unset.
+    const templateHasDoseUnits = Boolean(getTemplateDoseUnits(template.template.dosingInstructions));
     const defaultUnit =
       getDefaultDoseUnit(template.template) ??
-      (drug?.dosageForm ? { value: drug?.dosageForm?.display, valueCoded: drug?.dosageForm?.uuid } : null);
+      (!templateHasDoseUnits && drug?.dosageForm
+        ? { value: drug?.dosageForm?.display, valueCoded: drug?.dosageForm?.uuid }
+        : null);
 
     return {
       action: 'NEW',

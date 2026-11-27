@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { navigate, setUserLanguage, useConfig, useConnectivity, useSession } from '@openmrs/esm-framework';
 import { clearHistory } from '@openmrs/esm-framework/src/internal';
 import { type ConfigSchema } from '../config-schema';
-import { performLogout } from './logout.resource';
+import { performLogout, reloadToLogin } from './logout.resource';
 
 const RedirectLogout: React.FC = () => {
   const config = useConfig<ConfigSchema>();
@@ -16,6 +16,9 @@ const RedirectLogout: React.FC = () => {
         navigate({ to: config.provider.loginUrl });
       } else if (config.provider.type === 'oauth2') {
         // do nothing, do not redirect
+      } else if (isLoginEnabled) {
+        // performLogout's clearCurrentUser re-runs this effect before its own redirect, so reload here too
+        reloadToLogin();
       } else {
         navigate({ to: '${openmrsSpaBase}/login' });
       }
@@ -35,7 +38,7 @@ const RedirectLogout: React.FC = () => {
           } else if (config.provider.type === 'oauth2') {
             // do nothing, do not redirect
           } else {
-            navigate({ to: '${openmrsSpaBase}/login' });
+            reloadToLogin();
           }
         })
         .catch((error) => {

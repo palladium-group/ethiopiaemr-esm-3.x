@@ -4,8 +4,9 @@ import { Column, ComboBox, Grid, NumberInput, RadioButton, RadioButtonGroup } fr
 import { useLayoutType } from '@openmrs/esm-framework';
 import type { DosingUnit, MedicationRoute } from '@openmrs/esm-patient-common-lib';
 import {
+  isVariablePattern,
+  type VariableBidDoses,
   type VariableDosingState,
-  type VariablePattern,
   type VariableQ6hDoses,
   type VariableTidDoses,
   type VariableValidationErrors,
@@ -42,6 +43,16 @@ export function VariableDoseForm({
     [onStateChange, state],
   );
 
+  const updateBidDose = useCallback(
+    (slot: keyof VariableBidDoses, dose: number | null) => {
+      onStateChange({
+        ...state,
+        bidDoses: { ...state.bidDoses, [slot]: dose },
+      });
+    },
+    [onStateChange, state],
+  );
+
   const updateTidDose = useCallback(
     (slot: keyof VariableTidDoses, dose: number | null) => {
       onStateChange({
@@ -64,8 +75,8 @@ export function VariableDoseForm({
 
   const handlePatternChange = useCallback(
     (selection: string | number | undefined) => {
-      if (selection === 'tid' || selection === 'q6h') {
-        updateState({ pattern: selection as VariablePattern });
+      if (isVariablePattern(selection)) {
+        updateState({ pattern: selection });
       }
     },
     [updateState],
@@ -119,6 +130,7 @@ export function VariableDoseForm({
           orientation="horizontal"
           valueSelected={state.pattern}
           onChange={handlePatternChange}>
+          <RadioButton id="variablePatternBid" labelText={t('variablePatternBid', '2 times daily (BID)')} value="bid" />
           <RadioButton id="variablePatternTid" labelText={t('variablePatternTid', '3 times daily (TID)')} value="tid" />
           <RadioButton id="variablePatternQ6h" labelText={t('variablePatternQ6h', '4 times daily (Q6H)')} value="q6h" />
         </RadioButtonGroup>
@@ -126,7 +138,50 @@ export function VariableDoseForm({
 
       <div className={styles.scheduleCard}>
         <span className={styles.scheduleTitle}>{t('variableDoseSchedule', 'Dose schedule')}</span>
-        {state.pattern === 'tid' ? (
+        {state.pattern === 'bid' ? (
+          <Grid className={formStyles.gridRow}>
+            <Column lg={16} md={4} sm={4}>
+              <InputWrapper>
+                <div className={formStyles.numberInput}>
+                  <NumberInput
+                    allowEmpty
+                    disableWheel
+                    hideSteppers
+                    id="variableBidDoseMorning"
+                    invalid={Boolean(validationErrors?.slots?.morning?.dose)}
+                    invalidText={validationErrors?.slots?.morning?.dose}
+                    label={t('variableDoseMorning', 'Morning{{unitSuffix}}', { unitSuffix })}
+                    min={0.01}
+                    onChange={(_, { value }) => updateBidDose('morning', parseDoseValue(value))}
+                    size={inputSize}
+                    step={0.01}
+                    value={typeof state.bidDoses.morning === 'number' ? state.bidDoses.morning : ''}
+                  />
+                </div>
+              </InputWrapper>
+            </Column>
+            <Column lg={16} md={4} sm={4}>
+              <InputWrapper>
+                <div className={formStyles.numberInput}>
+                  <NumberInput
+                    allowEmpty
+                    disableWheel
+                    hideSteppers
+                    id="variableBidDoseEvening"
+                    invalid={Boolean(validationErrors?.slots?.evening?.dose)}
+                    invalidText={validationErrors?.slots?.evening?.dose}
+                    label={t('variableDoseEvening', 'Evening{{unitSuffix}}', { unitSuffix })}
+                    min={0.01}
+                    onChange={(_, { value }) => updateBidDose('evening', parseDoseValue(value))}
+                    size={inputSize}
+                    step={0.01}
+                    value={typeof state.bidDoses.evening === 'number' ? state.bidDoses.evening : ''}
+                  />
+                </div>
+              </InputWrapper>
+            </Column>
+          </Grid>
+        ) : state.pattern === 'tid' ? (
           <Grid className={formStyles.gridRow}>
             <Column lg={16} md={4} sm={4}>
               <InputWrapper>

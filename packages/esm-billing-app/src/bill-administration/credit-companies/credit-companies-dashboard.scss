@@ -1,0 +1,21 @@
+@use '@carbon/type';
+@use '@carbon/layout';
+
+.dataTable {
+  margin: layout.$spacing-05;
+}
+
+.addButton {
+  margin-right: layout.$spacing-05;
+}
+
+.emptyState {
+  @include type.type-style('body-compact-01');
+  margin: layout.$spacing-05;
+}
+
+.contractEnds {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}

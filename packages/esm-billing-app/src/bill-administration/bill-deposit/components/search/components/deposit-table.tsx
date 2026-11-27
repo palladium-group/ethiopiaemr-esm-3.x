@@ -134,7 +134,11 @@ const DepositTable: React.FC<DepositTableProps> = ({ deposits }) => {
                   </TableExpandRow>
                   {row.isExpanded && (
                     <TableExpandedRow colSpan={headers.length + 2}>
-                      <TransactionList transactions={deposits[index].transactions} depositUuid={deposits[index].id} />
+                      <TransactionList
+                        transactions={deposits[index].transactions}
+                        depositUuid={deposits[index].id}
+                        patientUuid={deposits[index].patient?.uuid}
+                      />
                     </TableExpandedRow>
                   )}
                 </React.Fragment>

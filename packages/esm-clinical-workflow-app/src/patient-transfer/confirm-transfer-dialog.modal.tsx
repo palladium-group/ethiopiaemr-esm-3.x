@@ -26,7 +26,7 @@ const ConfirmTransferDialog: React.FC<ConfirmTransferDialogProps> = ({ closeModa
     window.requestAnimationFrame(() => {
       // Second rAF: Wait for the browser to actually remove the element and repaint
       window.requestAnimationFrame(() => {
-        const dispose = showModal('transition-patient-to-latest-queue-modal', {
+        const dispose = showModal('ethiopia-transition-patient-to-latest-queue-modal', {
           activeVisit,
           closeModal: () => {
             setIsProcessing(false);

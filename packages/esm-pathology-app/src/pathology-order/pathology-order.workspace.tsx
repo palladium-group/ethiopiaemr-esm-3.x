@@ -1,13 +1,21 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
-import { showSnackbar, useConfig, useLayoutType, useSession, Workspace2, type Visit } from '@openmrs/esm-framework';
+import {
+  showSnackbar,
+  useConfig,
+  userHasAccess,
+  useLayoutType,
+  useSession,
+  Workspace2,
+  type Visit,
+} from '@openmrs/esm-framework';
 import {
   useLaunchWorkspaceRequiringVisit,
   type PatientWorkspace2DefinitionProps,
 } from '@openmrs/esm-patient-common-lib';
 import { type PathologyConfig, type PathologyRequestFormOption } from '../config-schema';
-import { SPECIAL_ORDER_FORM_ENTRY_WORKSPACE } from '../constants';
+import { PATHOLOGY_ORDER_PRIVILEGE, SPECIAL_ORDER_FORM_ENTRY_WORKSPACE } from '../constants';
 import { buildSpecialOrderFormLaunchProps } from './special-order-form-launch.resource';
 import styles from './pathology-order.workspace.scss';
 
@@ -28,6 +36,7 @@ export default function PathologyOrderWorkspace({ groupProps, workspaceProps }: 
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
+  const canOrderPathology = userHasAccess(PATHOLOGY_ORDER_PRIVILEGE, session?.user ?? { privileges: [], roles: [] });
   const { pathologyRequestForms, careSettingUuid } = useConfig<PathologyConfig>();
   const patientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid ?? groupProps?.patient?.id;
   const patient = workspaceProps?.patient ?? groupProps?.patient;
@@ -42,7 +51,14 @@ export default function PathologyOrderWorkspace({ groupProps, workspaceProps }: 
 
   const openFormForOption = useCallback(
     (option: PathologyRequestFormOption) => {
-      if (!patientUuid) {
+      if (!patientUuid || !canOrderPathology) {
+        if (!canOrderPathology) {
+          showSnackbar({
+            kind: 'error',
+            title: t('cannotOpenPathologyForm', 'Cannot open the pathology order form'),
+            subtitle: t('pathologyOrderNotPermitted', 'You do not have permission to place a pathology order.'),
+          });
+        }
         return;
       }
 
@@ -75,35 +91,52 @@ export default function PathologyOrderWorkspace({ groupProps, workspaceProps }: 
         { patient, patientUuid, visitContext },
       );
     },
-    [careSettingUuid, launchSpecialOrderForm, patient, patientUuid, session?.currentProvider?.uuid, t, visitContext],
+    [
+      canOrderPathology,
+      careSettingUuid,
+      launchSpecialOrderForm,
+      patient,
+      patientUuid,
+      session?.currentProvider?.uuid,
+      t,
+      visitContext,
+    ],
   );
 
   return (
     <Workspace2 title={t('pathologyOrders', 'Pathology orders')}>
       <div className={styles.container}>
-        <p className={styles.sectionLabel}>{t('serviceArea', 'Service area')} *</p>
-        {options.length > 0 ? (
-          <div className={styles.typeOfSampleSwitcher} role="group" aria-label={t('serviceArea', 'Service area')}>
-            {options.map((option) => {
-              const selected = selectedId === option.id;
-              return (
-                <Button
-                  key={option.id}
-                  kind={selected ? 'primary' : 'ghost'}
-                  size={isTablet ? 'lg' : 'md'}
-                  className={`${styles.typeOfSampleButton} ${
-                    selected ? styles.typeOfSampleButtonSelected : styles.typeOfSampleButtonUnselected
-                  }`}
-                  onClick={() => openFormForOption(option)}>
-                  {option.label}
-                </Button>
-              );
-            })}
-          </div>
-        ) : (
+        {!canOrderPathology ? (
           <p className={styles.empty}>
-            {t('noPathologyRequestFormsConfigured', 'No pathology request forms have been configured.')}
+            {t('pathologyOrderNotPermitted', 'You do not have permission to place a pathology order.')}
           </p>
+        ) : (
+          <>
+            <p className={styles.sectionLabel}>{t('serviceArea', 'Service area')} *</p>
+            {options.length > 0 ? (
+              <div className={styles.typeOfSampleSwitcher} role="group" aria-label={t('serviceArea', 'Service area')}>
+                {options.map((option) => {
+                  const selected = selectedId === option.id;
+                  return (
+                    <Button
+                      key={option.id}
+                      kind={selected ? 'primary' : 'ghost'}
+                      size={isTablet ? 'lg' : 'md'}
+                      className={`${styles.typeOfSampleButton} ${
+                        selected ? styles.typeOfSampleButtonSelected : styles.typeOfSampleButtonUnselected
+                      }`}
+                      onClick={() => openFormForOption(option)}>
+                      {option.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={styles.empty}>
+                {t('noPathologyRequestFormsConfigured', 'No pathology request forms have been configured.')}
+              </p>
+            )}
+          </>
         )}
       </div>
     </Workspace2>

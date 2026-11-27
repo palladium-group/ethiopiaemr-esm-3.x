@@ -20,6 +20,7 @@ import { mutate } from 'swr';
 import { makePayment } from '../payments.resource';
 import { createLineItemPaymentPayload, getPayableLineItemUuids, recordConsultationPaymentIfApplicable } from '../utils';
 import { extractErrorMessagesFromResponse } from '../../../utils';
+import { lineItemAmountDue } from '../../checkout/checkout.resource';
 import { useCurrencyFormatting } from '../../../helpers/currency';
 import useBillableServices from '../../../hooks/useBillableServices';
 import type { BillingConfig } from '../../../config-schema';
@@ -45,7 +46,7 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
       roundCurrency(
         (bill.lineItems ?? [])
           .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
-          .reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0),
+          .reduce((sum, item) => sum + lineItemAmountDue(item), 0),
       ),
     [bill.lineItems],
   );

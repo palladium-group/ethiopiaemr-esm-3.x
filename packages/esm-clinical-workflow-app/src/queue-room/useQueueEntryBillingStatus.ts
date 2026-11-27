@@ -8,6 +8,7 @@ import type { QueueEntry } from '../types';
 import { getVisitPaymentModeUuid } from '../ward/bed-fee/bed-fee.utils';
 import { usePaymentModes } from '../mru/billing-information/hooks/usePaymentModes';
 import { usePatientCardValidity } from './usePatientCardValidity';
+import { useLocationBillingExemption } from './useLocationBillingExemption';
 
 export type QueueEntryBillingStatusType =
   | 'LOADING'
@@ -27,41 +28,65 @@ export interface QueueEntryBillingStatus {
   message: string;
 }
 
+interface BillableServiceRef {
+  uuid?: string;
+  serviceType?: {
+    uuid?: string;
+    display?: string;
+  } | null;
+}
+
 interface BillLineItem {
   uuid: string;
+  voided?: boolean;
   paymentStatus?: string;
-  price?: number;
-  quantity?: number;
+  billableService?: string | null;
+  serviceTypeUuid?: string | null;
 }
 
 interface CashierBill {
   uuid: string;
-  display?: string;
   voided?: boolean;
-  status?: string;
-  balance?: number | string;
   lineItems?: BillLineItem[];
-  dateCreated?: string;
 }
 
-const CASHIER_BILL_REP =
-  'custom:(uuid,display,voided,status,balance,lineItems:(uuid,paymentStatus,price,quantity),dateCreated)';
+const CLINICAL_CONSULTATION_SERVICE_TYPE_UUID = '167410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const SETTLED_PAYMENT_STATUSES = new Set(['PAID', 'EXEMPTED', 'WAIVED']);
+
+// Request bare lineItems because nested lineItems:(...) custom props are ignored by the cashier REST
+// resource and omit fields like billableService and serviceTypeUuid.
+const CASHIER_BILL_REP = 'custom:(uuid,voided,lineItems)';
+
+const isUnpaidLineItem = (item: BillLineItem): boolean =>
+  !item.voided && Boolean(item.paymentStatus && !SETTLED_PAYMENT_STATUSES.has(item.paymentStatus));
+
+const extractBillableServiceUuid = (billableService?: string | null): string | null =>
+  billableService?.split(':')[0]?.trim() || null;
+
+const isClinicalConsultationType = (serviceType?: { uuid?: string; display?: string } | null): boolean =>
+  serviceType?.uuid === CLINICAL_CONSULTATION_SERVICE_TYPE_UUID ||
+  serviceType?.display?.trim().toLowerCase() === 'clinical consultation';
 
 /**
  * Evaluates the billing and MRU registration clearance status of a service queue entry.
  *
- * Strict policy: NO bypass.
+ * Clearance policy:
+ * - Location exemption: If the queue / login location has all services exempted, patient is CLEARED.
  * - Missing paymentMethod visit attribute => BLOCKED (MRU Pending).
  * - Non-cash payment method (CBHI, Credit, Waiver, Free, Exempt) => CLEARED.
+ * - Valid patient card => CLEARED (Card Valid).
  * - Cash / Paying payment method:
  *     - No bill found => BLOCKED (Fee Not Created).
- *     - Bill found with positive balance or pending payment => BLOCKED (Payment Pending).
- *     - Bill fully paid (balance == 0, status == 'PAID') => CLEARED.
+ *     - Unpaid bill line item that is a service with service type "Clinical consultation" => BLOCKED (Payment Pending).
+ *     - Otherwise (paid/exempted/waived, or unpaid items are non-consultation services or commodities) => CLEARED.
  */
 export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undefined): QueueEntryBillingStatus {
   const { t } = useTranslation();
   const { billingVisitAttributeTypes } = useConfig<ClinicalWorkflowConfig>();
   const { billingTypes, isLoading: isLoadingPaymentModes } = usePaymentModes();
+  const { isLocationExempted, isLoading: isLoadingExemption } = useLocationBillingExemption(
+    queueEntry?.queue?.location,
+  );
 
   const paymentMethodAttributeTypeUuid =
     billingVisitAttributeTypes?.paymentMethod ?? 'e6cb0c3b-04b0-4117-9bc6-ce24adbda802';
@@ -92,7 +117,9 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     cardExpiryDate,
     isLoading: isLoadingCard,
   } = usePatientCardValidity(patientUuid, personAttributes);
-  const shouldFetchBills = Boolean(patientUuid && paymentModeUuid && !isKnownNonCash && !hasValidCard);
+  const shouldFetchBills = Boolean(
+    patientUuid && paymentModeUuid && !isKnownNonCash && !hasValidCard && !isLocationExempted,
+  );
 
   const billsUrl = shouldFetchBills
     ? `${restBaseUrl}/cashier/bill?v=${CASHIER_BILL_REP}&patientUuid=${patientUuid}`
@@ -107,7 +134,42 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     },
   );
 
+  const hasUnpaidServiceWithoutType = Boolean(
+    shouldFetchBills &&
+      !isLoadingBills &&
+      (billsData?.data?.results ?? []).some(
+        (bill) =>
+          !bill.voided &&
+          (bill.lineItems ?? []).some(
+            (item) =>
+              isUnpaidLineItem(item) &&
+              Boolean(extractBillableServiceUuid(item.billableService)) &&
+              !item.serviceTypeUuid,
+          ),
+      ),
+  );
+
+  const billableServicesUrl = hasUnpaidServiceWithoutType
+    ? `${restBaseUrl}/cashier/billableService?v=custom:(uuid,serviceType:(uuid,display))`
+    : null;
+
+  const { data: billableServicesData, isLoading: isLoadingBillableServices } = useSWR<
+    FetchResponse<{ results: Array<BillableServiceRef> }>
+  >(billableServicesUrl, openmrsFetch, {
+    revalidateOnFocus: false,
+    dedupingInterval: 300_000,
+  });
+
   return useMemo<QueueEntryBillingStatus>(() => {
+    const loadingStatus = (message: string): QueueEntryBillingStatus => ({
+      status: 'LOADING',
+      isCleared: false,
+      isLoading: true,
+      badgeText: t('checkingStatus', 'Checking...'),
+      badgeType: 'cool-gray',
+      message,
+    });
+
     if (!queueEntry?.visit) {
       return {
         status: 'NO_PAYMENT_METHOD',
@@ -119,15 +181,24 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
       };
     }
 
-    if (isLoadingPaymentModes && !matchedPaymentMode && paymentModeUuid) {
+    if (isLoadingExemption) {
+      return loadingStatus(t('verifyingExemptions', 'Verifying location billing exemptions...'));
+    }
+
+    if (isLocationExempted) {
       return {
-        status: 'LOADING',
-        isCleared: false,
-        isLoading: true,
-        badgeText: t('checkingStatus', 'Checking...'),
-        badgeType: 'cool-gray',
-        message: t('verifyingPaymentMode', 'Verifying registered payment mode...'),
+        status: 'CLEARED',
+        isCleared: true,
+        isLoading: false,
+        paymentModeName: modeName || 'Exempt',
+        badgeText: t('exempted', 'Exempted'),
+        badgeType: 'green',
+        message: t('locationExemptedFromBilling', 'Location is exempted from billing. Patient cleared for service.'),
       };
+    }
+
+    if (isLoadingPaymentModes && !matchedPaymentMode && paymentModeUuid) {
+      return loadingStatus(t('verifyingPaymentMode', 'Verifying registered payment mode...'));
     }
 
     // Non-cash modes (CBHI, Credit Company, Waiver / Free / Exempt) are cleared once registered at MRU
@@ -149,14 +220,7 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     // If the patient has a valid consultation card from a previous visit,
     // they are cleared for service and do not need a new consultation bill.
     if (isLoadingCard) {
-      return {
-        status: 'LOADING',
-        isCleared: false,
-        isLoading: true,
-        badgeText: t('checkingStatus', 'Checking...'),
-        badgeType: 'cool-gray',
-        message: t('verifyingCardValidity', 'Verifying card validity...'),
-      };
+      return loadingStatus(t('verifyingCardValidity', 'Verifying card validity...'));
     }
 
     if (hasValidCard) {
@@ -197,14 +261,7 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
 
     // For Cash / Paying patients, verify consultation fee bill
     if (isLoadingBills) {
-      return {
-        status: 'LOADING',
-        isCleared: false,
-        isLoading: true,
-        badgeText: t('checkingStatus', 'Checking...'),
-        badgeType: 'cool-gray',
-        message: t('checkingCashierBills', 'Checking cashier bills...'),
-      };
+      return loadingStatus(t('checkingCashierBills', 'Checking cashier bills...'));
     }
 
     const nonVoidedBills = (billsData?.data?.results ?? []).filter((bill) => !bill.voided);
@@ -224,23 +281,28 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
       };
     }
 
-    const hasPendingLineItems = nonVoidedBills.some((bill) =>
-      (bill.lineItems ?? []).some(
-        (item) =>
-          item.paymentStatus === 'PENDING' ||
-          (item.paymentStatus &&
-            item.paymentStatus !== 'PAID' &&
-            item.paymentStatus !== 'EXEMPTED' &&
-            item.paymentStatus !== 'WAIVED'),
-      ),
+    if (hasUnpaidServiceWithoutType && isLoadingBillableServices) {
+      return loadingStatus(t('checkingCashierBills', 'Checking cashier bills...'));
+    }
+
+    const billableServices = billableServicesData?.data?.results ?? [];
+    const hasPendingConsultationService = nonVoidedBills.some((bill) =>
+      (bill.lineItems ?? []).some((item) => {
+        if (!isUnpaidLineItem(item)) {
+          return false;
+        }
+        const serviceUuid = extractBillableServiceUuid(item.billableService);
+        if (!serviceUuid) {
+          return false;
+        }
+        if (item.serviceTypeUuid) {
+          return item.serviceTypeUuid === CLINICAL_CONSULTATION_SERVICE_TYPE_UUID;
+        }
+        return isClinicalConsultationType(billableServices.find((s) => s.uuid === serviceUuid)?.serviceType);
+      }),
     );
 
-    const totalBalance = nonVoidedBills.reduce((acc, bill) => acc + (Number(bill.balance) || 0), 0);
-    const hasUnpaidBillStatus = nonVoidedBills.some(
-      (bill) => bill.status === 'PENDING' || bill.status === 'UNPAID' || bill.status === 'PARTIALLY_PAID',
-    );
-
-    if (hasPendingLineItems || totalBalance > 0 || hasUnpaidBillStatus) {
+    if (hasPendingConsultationService) {
       return {
         status: 'PENDING_PAYMENT',
         isCleared: false,
@@ -266,6 +328,8 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     };
   }, [
     queueEntry?.visit,
+    isLoadingExemption,
+    isLocationExempted,
     paymentModeUuid,
     isLoadingPaymentModes,
     matchedPaymentMode,
@@ -273,6 +337,9 @@ export function useQueueEntryBillingStatus(queueEntry: QueueEntry | null | undef
     modeName,
     isLoadingBills,
     billsData?.data?.results,
+    hasUnpaidServiceWithoutType,
+    isLoadingBillableServices,
+    billableServicesData?.data?.results,
     isLoadingCard,
     hasValidCard,
     cardExpiryDate,

@@ -20,6 +20,7 @@ const bill = {
       amountTendered: 40,
       dateCreated: '2026-10-01T12:16:00.000Z',
       instanceType: { name: 'Cash' },
+      cashierName: 'Cashier Two',
     },
     {
       uuid: 'pay-2',
@@ -83,7 +84,7 @@ describe('buildTimelineEvents', () => {
     expect(byId['opened-bill-1']).toMatchObject({ kind: 'opened', actor: 'Cashier One' });
     expect(byId['item-li-1']).toMatchObject({ kind: 'itemAdded', name: 'Paracetamol', amount: 50, status: 'EXEMPTED' });
     expect(byId['item-li-2']).toMatchObject({ name: 'Consultation', amount: 40, actor: 'Dr Who', status: 'PAID' });
-    expect(byId['payment-pay-1']).toMatchObject({ kind: 'payment', amount: 40, detail: 'Cash' });
+    expect(byId['payment-pay-1']).toMatchObject({ kind: 'payment', amount: 40, detail: 'Cash', actor: 'Cashier Two' });
     expect(byId['closed-bill-1']).toMatchObject({ kind: 'closed', detail: 'Visit checked out', actor: 'admin' });
   });
 
@@ -98,6 +99,71 @@ describe('buildTimelineEvents', () => {
     const openBill = { ...bill, closed: false, dateClosed: undefined } as MappedBill;
 
     expect(buildTimelineEvents(openBill, details).some((event) => event.kind === 'closed')).toBe(false);
+  });
+
+  it('names the line items a payment was applied to', () => {
+    const paidBill = {
+      ...bill,
+      payments: [{ ...bill.payments[0], allocations: [{ lineItem: 'li-2', amount: 40 }] }],
+    } as MappedBill;
+
+    const payment = buildTimelineEvents(paidBill, details).find((event) => event.kind === 'payment');
+
+    expect(payment.items).toEqual(['Consultation']);
+  });
+
+  it("adds deposits applied to the bill's line items, and their reversals", () => {
+    const deposits = [
+      {
+        uuid: 'dep-1',
+        referenceNumber: 'DEP001',
+        transactions: [
+          {
+            uuid: 'tx-1',
+            display: '',
+            transactionType: 'APPLY',
+            amount: 10,
+            dateCreated: '2026-10-01T12:13:00.000Z',
+            voided: true,
+            billLineItem: { uuid: 'li-2' },
+            auditInfo: {
+              creator: { display: 'Cashier One' },
+              voidedBy: { display: 'Cashier Two' },
+              dateVoided: '2026-10-01T12:14:00.000Z',
+              voidReason: 'Wrong item',
+            },
+          },
+          {
+            uuid: 'tx-other-bill',
+            display: '',
+            transactionType: 'APPLY',
+            amount: 5,
+            dateCreated: '2026-10-01T12:13:30.000Z',
+            voided: false,
+            billLineItem: { uuid: 'li-on-another-bill' },
+          },
+        ],
+      },
+    ];
+
+    const events = buildTimelineEvents(bill, details, deposits).filter((event) => event.id.startsWith('deposit'));
+
+    expect(events).toEqual([
+      expect.objectContaining({
+        kind: 'depositApplied',
+        name: 'Consultation',
+        detail: 'DEP001',
+        amount: 10,
+        actor: 'Cashier One',
+      }),
+      expect.objectContaining({
+        kind: 'depositReversed',
+        name: 'Consultation',
+        detail: 'Wrong item',
+        amount: 10,
+        actor: 'Cashier Two',
+      }),
+    ]);
   });
 
   it('still lists the bill and its payments when the line item details are missing', () => {

@@ -11,7 +11,6 @@ import { LineItem, MappedBill } from '../types';
 import styles from './invoice.scss';
 import InvoiceCheckout from './checkout/invoice-checkout.component';
 import PaymentChannelButtons from './payment-channel-buttons.component';
-import capitalize from 'lodash-es/capitalize';
 import { InvoiceActions } from './invoice-actions.component';
 import { useCurrencyFormatting } from '../helpers/currency';
 import BillTimeline, { paymentStatusTagType } from './timeline/bill-timeline.component';
@@ -94,13 +93,18 @@ export function InvoiceHeader({
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
 
+  // The bill's cashier is whoever created the bill, so show who took the payments instead
+  const cashiers = [
+    ...new Set(bill?.payments?.filter((payment) => !payment.voided).map((payment) => payment.cashierName)),
+  ].filter(Boolean);
+
   const details = [
     {
       label: t('dateAndTime', 'Date And Time'),
       value: formatDatetime(parseDate(bill.dateCreatedUnformatted), { mode: 'standard', noToday: true }),
     },
     { label: t('cashPoint', 'Cash Point'), value: bill?.cashPointName },
-    { label: t('cashier', 'Cashier'), value: capitalize(bill?.cashier?.display) },
+    { label: t('cashier', 'Cashier'), value: cashiers.join(', ') },
   ];
 
   const figures = [

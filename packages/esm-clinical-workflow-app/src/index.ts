@@ -31,6 +31,8 @@ import FinishServiceButton from './patient-chart/finish-service-button.extension
 import AddPatientToWardSiderailButton from './ward/add-patient-to-ward-siderail-button.component';
 import { subscribeAdmittedPatientsSlotSync } from './ward/admitted-patients/sync-admitted-patients-slot';
 import { registerAdmitWorkspaceOverride } from './ward/admit-to-inpatient/register-admit-workspace-override';
+import { registerCreateQueueEntryWorkspaceOverride } from './queue-room/create-queue-entry/register-create-queue-entry-override';
+import { registerQueueModalsOverride } from './queue-room/modals/register-queue-modals-override';
 import { subscribeAwaitingAdmissionSlotSync } from './ward/awaiting-admission/sync-awaiting-admission-slot';
 import { subscribeDischargeInSlotSync } from './ward/discharge-in/sync-discharge-in-slot';
 import ImmunizationRegisterActionButton from './patient-immunization/immunization-register-action-button.component';
@@ -42,6 +44,11 @@ import ReportsDashboardLink from './admin/reports-dashboard-link.extension';
 import AssignQueueRoomModal from './queue-room/assign-queue-room.modal';
 import AppointmentCheckInQueueHandler from './queue-room/appointment-checkin-queue-handler.component';
 import { subscribeAppointmentCheckInQueueSync } from './queue-room/appointment-checkin-queue-sync';
+import { subscribeQueueTransitionSync } from './queue-room/queue-transition-sync';
+import {
+  completePatientCheckedInAppointments,
+  subscribeVisitCheckoutAppointmentSync,
+} from './patient-chart/appointment-checkout-sync';
 
 const moduleName = '@palladium-ethiopia/esm-clinical-workflow-app';
 
@@ -81,9 +88,13 @@ export function startupApp() {
 
   subscribeAdmittedPatientsSlotSync();
   registerAdmitWorkspaceOverride();
+  registerCreateQueueEntryWorkspaceOverride();
+  registerQueueModalsOverride();
   subscribeAwaitingAdmissionSlotSync();
   subscribeDischargeInSlotSync();
   subscribeAppointmentCheckInQueueSync();
+  subscribeVisitCheckoutAppointmentSync();
+  subscribeQueueTransitionSync();
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
@@ -177,6 +188,11 @@ export const queueTableActionsColumn = getAsyncLifecycle(
 
 export const assignQueueRoomModal = getSyncLifecycle(AssignQueueRoomModal, options);
 
+export const printEncounterModal = getAsyncLifecycle(
+  () => import('./patient-chart/visit/visits-widget/past-visits-components/encounters-table/print-encounter.modal'),
+  options,
+);
+
 export const triageQueueAssignmentModal = getAsyncLifecycle(
   () => import('./triage/triage-queue-assignment.modal'),
   options,
@@ -268,6 +284,21 @@ export const ethiopiaAdmitPatientFormWorkspace = getAsyncLifecycle(
   options,
 );
 
+export const createQueueEntryWorkspace = getAsyncLifecycle(
+  () => import('./queue-room/create-queue-entry/create-queue-entry.workspace'),
+  options,
+);
+
+export const ethiopiaMoveQueueEntryModal = getAsyncLifecycle(
+  () => import('./queue-room/modals/move-queue-entry.modal'),
+  options,
+);
+
+export const ethiopiaTransitionPatientToLatestQueueModal = getAsyncLifecycle(
+  () => import('./queue-room/modals/transition-patient-to-latest-queue.modal'),
+  options,
+);
+
 export const etlAdminDashboardLink = getSyncLifecycle(EtlAdminDashboardLink, options);
 
 export const shrAdminDashboardLink = getSyncLifecycle(ShrAdminDashboardLink, options);
@@ -275,3 +306,8 @@ export const shrAdminDashboardLink = getSyncLifecycle(ShrAdminDashboardLink, opt
 export const reportsDashboardLink = getSyncLifecycle(ReportsDashboardLink, options);
 export const recentDiagnosesWidget = getSyncLifecycle(recentDiagnosesWidgetComponent, options);
 export const appointmentCheckInQueueHandler = getSyncLifecycle(AppointmentCheckInQueueHandler, options);
+export const patientOrdersTable = getAsyncLifecycle(
+  () => import('./patient-orders/orders-table/patient-orders-table.component'),
+  options,
+);
+export { completePatientCheckedInAppointments, subscribeVisitCheckoutAppointmentSync, subscribeQueueTransitionSync };

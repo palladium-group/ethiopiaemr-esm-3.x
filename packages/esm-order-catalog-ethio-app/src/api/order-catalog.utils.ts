@@ -98,6 +98,21 @@ export function getStandaloneOrderablesSectionLabel(
   }
 }
 
+/** Search box hint: the query covers the active order type, not the highlighted category. */
+export function getOrderCatalogSearchPlaceholder(
+  orderType: OrderCatalogOrderType,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  switch (orderType) {
+    case 'radiology':
+      return t('searchRadiologyOrderables', 'Search radiology orderables');
+    case 'procedure':
+      return t('searchProcedureOrderables', 'Search procedure orderables');
+    default:
+      return t('searchLabOrderables', 'Search lab orderables');
+  }
+}
+
 function resolveTestAvailability(
   conceptUuid: string,
   availabilityLookup: BillableAvailabilityLookup,
@@ -312,21 +327,21 @@ export function hasVisiblePartitionedTests(partition: PartitionedCategoryTests):
 }
 
 /**
- * The child tests of a panel that should be shown when the panel is expanded.
- * If the panel name matches the search (or there is no search), all children show;
- * otherwise only the children whose name matches.
+ * Categories in one order-type tab (lab, radiology, or procedure) that contain a matching orderable.
+ * A blank query matches nothing; the browse view shows the highlighted category instead.
  */
-export function getVisiblePanelChildren(panel: CatalogTest, searchTerm: string): Array<CatalogTest> {
-  const query = searchTerm.trim().toLowerCase();
-  if (!query || matchesSearch(panel.displayName, query)) {
-    return panel.childTests;
+export function getCategoriesMatchingSearch(
+  categories: Array<CatalogCategory>,
+  searchTerm: string,
+): Array<CatalogCategory> {
+  const query = searchTerm.trim();
+  if (!query) {
+    return [];
   }
-  return panel.childTests.filter((child) => matchesSearch(child.displayName, query));
-}
 
-/** A panel is "expanded" (its members are shown for partial selection) when it has any selection. */
-export function isPanelExpanded(panel: CatalogTest, selectedUuids: Set<string>): boolean {
-  return isOrderButtonActive(panel, selectedUuids);
+  return categories.filter((category) =>
+    hasVisiblePartitionedTests(filterPartitionedTests(partitionCategoryTests(category.tests), query)),
+  );
 }
 
 export function isConceptSelected(testUuid: string, selectedUuids: Set<string>): boolean {
@@ -395,14 +410,6 @@ export function toggleChildSelection(panel: CatalogTest, child: CatalogTest, sel
     next.add(panel.uuid);
   }
   return next;
-}
-
-export function isOrderButtonActive(test: CatalogTest, selectedUuids: Set<string>): boolean {
-  if (test.isPanel) {
-    const state = getPanelSelectionState(test, selectedUuids);
-    return state.checked || state.indeterminate;
-  }
-  return selectedUuids.has(test.uuid);
 }
 
 export function isPanelMemberEnabled(panel: CatalogTest, selectedUuids: Set<string>): boolean {

@@ -155,3 +155,10 @@
   padding: spacing.$spacing-04;
   text-align: center;
 }
+
+.dateTimeFields {
+  display: flex;
+  align-items: flex-start;
+  gap: spacing.$spacing-04;
+  margin-top: spacing.$spacing-04;
+}

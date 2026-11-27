@@ -19,6 +19,13 @@ export const paymentModeDashboardMeta = {
   icon: 'omrs-icon-sticky-note-add',
 } as const;
 
+export const creditCompaniesDashboardMeta = {
+  path: 'credit-companies',
+  title: 'Credit Companies',
+  titleKey: 'creditCompanies',
+  icon: 'omrs-icon-money',
+} as const;
+
 export const clinicalChargesDashboardMeta = {
   path: 'clinical-charges',
   title: 'Clinical Charges',

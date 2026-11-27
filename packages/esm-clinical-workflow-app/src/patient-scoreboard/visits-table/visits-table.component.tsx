@@ -20,9 +20,12 @@ import {
   isDesktop,
   useLayoutType,
   useConfig,
+  useSession,
   usePagination,
   type Visit,
 } from '@openmrs/esm-framework';
+import { type ClinicalWorkflowConfig } from '../../config-schema';
+import { useQueueLocations } from '../../queue-room/queue-entries.resource';
 import { DEFAULT_PAGE_SIZES } from '../../constants';
 import styles from './visits-table.component.scss';
 
@@ -53,9 +56,33 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
   const [searchString, setSearchString] = useState('');
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
-  const config = useConfig();
+  const config = useConfig<ClinicalWorkflowConfig>();
+  const { sessionLocation } = useSession();
+  const { queueLocations } = useQueueLocations(config?.queueLocationTagName);
   const customPatientChartUrl =
-    config?.customPatientChartUrl || '${openmrsSpaBase}/patient/${patientUuid}/chart/Visits';
+    (config as any)?.customPatientChartUrl || '${openmrsSpaBase}/patient/${patientUuid}/chart/Visits';
+
+  const sessionLocationName = (sessionLocation as any)?.display || (sessionLocation as any)?.name;
+
+  const getServiceLocation = useMemo(
+    () =>
+      (visit: Visit): string => {
+        const assignedQueueAttr = (visit.attributes as Array<any> | undefined)?.find(
+          (attr) => attr.attributeType?.uuid === config?.assignedQueueVisitAttributeTypeUuid,
+        );
+        const assignedLocationUuid = assignedQueueAttr?.value == null ? undefined : String(assignedQueueAttr.value);
+
+        if (assignedLocationUuid) {
+          if (assignedLocationUuid === sessionLocation?.uuid && sessionLocationName) {
+            return sessionLocationName;
+          }
+          return queueLocations?.find((loc) => loc.id === assignedLocationUuid)?.name || assignedLocationUuid;
+        }
+
+        return visit.location?.display || (visit.location as any)?.name || sessionLocationName || '--';
+      },
+    [config?.assignedQueueVisitAttributeTypeUuid, queueLocations, sessionLocation?.uuid, sessionLocationName],
+  );
 
   // Client-side search filtering
   const searchResults = useMemo(() => {
@@ -70,17 +97,17 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
     return visits.filter((visit) => {
       const patientName = visit.patient?.person?.display?.toLowerCase() || '';
       const identifier = visit.patient?.identifiers?.[0]?.identifier?.toLowerCase() || '';
-      const location = visit.location?.display?.toLowerCase() || '';
+      const serviceLocation = getServiceLocation(visit).toLowerCase();
       const visitType = visit.visitType?.display?.toLowerCase() || '';
 
       return (
         patientName.includes(search) ||
         identifier.includes(search) ||
-        location.includes(search) ||
+        serviceLocation.includes(search) ||
         visitType.includes(search)
       );
     });
-  }, [visits, searchString]);
+  }, [getServiceLocation, visits, searchString]);
 
   // Local pagination for Past visits (when useLocalPagination is true)
   const {
@@ -104,7 +131,7 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
     { header: t('patientName', 'Patient Name'), key: 'patientName' },
     { header: t('identifier', 'Identifier'), key: 'identifier' },
     { header: t('visitType', 'Visit Type'), key: 'visitType' },
-    { header: t('location', 'Location'), key: 'location' },
+    { header: t('serviceLocation', 'Service Location'), key: 'serviceLocation' },
     { header: t('startTime', 'Start Time'), key: 'startTime' },
     { header: t('endTime', 'End Time'), key: 'endTime' },
     { header: t('status', 'Status'), key: 'status' },
@@ -115,7 +142,7 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
     const patientName = visit.patient?.person?.display || '--';
     const identifier = visit.patient?.identifiers?.[0]?.identifier || '--';
     const visitType = visit.visitType?.display || '--';
-    const location = visit.location?.display || '--';
+    const serviceLocation = getServiceLocation(visit);
     const startTime = visit.startDatetime ? formatDatetime(new Date(visit.startDatetime)) : '--';
     const endTime = visit.stopDatetime ? formatDatetime(new Date(visit.stopDatetime)) : '--';
     const status = visit.stopDatetime ? t('ended', 'Ended') : t('active', 'Active');
@@ -157,7 +184,7 @@ const VisitsTable: React.FC<VisitsTableProps> = ({
       patientName: renderPatientName(),
       identifier,
       visitType,
-      location,
+      serviceLocation,
       startTime,
       endTime,
       status,

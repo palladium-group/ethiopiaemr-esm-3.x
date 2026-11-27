@@ -1,30 +1,118 @@
-import React from 'react';
+import React, { useState } from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import { Button, Tile } from '@carbon/react';
 import { ArrowRight, CircleFilled } from '@carbon/react/icons';
-import { navigate, useConfig } from '@openmrs/esm-framework';
+import {
+  fetchCurrentPatient,
+  getConfigStore,
+  launchWorkspace2,
+  showSnackbar,
+  useConfig,
+  type Visit,
+} from '@openmrs/esm-framework';
 import { calculateBMI, assessValue, getReferenceRangesForConcept } from '../current-visit.resource';
 import { useVitalsConceptMetadata } from '../hooks/useVitalsConceptMetadata';
+import { getCurrentVisitForPatient, invalidateVisitCache } from '../../../../triage/triage.resource';
 import { type ConfigObject } from '@openmrs/esm-service-queues-app/src/config-schema';
 import { type PatientVitals } from '@openmrs/esm-service-queues-app/src/types/index';
 import styles from './triage-note.scss';
+
+const DEFAULT_VITALS_FORM_UUID = '4d4f4e54-947b-5dcd-bad8-6c9f2e2ab969';
+const DEFAULT_VITALS_FORM_NAME = 'Vital Signs (Adult & Pediatric)';
+
+type VitalsModuleConfig = { vitals?: { formUuid?: string; formName?: string } };
+
+function resolveVitalsFormConfig(): { formUuid: string; formName: string } {
+  const state = getConfigStore('@openmrs/esm-patient-vitals-app')?.getState?.() as
+    | { config?: VitalsModuleConfig; providedConfigs?: Array<{ config?: VitalsModuleConfig }> }
+    | undefined;
+
+  const vitalsConfig =
+    state?.config?.vitals ??
+    state?.providedConfigs?.reduce<VitalsModuleConfig['vitals']>(
+      (acc, entry) => (entry?.config?.vitals ? entry.config.vitals : acc),
+      undefined,
+    );
+
+  return {
+    formUuid: vitalsConfig?.formUuid || DEFAULT_VITALS_FORM_UUID,
+    formName: vitalsConfig?.formName || DEFAULT_VITALS_FORM_NAME,
+  };
+}
 
 interface VitalsComponentProps {
   vitals: Array<PatientVitals>;
   patientUuid: string;
   visitType: string;
+  visit?: Visit | null;
+  mutateVisit?: () => void;
 }
 
-const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType }) => {
+const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType, visit, mutateVisit }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>({ externalModuleName: '@openmrs/esm-service-queues-app' });
   const { data: conceptUnits, conceptMetadata } = useVitalsConceptMetadata();
+  const [isLaunching, setIsLaunching] = useState(false);
 
   const vitalsToDisplay = vitals.reduce(
     (previousVital, currentVital) => Object.assign(previousVital, currentVital),
     {},
   );
+
+  const handleRecordVital = async () => {
+    if (!patientUuid || isLaunching) {
+      return;
+    }
+
+    setIsLaunching(true);
+    try {
+      const [patient, activeVisit] = await Promise.all([
+        fetchCurrentPatient(patientUuid),
+        visit?.uuid && visit?.visitType?.uuid ? Promise.resolve(visit) : getCurrentVisitForPatient(patientUuid),
+      ]);
+
+      if (!patient || !activeVisit?.uuid || !activeVisit?.visitType?.uuid) {
+        throw new Error(t('activeVisitRequiredForVitals', 'An active visit is required to record vitals.'));
+      }
+
+      const { formUuid, formName } = resolveVitalsFormConfig();
+
+      await launchWorkspace2(
+        'clinical-workflow-patient-form-entry-workspace',
+        {
+          formEntryWorkspaceName: formName,
+          patient,
+          visitContext: activeVisit,
+          form: {
+            visitUuid: activeVisit.uuid,
+            uuid: formUuid,
+            visitTypeUuid: activeVisit.visitType.uuid,
+          },
+          encounterUuid: '',
+          handlePostResponse: () => {
+            mutateVisit?.();
+            invalidateVisitCache(patientUuid);
+          },
+        },
+        {
+          patient,
+          patientUuid,
+          visitContext: activeVisit,
+          mutateVisitContext: mutateVisit ?? null,
+        },
+      );
+    } catch (error) {
+      showSnackbar({
+        title: t('errorLaunchingVitalsForm', 'Error opening vitals form'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: error instanceof Error ? error.message : t('unexpectedError', 'An unexpected error occurred'),
+      });
+    } finally {
+      setIsLaunching(false);
+    }
+  };
 
   return (
     <div>
@@ -136,24 +224,21 @@ const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType
             {vitalsToDisplay.time}
           </p>
         </div>
+      ) : visitType === 'currentVisit' ? (
+        <p className={styles.emptyText}>{t('noVitalsRecorded', 'No vitals have been recorded in this visit')}</p>
       ) : (
-        <div>
-          {visitType === 'currentVisit' ? (
-            <div>
-              <p className={styles.emptyText}>{t('noVitalsRecorded', 'No vitals have been recorded in this visit')}</p>
-              <Button
-                size="sm"
-                kind="ghost"
-                renderIcon={(props) => <ArrowRight size={16} {...props} />}
-                onClick={() => navigate({ to: `\${openmrsSpaBase}/patient/${patientUuid}/chart` })}
-                iconDescription={t('vitalsForm', 'Vitals form')}>
-                {t('vitalsForm', 'Vitals form')}
-              </Button>
-            </div>
-          ) : (
-            <p className={classNames(styles.bodyLong01, styles.text02)}>{t('noVitalsFound', 'No vitals found')}</p>
-          )}
-        </div>
+        <p className={classNames(styles.bodyLong01, styles.text02)}>{t('noVitalsFound', 'No vitals found')}</p>
+      )}
+      {visitType === 'currentVisit' && (
+        <Button
+          size="sm"
+          kind="ghost"
+          disabled={isLaunching}
+          renderIcon={(props) => <ArrowRight size={16} {...props} />}
+          onClick={handleRecordVital}
+          iconDescription={t('recordVital', 'Record vital')}>
+          {t('recordVital', 'Record vital')}
+        </Button>
       )}
     </div>
   );

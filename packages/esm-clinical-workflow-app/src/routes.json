@@ -8,6 +8,14 @@
   "pages": [],
   "extensions": [
     {
+      "name": "patient-orders-table",
+      "component": "patientOrdersTable",
+      "slot": "patient-chart-orders-dashboard-slot",
+      "meta": {
+        "fullWidth": false
+      }
+    },
+    {
       "name": "ewf-mru-dashboard-link",
       "component": "mruLeftPanelLink",
       "slot": "homepage-dashboard-slot",
@@ -276,6 +284,12 @@
       "component": "ethiopiaAdmitPatientFormWorkspace",
       "title": "admissionRequests",
       "type": "admission-requests"
+    },
+    {
+      "name": "create-queue-entry-workspace",
+      "component": "createQueueEntryWorkspace",
+      "title": "Add Patient to Queue",
+      "type": "queue-entry"
     }
   ],
   "workspaces2": [
@@ -369,6 +383,18 @@
     {
       "name": "triage-queue-assignment-modal",
       "component": "triageQueueAssignmentModal"
+    },
+    {
+      "name": "ethiopia-move-queue-entry-modal",
+      "component": "ethiopiaMoveQueueEntryModal"
+    },
+    {
+      "name": "ethiopia-transition-patient-to-latest-queue-modal",
+      "component": "ethiopiaTransitionPatientToLatestQueueModal"
+    },
+    {
+      "name": "print-encounter-modal",
+      "component": "printEncounterModal"
     }
   ]
 }

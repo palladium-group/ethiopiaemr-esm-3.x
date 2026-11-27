@@ -15,7 +15,7 @@ import { mutate } from 'swr';
 import { z } from 'zod';
 import { LocationAutosuggest } from '../../auto-suggest/location-autosuggest.component';
 import ResultsTile from '../../common/results-tile.component';
-import { extractErrorMessagesFromResponse } from '../../helpers';
+import { showServerErrorModal } from '../../../../utils/server-error';
 import { saveOrUpdateLocation } from '../../hooks/useLocation';
 import { useLocationTags } from '../../hooks/useLocationTags';
 import { LocationResponse } from '../../types';
@@ -90,14 +90,8 @@ const SearchLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
 
       handleMutation();
       closeWorkspaceWithSavedChanges();
-    } catch (error: any) {
-      console.error('Error saving location:', error);
-      const errorMessages = extractErrorMessagesFromResponse(error);
-      showSnackbar({
-        title: t('error', 'Error'),
-        kind: 'error',
-        subtitle: errorMessages.join(', ') || t('locationSaveError', 'Error saving location'),
-      });
+    } catch (error) {
+      showServerErrorModal(t('locationSaveError', 'Error saving location'), error);
     }
   };
 

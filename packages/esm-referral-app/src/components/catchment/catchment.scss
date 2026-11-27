@@ -1,0 +1,67 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+  flex-wrap: wrap;
+}
+
+.intro {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+  max-width: 40rem;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+}
+
+.table {
+  background: colors.$white-0;
+}
+
+.facilityName {
+  @include type.type-style('body-compact-01');
+  display: block;
+  color: colors.$gray-100;
+  font-weight: 600;
+}
+
+.code {
+  @include type.type-style('code-01');
+  color: colors.$gray-60;
+}
+
+.inactive td {
+  color: colors.$gray-50;
+}
+
+.menuCell {
+  width: 3rem;
+}
+
+.empty {
+  padding: layout.$spacing-09 layout.$spacing-07;
+  text-align: center;
+  background: colors.$gray-10;
+}
+
+.emptyTitle {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-100;
+  margin: 0 0 layout.$spacing-03;
+}
+
+.emptyHint {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  margin: 0;
+}

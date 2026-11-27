@@ -24,6 +24,7 @@ import PaymentForm from './payment-form/payment-form.component';
 import PaymentHistory from './payment-history/payment-history.component';
 import styles from './payments.scss';
 import { createLineItemPaymentPayload, getPayableLineItemUuids, recordConsultationPaymentIfApplicable } from './utils';
+import { lineItemAmountDue } from '../checkout/checkout.resource';
 import { makePayment } from './payments.resource';
 import { usePaymentSchema } from '../../hooks/usePaymentSchema';
 import { useCurrencyFormatting } from '../../helpers/currency';
@@ -106,10 +107,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
 
         // Aggregate by payment mode
         const currentTotal = paymentModeTotals.get(selectedServicePrice.paymentMode.uuid) || 0;
-        paymentModeTotals.set(
-          selectedServicePrice.paymentMode.uuid,
-          currentTotal + selectedServicePrice.price * item.quantity,
-        );
+        paymentModeTotals.set(selectedServicePrice.paymentMode.uuid, currentTotal + lineItemAmountDue(item));
       });
 
     // Create form items from aggregated totals
@@ -155,7 +153,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, selectedLineItems }) => {
   const selectedLineItemsAmountDue =
     selectedLineItems
       .filter((item) => item.paymentStatus !== PaymentStatus.PAID && item.paymentStatus !== PaymentStatus.EXEMPTED)
-      .reduce((curr: number, prev) => curr + Number(prev.price * prev.quantity), 0) - totalWaivedAmount;
+      .reduce((curr: number, prev) => curr + lineItemAmountDue(prev), 0) - totalWaivedAmount;
 
   const handleNavigateToBillingDashboard = () =>
     navigate({

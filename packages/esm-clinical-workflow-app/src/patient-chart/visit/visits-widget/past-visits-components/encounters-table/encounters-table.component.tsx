@@ -258,6 +258,10 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
 
                     const canDeleteEncounter = getCanDeleteEncounter();
                     const canEditEncounter = getCanEditEncounter();
+                    const canPrintEncounter =
+                      Boolean(encounter.obs?.length) ||
+                      Boolean(encounter.orders?.length) ||
+                      Boolean(encounter.form?.uuid);
 
                     return (
                       <React.Fragment key={encounter.id}>
@@ -267,7 +271,7 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                           ))}
                           <TableCell className="cds--table-column-menu">
                             <Layer className={styles.layer}>
-                              {(canDeleteEncounter || canEditEncounter) && (
+                              {(canDeleteEncounter || canEditEncounter || canPrintEncounter) && (
                                 <OverflowMenu
                                   aria-label={t('encounterTableActionsMenu', 'Encounter table actions menu')}
                                   flipped
@@ -290,6 +294,19 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                                             encounterUuid: encounter.id,
                                           });
                                         }
+                                      }}
+                                    />
+                                  )}
+                                  {canPrintEncounter && (
+                                    <OverflowMenuItem
+                                      className={styles.menuItem}
+                                      itemText={t('printThisEncounter', 'Print this encounter')}
+                                      onClick={() => {
+                                        const dispose = showModal('print-encounter-modal', {
+                                          encounter,
+                                          patientUuid,
+                                          closeModal: () => dispose(),
+                                        });
                                       }}
                                     />
                                   )}
@@ -348,6 +365,19 @@ const EncountersTable: React.FC<EncountersTableProps> = ({
                                       <EditIcon size={16} {...props} />
                                     )}>
                                     {t('editThisEncounter', 'Edit this encounter')}
+                                  </Button>
+                                )}
+                                {canPrintEncounter && (
+                                  <Button
+                                    kind="ghost"
+                                    onClick={() => {
+                                      const dispose = showModal('print-encounter-modal', {
+                                        encounter,
+                                        patientUuid,
+                                        closeModal: () => dispose(),
+                                      });
+                                    }}>
+                                    {t('printThisEncounter', 'Print this encounter')}
                                   </Button>
                                 )}
                                 {canDeleteEncounter && (

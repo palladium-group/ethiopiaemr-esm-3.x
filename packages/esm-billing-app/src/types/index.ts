@@ -84,6 +84,8 @@ export interface LineItem {
   auditInfo?: { dateCreated?: string };
   /** The urgency of the order the item was billed for; only in the full representation. */
   orderUrgency?: string;
+  /** What is still owed on the item after payments and applied deposits. */
+  balance?: number;
 }
 
 interface PatientLink {
@@ -307,6 +309,10 @@ export interface Payment {
   amountTendered: number;
   dateCreated: number;
   voided: boolean;
+  /** Who took the payment */
+  cashierName?: string;
+  /** The line items the payment was applied to. */
+  allocations?: Array<{ lineItem: string; amount: number }>;
   resourceVersion: string;
 }
 
@@ -509,6 +515,25 @@ export type PaymentMode = {
   attributeTypes?: Array<AttributeType>;
   sortOrder?: number | null;
   resourceVersion?: string;
+};
+
+/** An organization from /ws/rest/v1/organization (e.g. a credit company). Dates come back as ISO date-times. */
+export type Organization = {
+  uuid: string;
+  display: string;
+  name: string;
+  description?: string | null;
+  organizationType?: { uuid: string; display: string };
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  tin?: string | null;
+  contractNumber?: string | null;
+  contractStartDate?: string | null;
+  contractEndDate?: string | null;
+  retired: boolean;
+  retireReason?: string | null;
+  auditInfo?: AuditInfo;
 };
 
 export type SHAIntervention = {

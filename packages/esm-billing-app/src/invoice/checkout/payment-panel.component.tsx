@@ -23,7 +23,7 @@ import { LineItem, MappedBill, PaymentMethod } from '../../types';
 import { computeWaivedAmount, extractErrorMessagesFromResponse } from '../../utils';
 import { makePayment } from '../payments/payments.resource';
 import { createLineItemPaymentPayload, getPayableLineItemUuids } from '../payments/utils';
-import { lineItemTotal, PaymentGroup } from './checkout.resource';
+import { lineItemAmountDue, PaymentGroup } from './checkout.resource';
 import styles from './checkout.scss';
 
 type PaymentOption = { id: number; method: PaymentMethod | null; amount: number | ''; referenceCode: string };
@@ -100,7 +100,7 @@ const PaymentPanel: React.FC<PaymentPanelProps> = ({ bill, selectedLineItems, gr
 
   const totalAmountTendered = roundCurrency(options.reduce((sum, option) => sum + Number(option.amount || 0), 0));
   const selectedLineItemsAmountDue = roundCurrency(
-    selectedLineItems.reduce((sum, lineItem) => sum + lineItemTotal(lineItem), 0) - computeWaivedAmount(bill),
+    selectedLineItems.reduce((sum, lineItem) => sum + lineItemAmountDue(lineItem), 0) - computeWaivedAmount(bill),
   );
   const amountDue = bill.balance - totalAmountTendered;
 

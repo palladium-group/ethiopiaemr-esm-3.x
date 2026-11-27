@@ -3,6 +3,17 @@ import { z } from 'zod';
 import dayjs from 'dayjs';
 // Create the billing form schema factory with conditional validation based on skip logic
 import type { TFunction } from 'i18next';
+import {
+  isCbhiPaymentMode,
+  isShiPaymentMode,
+  isInsurancePaymentMode,
+  isCreditCompanyPaymentMode,
+  INSURANCE_ATTRIBUTE_UUIDS,
+  CBHI_ATTRIBUTE_UUIDS,
+  SHI_ATTRIBUTE_UUIDS,
+  CREDIT_COMPANY_ATTRIBUTE_UUIDS,
+  hasAttributeValue,
+} from './billing-constants';
 
 /**
  * Creates a cashier bill for the selected billable item
@@ -54,7 +65,6 @@ export const createBillingFormSchema = (
   return z
     .object({
       billingTypeUuid: z.string().optional(),
-      creditSubType: z.string().optional(),
       attributes: z.record(z.string(), z.any()).optional(),
       billableItem: z
         .object({
@@ -87,24 +97,88 @@ export const createBillingFormSchema = (
         });
       }
 
-      // Validate required attributes for the selected billing type
-      if (billingTypes && data.billingTypeUuid) {
-        const selectedBillingType = billingTypes.find((bt) => bt.uuid === data.billingTypeUuid);
-        if (selectedBillingType?.attributeTypes) {
-          selectedBillingType.attributeTypes.forEach((attrType) => {
-            if (attrType.required) {
-              const attrValue = data.attributes?.[attrType.uuid];
-              if (!attrValue || (typeof attrValue === 'string' && attrValue.trim() === '')) {
-                ctx.addIssue({
-                  code: z.ZodIssueCode.custom,
-                  message: t('attributeRequired', '{{attributeName}} is required', {
-                    attributeName: attrType.uuid,
-                  }),
-                  path: ['attributes', attrType.uuid],
-                });
-              }
-            }
-          });
+      const selectedBillingType = billingTypes?.find((bt) => bt.uuid === data.billingTypeUuid);
+
+      // Validate required attributes for each payment mode
+      if (data.billingTypeUuid) {
+        if (isInsurancePaymentMode(data.billingTypeUuid, selectedBillingType?.name)) {
+          const insuranceId = data.attributes?.[INSURANCE_ATTRIBUTE_UUIDS.insuranceId] ?? data.attributes?.insuranceId;
+          if (!hasAttributeValue(insuranceId)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('insuranceIdRequired', 'Insurance ID is required'),
+              path: ['attributes', INSURANCE_ATTRIBUTE_UUIDS.insuranceId],
+            });
+          }
+
+          const expiryDate =
+            data.attributes?.[INSURANCE_ATTRIBUTE_UUIDS.insuranceExpiryDate] ?? data.attributes?.insuranceExpiryDate;
+          if (!hasAttributeValue(expiryDate)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('insuranceExpiryDateRequired', 'Insurance Expiry Date is required'),
+              path: ['attributes', INSURANCE_ATTRIBUTE_UUIDS.insuranceExpiryDate],
+            });
+          }
+
+          const accidentDate =
+            data.attributes?.[INSURANCE_ATTRIBUTE_UUIDS.accidentDate] ?? data.attributes?.accidentDate;
+          if (!hasAttributeValue(accidentDate)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('accidentDateRequired', 'Date of the accident is required'),
+              path: ['attributes', INSURANCE_ATTRIBUTE_UUIDS.accidentDate],
+            });
+          }
+        } else if (isCbhiPaymentMode(data.billingTypeUuid, selectedBillingType?.name)) {
+          const cbhiId = data.attributes?.[CBHI_ATTRIBUTE_UUIDS.cbhiId] ?? data.attributes?.cbhiId;
+          if (!hasAttributeValue(cbhiId)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('cbhiIdRequired', 'CBHI ID is required'),
+              path: ['attributes', CBHI_ATTRIBUTE_UUIDS.cbhiId],
+            });
+          }
+
+          const expiryDate =
+            data.attributes?.[CBHI_ATTRIBUTE_UUIDS.cbhiExpiryDate] ??
+            data.attributes?.cbhiExpiryDate ??
+            data.attributes?.expiryDate;
+          if (!hasAttributeValue(expiryDate)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('cbhiExpiryDateRequired', 'CBHI Expiry Date is required'),
+              path: ['attributes', CBHI_ATTRIBUTE_UUIDS.cbhiExpiryDate],
+            });
+          }
+        } else if (isShiPaymentMode(data.billingTypeUuid, selectedBillingType?.name)) {
+          const shiId = data.attributes?.[SHI_ATTRIBUTE_UUIDS.shiId] ?? data.attributes?.shiId;
+          if (!hasAttributeValue(shiId)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('shiIdRequired', 'SHI ID is required'),
+              path: ['attributes', SHI_ATTRIBUTE_UUIDS.shiId],
+            });
+          }
+
+          const expiryDate = data.attributes?.[SHI_ATTRIBUTE_UUIDS.shiExpiryDate] ?? data.attributes?.shiExpiryDate;
+          if (!hasAttributeValue(expiryDate)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('shiExpiryDateRequired', 'SHI Expiry Date is required'),
+              path: ['attributes', SHI_ATTRIBUTE_UUIDS.shiExpiryDate],
+            });
+          }
+        } else if (isCreditCompanyPaymentMode(data.billingTypeUuid, selectedBillingType?.name)) {
+          const creditCompany =
+            data.attributes?.[CREDIT_COMPANY_ATTRIBUTE_UUIDS.creditCompany] ?? data.attributes?.creditCompany;
+          if (!hasAttributeValue(creditCompany)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('creditCompanyRequired', 'Credit company is required'),
+              path: ['attributes', CREDIT_COMPANY_ATTRIBUTE_UUIDS.creditCompany],
+            });
+          }
         }
       }
 
@@ -137,40 +211,41 @@ export type BillingVisitAttributeTypesMap = {
   creditType?: string;
   creditTypeDetails?: string;
   paymentAttributesSummary?: string;
-  cbhi?: Partial<Record<CbhiVisitAttributeField, string>>;
+  cbhi?: Partial<Record<string, string>>;
+  insurance?: Partial<Record<string, string>>;
+  shi?: Partial<Record<string, string>>;
+  creditCompany?: string;
 };
 
-const hasAttributeValue = (value: unknown) =>
-  value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '');
-
-const transformFormObjectToVisitAttributes = (
-  formObject: Record<string, any>,
-  visitAttributeTypeUuidsMap: Record<string, string>,
-) => {
-  return Object.entries(formObject)
-    .map(([key, value]) => ({
-      attributeType: visitAttributeTypeUuidsMap[key],
-      value: value,
-    }))
-    .filter((item) => {
-      // Filter out undefined, null, or empty string values
-      if (item.value === undefined || item.value === null || item.value === '') {
-        return false;
-      }
-      // Filter out empty creditTypeDetails object
-      if (item.value && typeof item.value === 'object' && !Array.isArray(item.value)) {
-        const creditDetails = item.value as Record<string, any>;
-        const hasAnyValue = Object.values(creditDetails).some((val) => val !== undefined && val !== null && val !== '');
-        if (!hasAnyValue) {
-          return false;
-        }
-      }
-      return true;
-    })
-    .map((item) => ({
-      attributeType: item.attributeType,
-      value: item.value && typeof item.value === 'object' ? JSON.stringify(item.value) : item.value,
-    }));
+const FIELD_ALIAS_TO_DEFAULT_UUID: Record<string, string> = {
+  // Insurance
+  insuranceId: INSURANCE_ATTRIBUTE_UUIDS.insuranceId,
+  insuranceName: INSURANCE_ATTRIBUTE_UUIDS.insuranceName,
+  insuranceCode: INSURANCE_ATTRIBUTE_UUIDS.insuranceCode,
+  insuranceZone: INSURANCE_ATTRIBUTE_UUIDS.insuranceZone,
+  insuranceExpiryDate: INSURANCE_ATTRIBUTE_UUIDS.insuranceExpiryDate,
+  accidentDate: INSURANCE_ATTRIBUTE_UUIDS.accidentDate,
+  accidentPlace: INSURANCE_ATTRIBUTE_UUIDS.accidentPlace,
+  policeOfficerName: INSURANCE_ATTRIBUTE_UUIDS.policeOfficerName,
+  policeOfficerPhone: INSURANCE_ATTRIBUTE_UUIDS.policeOfficerPhone,
+  atFaultDriverPlateNo: INSURANCE_ATTRIBUTE_UUIDS.atFaultDriverPlateNo,
+  // CBHI
+  cbhiRegion: CBHI_ATTRIBUTE_UUIDS.cbhiRegion,
+  cbhiZone: CBHI_ATTRIBUTE_UUIDS.cbhiZone,
+  cbhiWoreda: CBHI_ATTRIBUTE_UUIDS.cbhiWoreda,
+  cbhiId: CBHI_ATTRIBUTE_UUIDS.cbhiId,
+  cbhiExpiryDate: CBHI_ATTRIBUTE_UUIDS.cbhiExpiryDate,
+  expiryDate: CBHI_ATTRIBUTE_UUIDS.cbhiExpiryDate,
+  id: CBHI_ATTRIBUTE_UUIDS.id,
+  fullName: CBHI_ATTRIBUTE_UUIDS.fullName,
+  accountNo: CBHI_ATTRIBUTE_UUIDS.accountNo,
+  membershipType: CBHI_ATTRIBUTE_UUIDS.membershipType,
+  insuredId: CBHI_ATTRIBUTE_UUIDS.insuredId,
+  // SHI
+  shiId: SHI_ATTRIBUTE_UUIDS.shiId,
+  shiExpiryDate: SHI_ATTRIBUTE_UUIDS.shiExpiryDate,
+  // Credit Company
+  creditCompany: CREDIT_COMPANY_ATTRIBUTE_UUIDS.creditCompany,
 };
 
 export const createBillingInformationVisitAttribute = (
@@ -189,45 +264,43 @@ export const createBillingInformationVisitAttribute = (
     });
   }
 
-  const cbhiAttributeTypes = visitAttributeTypeUuidsMap.cbhi || {};
-  const cbhiFieldKeys = new Set<string>(CBHI_VISIT_ATTRIBUTE_FIELDS);
-  const configuredCbhiAttributeUuids = new Set(
-    Object.values(cbhiAttributeTypes).filter((uuid): uuid is string => Boolean(uuid)),
-  );
+  // Each field is saved as a separate attribute now
+  if (attributes) {
+    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
-  // Persist CBHI fields as independent visit attributes for reporting
-  CBHI_VISIT_ATTRIBUTE_FIELDS.forEach((field) => {
-    const attributeTypeUuid = cbhiAttributeTypes[field];
-    const value = attributes?.[field];
-    if (attributeTypeUuid && hasAttributeValue(value)) {
-      visitAttributePayload.push({
-        attributeType: attributeTypeUuid,
-        value: String(value),
-      });
-    }
-  });
+    const addedAttributeUuids = new Set<string>();
 
-  // Save remaining sub attributes as a stringified object under paymentAttributesSummary.
-  // CBHI fields are excluded so they are not duplicated inside the summary blob.
-  if (visitAttributeTypeUuidsMap.paymentAttributesSummary && attributes) {
-    const paymentAttributesObject: Record<string, any> = {};
-
-    Object.entries(attributes).forEach(([attrTypeUuid, value]) => {
+    Object.entries(attributes).forEach(([key, value]) => {
       if (!hasAttributeValue(value)) {
         return;
       }
-      if (cbhiFieldKeys.has(attrTypeUuid) || configuredCbhiAttributeUuids.has(attrTypeUuid)) {
-        return;
-      }
-      paymentAttributesObject[attrTypeUuid] = value;
-    });
 
-    if (Object.keys(paymentAttributesObject).length > 0) {
-      visitAttributePayload.push({
-        attributeType: visitAttributeTypeUuidsMap.paymentAttributesSummary,
-        value: JSON.stringify(paymentAttributesObject),
-      });
-    }
+      let targetAttrUuid: string | undefined;
+      if (isUuid(key)) {
+        targetAttrUuid = key;
+      } else {
+        // Check config map overrides first, then fallback to default constants
+        const cbhiMap = visitAttributeTypeUuidsMap.cbhi as Record<string, string> | undefined;
+        const insMap = visitAttributeTypeUuidsMap.insurance as Record<string, string> | undefined;
+        const shiMap = visitAttributeTypeUuidsMap.shi as Record<string, string> | undefined;
+
+        targetAttrUuid =
+          (key === 'expiryDate' ? cbhiMap?.cbhiExpiryDate || cbhiMap?.expiryDate : cbhiMap?.[key]) ??
+          (key === 'cbhiExpiryDate' ? cbhiMap?.cbhiExpiryDate || cbhiMap?.expiryDate : undefined) ??
+          insMap?.[key] ??
+          shiMap?.[key] ??
+          (key === 'creditCompany' ? visitAttributeTypeUuidsMap.creditCompany : undefined) ??
+          FIELD_ALIAS_TO_DEFAULT_UUID[key];
+      }
+
+      if (targetAttrUuid && !addedAttributeUuids.has(targetAttrUuid)) {
+        addedAttributeUuids.add(targetAttrUuid);
+        visitAttributePayload.push({
+          attributeType: targetAttrUuid,
+          value: String(value),
+        });
+      }
+    });
   }
 
   return visitAttributePayload;

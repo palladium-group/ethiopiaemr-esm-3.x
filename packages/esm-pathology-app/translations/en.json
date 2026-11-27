@@ -8,6 +8,7 @@
   "pathology": "Pathology",
   "Pathology": "Pathology",
   "pathologyFormNotConfigured": "No pathology order form has been configured.",
+  "pathologyOrderNotPermitted": "You do not have permission to place a pathology order.",
   "pathologyOrders": "Pathology orders",
   "pathologyOrdersTitle": "Pathology Orders",
   "pathologyResultsTitle": "Pathology Results",
@@ -15,5 +16,6 @@
   "refreshing": "Refreshing...",
   "results": "Results",
   "serviceArea": "Service area",
-  "unknownForm": "Unknown form"
+  "unknownForm": "Unknown form",
+  "hematopathologyResultsTitle": "Hematopathology Results"
 }

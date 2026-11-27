@@ -14,6 +14,8 @@ import type { AttributeTypeMapping, ProviderValues } from './useProviderAttribut
 import type { FieldErrors } from 'react-hook-form';
 import type { UserFormSchema } from './useUserManagementForm';
 import { extractNameParts } from '../user-management.utils';
+import { showServerErrorModal } from '../../../../utils/server-error';
+import { revalidateAdminUsers } from '../user-list/user-list.resource';
 interface UseUserFormSubmissionParams {
   attributeTypeMapping: AttributeTypeMapping;
   selectedProvider: ProviderSearchResult | null;
@@ -178,10 +180,6 @@ export function useUserFormSubmission({
       if (response.uuid) {
         showSnackbarMessage(t('userSaved', 'User saved successfully'), '', 'success');
 
-        handleMutation(
-          `${restBaseUrl}/user?v=custom:(uuid,username,display,systemId,retired,person:(uuid,display,gender,names:(givenName,familyName,middleName),attributes:(uuid,display)),roles:(uuid,description,display,name))`,
-        );
-
         if (setProvider) {
           try {
             const providerUrl = providerUUID ? `${restBaseUrl}/provider/${providerUUID}` : `${restBaseUrl}/provider`;
@@ -192,10 +190,10 @@ export function useUserFormSubmission({
               showSnackbarMessage(t('providerSaved', 'Provider saved successfully'), '', 'success');
             }
           } catch (error) {
-            showSnackbarMessage(
+            showServerErrorModal(
               t('providerFail', 'Failed to save provider'),
-              t('providerFailedSubtitle', 'An error occurred while creating provider'),
-              'error',
+              error,
+              t('userSavedProviderFailed', 'The user account was saved, but the provider account could not be saved.'),
             );
           }
         }
@@ -211,7 +209,7 @@ export function useUserFormSubmission({
             },
           ].filter((attr) => attr?.value !== undefined && attr?.value !== null && attr?.value !== '');
 
-          await Promise.all(
+          const attributeResults = await Promise.allSettled(
             updatableAttributes?.map((attr) => {
               const existingAttributes = provider[0]?.attributes?.find(
                 (at) => at?.attributeType?.uuid === attr?.attributeType,
@@ -228,33 +226,45 @@ export function useUserFormSubmission({
               return updateProviderAttributes(attrPayload, providerUUID, existingAttributes);
             }),
           );
-          showSnackbar({
-            title: 'Success',
-            kind: 'success',
-            subtitle: t('updateMessage', 'Provider updated successfully'),
-          });
+          const failedAttribute = attributeResults.find(
+            (result): result is PromiseRejectedResult => result.status === 'rejected',
+          );
+          if (failedAttribute) {
+            showServerErrorModal(
+              t('providerUpdateFailed', 'Failed to update provider'),
+              failedAttribute.reason,
+              t(
+                'userSavedProviderAttributesFailed',
+                'The user account was saved, but some provider details could not be updated.',
+              ),
+            );
+          } else {
+            showSnackbar({
+              title: t('success', 'Success'),
+              kind: 'success',
+              subtitle: t('updateMessage', 'Provider updated successfully'),
+            });
+          }
         }
       } else {
         throw new Error('User creation failed');
       }
       handleMutation(`${restBaseUrl}/user`);
       mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/provider`));
+      revalidateAdminUsers();
       closeWorkspaceWithSavedChanges();
     } catch (error) {
-      showSnackbarMessage(
-        t('userSaveFailed', 'Failed to save user'),
-        t('userCreationFailedSubtitle', 'An error occurred while saving user form '),
-        'error',
-      );
+      showServerErrorModal(t('userSaveFailed', 'Failed to save user'), error);
     }
   };
 
   const handleError = (errors: FieldErrors<UserFormSchema>) => {
+    const messages = Object.entries(errors)
+      .map(([field, fieldError]) => `${field}: ${fieldError?.message ?? t('invalid', 'invalid')}`)
+      .join('; ');
     showSnackbar({
-      title: t('userSaveFailed', 'Fail to save'),
-      subtitle: t('userCreationFailedSubtitle', 'An error occurred while saving user form', {
-        errorMessage: JSON.stringify(errors, null, 2),
-      }),
+      title: t('userFormInvalid', 'Please correct the highlighted fields'),
+      subtitle: messages,
       kind: 'error',
       isLowContrast: true,
     });

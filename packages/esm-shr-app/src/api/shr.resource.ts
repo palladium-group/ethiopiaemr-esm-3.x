@@ -13,7 +13,6 @@ export interface ShrOutboxRow {
   operation: string | null;
   status: ShrOutboxStatus | null;
   retryCount: number;
-  workOrderId: string | null;
   dateCreated: string | null;
   dateChanged: string | null;
   lastError: string | null;

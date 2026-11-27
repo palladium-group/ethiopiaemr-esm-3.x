@@ -13,6 +13,7 @@ import SearchLocationWorkspace from './components/locations/forms/search-locatio
 import LocationBulkImportModal from './components/locations/bulk-import/location-bulk-import.modal';
 import UserLoginLocationsWorkspace from './components/users/manage-users/user-login-locations/user-login-locations.workspace';
 import ProviderBannerTag from './components/provider-banner/provider-banner.component';
+import ServerErrorDetailsModal from './components/modal/server-error-details.modal';
 
 const options = {
   featureName: 'esm-admin-app',
@@ -56,6 +57,23 @@ export const facilitySetupLeftPanelLink = getSyncLifecycle(
 export const hwrConfirmationModal = getSyncLifecycle(HWRConfirmModal, options);
 export const hwrEmptyModal = getSyncLifecycle(HWREmptyModal, options);
 export const hwrSyncModal = getSyncLifecycle(HWRSyncModal, options);
+// keys used only in the server error modal, workspaces and hooks, which the i18next extractor does not scan
+// t('close', 'Close')
+// t('copied', 'Copied!')
+// t('error', 'Error')
+// t('hideTechnicalDetails', 'Hide technical details')
+// t('invalid', 'invalid')
+// t('locationSaveError', 'Error saving location')
+// t('providerFail', 'Failed to save provider')
+// t('providerUpdateFailed', 'Failed to update provider')
+// t('showTechnicalDetails', 'Show technical details')
+// t('success', 'Success')
+// t('userFormInvalid', 'Please correct the highlighted fields')
+// t('userSaveFailed', 'Failed to save user')
+// t('userSavedProviderAttributesFailed', 'The user account was saved, but some provider details could not be updated.')
+// t('userSavedProviderFailed', 'The user account was saved, but the provider account could not be saved.')
+// t('validationErrors', 'Validation errors')
+export const serverErrorDetailsModal = getSyncLifecycle(ServerErrorDetailsModal, options);
 
 export const addLocation = getSyncLifecycle(AddLocationWorkspace, options);
 export const searchLocationWorkspace = getSyncLifecycle(SearchLocationWorkspace, options);

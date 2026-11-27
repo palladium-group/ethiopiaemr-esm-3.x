@@ -98,7 +98,7 @@ export function useTriageAssignmentCounts(triageId: string | undefined, queueLoc
 }
 
 export async function setAssignedQueueVisitAttribute(
-  visit: Visit,
+  visit: Visit | { uuid: string; attributes?: Array<unknown> },
   attributeTypeUuid: string,
   queueLocationUuid: string,
 ) {
@@ -106,7 +106,14 @@ export async function setAssignedQueueVisitAttribute(
     return;
   }
 
-  const attributes = visit.attributes as VisitAttributeLike[] | undefined;
+  let attributes = visit.attributes as VisitAttributeLike[] | undefined;
+  if (!attributes) {
+    const response = await openmrsFetch<Visit>(
+      `${restBaseUrl}/visit/${visit.uuid}?v=custom:(uuid,attributes:(uuid,value,attributeType:(uuid)))`,
+    ).catch(() => null);
+    attributes = response?.data?.attributes as VisitAttributeLike[] | undefined;
+  }
+
   const existing = attributes?.find((attr) => attr.attributeType?.uuid === attributeTypeUuid);
   const existingValue = existing?.value == null ? undefined : String(existing.value);
   if (existingValue === queueLocationUuid) {

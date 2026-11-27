@@ -1,0 +1,39 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.page {
+  padding: layout.$spacing-06 layout.$spacing-07;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+  flex-wrap: wrap;
+}
+
+.title {
+  @include type.type-style('heading-04');
+  color: colors.$gray-100;
+  margin: 0 0 layout.$spacing-03;
+}
+
+.description {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+  max-width: 50rem;
+}
+
+.content {
+  padding-top: layout.$spacing-06;
+}
+
+@media (max-width: 42rem) {
+  .page {
+    padding: layout.$spacing-05;
+  }
+}

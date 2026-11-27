@@ -86,7 +86,9 @@ export const addDepositTransaction = async (depositUuid: string, transaction: Re
 /**
  * Reverses a bill deposit transaction
  */
-export const reverseTransaction = async (depositUuid: string, transactionUuid: string) => {
-  const url = `${restBaseUrl}/cashier/deposit/${depositUuid}/transaction/${transactionUuid}`;
+export const reverseTransaction = async (depositUuid: string, transactionUuid: string, reason: string) => {
+  const url = `${restBaseUrl}/cashier/deposit/${depositUuid}/transaction/${transactionUuid}?reason=${encodeURIComponent(
+    reason,
+  )}`;
   return await openmrsFetch(url, { method: 'DELETE' });
 };

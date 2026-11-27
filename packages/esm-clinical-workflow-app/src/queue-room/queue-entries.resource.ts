@@ -155,8 +155,8 @@ export function useQueueEntries(searchCriteria?: QueueEntrySearchCriteria) {
   };
 }
 
-export function useQueueLocations() {
-  const apiUrl = `${fhirBaseUrl}/Location?_summary=data&_tag=queue location`;
+export function useQueueLocations(tag: string = 'queue location') {
+  const apiUrl = `${fhirBaseUrl}/Location?_summary=data&_tag=${encodeURIComponent(tag)}`;
   const { data, error, isLoading } = useFhirFetchAll<fhir.Location>(apiUrl);
 
   const queueLocations = useMemo(
@@ -172,14 +172,23 @@ export function useQueueLocations() {
   return { queueLocations, isLoading, error };
 }
 
-interface Queue {
+export const QUEUE_ENTRY_MODAL_REP =
+  'custom:(uuid,display,queue:(uuid,display,name,location:(uuid,display),service:(uuid,display),allowedPriorities:(uuid,display),allowedStatuses:(uuid,display)),status,patient:(uuid,display),visit:(uuid,display,startDatetime),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
+
+export interface QueueOption {
   uuid: string;
   display: string;
+  name?: string;
   service: {
     uuid: string;
     display: string;
   };
+  allowedPriorities?: Array<{ uuid: string; display: string }>;
   allowedStatuses?: Array<{ uuid: string; display: string }>;
+  location?: {
+    uuid: string;
+    display: string;
+  };
 }
 
 export function useQueues(locationUuid?: string) {
@@ -187,7 +196,7 @@ export function useQueues(locationUuid?: string) {
     'custom:(uuid,display,name,description,service:(uuid,display),allowedPriorities:(uuid,display),allowedStatuses:(uuid,display),location:(uuid,display))';
   const apiUrl = `${restBaseUrl}/queue?v=${customRepresentation}` + (locationUuid ? `&location=${locationUuid}` : '');
 
-  const { data, ...rest } = useSWRImmutable<{ data: { results: Array<Queue> } }, Error>(apiUrl, openmrsFetch);
+  const { data, ...rest } = useSWRImmutable<{ data: { results: Array<QueueOption> } }, Error>(apiUrl, openmrsFetch);
 
   const queues = useMemo(
     () => data?.data?.results.sort((a, b) => a.display.localeCompare(b.display, getLocale())) ?? [],
@@ -195,6 +204,117 @@ export function useQueues(locationUuid?: string) {
   );
 
   return { queues, ...rest };
+}
+
+export function useQueueEntry(queueEntryUuid?: string) {
+  const url = queueEntryUuid
+    ? `${restBaseUrl}/queue-entry/${queueEntryUuid}?v=${encodeURIComponent(QUEUE_ENTRY_MODAL_REP)}`
+    : null;
+  const { data, error, isLoading } = useSWR<FetchResponse<QueueEntry>>(url, openmrsFetch, {
+    dedupingInterval: 0,
+  });
+
+  return {
+    queueEntry: data?.data ?? null,
+    error,
+    isLoading,
+  };
+}
+
+export function useLatestQueueEntry(patientUuid?: string) {
+  const url = patientUuid
+    ? `${restBaseUrl}/queue-entry?v=${encodeURIComponent(QUEUE_ENTRY_MODAL_REP)}&patient=${patientUuid}&isEnded=false`
+    : null;
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: QueueEntry[] }>>(url, openmrsFetch);
+
+  const queueEntry = useMemo(
+    () =>
+      data?.data?.results?.reduce<QueueEntry | null>((latest, current) => {
+        if (!latest || new Date(current.startedAt) > new Date(latest.startedAt)) {
+          return current;
+        }
+        return latest;
+      }, null) ?? null,
+    [data?.data?.results],
+  );
+
+  return { data: queueEntry, error, isLoading, mutate };
+}
+
+export interface TransitionQueueEntryParams {
+  queueEntryToTransition: string;
+  transitionDate?: string;
+  newQueue?: string;
+  newStatus?: string;
+  newPriority?: string;
+  newPriorityComment?: string;
+}
+
+export function transitionQueueEntry(params: TransitionQueueEntryParams) {
+  return openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: params,
+  });
+}
+
+export function isAlreadyEndedQueueEntryError(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const withBody = error as { message?: string; responseBody?: { error?: { message?: string } } };
+  const errorMessage = withBody.responseBody?.error?.message || withBody.message || '';
+  return errorMessage.toLowerCase().includes('queue entry that has already ended');
+}
+
+export const DEFAULT_EMERGENCY_PRIORITY_CONCEPT_UUID = '037446f4-adfc-40b3-928c-a39a4826b1bf';
+
+export function resolveEmergencyPriorityUuid(
+  configuredUuid?: string,
+  availablePriorities: Array<{ uuid: string; display: string }> = [],
+): string {
+  return (
+    configuredUuid ||
+    availablePriorities.find((p) => p.display?.trim().toLowerCase() === 'emergency')?.uuid ||
+    DEFAULT_EMERGENCY_PRIORITY_CONCEPT_UUID
+  );
+}
+
+export function getDefaultPriorityUuid(
+  availablePriorities: Array<{ uuid: string; display: string }>,
+  defaultPriorityUuid?: string,
+): string {
+  return (
+    availablePriorities.find((item) => item.uuid === defaultPriorityUuid)?.uuid ?? availablePriorities[0]?.uuid ?? ''
+  );
+}
+
+export function useQueuePriorities(priorityConceptSetUuid?: string) {
+  const conceptUrl = priorityConceptSetUuid
+    ? `${restBaseUrl}/concept/${priorityConceptSetUuid}?v=custom:(uuid,display,setMembers:(uuid,display))`
+    : null;
+  const { data: conceptResponse, isLoading: isLoadingConcept } = useSWRImmutable<{
+    data?: { setMembers?: Array<{ uuid: string; display: string }> };
+  }>(conceptUrl, openmrsFetch);
+
+  const { queues, isLoading: isLoadingQueues } = useQueues();
+
+  const priorities = useMemo(() => {
+    const conceptSetMembers = conceptResponse?.data?.setMembers ?? [];
+    if (conceptSetMembers.length > 0) {
+      return conceptSetMembers;
+    }
+
+    const allPriorities = (queues ?? []).flatMap((queue) => queue?.allowedPriorities ?? []);
+    return Array.from(new Map(allPriorities.filter((p) => p?.uuid).map((p) => [p.uuid, p])).values());
+  }, [conceptResponse?.data?.setMembers, queues]);
+
+  const isLoading =
+    (Boolean(priorityConceptSetUuid) && isLoadingConcept) || (priorities.length === 0 && isLoadingQueues);
+
+  return { priorities, isLoadingQueuePriorities: isLoading };
 }
 
 export function useQueueStatuses() {

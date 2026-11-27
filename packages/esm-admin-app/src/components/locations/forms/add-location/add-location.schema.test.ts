@@ -36,4 +36,10 @@ describe('location form department rules', () => {
     };
     expect(issuePaths(data)).toEqual([]);
   });
+
+  it('rejects a department that already contains departments', () => {
+    const data = { ...base, tags: [{ uuid: DEPT_TAG, display: 'Department' }], departmentType: 'type-uuid' };
+    const result = buildLocationFormSchema(DEPT_TAG, true).safeParse(data);
+    expect(result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))).toEqual(['tags']);
+  });
 });

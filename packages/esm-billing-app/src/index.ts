@@ -61,6 +61,8 @@ import EthSwitchPaymentDialog from './invoice/payments/ethswitch-payment/ethswit
 import VisitAttributeTags from './invoice/payments/visit-tags/visit-attribute.component';
 import DeletePaymentModeModal from './bill-administration/payment-modes/delete-payment-mode.modal';
 import PaymentModeWorkspace from './bill-administration/payment-modes/payment-mode.workspace';
+import CreditCompanyWorkspace from './bill-administration/credit-companies/credit-company.workspace';
+import RetireCreditCompanyModal from './bill-administration/credit-companies/retire-credit-company.modal';
 import ExemptionRuleWorkspace from './bill-administration/billable-exemption/rules/exemption-rule.workspace';
 import DeleteExemptionRuleModal from './bill-administration/billable-exemption/rules/delete-exemption-rule.modal';
 import RequirePaymentModal from './prompt-payment/prompt-payment-modal.component';
@@ -127,6 +129,8 @@ export const initiatePaymentDialog = getSyncLifecycle(InitiatePaymentDialog, opt
 export const ethSwitchPaymentDialog = getSyncLifecycle(EthSwitchPaymentDialog, options);
 export const paymentModeWorkspace = getSyncLifecycle(PaymentModeWorkspace, options);
 export const deletePaymentModeModal = getSyncLifecycle(DeletePaymentModeModal, options);
+export const creditCompanyWorkspace = getSyncLifecycle(CreditCompanyWorkspace, options);
+export const retireCreditCompanyModal = getSyncLifecycle(RetireCreditCompanyModal, options);
 export const exemptionRuleWorkspace = getSyncLifecycle(ExemptionRuleWorkspace, options);
 export const deleteExemptionRuleModal = getSyncLifecycle(DeleteExemptionRuleModal, options);
 export const paymentWorkspace = getSyncLifecycle(PaymentWorkspace, options);

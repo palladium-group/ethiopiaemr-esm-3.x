@@ -5,6 +5,7 @@ import {
   billableExemptionsDashboardMeta,
   billDepositDashboardMeta,
   clinicalChargesDashboardMeta,
+  creditCompaniesDashboardMeta,
   patientBillingDashboardMeta,
   paymentHistoryDashboardMeta,
   paymentModeDashboardMeta,
@@ -53,6 +54,11 @@ export const paymentModeDashboard = getAsyncLifecycle(
   options,
 );
 
+export const creditCompaniesDashboard = getAsyncLifecycle(
+  () => import('./credit-companies/credit-companies-dashboard.component'),
+  options,
+);
+
 export const clinicalCharges = getAsyncLifecycle(() => import('./service-catalog/clinical-charges.component'), options);
 export const clinicalServicesAvailable = getAsyncLifecycle(
   () => import('./service-catalog/clinical-service-available.component'),
@@ -74,6 +80,7 @@ export const autoClaimsAdmin = getAsyncLifecycle(() => import('./auto-claims-hom
 export const billDepositDashboardLink = getSyncLifecycle(createDashboardLink(billDepositDashboardMeta), options);
 export const billableExemptionsLink = getSyncLifecycle(createDashboardLink(billableExemptionsDashboardMeta), options);
 export const paymentModeLink = getSyncLifecycle(createDashboardLink(paymentModeDashboardMeta), options);
+export const creditCompaniesLink = getSyncLifecycle(createDashboardLink(creditCompaniesDashboardMeta), options);
 export const clinicalChargesLink = getSyncLifecycle(createDashboardLink(clinicalChargesDashboardMeta), options);
 export const paymentHistoryLink = getSyncLifecycle(createDashboardLink(paymentHistoryDashboardMeta), options);
 export const patientBillingLink = getSyncLifecycle(createDashboardLink(patientBillingDashboardMeta), options);

@@ -1,27 +1,47 @@
-import { useFhirFetchAll } from '@openmrs/esm-framework';
-import { type FHIRLocation, type LocationTagsResponse } from '../types';
+import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import useSWR from 'swr';
+import { type LocationResponse } from '../types';
+
+export type LocationListItem = LocationResponse & {
+  retired?: boolean;
+  parentLocation?: { uuid: string; display: string } | null;
+};
+
+const locationRepresentation = encodeURIComponent(
+  'custom:(uuid,display,name,description,retired,tags:(uuid,display,name),parentLocation:(uuid,display),attributes:(uuid,attributeType:(uuid,display),value))',
+);
+
+interface UsePagedLocationsParams {
+  searchTerm?: string;
+  /** Only locations carrying this tag (uuid or name). */
+  tag?: string;
+  page?: number;
+  pageSize?: number;
+}
 
 /**
- * Custom hook that fetches all facilities with specified location tags.
- * Uses the framework's useFhirFetchAll hook which handles pagination automatically.
- *
- * @param locationTags The location tags response containing tags to filter by
- * @returns Object containing loading state, error, and the list of facilities
+ * One server-side page of non-retired locations. `q` matches the location name; `tag` and `q` can be combined.
+ * Keys start with `${restBaseUrl}/location` so the add/edit/tag workspaces' prefix mutations refresh the table.
  */
-export const useFacilitiesTagged = (locationTags: LocationTagsResponse) => {
-  const tagNames = locationTags?.results
-    ?.map((tag) => encodeURIComponent(tag.name || tag.display))
-    .filter(Boolean)
-    .join(',');
+export const usePagedLocations = ({ searchTerm = '', tag = '', page = 1, pageSize = 10 }: UsePagedLocationsParams) => {
+  const startIndex = (page - 1) * pageSize;
+  const trimmedSearch = searchTerm.trim();
+  const url =
+    `${restBaseUrl}/location?v=${locationRepresentation}&startIndex=${startIndex}&limit=${pageSize}&totalCount=true` +
+    (trimmedSearch ? `&q=${encodeURIComponent(trimmedSearch)}` : '') +
+    (tag ? `&tag=${encodeURIComponent(tag)}` : '');
 
-  const url = tagNames ? `ws/fhir2/R4/Location?_summary=data&_tag=${tagNames}` : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    FetchResponse<{ results: Array<LocationListItem>; totalCount?: number }>
+  >(url, openmrsFetch, { keepPreviousData: true, errorRetryCount: 2 });
 
-  const { data, isLoading, error, mutate } = useFhirFetchAll<FHIRLocation>(url);
-
+  const results = data?.data?.results;
   return {
-    isLoading,
+    locations: results ?? [],
+    totalCount: data?.data?.totalCount ?? results?.length ?? 0,
     error,
+    isLoading,
+    isValidating,
     mutate,
-    facilityList: data?.map((resource) => ({ resource })) || [],
   };
 };

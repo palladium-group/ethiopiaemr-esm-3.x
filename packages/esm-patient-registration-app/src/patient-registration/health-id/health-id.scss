@@ -1,0 +1,132 @@
+@use '@carbon/react/scss/spacing' as spacing;
+@use '@carbon/react/scss/theme' as theme;
+@use '@carbon/react/scss/type' as type;
+@use '@carbon/react/scss/colors' as colors;
+
+.healthIdCard {
+  width: 100%;
+  margin-bottom: spacing.$spacing-06;
+  background-color: colors.$cool-gray-10;
+  border: 1px solid colors.$cool-gray-20;
+  border-left: 4px solid colors.$blue-60;
+  padding: spacing.$spacing-05;
+}
+
+.searchHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: spacing.$spacing-03;
+}
+
+.searchTitle {
+  @include type.type-style('heading-compact-02');
+  color: theme.$text-primary;
+  display: flex;
+  align-items: center;
+  gap: spacing.$spacing-03;
+}
+
+.searchDescription {
+  @include type.type-style('body-compact-01');
+  color: theme.$text-secondary;
+  margin-bottom: spacing.$spacing-04;
+}
+
+.searchControls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: spacing.$spacing-03;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.notificationWrapper {
+  margin-top: spacing.$spacing-04;
+}
+
+/* Modal styles */
+.modalBody {
+  padding-top: spacing.$spacing-04;
+}
+
+.diffHeaderSummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: spacing.$spacing-05;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-03;
+}
+
+.summaryText {
+  @include type.type-style('body-compact-02');
+  color: theme.$text-primary;
+  margin: 0;
+}
+
+.summaryTags {
+  display: flex;
+  gap: spacing.$spacing-02;
+}
+
+.tableWrapper {
+  margin-bottom: spacing.$spacing-05;
+  border: 1px solid colors.$cool-gray-20;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.diffRowDifferent {
+  background-color: #fff1f1 !important; // light red (Carbon red-10)
+
+  > td {
+    background-color: #fff1f1 !important;
+  }
+
+  &:hover > td {
+    background-color: #ffd7d9 !important;
+  }
+}
+
+.diffRowSame {
+  background-color: #defbe6 !important; // light green (Carbon green-10)
+
+  > td {
+    background-color: #defbe6 !important;
+  }
+
+  &:hover > td {
+    background-color: #c6f6d5 !important;
+  }
+}
+
+.diffRowNew {
+  background-color: #edf5ff !important; // light blue (Carbon blue-10)
+
+  > td {
+    background-color: #edf5ff !important;
+  }
+
+  &:hover > td {
+    background-color: #d0e2ff !important;
+  }
+}
+
+.fieldNameCell {
+  width: 28%;
+}
+
+.currentValueCell {
+  width: 32%;
+  color: theme.$text-secondary;
+}
+
+.healthIdValueCell {
+  width: 30%;
+  color: theme.$text-primary;
+}
+
+.warningNotification {
+  margin-top: spacing.$spacing-04;
+}

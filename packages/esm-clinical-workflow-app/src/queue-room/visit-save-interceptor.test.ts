@@ -1,8 +1,14 @@
 import {
   installVisitSaveInterceptor,
   installAppointmentCheckInInterceptor,
+  installVisitStopInterceptor,
+  installQueueTransitionInterceptor,
   isVisitCreateEndpoint,
+  extractVisitUuidFromPathname,
+  isVisitStopEndpoint,
+  isVisitStopPayload,
   isAppointmentEndpoint,
+  isQueueTransitionEndpoint,
   isCheckedInPayload,
   extractPatientUuidFromPayload,
 } from './visit-save-interceptor';
@@ -20,11 +26,35 @@ describe('visit-save-interceptor helpers', () => {
     expect(isVisitCreateEndpoint('/ws/rest/v1/visittype')).toBe(false);
   });
 
+  it('identifies visit stop endpoints and extracts visit UUID accurately', () => {
+    expect(isVisitStopEndpoint('/ws/rest/v1/visit/123-uuid')).toBe(true);
+    expect(isVisitStopEndpoint('/openmrs/ws/rest/v1/visit/123-uuid/')).toBe(true);
+    expect(extractVisitUuidFromPathname('/openmrs/ws/rest/v1/visit/abc-456')).toBe('abc-456');
+    expect(extractVisitUuidFromPathname('/openmrs/ws/rest/v1/visit/abc-456/')).toBe('abc-456');
+
+    expect(isVisitStopEndpoint('/ws/rest/v1/visit')).toBe(false);
+    expect(extractVisitUuidFromPathname('/ws/rest/v1/visit')).toBeUndefined();
+  });
+
+  it('identifies visit stop payload accurately', () => {
+    expect(isVisitStopPayload({ stopDatetime: '2026-10-26T19:26:51.000+0300' })).toBe(true);
+    expect(isVisitStopPayload({ stopDate: '2026-10-26' })).toBe(true);
+    expect(isVisitStopPayload({ location: 'xyz' })).toBe(false);
+    expect(isVisitStopPayload(null)).toBe(false);
+  });
+
   it('identifies appointment endpoints accurately', () => {
     expect(isAppointmentEndpoint('/ws/rest/v1/appointment')).toBe(true);
     expect(isAppointmentEndpoint('/ws/rest/v1/appointment/123-uuid')).toBe(true);
     expect(isAppointmentEndpoint('/openmrs/ws/rest/v1/appointment/123-uuid/')).toBe(true);
     expect(isAppointmentEndpoint('/openmrs/ws/rest/v1/patient')).toBe(false);
+  });
+
+  it('identifies queue transition endpoints accurately', () => {
+    expect(isQueueTransitionEndpoint('/ws/rest/v1/queue-entry/transition')).toBe(true);
+    expect(isQueueTransitionEndpoint('/openmrs/ws/rest/v1/queue-entry/transition/')).toBe(true);
+    expect(isQueueTransitionEndpoint('/openmrs/ws/rest/v1/queue-entry')).toBe(false);
+    expect(isQueueTransitionEndpoint('/openmrs/ws/rest/v1/queue')).toBe(false);
   });
 
   it('identifies CheckedIn payload accurately', () => {
@@ -253,5 +283,170 @@ describe('installAppointmentCheckInInterceptor', () => {
 
     expect(listener).not.toHaveBeenCalled();
     uninstall();
+  });
+});
+
+describe('installVisitStopInterceptor', () => {
+  const underlyingFetch = jest.fn(
+    async () =>
+      ({
+        ok: true,
+        clone: () => ({
+          json: async () => ({
+            uuid: 'visit-999',
+            stopDatetime: '2026-10-26T19:26:51.000+0300',
+            patient: { uuid: 'patient-stopped' },
+          }),
+        }),
+      } as unknown as Response),
+  );
+
+  beforeEach(() => {
+    underlyingFetch.mockClear();
+    window.fetch = underlyingFetch as typeof window.fetch;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('notifies listeners when a visit is stopped / checked out via POST', async () => {
+    const listener = jest.fn();
+    const uninstall = installVisitStopInterceptor(listener);
+
+    await window.fetch('/openmrs/ws/rest/v1/visit/visit-999', {
+      method: 'POST',
+      body: JSON.stringify({
+        stopDatetime: '2026-10-26T19:26:51.000+0300',
+      }),
+    });
+
+    expect(listener).toHaveBeenCalledWith({
+      patientUuid: 'patient-stopped',
+      visitUuid: 'visit-999',
+    });
+
+    uninstall();
+  });
+
+  it('ignores visit updates without stopDatetime', async () => {
+    const listener = jest.fn();
+    const uninstall = installVisitStopInterceptor(listener);
+
+    await window.fetch('/openmrs/ws/rest/v1/visit/visit-999', {
+      method: 'POST',
+      body: JSON.stringify({
+        location: 'some-location',
+      }),
+    });
+
+    expect(listener).not.toHaveBeenCalled();
+    uninstall();
+  });
+
+  it('ignores failed visit stop requests', async () => {
+    underlyingFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    } as unknown as Response);
+
+    const listener = jest.fn();
+    const uninstall = installVisitStopInterceptor(listener);
+
+    await window.fetch('/openmrs/ws/rest/v1/visit/visit-999', {
+      method: 'POST',
+      body: JSON.stringify({
+        stopDatetime: '2026-10-26T19:26:51.000+0300',
+      }),
+    });
+
+    expect(listener).not.toHaveBeenCalled();
+    uninstall();
+  });
+
+  describe('installQueueTransitionInterceptor', () => {
+    it('notifies listeners when a queue transition is posted with newQueue', async () => {
+      underlyingFetch.mockResolvedValueOnce({
+        ok: true,
+        clone: () => ({
+          json: () =>
+            Promise.resolve({
+              uuid: 'new-entry-uuid',
+              patient: { uuid: 'patient-abc' },
+              visit: { uuid: 'visit-123' },
+            }),
+        }),
+      } as unknown as Response);
+
+      const listener = jest.fn();
+      const uninstall = installQueueTransitionInterceptor(listener);
+
+      await window.fetch('/openmrs/ws/rest/v1/queue-entry/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          queueEntryToTransition: 'old-entry-uuid',
+          newQueue: 'new-queue-uuid',
+          newStatus: 'status-uuid',
+        }),
+      });
+
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queueEntryToTransition: 'old-entry-uuid',
+          newQueue: 'new-queue-uuid',
+          patientUuid: 'patient-abc',
+          visitUuid: 'visit-123',
+        }),
+      );
+
+      uninstall();
+    });
+
+    it('ignores queue transitions without newQueue', async () => {
+      underlyingFetch.mockResolvedValueOnce({
+        ok: true,
+        clone: () => ({
+          json: () => Promise.resolve({ uuid: 'entry-uuid' }),
+        }),
+      } as unknown as Response);
+
+      const listener = jest.fn();
+      const uninstall = installQueueTransitionInterceptor(listener);
+
+      await window.fetch('/openmrs/ws/rest/v1/queue-entry/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          queueEntryToTransition: 'entry-uuid',
+          newStatus: 'new-status-uuid',
+        }),
+      });
+
+      expect(listener).not.toHaveBeenCalled();
+      uninstall();
+    });
+
+    it('ignores failed queue transition requests', async () => {
+      underlyingFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+      } as unknown as Response);
+
+      const listener = jest.fn();
+      const uninstall = installQueueTransitionInterceptor(listener);
+
+      await window.fetch('/openmrs/ws/rest/v1/queue-entry/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          queueEntryToTransition: 'old-entry-uuid',
+          newQueue: 'new-queue-uuid',
+        }),
+      });
+
+      expect(listener).not.toHaveBeenCalled();
+      uninstall();
+    });
   });
 });
