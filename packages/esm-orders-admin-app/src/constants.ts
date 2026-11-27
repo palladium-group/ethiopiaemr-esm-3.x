@@ -24,4 +24,10 @@ export const orderSetListRepresentation =
   'custom:(uuid,name,description,retired,operator,orderSetMembers:(uuid,display,retired,concept:(uuid,display),orderType:(uuid,display)))';
 
 export const orderSetFullRepresentation =
-  'custom:(uuid,name,description,retired,operator,orderSetMembers:(uuid,display,retired,orderTemplate,orderTemplateType,concept:(uuid,display),orderType:(uuid,display)))';
+  'custom:(uuid,name,description,retired,operator,attributes:(uuid,value,attributeType:(uuid)),orderSetMembers:(uuid,display,retired,orderTemplate,orderTemplateType,concept:(uuid,display),orderType:(uuid,display)))';
+
+/** Order set attribute type holding instructions for the whole set; created by the ethiopiaemr-custom-module backend. */
+export const ORDER_SET_INSTRUCTIONS_ATTRIBUTE_TYPE_UUID = 'd239f453-478c-4a2f-b02b-10848d7c61f5';
+
+/** Core rejects order set descriptions longer than this, regardless of the database column size. */
+export const ORDER_SET_DESCRIPTION_MAX_LENGTH = 255;

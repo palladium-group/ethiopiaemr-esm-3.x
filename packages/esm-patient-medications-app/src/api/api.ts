@@ -19,6 +19,7 @@ import {
   type OrderAction,
 } from '@openmrs/esm-patient-common-lib';
 import { type ConfigObject } from '../config-schema';
+import { unescapeRestText } from '../utils/protocol-instructions';
 
 const customRepresentation =
   'custom:(uuid,dosingType,orderNumber,accessionNumber,' +
@@ -207,6 +208,7 @@ export const prepMedicationOrderPostData: PostDataPrepFunction = (
         ? 'org.openmrs.FreeTextDosingInstructions'
         : 'org.openmrs.SimpleDosingInstructions',
       dosingInstructions: order.isFreeTextDosage ? order.freeTextDosage : order.patientInstructions,
+      instructions: order.instructions,
       concept: order.drug.concept.uuid,
       orderReasonNonCoded: order.indication,
     };
@@ -235,6 +237,7 @@ export const prepMedicationOrderPostData: PostDataPrepFunction = (
         ? 'org.openmrs.FreeTextDosingInstructions'
         : 'org.openmrs.SimpleDosingInstructions',
       dosingInstructions: order.isFreeTextDosage ? order.freeTextDosage : order.patientInstructions,
+      instructions: order.instructions,
       concept: order.drug.concept.uuid,
       orderReasonNonCoded: order.indication,
     };
@@ -263,6 +266,7 @@ export const prepMedicationOrderPostData: PostDataPrepFunction = (
         ? 'org.openmrs.FreeTextDosingInstructions'
         : 'org.openmrs.SimpleDosingInstructions',
       dosingInstructions: order.isFreeTextDosage ? order.freeTextDosage : order.patientInstructions,
+      instructions: order.instructions,
       concept: order?.drug?.concept?.uuid,
       orderReasonNonCoded: order.indication,
     };
@@ -322,10 +326,13 @@ export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrd
       : null,
     commonMedicationName: order.drug.display,
     isFreeTextDosage: order.dosingType === 'org.openmrs.FreeTextDosingInstructions',
-    freeTextDosage: order.dosingType === 'org.openmrs.FreeTextDosingInstructions' ? order.dosingInstructions : '',
-    patientInstructions: order.dosingType !== 'org.openmrs.FreeTextDosingInstructions' ? order.dosingInstructions : '',
+    // Text from the server is HTML-encoded; decode it so re-posting does not encode it a second time.
+    freeTextDosage:
+      order.dosingType === 'org.openmrs.FreeTextDosingInstructions' ? unescapeRestText(order.dosingInstructions) : '',
+    patientInstructions:
+      order.dosingType !== 'org.openmrs.FreeTextDosingInstructions' ? unescapeRestText(order.dosingInstructions) : '',
     asNeeded: order.asNeeded,
-    asNeededCondition: order.asNeededCondition ?? null,
+    asNeededCondition: order.asNeededCondition ? unescapeRestText(order.asNeededCondition) : null,
     scheduledDate: action === 'DISCONTINUE' ? new Date(order.dateActivated) : new Date(),
     duration: order.duration,
     durationUnit: order.durationUnits
@@ -336,7 +343,9 @@ export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrd
       : null,
     pillsDispensed: order.quantity,
     numRefills: order.numRefills,
-    indication: order.orderReasonNonCoded,
+    indication: order.orderReasonNonCoded ? unescapeRestText(order.orderReasonNonCoded) : order.orderReasonNonCoded,
+    // Keeps the protocol note (see utils/protocol-instructions) on the order when it is revised or renewed.
+    instructions: unescapeRestText(order.instructions) || undefined,
     quantityUnits: order.quantityUnits
       ? {
           value: order.quantityUnits.display,

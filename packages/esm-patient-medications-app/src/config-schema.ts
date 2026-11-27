@@ -74,6 +74,12 @@ export const configSchema = {
     _description: 'Whether to include order sets in the drug order search results.',
     _default: true,
   },
+  orderSetInstructionsAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description:
+      'UUID of the order set attribute type that holds instructions for the whole order set (start criteria, dose adjustment rules, monitoring). Orders placed from an order set that has them carry a copy, which is shown in the medications table.',
+    _default: 'd239f453-478c-4a2f-b02b-10848d7c61f5',
+  },
   dtpResponse: {
     questionConceptUuid: {
       _type: Type.ConceptUuid,
@@ -154,6 +160,7 @@ export interface ConfigObject {
   durationUnitsDaysMap: Record<string, number>;
   drugCategoryConceptSets: Array<string>;
   enableOrderSets: boolean;
+  orderSetInstructionsAttributeTypeUuid: string;
   dtpResponse: {
     questionConceptUuid: string;
     acceptedConceptUuid: string;

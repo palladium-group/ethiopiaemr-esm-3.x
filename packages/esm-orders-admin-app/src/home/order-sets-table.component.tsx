@@ -17,7 +17,7 @@ import { Add } from '@carbon/react/icons';
 import { launchWorkspace, openmrsFetch, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { getOrderSetUrl, revalidateOrderSets, retireOrderSet, useOrderSets } from '../api/order-set.resource';
 import { ORDER_SET_ADMIN_WORKSPACE } from '../constants';
-import { getErrorMessage } from '../order-sets/order-set-form.helper';
+import { getErrorMessage, unescapeRestText } from '../order-sets/order-set-form.helper';
 import type { OrderSetListItem } from '../types';
 import styles from './order-sets-table.scss';
 
@@ -44,8 +44,8 @@ const OrderSetsTable: React.FC = () => {
     () =>
       orderSets.map((orderSet) => ({
         id: orderSet.uuid,
-        name: orderSet.name,
-        description: orderSet.description || t('notSet', 'Not set'),
+        name: unescapeRestText(orderSet.name),
+        description: unescapeRestText(orderSet.description) || t('notSet', 'Not set'),
         members: String(orderSet.orderSetMembers?.filter((member) => !member.retired).length ?? 0),
         operator: orderSet.operator,
         status: orderSet.retired ? t('retired', 'Retired') : t('active', 'Active'),

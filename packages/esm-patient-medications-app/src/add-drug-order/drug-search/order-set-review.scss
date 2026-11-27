@@ -26,6 +26,25 @@
 .description {
   @include type.type-style('body-compact-01');
   color: $text-02;
+  white-space: pre-line;
+}
+
+.protocolInstructions {
+  background-color: $ui-01;
+  border-left: 3px solid $interactive-01;
+  margin-top: layout.$spacing-04;
+  padding: layout.$spacing-03 layout.$spacing-04;
+}
+
+.protocolInstructionsLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.protocolInstructionsText {
+  @include type.type-style('body-compact-01');
+  margin-top: layout.$spacing-02;
+  white-space: pre-line;
 }
 
 .operatorHelp {
@@ -52,6 +71,11 @@
   gap: layout.$spacing-03;
 }
 
+// Carbon's checkbox and radio wrappers grow by default and would take half the tile.
+.memberHeader > :first-child {
+  flex: none;
+}
+
 .memberDetails {
   flex: 1;
 }
@@ -64,6 +88,12 @@
   @include type.type-style('label-01');
   color: $text-02;
   margin-top: layout.$spacing-02;
+}
+
+.memberInstructions {
+  @include type.type-style('body-compact-01');
+  margin-top: layout.$spacing-02;
+  white-space: pre-line;
 }
 
 .actions {

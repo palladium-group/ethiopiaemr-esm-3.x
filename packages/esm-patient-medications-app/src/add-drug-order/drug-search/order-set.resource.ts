@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { unescapeRestText } from '../../utils/protocol-instructions';
 import type { OrderSetOperator } from './order-set.helper';
 
 export interface OrderSetSearchResult {
@@ -31,7 +32,16 @@ export interface OrderSetMemberDetail {
   };
 }
 
+export interface OrderSetAttributeDetail {
+  uuid: string;
+  value?: string;
+  attributeType?: {
+    uuid: string;
+  };
+}
+
 export interface OrderSetDetail extends OrderSetSearchResult {
+  attributes?: Array<OrderSetAttributeDetail>;
   orderSetMembers?: Array<OrderSetMemberDetail>;
 }
 
@@ -39,7 +49,7 @@ const orderSetListRepresentation =
   'custom:(uuid,name,description,retired,operator,orderSetMembers:(uuid,display,retired))';
 
 const orderSetFullRepresentation =
-  'custom:(uuid,name,description,retired,operator,orderSetMembers:(uuid,display,retired,orderTemplate,orderTemplateType,concept:(uuid,display),orderType:(uuid,display)))';
+  'custom:(uuid,name,description,retired,operator,attributes:(uuid,value,attributeType:(uuid)),orderSetMembers:(uuid,display,retired,orderTemplate,orderTemplateType,concept:(uuid,display),orderType:(uuid,display)))';
 
 function parseOrderSetList(data: unknown): Array<OrderSetSearchResult> {
   if (Array.isArray(data)) {
@@ -78,7 +88,16 @@ export function useOrderSetSearch(query: string, enabled = true) {
     () => openmrsFetch(`${restBaseUrl}/orderset?v=${orderSetListRepresentation}`),
   );
 
-  const orderSets = useMemo(() => filterOrderSetsByQuery(parseOrderSetList(data?.data), query), [data, query]);
+  const allOrderSets = useMemo(
+    () =>
+      parseOrderSetList(data?.data).map((orderSet) => ({
+        ...orderSet,
+        name: unescapeRestText(orderSet.name),
+        description: unescapeRestText(orderSet.description),
+      })),
+    [data],
+  );
+  const orderSets = useMemo(() => filterOrderSetsByQuery(allOrderSets, query), [allOrderSets, query]);
 
   return useMemo(
     () => ({

@@ -1,5 +1,5 @@
 import { type OrderTemplate } from '@openmrs/esm-patient-common-lib';
-import { DRUG_ORDER_TEMPLATE_SCHEMA } from '../constants';
+import { DRUG_ORDER_TEMPLATE_SCHEMA, ORDER_SET_INSTRUCTIONS_ATTRIBUTE_TYPE_UUID } from '../constants';
 import { getErrorMessage, normalizeDoseUnits } from '../order-templates/order-template-form.helper';
 import type {
   DoseUnitFormValue,
@@ -34,6 +34,25 @@ function toFormDose(value: unknown): number | null {
 
   const parsed = typeof value === 'number' ? value : Number(value);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+/**
+ * The server HTML-encodes `<`, `>` and `&` in saved text. Decode on read so the form shows what was
+ * typed and a re-save does not encode it a second time.
+ */
+export function unescapeRestText(value?: string | null): string {
+  let current = value ?? '';
+  let previous: string;
+  do {
+    previous = current;
+    current = previous
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#0?39;/g, "'")
+      .replace(/&amp;/g, '&');
+  } while (current !== previous);
+  return current;
 }
 
 function parseMemberOrderTemplate(orderTemplate?: string): MemberOrderTemplate | undefined {
@@ -76,11 +95,13 @@ export const emptyOrderSetMemberFormValues: OrderSetMemberFormValues = {
   frequencyDisplay: '',
   asNeeded: false,
   asNeededCondition: '',
+  instructions: '',
 };
 
 export const emptyOrderSetFormValues: OrderSetFormValues = {
   name: '',
   description: '',
+  instructions: '',
   operator: 'ALL',
   members: [],
 };
@@ -98,6 +119,7 @@ function mapMemberOrderTemplateToFormValues(
   const dose = getDefaultOption(dosingInstructions?.dose);
   const route = getDefaultOption(dosingInstructions?.route);
   const frequency = getDefaultOption(dosingInstructions?.frequency);
+  const instructions = getDefaultOption(dosingInstructions?.instructions);
 
   return {
     uuid: member.uuid,
@@ -111,16 +133,22 @@ function mapMemberOrderTemplateToFormValues(
     frequencyUuid: (frequency as { valueCoded?: string } | undefined)?.valueCoded ?? '',
     frequencyDisplay: String(frequency?.value ?? ''),
     asNeeded: Boolean(dosingInstructions?.asNeeded),
-    asNeededCondition: dosingInstructions?.asNeededCondition ?? '',
+    asNeededCondition: unescapeRestText(dosingInstructions?.asNeededCondition),
+    instructions: unescapeRestText(instructions?.value),
   };
 }
 
 export function mapOrderSetToFormValues(orderSet: OrderSetListItem): OrderSetFormValues {
   const activeMembers = orderSet.orderSetMembers?.filter((member) => !member.retired) ?? [];
 
+  const instructionsAttribute = orderSet.attributes?.find(
+    (attribute) => attribute.attributeType?.uuid === ORDER_SET_INSTRUCTIONS_ATTRIBUTE_TYPE_UUID,
+  );
+
   return {
-    name: orderSet.name ?? '',
-    description: orderSet.description ?? '',
+    name: unescapeRestText(orderSet.name),
+    description: unescapeRestText(orderSet.description),
+    instructions: unescapeRestText(instructionsAttribute?.value),
     operator: orderSet.operator ?? 'ALL',
     members: activeMembers.map((member) =>
       mapMemberOrderTemplateToFormValues(member, parseMemberOrderTemplate(member.orderTemplate)),
@@ -135,6 +163,7 @@ function buildMemberOrderTemplate(member: OrderSetMemberFormValues): string | un
 
   const doseValue = member.dose;
   const doseUnits = normalizeDoseUnits(member.doseUnits);
+  const instructions = member.instructions?.trim();
 
   const template: MemberOrderTemplate = {
     type: DRUG_ORDER_TEMPLATE_SCHEMA,
@@ -153,6 +182,7 @@ function buildMemberOrderTemplate(member: OrderSetMemberFormValues): string | un
         : [],
       asNeeded: member.asNeeded,
       asNeededCondition: member.asNeeded ? member.asNeededCondition || undefined : undefined,
+      instructions: instructions ? [{ value: instructions, default: true }] : undefined,
     },
   };
 
@@ -180,11 +210,17 @@ export function mapFormValuesToSavePayload(
     retired: true,
   }));
 
+  const instructions = values.instructions?.trim();
+
   return {
     uuid: existingUuid,
     name: values.name.trim(),
     description: values.description.trim(),
     operator: values.operator,
+    // The backend treats this list as the full desired state, so an empty list clears the note.
+    attributes: instructions
+      ? [{ attributeType: ORDER_SET_INSTRUCTIONS_ATTRIBUTE_TYPE_UUID, value: instructions }]
+      : [],
     orderSetMembers: [...activeMemberPayloads, ...retiredMemberPayloads],
   };
 }

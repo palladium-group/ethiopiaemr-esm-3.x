@@ -80,12 +80,21 @@ export interface OrderSetMemberListItem {
   orderTemplateType?: string;
 }
 
+export interface OrderSetAttributeListItem {
+  uuid: string;
+  value?: string;
+  attributeType?: {
+    uuid: string;
+  };
+}
+
 export interface OrderSetListItem {
   uuid: string;
   name: string;
   description?: string;
   retired: boolean;
   operator: OrderSetOperator;
+  attributes?: Array<OrderSetAttributeListItem>;
   orderSetMembers?: Array<OrderSetMemberListItem>;
 }
 
@@ -102,12 +111,14 @@ export interface OrderSetMemberFormValues {
   frequencyDisplay: string;
   asNeeded: boolean;
   asNeededCondition: string;
+  instructions: string;
   retired?: boolean;
 }
 
 export interface OrderSetFormValues {
   name: string;
   description: string;
+  instructions: string;
   operator: OrderSetOperator;
   members: Array<OrderSetMemberFormValues>;
 }
@@ -120,10 +131,16 @@ export interface OrderSetMemberSavePayload {
   retired?: boolean;
 }
 
+export interface OrderSetAttributeSavePayload {
+  attributeType: string;
+  value: string;
+}
+
 export interface OrderSetSavePayload {
   uuid?: string;
   name: string;
   description: string;
   operator: OrderSetOperator;
+  attributes: Array<OrderSetAttributeSavePayload>;
   orderSetMembers: Array<OrderSetMemberSavePayload>;
 }

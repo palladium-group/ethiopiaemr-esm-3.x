@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Checkbox, ComboBox, InlineLoading, NumberInput, TextInput } from '@carbon/react';
+import { Button, Checkbox, ComboBox, InlineLoading, NumberInput, TextArea, TextInput } from '@carbon/react';
 import { Add, TrashCan } from '@carbon/react/icons';
 import { Controller, type Control, useFieldArray, type UseFormSetValue, useWatch } from 'react-hook-form';
 import { useDrugSearch } from '../api/drug-search.resource';
@@ -143,6 +143,12 @@ const OrderSetMemberRow: React.FC<OrderSetMemberRowProps> = ({
     if (!drug) {
       setValue(`members.${index}`, emptyOrderSetMemberFormValues, { shouldDirty: true, shouldValidate: true });
       setDrugSearchTerm('');
+      return;
+    }
+
+    // Carbon's ComboBox also calls onChange when the selectedItem prop changes identity, which happens
+    // as search results load. Re-selecting the same drug must not reset the member's other fields.
+    if (drug.uuid === memberDrugUuid) {
       return;
     }
 
@@ -303,6 +309,28 @@ const OrderSetMemberRow: React.FC<OrderSetMemberRowProps> = ({
               )}
             />
           ) : null}
+
+          <Controller
+            name={`members.${index}.instructions`}
+            control={control}
+            render={({ field }) => (
+              <TextArea
+                id={`order-set-member-instructions-${index}`}
+                labelText={t('orderSetMemberInstructions', 'Instructions')}
+                helperText={t(
+                  'orderSetMemberInstructionsHelp',
+                  'Optional. Prefilled on the order and shown in the patient chart.',
+                )}
+                placeholder={t(
+                  'orderSetMemberInstructionsPlaceholder',
+                  'e.g. IV push slowly over 10 minutes, max 2 mg per dose',
+                )}
+                rows={3}
+                {...field}
+                value={field.value ?? ''}
+              />
+            )}
+          />
         </div>
       ) : null}
     </div>
