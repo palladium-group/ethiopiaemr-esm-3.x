@@ -6,7 +6,7 @@ import { type DrugOrderBasketItem, useOrderBasket } from '@openmrs/esm-patient-c
 import { useConfig, useLayoutType, type Visit, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import { prepMedicationOrderPostData } from '../../api/api';
 import { type ConfigObject } from '../../config-schema';
-import { ordersEqual } from './helpers';
+import { closeAndShowOrderBasket, ordersEqual } from './helpers';
 import {
   buildBasketItemFromOrderSetMember,
   fetchOrderSetMemberDrugs,
@@ -140,7 +140,7 @@ const OrderSetReview: React.FC<OrderSetReviewProps> = ({ orderSetSummary, patien
     if (itemsToAdd.length > 0) {
       setOrders([...orders, ...itemsToAdd]);
     }
-    closeWorkspace();
+    closeAndShowOrderBasket(closeWorkspace);
   }, [
     activeMembers,
     closeWorkspace,

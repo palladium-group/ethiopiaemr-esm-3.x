@@ -22,7 +22,7 @@ import {
 } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../../config-schema';
 import { prepMedicationOrderPostData, useActivePatientOrders } from '../../api/api';
-import { ordersEqual } from './helpers';
+import { closeAndShowOrderBasket, ordersEqual } from './helpers';
 import {
   type DrugSearchResult,
   getTemplateOrderBasketItem,
@@ -300,7 +300,7 @@ export const DrugSearchResultItem = memo(function DrugSearchResultItem({
     (searchResult: DrugOrderBasketItem) => {
       searchResult.isOrderIncomplete = true;
       setOrders([...orders, searchResult]);
-      closeWorkspace();
+      closeAndShowOrderBasket(closeWorkspace);
     },
     [orders, setOrders, closeWorkspace],
   );
